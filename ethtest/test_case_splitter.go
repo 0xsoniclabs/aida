@@ -3,7 +3,6 @@ package ethtest
 import (
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/Fantom-foundation/Aida/logger"
 	"github.com/Fantom-foundation/Aida/txcontext"
@@ -43,25 +42,22 @@ func NewTestCaseSplitter(cfg *utils.Config) (*TestCaseSplitter, error) {
 	log := logger.NewLogger(cfg.LogLevel, "eth-test-decoder")
 
 	return &TestCaseSplitter{
-		enabledForks: sortForks(log, cfg.Forks),
+		enabledForks: sortForks(log, cfg.Fork),
 		log:          log,
 		jsons:        tests,
 		chainConfigs: make(map[string]*params.ChainConfig),
 	}, nil
 }
 
-func sortForks(log logger.Logger, cfgForks []string) (forks []string) {
-	if len(cfgForks) == 1 && strings.ToLower(cfgForks[0]) == "all" {
+func sortForks(log logger.Logger, cfgFork string) (forks []string) {
+	cfgFork = utils.ToTitleCase(cfgFork)
+	if cfgFork == "All" {
 		forks = maps.Keys(usableForks)
 	} else {
-		for _, fork := range cfgForks {
-			fork = strings.Replace(strings.ToLower(fork), "glacier", "Glacier", -1)
-			fork = strings.Title(fork)
-			if _, ok := usableForks[fork]; !ok {
-				log.Warningf("Unknown name fork name %v, removing", fork)
-				continue
-			}
-			forks = append(forks, fork)
+		if _, ok := usableForks[cfgFork]; !ok {
+			log.Warningf("Unknown name fork name %v, removing", cfgFork)
+		} else {
+			forks = append(forks, cfgFork)
 		}
 	}
 	return forks

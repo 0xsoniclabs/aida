@@ -60,7 +60,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		DiagnosticServer:         getFlagValue(ctx, DiagnosticServerFlag).(int64),
 		ErrorLogging:             getFlagValue(ctx, ErrorLoggingFlag).(string),
 		EvmImpl:                  getFlagValue(ctx, EvmImplementation).(string),
-		Forks:                    getFlagValue(ctx, ForksFlag).([]string),
+		Fork:                     getFlagValue(ctx, ForkFlag).(string),
 		Genesis:                  getFlagValue(ctx, GenesisFlag).(string),
 		EthTestType:              EthTestType(getFlagValue(ctx, EthTestTypeFlag).(int)),
 		IncludeStorage:           getFlagValue(ctx, IncludeStorageFlag).(bool),
@@ -107,7 +107,6 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		StateValidationMode: SubsetCheck,
 		SubstateDb:          getFlagValue(ctx, AidaDbFlag).(string),
 		SubstateEncoding:    getFlagValue(ctx, SubstateEncodingFlag).(string),
-
 		SyncPeriodLength:    getFlagValue(ctx, SyncPeriodLengthFlag).(uint64),
 		TargetDb:            getFlagValue(ctx, TargetDbFlag).(string),
 		TargetEpoch:         getFlagValue(ctx, TargetEpochFlag).(uint64),

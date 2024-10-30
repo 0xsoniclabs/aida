@@ -153,50 +153,53 @@ var GitCommit = "0000000000000000000000000000000000000000"
 
 // Config represents execution configuration for Aida tools.
 type Config struct {
+	// command
 	AppName     string
 	CommandName string
 
+	// block range
 	First uint64 // first block
 	Last  uint64 // last block
 
-	AidaDb                   string  // directory to profiling database containing substate, update, delete accounts data
-	ArchiveMaxQueryAge       int     // the maximum age for archive queries (in blocks)
-	ArchiveMode              bool    // enable archive mode
-	ArchiveQueryRate         int     // the queries per second send to the archive
-	ArchiveVariant           string  // selects the implementation variant of the archive
-	ArgPath                  string  // path to file or directory given as argument
-	BalanceRange             int64   // balance range for stochastic simulation/replay
-	BasicBlockProfiling      bool    // enable profiling of basic block
-	BlockLength              uint64  // length of a block in number of transactions
-	CPUProfile               string  // pprof cpu profile output file name
-	CPUProfilePerInterval    bool    // a different CPU profile is taken per 100k block interval
-	Cache                    int     // Cache for StateDb or Priming
-	CarmenCheckpointInterval int     // how often (in blocks) will Carmen create checkpoints
-	CarmenCheckpointPeriod   int     // how often (in minutes) will Carmen create checkpoints
-	CarmenSchema             int     // the current DB schema ID to use in Carmen
-	CarmenStateCacheSize     int     // the number of values cached in the Carmen StateDB (0 for default value)
-	CarmenNodeCacheSize      int     // the size of the in-memory cache to be used by a Carmen LiveDB in byte (0 for default value)
-	ChainID                  ChainID // Blockchain ID (mainnet: 250/testnet: 4002)
-	chainCfg                 *params.ChainConfig
-	ChannelBufferSize        int    // set a buffer size for profiling channel
-	CompactDb                bool   // compact database after merging
-	ContinueOnFailure        bool   // continue validation when an error detected
-	ContractNumber           int64  // number of contracts to create
-	CustomDbName             string // name of state-db directory
-	DbComponent              string // options for util-db info are 'all', 'substate', 'delete', 'update', 'state-hash'
-	DbImpl                   string // storage implementation
-	DbLogging                string // set to true if all DB operations should be logged
-	DbTmp                    string // path to temporary database
-	DbVariant                string // database variant
-	Debug                    bool   // enable trace debug flag
-	DebugFrom                uint64 // the first block to print trace debug
-	DeleteSourceDbs          bool   // delete source databases
-	DeletionDb               string // directory of deleted account database
-	DiagnosticServer         int64  // if not zero, the port used for hosting a HTTP server for performance diagnostics
-	ErrorLogging             string // if defined, error logging to file is enabled
-	EvmImpl                  string
-	Genesis                  string         // genesis file
+	// global configs
+	AidaDb                   string         // directory to profiling database containing substate, update, delete accounts data
+	ArchiveMaxQueryAge       int            // the maximum age for archive queries (in blocks)
+	ArchiveMode              bool           // enable archive mode
+	ArchiveQueryRate         int            // the queries per second send to the archive
+	ArchiveVariant           string         // selects the implementation variant of the archive
+	ArgPath                  string         // path to file or directory given as argument
+	BalanceRange             int64          // balance range for stochastic simulation/replay
+	BasicBlockProfiling      bool           // enable profiling of basic block
+	BlockLength              uint64         // length of a block in number of transactions
+	CPUProfile               string         // pprof cpu profile output file name
+	CPUProfilePerInterval    bool           // a different CPU profile is taken per 100k block interval
+	Cache                    int            // Cache for StateDb or Priming
+	CarmenCheckpointInterval int            // how often (in blocks) will Carmen create checkpoints
+	CarmenCheckpointPeriod   int            // how often (in minutes) will Carmen create checkpoints
+	CarmenNodeCacheSize      int            // the size of the in-memory cache to be used by a Carmen LiveDB in byte (0 for default value)
+	CarmenSchema             int            // the current DB schema ID to use in Carmen
+	CarmenStateCacheSize     int            // the number of values cached in the Carmen StateDB (0 for default value)
+	ChainID                  ChainID        // Blockchain ID (mainnet: 250/testnet: 4002)
+	ChannelBufferSize        int            // set a buffer size for profiling channel
+	CompactDb                bool           // compact database after merging
+	ContinueOnFailure        bool           // continue validation when an error detected
+	ContractNumber           int64          // number of contracts to create
+	CustomDbName             string         // name of state-db directory
+	DbComponent              string         // options for util-db info are 'all', 'substate', 'delete', 'update', 'state-hash'
+	DbImpl                   string         // storage implementation
+	DbLogging                string         // set to true if all DB operations should be logged
+	DbTmp                    string         // path to temporary database
+	DbVariant                string         // database variant
+	Debug                    bool           // enable trace debug flag
+	DebugFrom                uint64         // the first block to print trace debug
+	DeleteSourceDbs          bool           // delete source databases
+	DeletionDb               string         // directory of deleted account database
+	DiagnosticServer         int64          // if not zero, the port used for hosting a HTTP server for performance diagnostics
+	ErrorLogging             string         // if defined, error logging to file is enabled
 	EthTestType              EthTestType    // which geth test are we running
+	EvmImpl                  string         // processor implementation
+	Fork                     string         // Which forks are going to get executed byz
+	Genesis                  string         // genesis file
 	IncludeStorage           bool           // represents a flag for contract storage inclusion in an operation
 	IsExistingStateDb        bool           // this is true if we are using an existing StateDb
 	KeepDb                   bool           // set to true if db is kept after run
@@ -251,6 +254,7 @@ type Config struct {
 	TrackProgress            bool           // enables track progress logging
 	TrackerGranularity       int            // defines how often will tracker report achieved block
 	TransactionLength        uint64         // determines indirectly the length of a transaction
+	TxGeneratorType          []string       // type of the application used for transaction generation
 	UpdateBufferSize         uint64         // cache size in Bytes
 	UpdateDb                 string         // update-set directory
 	UpdateOnFailure          bool           // if enabled and continue-on-failure is also enabled, this updates any error found in StateDb
@@ -261,12 +265,11 @@ type Config struct {
 	ValuesNumber             int64          // number of values to generate
 	VmImpl                   string         // vm implementation (geth/lfvm)
 	Workers                  int            // number of worker threads
-	TxGeneratorType          []string       // type of the application used for transaction generation
-	Forks                    []string       // Which forks are going to get executed byz
 
 	// -- cached results --
-
+	chainCfg           *params.ChainConfig   // cached chain configuration
 	interpreterFactory vm.InterpreterFactory // cached interpreter factory to facilitate reuse in interpreter instances
+
 }
 
 type configContext struct {
@@ -287,6 +290,7 @@ func NewConfigContext(cfg *Config, ctx *cli.Context) *configContext {
 
 // NewTestConfig creates a new config for test purpose
 func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate bool, fork string) *Config {
+	fork = ToTitleCase(fork)
 	chainCfg, err := getChainConfig(chainId, fork)
 	if err != nil {
 		t.Fatalf("cannot get chain cfg: %v", err)
@@ -347,6 +351,7 @@ func NewConfig(ctx *cli.Context, mode ArgumentMode) (*Config, error) {
 		return nil, fmt.Errorf("cannot adjust missing config values; %v", err)
 	}
 
+	cc.cfg.Fork = ToTitleCase(cc.cfg.Fork)
 	cc.reportNewConfig()
 
 	return cfg, nil
@@ -792,6 +797,7 @@ func (cc *configContext) reportNewConfig() {
 	log.Noticef("Used EVM implementation: %v", cfg.EvmImpl)
 	log.Noticef("Used VM implementation: %v", cfg.VmImpl)
 	log.Infof("Aida DB directory: %v", cfg.AidaDb)
+	log.Infof("Fork: %v", cfg.Fork)
 
 	// todo move to tx validator once finished
 	log.Infof("validate tx state: %v", cfg.ValidateTxState)
@@ -824,4 +830,13 @@ func (cc *configContext) setChainConfig() (err error) {
 	}
 	cc.cfg.chainCfg, err = getChainConfig(cc.cfg.ChainID, "")
 	return err
+}
+
+// ToTitleCase adjusts fork names to title case.
+// If the input string contains word glacier anywhere in the string, the word is replaced by "Glacier".
+func ToTitleCase(fork string) string {
+	// Adjust the case when the fork name is glacier
+	fork = strings.Replace(strings.ToLower(fork), "glacier", "Glacier", -1)
+	fork = strings.Title(fork)
+	return fork
 }
