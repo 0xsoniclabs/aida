@@ -145,8 +145,10 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 	EthTestsChainID: {},
 }
 
-// special transaction number for pseudo transactions
-const PseudoTx = 99999
+const (
+	// special transaction number for pseudo transactions
+	PseudoTx = 99999
+)
 
 // GitCommit represents the GitHub commit hash the app was built from.
 var GitCommit = "0000000000000000000000000000000000000000"

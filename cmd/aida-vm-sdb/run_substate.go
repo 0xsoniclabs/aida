@@ -113,7 +113,9 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 		validator.MakeStateHashValidator[txcontext.TxContext](cfg),
 		statedb.MakeBlockEventEmitter[txcontext.TxContext](),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
+		validator.MakeEthereumDbPreTransactionUpdater(cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
+		validator.MakeEthereumDbPostTransactionUpdater(cfg),
 		profiler.MakeOperationProfiler[txcontext.TxContext](cfg),
 
 		// block profile extension should be always last because:

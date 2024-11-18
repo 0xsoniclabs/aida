@@ -19,6 +19,7 @@ package validator
 import (
 	"bytes"
 	"fmt"
+	"slices"
 
 	"github.com/Fantom-foundation/Aida/logger"
 	"github.com/Fantom-foundation/Aida/state"
@@ -27,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 )
 
@@ -207,5 +209,47 @@ func doSubsetValidation(alloc txcontext.WorldState, db state.VmStateDB, updateOn
 	if len(err) > 0 {
 		return fmt.Errorf(err)
 	}
+	return nil
+}
+
+// updateStateDbOnEthereumChain is used to fix exceptions in ethereum dataset inconsistencies
+func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, overwriteAccount bool) error {
+	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+		if !db.Exist(addr) {
+			db.CreateAccount(addr)
+		}
+
+		accBalance := acc.GetBalance()
+		balance := db.GetBalance(addr)
+		// balance increments covers block rewards
+		// or zero balance exception for slashed accounts - dao fork
+		if overwriteAccount ||
+			balance.Cmp(accBalance) < 0 ||
+			(slices.Contains(params.DAODrainList(), addr) && accBalance.Eq(uint256.NewInt(0))) {
+			if accBalance.Cmp(balance) != 0 {
+				db.SubBalance(addr, balance, tracing.BalanceChangeUnspecified)
+				db.AddBalance(addr, accBalance, tracing.BalanceChangeUnspecified)
+			}
+		}
+
+		if overwriteAccount {
+			if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
+				db.SetNonce(addr, acc.GetNonce())
+			}
+			if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
+				db.SetCode(addr, acc.GetCode())
+			}
+		}
+
+		// BeaconRootsAddress is a special case where the storage is diverging
+		if overwriteAccount || addr == params.BeaconRootsAddress {
+			acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+				if db.GetState(addr, keyHash) != valueHash {
+					db.SetState(addr, keyHash, valueHash)
+				}
+			})
+		}
+	})
+
 	return nil
 }

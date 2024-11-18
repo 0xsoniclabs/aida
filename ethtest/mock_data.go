@@ -18,13 +18,13 @@ package ethtest
 
 import (
 	"encoding/hex"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"testing"
 
 	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/Fantom-foundation/Aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/tests"

@@ -394,7 +394,7 @@ var (
 	UpdateOnFailure = cli.BoolFlag{
 		Name:  "update-on-failure",
 		Usage: "if enabled and continue-on-failure is also enabled, this corrects any error found in StateDb",
-		Value: true,
+		Value: false,
 	}
 	SkipStateHashScrappingFlag = cli.BoolFlag{
 		Name:  "skip-state-hash-scrapping",
