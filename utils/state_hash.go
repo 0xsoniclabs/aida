@@ -26,8 +26,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/status-im/keycard-go/hexutils"

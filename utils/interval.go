@@ -17,7 +17,7 @@
 package utils
 
 import (
-	xmath "github.com/Fantom-foundation/Aida/utils/math"
+	xmath "github.com/0xsoniclabs/Aida/utils/math"
 )
 
 type Interval struct {

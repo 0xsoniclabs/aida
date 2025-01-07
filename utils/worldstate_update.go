@@ -19,10 +19,10 @@ package utils
 import (
 	"fmt"
 
-	substatecontext "github.com/Fantom-foundation/Aida/txcontext/substate"
-	"github.com/Fantom-foundation/Substate/db"
-	"github.com/Fantom-foundation/Substate/substate"
-	substatetypes "github.com/Fantom-foundation/Substate/types"
+	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 )
 
 // GenerateUpdateSet generates an update set for a block range.

@@ -17,9 +17,9 @@
 package stochastic
 
 import (
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/stochastic"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/stochastic"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/urfave/cli/v2"
 )
 

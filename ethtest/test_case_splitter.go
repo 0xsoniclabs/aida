@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/tests"
 	"golang.org/x/exp/maps"

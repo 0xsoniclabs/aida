@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 

@@ -19,9 +19,9 @@ package executor
 import (
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
-	"github.com/Fantom-foundation/Aida/tracer/operation"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/Aida/tracer/operation"
+	"github.com/0xsoniclabs/Aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

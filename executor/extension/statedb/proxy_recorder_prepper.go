@@ -19,12 +19,12 @@ package statedb
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/state/proxy"
-	"github.com/Fantom-foundation/Aida/tracer/context"
-	"github.com/Fantom-foundation/Aida/tracer/operation"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/state/proxy"
+	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/Aida/tracer/operation"
+	"github.com/0xsoniclabs/Aida/utils"
 )
 
 // MakeProxyRecorderPrepper creates an extension which

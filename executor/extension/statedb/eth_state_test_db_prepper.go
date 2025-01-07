@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/log"
 )
 

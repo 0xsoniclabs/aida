@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
-	umath "github.com/Fantom-foundation/Aida/utils/math"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/utils"
+	umath "github.com/0xsoniclabs/Aida/utils/math"
 )
 
 type archiveBlockChecker[T any] struct {

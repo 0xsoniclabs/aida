@@ -21,10 +21,10 @@ package executor
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
-	substatecontext "github.com/Fantom-foundation/Aida/txcontext/substate"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
+	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
@@ -48,7 +48,7 @@ func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB
 }
 
 // substateProvider is an adapter of Aida's SubstateProvider interface defined above to the
-// current substate implementation offered by github.com/Fantom-foundation/Substate.
+// current substate implementation offered by github.com/0xsoniclabs/substate.
 type substateProvider struct {
 	db                  db.SubstateDB
 	ctxt                *cli.Context

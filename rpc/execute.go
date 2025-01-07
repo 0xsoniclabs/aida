@@ -21,9 +21,9 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/Fantom-foundation/lachesis-base/common/littleendian"
 	"github.com/ethereum/go-ethereum/common"
 )

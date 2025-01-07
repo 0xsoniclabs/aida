@@ -22,8 +22,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/ethtest"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/ethtest"
+	"github.com/0xsoniclabs/Aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Fantom-foundation/Substate/db"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
 )
 
 // SubstateDumpTask dumps substate data

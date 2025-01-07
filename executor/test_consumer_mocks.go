@@ -12,9 +12,9 @@ package executor
 import (
 	reflect "reflect"
 
-	rpc "github.com/Fantom-foundation/Aida/rpc"
-	operation "github.com/Fantom-foundation/Aida/tracer/operation"
-	txcontext "github.com/Fantom-foundation/Aida/txcontext"
+	rpc "github.com/0xsoniclabs/Aida/rpc"
+	operation "github.com/0xsoniclabs/Aida/tracer/operation"
+	txcontext "github.com/0xsoniclabs/Aida/txcontext"
 	gomock "go.uber.org/mock/gomock"
 )
 

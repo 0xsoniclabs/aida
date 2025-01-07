@@ -26,24 +26,24 @@ import (
 
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/Fantom-foundation/Aida/ethtest"
+	"github.com/0xsoniclabs/Aida/ethtest"
 	"github.com/ethereum/go-ethereum/core"
 	"golang.org/x/exp/maps"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Tosca/go/tosca"
-	"github.com/Fantom-foundation/go-opera/opera"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/Tosca/go/tosca"
+	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
 
-	_ "github.com/Fantom-foundation/Tosca/go/processor/floria"
-	_ "github.com/Fantom-foundation/Tosca/go/processor/opera"
+	_ "github.com/0xsoniclabs/Tosca/go/processor/floria"
+	_ "github.com/0xsoniclabs/Tosca/go/processor/opera"
 )
 
 // MakeLiveDbTxProcessor creates a executor.Processor which processes transaction into LIVE StateDb.

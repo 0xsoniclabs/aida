@@ -19,10 +19,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/ethtest"
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/ethtest"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 )

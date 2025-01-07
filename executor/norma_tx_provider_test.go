@@ -19,8 +19,8 @@ package executor
 import (
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"

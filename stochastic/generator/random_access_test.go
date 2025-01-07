@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/Aida/stochastic/statistics"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 

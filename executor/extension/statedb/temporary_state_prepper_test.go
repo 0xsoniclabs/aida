@@ -19,7 +19,7 @@ package statedb
 import (
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/utils"
 )
 
 func TestTemporaryStatePrepper_DefaultDbImplementationIsOffTheChainStateDb(t *testing.T) {

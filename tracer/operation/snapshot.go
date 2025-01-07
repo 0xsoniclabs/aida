@@ -24,9 +24,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/state"
+	"github.com/0xsoniclabs/Aida/state"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
+	"github.com/0xsoniclabs/Aida/tracer/context"
 )
 
 // Snapshot data structure

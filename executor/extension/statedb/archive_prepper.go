@@ -17,8 +17,8 @@
 package statedb
 
 import (
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
 )
 
 // MakeArchivePrepper creates an extension for retrieving archive. Archive is assigned to context.Archive.

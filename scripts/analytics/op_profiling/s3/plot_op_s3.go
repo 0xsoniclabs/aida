@@ -26,9 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
-	xmath "github.com/Fantom-foundation/Aida/utils/math"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/utils"
+	xmath "github.com/0xsoniclabs/Aida/utils/math"
 
 	// db
 	"github.com/jmoiron/sqlx"

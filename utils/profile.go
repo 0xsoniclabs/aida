@@ -22,9 +22,9 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Tosca/go/tosca"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Tosca/go/tosca"
 )
 
 func StartCPUProfile(cfg *Config) error {

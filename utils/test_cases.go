@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 )
 

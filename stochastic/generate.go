@@ -17,9 +17,9 @@
 package stochastic
 
 import (
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/Aida/utils"
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.

@@ -19,13 +19,13 @@ package profiler
 import (
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state/proxy"
-	"github.com/Fantom-foundation/Aida/tracer/operation"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Aida/utils/analytics"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/state/proxy"
+	"github.com/0xsoniclabs/Aida/tracer/operation"
+	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/Aida/utils/analytics"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 

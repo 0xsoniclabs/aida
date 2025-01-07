@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 )
 
 const (

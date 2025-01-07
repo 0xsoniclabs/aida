@@ -19,10 +19,10 @@ package profile
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
-	"github.com/Fantom-foundation/Substate/substate"
-	substatetypes "github.com/Fantom-foundation/Substate/types"
+	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 )

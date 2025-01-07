@@ -19,8 +19,8 @@ package db
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/utils"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/urfave/cli/v2"
 )

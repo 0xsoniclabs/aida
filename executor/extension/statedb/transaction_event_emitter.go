@@ -17,8 +17,8 @@
 package statedb
 
 import (
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
 )
 
 // MakeTransactionEventEmitter creates a executor.Extension to call BeginBlock() and EndBlock()

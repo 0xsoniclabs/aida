@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Carmen/go/carmen"
-	_ "github.com/Fantom-foundation/Carmen/go/carmen/experimental"
-	_ "github.com/Fantom-foundation/Carmen/go/state/cppstate"
-	_ "github.com/Fantom-foundation/Carmen/go/state/gostate"
+	"github.com/0xsoniclabs/Carmen/go/carmen"
+	_ "github.com/0xsoniclabs/Carmen/go/carmen/experimental"
+	_ "github.com/0xsoniclabs/Carmen/go/state/cppstate"
+	_ "github.com/0xsoniclabs/Carmen/go/state/gostate"
 )
 
 type CarmenStateTestCase struct {

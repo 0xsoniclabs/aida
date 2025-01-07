@@ -17,8 +17,8 @@
 package utils
 
 import (
-	"github.com/Fantom-foundation/Aida/cmd/util-db/flags"
-	"github.com/Fantom-foundation/Aida/logger"
+	"github.com/0xsoniclabs/Aida/cmd/util-db/flags"
+	"github.com/0xsoniclabs/Aida/logger"
 	"github.com/urfave/cli/v2"
 )
 

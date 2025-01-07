@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/Aida/stochastic/statistics"
 )
 
 // IDs of StateDB Operations

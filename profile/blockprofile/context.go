@@ -20,9 +20,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/profile/graphutil"
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/profile/graphutil"
+	"github.com/0xsoniclabs/Aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 )
 

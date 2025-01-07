@@ -19,9 +19,9 @@ package executor
 import (
 	"fmt"
 
-	statetest "github.com/Fantom-foundation/Aida/ethtest"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	statetest "github.com/0xsoniclabs/Aida/ethtest"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/utils"
 )
 
 func NewEthStateTestProvider(cfg *utils.Config) Provider[txcontext.TxContext] {

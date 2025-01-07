@@ -20,7 +20,7 @@ import (
 	"io"
 	"log"
 
-	"github.com/Fantom-foundation/Aida/tracer/operation"
+	"github.com/0xsoniclabs/Aida/tracer/operation"
 )
 
 // TraceIterator data structure for storing state of a trace iterator

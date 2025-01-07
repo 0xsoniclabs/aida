@@ -28,18 +28,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/urfave/cli/v2"
 
-	"github.com/Fantom-foundation/Tosca/go/geth_adapter"
-	_ "github.com/Fantom-foundation/Tosca/go/interpreter/evmone"
-	_ "github.com/Fantom-foundation/Tosca/go/interpreter/evmzero"
-	"github.com/Fantom-foundation/Tosca/go/interpreter/lfvm"
-	"github.com/Fantom-foundation/Tosca/go/tosca"
+	"github.com/0xsoniclabs/Tosca/go/geth_adapter"
+	_ "github.com/0xsoniclabs/Tosca/go/interpreter/evmone"
+	_ "github.com/0xsoniclabs/Tosca/go/interpreter/evmzero"
+	"github.com/0xsoniclabs/Tosca/go/interpreter/lfvm"
+	"github.com/0xsoniclabs/Tosca/go/tosca"
 )
 
 func init() {

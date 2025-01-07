@@ -16,7 +16,7 @@
 
 package extension
 
-import "github.com/Fantom-foundation/Aida/executor"
+import "github.com/0xsoniclabs/Aida/executor"
 
 // NilExtension is an implementation of the executor.Extension interface
 // ignoring all incoming events. It is mainly intended as a fall-back

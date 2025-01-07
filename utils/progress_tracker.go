@@ -19,7 +19,7 @@ package utils
 import (
 	"time"
 
-	"github.com/Fantom-foundation/Aida/logger"
+	"github.com/0xsoniclabs/Aida/logger"
 )
 
 // threshold for wrapping a bulk load and reporting a priming progress

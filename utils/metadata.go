@@ -26,8 +26,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/syndtr/goleveldb/leveldb"

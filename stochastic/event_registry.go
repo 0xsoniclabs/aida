@@ -27,7 +27,7 @@ import (
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/simplify"
 
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/Aida/stochastic/statistics"
 )
 
 // EventRegistry counts events and counts transition for the Markov-Process.

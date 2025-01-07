@@ -20,10 +20,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/state/proxy"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Aida/state/proxy"
+	"github.com/0xsoniclabs/Aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

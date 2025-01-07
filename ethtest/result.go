@@ -3,7 +3,7 @@ package ethtest
 import (
 	"errors"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/txcontext"
 )
 
 type stateTestResult struct {

@@ -17,9 +17,9 @@
 package executor
 
 import (
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/tracer/operation"
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/rpc"
+	"github.com/0xsoniclabs/Aida/tracer/operation"
+	"github.com/0xsoniclabs/Aida/txcontext"
 )
 
 //go:generate mockgen -source test_consumer.go -destination test_consumer_mocks.go -package executor

@@ -17,9 +17,9 @@
 package profiler
 
 import (
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/Aida/utils"
 )
 
 // MakeMemoryProfiler creates an executor.Extension that records memory profiling data if enabled in the configuration.

@@ -21,11 +21,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/state/proxy"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/Aida/state/proxy"
+	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/martian/log"
 )

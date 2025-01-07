@@ -21,7 +21,7 @@ package state
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/Aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
