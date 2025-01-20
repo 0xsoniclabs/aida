@@ -34,6 +34,7 @@ var SubstateDumpCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
 		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 The aida-vm dump command requires two arguments:
@@ -52,13 +53,22 @@ func substateDumpAction(ctx *cli.Context) error {
 		return err
 	}
 
+	// prepare substate database
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
 	defer sdb.Close()
 
+	// set encoding type
+	_, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+	if err != nil {
+		return fmt.Errorf("cannot set substate encoding; %w", err)
+	}
+
+	// run substate dump task
 	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", utildb.SubstateDumpTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()
+
 	return err
 }
