@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/substate/db"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"

@@ -17,9 +17,9 @@
 package executor
 
 import (
-	"github.com/0xsoniclabs/Aida/rpc"
-	"github.com/0xsoniclabs/Aida/tracer/operation"
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/txcontext"
 )
 
 //go:generate mockgen -source test_consumer.go -destination test_consumer_mocks.go -package executor

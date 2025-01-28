@@ -20,8 +20,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/0xsoniclabs/Aida/cmd/util-db/db"
-	"github.com/0xsoniclabs/Aida/cmd/util-db/primer"
+	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
 
 	"github.com/urfave/cli/v2"
 )

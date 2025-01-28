@@ -17,11 +17,11 @@
 package profiler
 
 import (
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/tracer/context"
-	"github.com/0xsoniclabs/Aida/tracer/operation"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeReplayProfiler creates executor.Extension that prints profile statistics

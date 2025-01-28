@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/syndtr/goleveldb/leveldb"
 )

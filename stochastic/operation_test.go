@@ -19,7 +19,7 @@ package stochastic
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // TestOperationDecoding checks whether number encoding/decoding of operations with their arguments works.

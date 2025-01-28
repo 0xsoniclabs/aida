@@ -17,8 +17,8 @@
 package trace
 
 import (
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 

@@ -23,9 +23,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/tracer/context"
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"

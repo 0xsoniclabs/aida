@@ -19,7 +19,7 @@ package utils
 import (
 	"time"
 
-	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/aida/logger"
 )
 
 // threshold for wrapping a bulk load and reporting a priming progress

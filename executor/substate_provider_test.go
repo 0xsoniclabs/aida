@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"

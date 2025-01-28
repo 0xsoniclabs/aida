@@ -17,9 +17,9 @@
 package stochastic
 
 import (
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.

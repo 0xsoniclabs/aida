@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/0xsoniclabs/Aida/cmd/aida-profile/profile"
+	"github.com/0xsoniclabs/aida/cmd/aida-profile/profile"
 	"github.com/urfave/cli/v2"
 )
 

@@ -21,11 +21,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
 )

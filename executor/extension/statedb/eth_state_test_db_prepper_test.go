@@ -20,11 +20,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {

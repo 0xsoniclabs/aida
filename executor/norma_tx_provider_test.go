@@ -19,8 +19,8 @@ package executor
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"

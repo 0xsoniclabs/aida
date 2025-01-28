@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/0xsoniclabs/Aida/cmd/aida-stochastic-sdb/stochastic"
+	"github.com/0xsoniclabs/aida/cmd/aida-stochastic-sdb/stochastic"
 	"github.com/urfave/cli/v2"
 )
 

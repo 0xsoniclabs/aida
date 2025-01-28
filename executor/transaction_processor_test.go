@@ -21,13 +21,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/Tosca/go/tosca"
+	"github.com/0xsoniclabs/tosca/go/tosca"
 	"go.uber.org/mock/gomock"
 )
 

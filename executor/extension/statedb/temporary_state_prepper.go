@@ -19,11 +19,11 @@ package statedb
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	statedb "github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	statedb "github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeTemporaryStatePrepper creates an executor.Extension which Makes a fresh StateDb

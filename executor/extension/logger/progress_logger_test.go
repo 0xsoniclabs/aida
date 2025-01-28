@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/logger"
-	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
 )

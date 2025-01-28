@@ -22,10 +22,10 @@ import (
 	"io"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/aida/state"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 // GetTransientState data structure

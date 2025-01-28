@@ -1,15 +1,15 @@
-module github.com/0xsoniclabs/Aida
+module github.com/0xsoniclabs/aida
 
 go 1.22.0
 
 toolchain go1.22.4
 
 require (
-	github.com/0xsoniclabs/Carmen/go v0.0.0-20241230125907-0745da71c1ba
-	github.com/0xsoniclabs/Norma v0.0.0-20250107083705-27ee87999080
-	github.com/0xsoniclabs/Tosca v0.0.0-20250102101309-c64a219ca14d
+	github.com/0xsoniclabs/carmen/go v0.0.0-20250113102336-97f8b8616eff
+	github.com/0xsoniclabs/norma v0.0.0-20250128090554-d3c7e0febb4e
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
 	github.com/0xsoniclabs/substate v0.0.0-20250107100010-67dd5fb1bf8b
+	github.com/0xsoniclabs/tosca v0.0.0-20250109073452-a7eb49bdbd45
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
 	github.com/dsnet/compress v0.0.1
 	github.com/ethereum/go-ethereum v1.14.8
@@ -116,11 +116,11 @@ require (
 
 // The Carmen project is integrated as a git-submodule since we need to run extra
 // build steps when importing the project. This is handled in the Makefile.
-replace github.com/0xsoniclabs/Carmen/go => ./carmen/go
+replace github.com/0xsoniclabs/carmen/go => ./carmen/go
 
 // The Tosca project is also integrated as a git-submodule for the same reasons as
 // Carmen. Furthermore, the EVMC library, which is part of Tosca, needs to be used.
-replace github.com/0xsoniclabs/Tosca => ./tosca
+replace github.com/0xsoniclabs/tosca => ./tosca
 
 replace github.com/ethereum/evmc/v11 => ./tosca/third_party/evmc
 

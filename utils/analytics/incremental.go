@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"math"
 
-	xmath "github.com/0xsoniclabs/Aida/utils/math"
+	xmath "github.com/0xsoniclabs/aida/utils/math"
 )
 
 // IncrementalAnalytics tracks metrics defined by Analytics interface

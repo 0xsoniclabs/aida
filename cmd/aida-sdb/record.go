@@ -19,14 +19,14 @@ package main
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension/profiler"
-	"github.com/0xsoniclabs/Aida/executor/extension/statedb"
-	"github.com/0xsoniclabs/Aida/executor/extension/tracker"
-	"github.com/0xsoniclabs/Aida/executor/extension/validator"
-	log "github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/profiler"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/tracker"
+	"github.com/0xsoniclabs/aida/executor/extension/validator"
+	log "github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )

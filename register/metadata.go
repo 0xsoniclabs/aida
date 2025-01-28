@@ -25,7 +25,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 const (

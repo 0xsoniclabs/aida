@@ -21,9 +21,9 @@ package executor
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/txcontext"
-	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )

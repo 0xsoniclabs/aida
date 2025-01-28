@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"

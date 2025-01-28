@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/urfave/cli/v2"

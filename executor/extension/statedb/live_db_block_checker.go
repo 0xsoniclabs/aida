@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 type liveDbBlockChecker[T any] struct {

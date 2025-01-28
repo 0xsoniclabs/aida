@@ -21,8 +21,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 // The GetTransientStateLcls operation is a GetState operation

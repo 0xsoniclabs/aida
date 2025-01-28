@@ -19,7 +19,7 @@ package stochastic
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/ethereum/go-ethereum/common"
 )
 

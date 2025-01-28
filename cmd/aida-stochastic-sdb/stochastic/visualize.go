@@ -19,10 +19,10 @@ package stochastic
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/stochastic"
-	"github.com/0xsoniclabs/Aida/stochastic/visualizer"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/visualizer"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 

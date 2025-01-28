@@ -19,10 +19,10 @@ package statedb
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"go.uber.org/mock/gomock"
 )
 

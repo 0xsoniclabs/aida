@@ -22,8 +22,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

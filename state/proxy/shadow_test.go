@@ -21,8 +21,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/state"
-	carmen "github.com/0xsoniclabs/Carmen/go/state"
+	"github.com/0xsoniclabs/aida/state"
+	carmen "github.com/0xsoniclabs/carmen/go/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"

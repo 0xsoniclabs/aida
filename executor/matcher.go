@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/substate/substate"
 	gomock "go.uber.org/mock/gomock"
 )

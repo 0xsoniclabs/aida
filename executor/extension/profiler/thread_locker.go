@@ -19,8 +19,8 @@ package profiler
 import (
 	"runtime"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
 )
 
 // MakeThreadLocker creates an executor.Extension locks the executor thread

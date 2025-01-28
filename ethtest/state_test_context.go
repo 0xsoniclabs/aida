@@ -19,7 +19,7 @@ package ethtest
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"

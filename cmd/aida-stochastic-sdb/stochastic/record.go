@@ -23,11 +23,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/stochastic"
-	substatecontext "github.com/0xsoniclabs/Aida/txcontext/substate"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/stochastic"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )

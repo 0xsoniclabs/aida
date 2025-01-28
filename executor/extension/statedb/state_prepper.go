@@ -17,9 +17,9 @@
 package statedb
 
 import (
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/txcontext"
 )
 
 // MakeStateDbPrepper creates an executor extension calling PrepareSubstate on

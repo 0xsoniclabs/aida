@@ -19,7 +19,7 @@ package operation
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 func initEndTransaction(t *testing.T) (*context.Replay, *EndTransaction) {

@@ -19,13 +19,13 @@ package profiler
 import (
 	"time"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/state/proxy"
-	"github.com/0xsoniclabs/Aida/tracer/operation"
-	"github.com/0xsoniclabs/Aida/utils"
-	"github.com/0xsoniclabs/Aida/utils/analytics"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state/proxy"
+	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 

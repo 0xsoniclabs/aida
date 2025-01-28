@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
 )
 

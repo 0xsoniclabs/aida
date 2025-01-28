@@ -17,7 +17,7 @@
 package substate
 
 import (
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"

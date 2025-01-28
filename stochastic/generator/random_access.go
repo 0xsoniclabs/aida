@@ -21,8 +21,8 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/0xsoniclabs/Aida/stochastic/exponential"
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/exponential"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // minRandomAccessSize must be substantially larger than statistics.QueueLen

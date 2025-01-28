@@ -17,8 +17,8 @@
 package utils
 
 import (
-	"github.com/0xsoniclabs/Aida/cmd/util-db/flags"
-	"github.com/0xsoniclabs/Aida/logger"
+	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/urfave/cli/v2"
 )
 

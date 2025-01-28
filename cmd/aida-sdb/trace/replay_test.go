@@ -19,9 +19,9 @@ package trace
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/tracer/operation"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

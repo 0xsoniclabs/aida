@@ -19,7 +19,7 @@ package generator
 import (
 	"errors"
 
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // IndirectAccess data structure for random access indices permitting deletion without reuse.

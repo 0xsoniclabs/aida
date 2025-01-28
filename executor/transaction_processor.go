@@ -26,15 +26,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/0xsoniclabs/Aida/ethtest"
+	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/ethereum/go-ethereum/core"
 	"golang.org/x/exp/maps"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/txcontext"
-	"github.com/0xsoniclabs/Aida/utils"
-	"github.com/0xsoniclabs/Tosca/go/tosca"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/tosca/go/tosca"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -42,8 +42,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
 
-	_ "github.com/0xsoniclabs/Tosca/go/processor/floria"
-	_ "github.com/0xsoniclabs/Tosca/go/processor/opera"
+	_ "github.com/0xsoniclabs/tosca/go/processor/floria"
+	_ "github.com/0xsoniclabs/tosca/go/processor/opera"
 )
 
 // MakeLiveDbTxProcessor creates a executor.Processor which processes transaction into LIVE StateDb.

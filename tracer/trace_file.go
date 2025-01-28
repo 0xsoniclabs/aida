@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/dsnet/compress/bzip2"
 )
 

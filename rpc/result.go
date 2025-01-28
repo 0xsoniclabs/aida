@@ -19,7 +19,7 @@ package rpc
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/txcontext"
 )
 
 type result struct {

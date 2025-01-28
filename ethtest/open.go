@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 type ethTest interface {

@@ -19,16 +19,16 @@ package main
 import (
 	"time"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension/logger"
-	"github.com/0xsoniclabs/Aida/executor/extension/profiler"
-	"github.com/0xsoniclabs/Aida/executor/extension/register"
-	"github.com/0xsoniclabs/Aida/executor/extension/statedb"
-	"github.com/0xsoniclabs/Aida/executor/extension/tracker"
-	"github.com/0xsoniclabs/Aida/executor/extension/validator"
-	"github.com/0xsoniclabs/Aida/rpc"
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
+	"github.com/0xsoniclabs/aida/executor/extension/profiler"
+	"github.com/0xsoniclabs/aida/executor/extension/register"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/tracker"
+	"github.com/0xsoniclabs/aida/executor/extension/validator"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 

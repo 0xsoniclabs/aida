@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/0xsoniclabs/Aida/state"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/ethapi"
 	"github.com/0xsoniclabs/sonic/evmcore"
 	"github.com/0xsoniclabs/sonic/opera"

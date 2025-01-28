@@ -19,9 +19,9 @@ package statedb
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/Aida/executor"
-	"github.com/0xsoniclabs/Aida/executor/extension"
-	"github.com/0xsoniclabs/Aida/rpc"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/rpc"
 )
 
 // MakeTemporaryArchivePrepper creates an extension for retrieving temporary archive before every txcontext.

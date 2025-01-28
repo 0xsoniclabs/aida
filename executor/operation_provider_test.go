@@ -19,9 +19,9 @@ package executor
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
-	"github.com/0xsoniclabs/Aida/tracer/operation"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

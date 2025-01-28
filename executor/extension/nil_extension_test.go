@@ -19,7 +19,7 @@ package extension
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/executor"
+	"github.com/0xsoniclabs/aida/executor"
 )
 
 func TestNilExtensionIsExtension(t *testing.T) {

@@ -28,9 +28,9 @@ import (
 
 	"golang.org/x/exp/constraints"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/scripts/analytics/html"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/scripts/analytics/html"
+	"github.com/0xsoniclabs/aida/utils"
 
 	// db
 	"github.com/jmoiron/sqlx"

@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 func initBeginTransaction(t *testing.T) (*context.Replay, *BeginTransaction) {

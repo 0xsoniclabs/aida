@@ -21,9 +21,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/aida/state"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 // End-sync-period operation data structure

@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/rpc"
-	"github.com/0xsoniclabs/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 

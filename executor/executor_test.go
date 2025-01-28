@@ -23,8 +23,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/logger"
-	"github.com/0xsoniclabs/Aida/state"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
 )

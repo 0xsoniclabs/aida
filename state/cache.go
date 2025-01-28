@@ -4,7 +4,7 @@ package state
 import (
 	"sync"
 
-	cc "github.com/0xsoniclabs/Carmen/go/common"
+	cc "github.com/0xsoniclabs/carmen/go/common"
 	"github.com/ethereum/go-ethereum/common"
 )
 

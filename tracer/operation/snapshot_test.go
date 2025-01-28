@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/0xsoniclabs/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 func initSnapshot(t *testing.T) (*context.Replay, *Snapshot, int32) {

@@ -20,10 +20,10 @@ import (
 	"log"
 	"sort"
 
-	"github.com/0xsoniclabs/Aida/stochastic"
-	"github.com/0xsoniclabs/Aida/stochastic/exponential"
-	"github.com/0xsoniclabs/Aida/stochastic/stationary"
-	"github.com/0xsoniclabs/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/exponential"
+	"github.com/0xsoniclabs/aida/stochastic/stationary"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // EventData contains the statistical data for events that is used for visualization.
