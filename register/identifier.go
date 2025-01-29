@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 type RunIdentity struct {

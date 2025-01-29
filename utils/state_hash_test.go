@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 

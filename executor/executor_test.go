@@ -23,9 +23,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
 )
 

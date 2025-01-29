@@ -23,9 +23,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/state"
+	"github.com/0xsoniclabs/aida/state"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 // The GetStateLccs operation is a GetState operation whose

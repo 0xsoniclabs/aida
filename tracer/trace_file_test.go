@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/dsnet/compress/bzip2"
 )
 
