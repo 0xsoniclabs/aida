@@ -26,7 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/txcontext/txgenerator"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/0xsoniclabs/norma/load/app"
+	"github.com/Fantom-foundation/Norma/load/app"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
