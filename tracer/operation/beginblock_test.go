@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 func initBeginBlock(t *testing.T) (*context.Replay, *BeginBlock, uint64) {

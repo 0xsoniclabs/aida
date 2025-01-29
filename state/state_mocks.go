@@ -12,7 +12,7 @@ package state
 import (
 	reflect "reflect"
 
-	txcontext "github.com/Fantom-foundation/Aida/txcontext"
+	txcontext "github.com/0xsoniclabs/aida/txcontext"
 	common "github.com/ethereum/go-ethereum/common"
 	stateless "github.com/ethereum/go-ethereum/core/stateless"
 	tracing "github.com/ethereum/go-ethereum/core/tracing"

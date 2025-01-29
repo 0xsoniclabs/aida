@@ -12,7 +12,7 @@ package executor
 import (
 	reflect "reflect"
 
-	db "github.com/Fantom-foundation/Substate/db"
+	db "github.com/0xsoniclabs/substate/db"
 	gomock "go.uber.org/mock/gomock"
 )
 

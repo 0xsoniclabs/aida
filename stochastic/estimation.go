@@ -23,8 +23,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/Fantom-foundation/Aida/stochastic/exponential"
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/exponential"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // EstimationModelJSON is the output of the estimator in JSON format.

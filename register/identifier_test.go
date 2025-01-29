@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestIdentity_SameIdIfSameRun(t *testing.T) {

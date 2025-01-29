@@ -19,7 +19,7 @@ which builds all Aida tools. The aida tools can be found in ```build/...```.
 
 ### Documentation
 
-The tools documentation can be found on the [Wiki](https://github.com/Fantom-foundation/Aida/wiki) page.
+The tools documentation can be found on the [Wiki](https://github.com/0xsoniclabs/Aida/wiki) page.
 
 ## Testing 
 

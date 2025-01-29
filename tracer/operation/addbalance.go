@@ -23,8 +23,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"

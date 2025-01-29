@@ -25,9 +25,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
-	"github.com/Fantom-foundation/Tosca/go/tosca"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/tosca/go/tosca"
 	"github.com/urfave/cli/v2"
 )
 

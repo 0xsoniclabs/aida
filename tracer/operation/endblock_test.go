@@ -19,7 +19,7 @@ package operation
 import (
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 func initEndBlock(t *testing.T) (*context.Replay, *EndBlock) {

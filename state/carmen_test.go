@@ -21,7 +21,7 @@ import (
 	"errors"
 	"testing"
 
-	carmen "github.com/Fantom-foundation/Carmen/go/state"
+	carmen "github.com/0xsoniclabs/carmen/go/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"

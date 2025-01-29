@@ -20,8 +20,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/substate/substate"
 	gomock "go.uber.org/mock/gomock"
 )
 

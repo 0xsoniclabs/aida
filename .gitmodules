@@ -1,9 +1,9 @@
 [submodule "carmen"]
 	path = carmen
-	url = https://github.com/Fantom-foundation/Carmen.git
+	url = https://github.com/0xsoniclabs/carmen.git
 [submodule "tosca"]
 	path = tosca
-	url = https://github.com/Fantom-foundation/Tosca.git
+	url = https://github.com/0xsoniclabs/tosca.git
 [submodule "sonic"]
 	path = sonic
-	url = https://github.com/Fantom-foundation/Sonic.git
+	url = https://github.com/0xsoniclabs/sonic.git

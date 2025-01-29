@@ -24,8 +24,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 // fuzzSource is a random generator source from a fuzzing source.
