@@ -43,6 +43,7 @@ import (
 	"github.com/holiman/uint256"
 
 	_ "github.com/0xsoniclabs/tosca/go/processor/floria"
+	_ "github.com/0xsoniclabs/tosca/go/processor/geth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/opera"
 )
 
@@ -438,12 +439,41 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, block int, tx int,
 		return res, fmt.Errorf("cannot get chain config: %w", err)
 	}
 
+	//block = 1
+	baseFee := blockEnvironment.GetBaseFee()
+	if message.GasPrice.Cmp(big.NewInt(0)) == 0 &&
+		blockEnvironment.GetBaseFee() != nil &&
+		blockEnvironment.GetBaseFee().Cmp(big.NewInt(0)) != 0 {
+		baseFee = big.NewInt(0)
+	}
+	if message.GasPrice.Cmp(big.NewInt(0)) != 0 &&
+		message.GasFeeCap.Cmp(big.NewInt(0)) == 0 &&
+		message.GasTipCap.Cmp(big.NewInt(0)) == 0 {
+		// Legacy transaction do not specify gas fee cap and gas tip cap but the gas price
+		message.GasFeeCap = message.GasPrice
+		message.GasTipCap = message.GasPrice
+	}
+
 	revision := tosca.R07_Istanbul
-	if block >= int(chainCfg.BerlinBlock.Uint64()) {
+	if chainCfg.BerlinBlock != nil && block >= int(chainCfg.BerlinBlock.Uint64()) {
 		revision = tosca.R09_Berlin
 	}
-	if block >= int(chainCfg.LondonBlock.Uint64()) {
+	if chainCfg.LondonBlock != nil && block >= int(chainCfg.LondonBlock.Uint64()) {
 		revision = tosca.R10_London
+	}
+	if chainCfg.MergeNetsplitBlock != nil && block >= int(chainCfg.MergeNetsplitBlock.Uint64()) {
+		revision = tosca.R11_Paris
+	}
+	if chainCfg.ShanghaiTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.ShanghaiTime {
+		revision = tosca.R12_Shanghai
+	}
+	if chainCfg.CancunTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.CancunTime {
+		revision = tosca.R13_Cancun
+	}
+
+	randao := tosca.Hash(bigToValue(blockEnvironment.GetDifficulty()))
+	if revision >= tosca.R11_Paris {
+		randao = tosca.Hash(*blockEnvironment.GetRandom())
 	}
 
 	blockParams := tosca.BlockParameters{
@@ -452,9 +482,9 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, block int, tx int,
 		GasLimit:    tosca.Gas(blockEnvironment.GetGasLimit()),
 		Coinbase:    tosca.Address(blockEnvironment.GetCoinbase()),
 		ChainID:     tosca.Word(bigToValue(chainCfg.ChainID)),
-		PrevRandao:  tosca.Hash(bigToValue(blockEnvironment.GetDifficulty())),
-		BaseFee:     bigToValue(blockEnvironment.GetBaseFee()),
-		BlobBaseFee: tosca.Value{}, // = 0, since blobs are not supported by Fantom yet
+		PrevRandao:  tosca.Hash(randao),
+		BaseFee:     bigToValue(baseFee),
+		BlobBaseFee: bigToValue(blockEnvironment.GetBlobBaseFee()),
 		Revision:    revision,
 	}
 
@@ -470,6 +500,14 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, block int, tx int,
 		})
 	}
 
+	var blobHashes []tosca.Hash
+	if message.BlobHashes != nil {
+		blobHashes = make([]tosca.Hash, len(message.BlobHashes))
+		for i, hash := range message.BlobHashes {
+			blobHashes[i] = tosca.Hash(hash)
+		}
+	}
+
 	transaction := tosca.Transaction{
 		Sender: tosca.Address(message.From),
 		Recipient: func() *tosca.Address {
@@ -480,22 +518,24 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, block int, tx int,
 			toscaAddr := tosca.Address(*addr)
 			return &toscaAddr
 		}(),
-		Nonce:      message.Nonce,
-		Input:      message.Data,
-		Value:      bigToValue(message.Value),
-		GasPrice:   bigToValue(message.GasPrice),
-		GasLimit:   tosca.Gas(message.GasLimit),
-		AccessList: accessList,
+		Nonce:         message.Nonce,
+		Input:         message.Data,
+		Value:         bigToValue(message.Value),
+		GasFeeCap:     bigToValue(message.GasFeeCap),
+		GasTipCap:     bigToValue(message.GasTipCap),
+		GasLimit:      tosca.Gas(message.GasLimit),
+		BlobGasFeeCap: bigToValue(message.BlobGasFeeCap),
+		BlobHashes:    blobHashes,
+		AccessList:    accessList,
 	}
 
 	context := &toscaTxContext{
 		blockEnvironment: blockEnvironment,
 		db:               db,
 	}
-
 	receipt, err := processor.Run(blockParams, transaction, context)
 	if err != nil {
-		return transactionResult{}, err
+		return transactionResult{err: err}, err
 	}
 
 	log := []*types.Log{}
@@ -535,13 +575,19 @@ type toscaTxContext struct {
 	db               state.VmStateDB
 }
 
-func (a *toscaTxContext) CreateAccount(addr tosca.Address, code tosca.Code) bool {
-	if a.db.Exist(common.Address(addr)) {
-		return false
+func (a *toscaTxContext) CreateAccount(addr tosca.Address) {
+	if !a.db.Exist(common.Address(addr)) {
+		a.db.CreateAccount(common.Address(addr))
 	}
-	a.db.CreateAccount(common.Address(addr))
-	a.db.SetCode(common.Address(addr), code)
-	return true
+	a.db.CreateContract(common.Address(addr))
+}
+
+func (a *toscaTxContext) HasEmptyStateRoot(addr tosca.Address) bool {
+	codeHash := a.db.GetCodeHash(common.Address(addr))
+	rootHash := a.db.GetStorageRoot(common.Address(addr))
+	return a.db.GetNonce(common.Address(addr)) == 0 &&
+		(codeHash == common.Hash{} || codeHash == types.EmptyCodeHash) &&
+		(rootHash == common.Hash{} || rootHash == types.EmptyRootHash)
 }
 
 func (a *toscaTxContext) AccountExists(addr tosca.Address) bool {
@@ -650,8 +696,14 @@ func (a *toscaTxContext) GetLogs() []tosca.Log {
 }
 
 func (a *toscaTxContext) SelfDestruct(addr tosca.Address, beneficiary tosca.Address) bool {
-	a.db.SelfDestruct(common.Address(addr))
-	return true
+	selfdestructed := !a.db.HasSelfDestructed(common.Address(addr))
+
+	if a.blockEnvironment.GetFork() == tosca.R13_Cancun.String() {
+		a.db.Selfdestruct6780(common.Address(addr))
+	} else {
+		a.db.SelfDestruct(common.Address(addr))
+	}
+	return selfdestructed
 }
 
 func (a *toscaTxContext) AccessAccount(addr tosca.Address) tosca.AccessStatus {
