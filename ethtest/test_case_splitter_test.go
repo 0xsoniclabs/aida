@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/exp/maps"

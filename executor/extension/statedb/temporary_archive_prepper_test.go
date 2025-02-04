@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/state"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/state"
 	"go.uber.org/mock/gomock"
 )
 

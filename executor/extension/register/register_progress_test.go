@@ -26,14 +26,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/register"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	substatecontext "github.com/Fantom-foundation/Aida/txcontext/substate"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/register"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/substate"
 
 	//db
 	"github.com/jmoiron/sqlx"

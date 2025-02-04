@@ -19,10 +19,10 @@ package statedb
 import (
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/ethtest"
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/ethtest"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"go.uber.org/mock/gomock"
 )
 

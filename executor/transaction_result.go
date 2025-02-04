@@ -19,7 +19,7 @@ package executor
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"

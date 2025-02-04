@@ -22,9 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 

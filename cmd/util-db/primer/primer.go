@@ -19,8 +19,8 @@ package primer
 import (
 	"github.com/urfave/cli/v2"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 var RunPrimerCmd = cli.Command{

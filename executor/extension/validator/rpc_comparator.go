@@ -23,12 +23,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/Fantom-foundation/lachesis-base/common/littleendian"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -74,7 +74,10 @@ var EvmErrors = map[int][]string{
 	},
 	executionRevertedC: {"execution reverted"},
 
-	invalidArgumentErrCode: {"invalid argument"},
+	invalidArgumentErrCode: {
+		"invalid argument",
+		"cannot unmarshall",
+	},
 }
 
 // comparatorError is returned when state.Data returned by StateDB does not match recorded state.Data
@@ -280,10 +283,7 @@ func compareBalance(result txcontext.Result, data *rpc.RequestAndResults, block 
 	stateBalance := new(big.Int).SetBytes(res)
 
 	if data.Error != nil {
-		if data.Error.Error.Code == internalErrorCode {
-			return newComparatorError(result, stateBalance.Text(16), data.Error.Error.Message, data, block, internalError)
-		}
-		return newComparatorError(result, stateBalance.Text(16), data.Error.Error.Message, data, block, expectedErrorGotResult)
+		return checkUnexpectedError(result, data, block, res)
 	}
 
 	// no error
@@ -313,10 +313,7 @@ func compareTransactionCount(result txcontext.Result, data *rpc.RequestAndResult
 	stateNonce := littleendian.BytesToUint64(res)
 
 	if data.Error != nil {
-		if data.Error.Error.Code == internalErrorCode {
-			return newComparatorError(result, stateNonce, data.Error.Error.Message, data, block, internalError)
-		}
-		return newComparatorError(result, stateNonce, data.Error.Error.Message, data, block, expectedErrorGotResult)
+		return checkUnexpectedError(result, data, block, res)
 	}
 
 	var recordedString string
@@ -388,7 +385,6 @@ func compareCallStateDbResult(result txcontext.Result, res []byte, data *rpc.Req
 	if !ok {
 		msg = fmt.Sprintf("unknown error code: %v", data.Error.Error.Code)
 	} else {
-
 		// we could have potentially recorded a request with invalid arguments
 		// - this is not checked in execution, hence StateDB returns a valid result.
 		// For this we exclude any invalid requests when getting unmatched results
@@ -458,6 +454,21 @@ func compareEVMStateDBError(result txcontext.Result, err error, data *rpc.Reques
 		noMatchingErrors)
 }
 
+// checkUnexpectedError checks error for methods where error is unexpected.
+// Such methods are very unlikely to cause an error in EVM.
+func checkUnexpectedError(result txcontext.Result, data *rpc.RequestAndResults, block int, expectedValue any) *comparatorError {
+	// Return internal code immediately
+	if data.Error.Error.Code == internalErrorCode {
+		return newComparatorError(result, expectedValue, data.Error.Error.Message, data, block, internalError)
+	}
+
+	if data.Error.Error.Code == invalidArgumentErrCode {
+		return nil
+	}
+
+	return newComparatorError(result, expectedValue, data.Error.Error.Message, data, block, expectedErrorGotResult)
+}
+
 // compareEstimateGas compares recorded data for estimateGas method with result from StateDB
 func compareEstimateGas(result txcontext.Result, data *rpc.RequestAndResults, block int) *comparatorError {
 	res, err := result.GetRawResult()
@@ -519,13 +530,8 @@ func compareCode(result txcontext.Result, data *rpc.RequestAndResults, block int
 	res, _ := result.GetRawResult()
 	dbString := hexutil.Encode(res)
 
-	// did we data an error?
 	if data.Error != nil {
-		// internal error?
-		if data.Error.Error.Code == internalErrorCode {
-			return newComparatorError(result, dbString, data.Error.Error, data, block, internalError)
-		}
-		return newComparatorError(result, dbString, data.Error.Error, data, block, expectedErrorGotResult)
+		return checkUnexpectedError(result, data, block, res)
 	}
 
 	var recordedString string
@@ -549,11 +555,7 @@ func compareStorageAt(result txcontext.Result, data *rpc.RequestAndResults, bloc
 	dbString := hexutil.Encode(res)
 
 	if data.Error != nil {
-		// internal error?
-		if data.Error.Error.Code == internalErrorCode {
-			return newComparatorError(result, dbString, data.Error, data, block, internalError)
-		}
-		return newComparatorError(result, dbString, data.Error, data, block, internalError)
+		return checkUnexpectedError(result, data, block, res)
 	}
 
 	var recordedString string

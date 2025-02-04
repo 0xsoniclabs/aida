@@ -23,7 +23,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Fantom-foundation/Aida/profile"
+	"github.com/0xsoniclabs/aida/profile"
 	"github.com/dsnet/compress/bzip2"
 	"github.com/ethereum/go-ethereum/common"
 )

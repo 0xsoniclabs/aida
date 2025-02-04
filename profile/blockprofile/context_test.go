@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/profile/graphutil"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	substatecontext "github.com/Fantom-foundation/Aida/txcontext/substate"
-	"github.com/Fantom-foundation/Substate/substate"
-	substatetypes "github.com/Fantom-foundation/Substate/types"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/profile/graphutil"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/substate/substate"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 

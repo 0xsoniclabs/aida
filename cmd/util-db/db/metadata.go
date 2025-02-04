@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Fantom-foundation/Aida/utildb"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 

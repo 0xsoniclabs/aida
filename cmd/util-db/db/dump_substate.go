@@ -19,9 +19,9 @@ package db
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/Aida/utildb"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,6 +34,7 @@ var SubstateDumpCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
 		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 The aida-vm dump command requires two arguments:
@@ -52,13 +53,22 @@ func substateDumpAction(ctx *cli.Context) error {
 		return err
 	}
 
+	// prepare substate database
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
 	defer sdb.Close()
 
+	// set encoding type
+	_, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+	if err != nil {
+		return fmt.Errorf("cannot set substate encoding; %w", err)
+	}
+
+	// run substate dump task
 	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", utildb.SubstateDumpTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()
+
 	return err
 }

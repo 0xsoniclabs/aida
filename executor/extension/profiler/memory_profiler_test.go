@@ -21,9 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestMemoryProfiler_CollectsProfileDataIfEnabled(t *testing.T) {

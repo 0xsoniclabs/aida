@@ -19,10 +19,9 @@ package utildb
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
-	"github.com/Fantom-foundation/Substate/db"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
 )
 
 // SubstateDumpTask dumps substate data
@@ -48,7 +47,7 @@ func SubstateDumpTask(block uint64, tx int, recording *substate.Substate, taskPo
 	jbytes, _ = json.MarshalIndent(outputResult, "", " ")
 	out += fmt.Sprintf("Recorded output result:\n%s\n", jbytes)
 
-	log.Println(out)
+	fmt.Println(out)
 
 	return nil
 }

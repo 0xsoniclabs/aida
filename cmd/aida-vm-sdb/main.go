@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -113,6 +113,7 @@ var RunSubstateCmd = cli.Command{
 		//&utils.MaxNumTransactionsFlag,
 		&utils.ValidateTxStateFlag,
 		&utils.ValidateFlag,
+		&utils.OverwritePreWorldStateFlag,
 		&logger.LogLevelFlag,
 		&utils.NoHeartbeatLoggingFlag,
 		&utils.TrackProgressFlag,

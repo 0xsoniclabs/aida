@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Substate/substate"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 )
 

@@ -23,11 +23,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/Fantom-foundation/lachesis-base/common/littleendian"
 	"github.com/status-im/keycard-go/hexutils"
 )
@@ -511,6 +512,44 @@ func Test_compareStorageAtErrorNoMatchingResult(t *testing.T) {
 
 	if err.typ != noMatchingResult {
 		t.Errorf("error must be type 'noMatchingResult'; err: %v", err)
+	}
+
+}
+
+func Test_RPCComparator_InvalidArgumentInSomeMethodsDoesNotCauseError(t *testing.T) {
+	tests := []struct {
+		name string
+		f    func(result txcontext.Result, data *rpc.RequestAndResults, block int) *comparatorError
+	}{
+		{
+			name: "getBalance",
+			f:    compareBalance,
+		},
+		{
+			name: "getTransactionCount",
+			f:    compareTransactionCount,
+		},
+		{
+			name: "getCode",
+			f:    compareCode,
+		},
+		{
+			name: "getStorageAt",
+			f:    compareStorageAt,
+		},
+	}
+
+	res := rpc.NewResult(hexutils.HexToBytes(strings.TrimPrefix(longHexZero, "0x")), nil, 10)
+	data := &rpc.RequestAndResults{
+		Error: &rpc.ErrorResponse{Error: rpc.ErrorMessage{Code: invalidArgumentErrCode}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.f(res, data, 1)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
 	}
 
 }

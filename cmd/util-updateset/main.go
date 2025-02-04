@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Fantom-foundation/Aida/cmd/util-updateset/updateset"
+	"github.com/0xsoniclabs/aida/cmd/util-updateset/updateset"
 	"github.com/urfave/cli/v2"
 )
 

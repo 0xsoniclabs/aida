@@ -28,18 +28,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/tests"
 	"github.com/urfave/cli/v2"
 
-	"github.com/Fantom-foundation/Tosca/go/geth_adapter"
-	_ "github.com/Fantom-foundation/Tosca/go/interpreter/evmone"
-	_ "github.com/Fantom-foundation/Tosca/go/interpreter/evmzero"
-	"github.com/Fantom-foundation/Tosca/go/interpreter/lfvm"
-	"github.com/Fantom-foundation/Tosca/go/tosca"
+	"github.com/0xsoniclabs/tosca/go/geth_adapter"
+	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmone"
+	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmzero"
+	"github.com/0xsoniclabs/tosca/go/interpreter/lfvm"
+	"github.com/0xsoniclabs/tosca/go/tosca"
 )
 
 func init() {
@@ -259,7 +259,7 @@ type Config struct {
 	TxGeneratorType          []string       // type of the application used for transaction generation
 	UpdateBufferSize         uint64         // cache size in Bytes
 	UpdateDb                 string         // update-set directory
-	UpdateOnFailure          bool           // if enabled and continue-on-failure is also enabled, this updates any error found in StateDb
+	OverwritePreWorldState   bool           // instead of validation of StateDb we overwrite it with the provided data
 	UpdateType               string         // download datatype
 	Validate                 bool           // validate validate aida-db
 	ValidateStateHashes      bool           // if this is true state hash validation is enabled in Executor

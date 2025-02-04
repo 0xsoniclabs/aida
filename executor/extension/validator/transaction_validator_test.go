@@ -23,15 +23,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	substatecontext "github.com/Fantom-foundation/Aida/txcontext/substate"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/substate"
-	substatetypes "github.com/Fantom-foundation/Substate/types"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/substate"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
@@ -823,7 +823,7 @@ func TestValidateStateDb_ValidationDoesNotFail(t *testing.T) {
 			}
 
 			// Call for state DB validation and subsequent check for error
-			err = doSubsetValidation(ws, sDB, false)
+			err = doSubsetValidation(ws, sDB)
 			if err != nil {
 				t.Fatalf("failed to validate state DB: %v", err)
 			}
@@ -831,9 +831,9 @@ func TestValidateStateDb_ValidationDoesNotFail(t *testing.T) {
 	}
 }
 
-// TestStateDb_ValidateStateDBWithUpdate test state DB validation comparing it to valid world state
-// given state DB should be updated if world state contains different data
-func TestValidateStateDb_ValidationDoesNotFailWithPriming(t *testing.T) {
+// TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming test state DB validation comparing it to valid world state fails
+// then given state DB is overwritten with new world state
+func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T) {
 	for _, tc := range utils.GetStateDbTestCases() {
 		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
 			cfg := utils.MakeTestConfig(tc)
@@ -883,12 +883,23 @@ func TestValidateStateDb_ValidationDoesNotFailWithPriming(t *testing.T) {
 				t.Fatalf("cannot begin transaction; %v", err)
 			}
 
-			// Call for state DB validation with update enabled and subsequent checks if the update was made correctly
-			err = doSubsetValidation(ws, sDB, true)
+			// Call for state DB validation to make sure that it fails
+			err = doSubsetValidation(ws, sDB)
 			if err == nil {
 				t.Fatalf("failed to throw errors while validating state DB: %v", err)
 			}
+			// Overwrite the WorldState
+			err = overwriteWorldState(cfg, ws, sDB)
+			if err != nil {
+				t.Fatalf("failed to update state DB: %v", err)
+			}
+			// Check that world state was updated correctly
+			err = doSubsetValidation(ws, sDB)
+			if err != nil {
+				t.Fatalf("failed to validate state DB: %v", err)
+			}
 
+			// subsequent checks if the update was made correctly
 			acc := ws[addr]
 			if sDB.GetBalance(addr).Cmp(acc.GetBalance()) != 0 {
 				t.Fatalf("failed to prime account balance; Is: %v; Should be: %v", sDB.GetBalance(addr), acc.GetBalance())

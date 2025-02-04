@@ -22,12 +22,12 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/stochastic/exponential"
-	"github.com/Fantom-foundation/Aida/stochastic/generator"
-	"github.com/Fantom-foundation/Aida/stochastic/statistics"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/stochastic/exponential"
+	"github.com/0xsoniclabs/aida/stochastic/generator"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 )

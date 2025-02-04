@@ -19,11 +19,11 @@ package tracker
 import (
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension"
-	"github.com/Fantom-foundation/Aida/logger"
-	"github.com/Fantom-foundation/Aida/rpc"
-	"github.com/Fantom-foundation/Aida/utils"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 const rpcProgressTrackerReportFormat = "Track: request %d, interval_total_req_rate %.2f, interval_gas_rate %.2f, overall_total_req_rate %.2f, overall_gas_rate %.2f"

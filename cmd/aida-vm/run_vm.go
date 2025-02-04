@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Fantom-foundation/Aida/executor"
-	"github.com/Fantom-foundation/Aida/executor/extension/logger"
-	"github.com/Fantom-foundation/Aida/executor/extension/profiler"
-	"github.com/Fantom-foundation/Aida/executor/extension/statedb"
-	"github.com/Fantom-foundation/Aida/executor/extension/validator"
-	"github.com/Fantom-foundation/Aida/state"
-	"github.com/Fantom-foundation/Aida/txcontext"
-	"github.com/Fantom-foundation/Aida/utils"
-	"github.com/Fantom-foundation/Substate/db"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
+	"github.com/0xsoniclabs/aida/executor/extension/profiler"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/validator"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
@@ -91,6 +91,7 @@ func run(
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
+		validator.MakeEthereumDbPostTransactionUpdater(cfg),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 	)
 	extensions = append(extensions, extra...)

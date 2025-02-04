@@ -71,7 +71,7 @@ func setupTestSubstateDB() error {
 	// download substate.test from url
 	// set timeout to 1 minutes
 	client := http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Get("https://github.com/Fantom-foundation/substate-cli/releases/download/substate-test/substate.test.tar.gz")
+	resp, err := client.Get("https://github.com/0xsoniclabs/substate-cli/releases/download/substate-test/substate.test.tar.gz")
 	if err != nil {
 		return err
 	}
