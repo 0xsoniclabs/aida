@@ -44,6 +44,7 @@ import (
 
 	_ "github.com/0xsoniclabs/tosca/go/processor/floria"
 	_ "github.com/0xsoniclabs/tosca/go/processor/geth"
+	_ "github.com/0xsoniclabs/tosca/go/processor/geth_eth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/opera"
 )
 
