@@ -166,26 +166,8 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 			}
 		case extractedPatchPath, ok := <-decompressChan:
 			{
+				// no more data then return
 				if !ok {
-					if cfg.Validate {
-						if patchDbHash == nil {
-							log.Critical("DbHash not found in downloaded Patch - cannot perform validation. If you were missing only lachesis patch, this would be normal behaviour.")
-						} else {
-							log.Notice("Starting db-validation. This may take several hours...")
-							targetDbHash, err = GenerateDbHash(targetMD.Db, cfg.LogLevel)
-							if err != nil {
-								return fmt.Errorf("cannot create DbHash of merged AidaDb; %v", err)
-							}
-
-							if cmp := bytes.Compare(patchDbHash, targetDbHash); cmp != 0 {
-								log.Criticalf("db hashes are not same! \nPatch: %v; Calculated: %v", hex.EncodeToString(patchDbHash), hex.EncodeToString(targetDbHash))
-							} else {
-								log.Notice("Validation successful!")
-								return targetMD.SetDbHash(patchDbHash)
-							}
-						}
-					}
-
 					return nil
 				}
 
