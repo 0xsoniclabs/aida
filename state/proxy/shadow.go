@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -92,10 +93,9 @@ func (s *shadowVmStateDb) Empty(addr common.Address) bool {
 	return s.getBool("Empty", func(s state.VmStateDB) bool { return s.Empty(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SelfDestruct(addr common.Address) {
-	s.run("SelfDestruct", func(s state.VmStateDB) error {
-		s.SelfDestruct(addr)
-		return nil
+func (s *shadowVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
+	return s.getUint256("SelfDestruct", func(s state.VmStateDB) uint256.Int {
+		return s.SelfDestruct(addr)
 	})
 }
 
@@ -104,20 +104,18 @@ func (s *shadowVmStateDb) HasSelfDestructed(addr common.Address) bool {
 }
 
 func (s *shadowVmStateDb) GetBalance(addr common.Address) *uint256.Int {
-	return s.getUint256("GetBalance", func(s state.VmStateDB) *uint256.Int { return s.GetBalance(addr) }, addr)
+	return s.getUint256Ptr("GetBalance", func(s state.VmStateDB) *uint256.Int { return s.GetBalance(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.run("AddBalance", func(s state.VmStateDB) error {
-		s.AddBalance(addr, value, reason)
-		return nil
+func (s *shadowVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return s.getUint256("AddBalance", func(s state.VmStateDB) uint256.Int {
+		return s.AddBalance(addr, value, reason)
 	})
 }
 
-func (s *shadowVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.run("SubBalance", func(s state.VmStateDB) error {
-		s.SubBalance(addr, value, reason)
-		return nil
+func (s *shadowVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return s.getUint256("SubBalance", func(s state.VmStateDB) uint256.Int {
+		return s.SubBalance(addr, value, reason)
 	})
 }
 
@@ -125,9 +123,9 @@ func (s *shadowVmStateDb) GetNonce(addr common.Address) uint64 {
 	return s.getUint64("GetNonce", func(s state.VmStateDB) uint64 { return s.GetNonce(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SetNonce(addr common.Address, value uint64) {
+func (s *shadowVmStateDb) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
 	s.run("SetNonce", func(s state.VmStateDB) error {
-		s.SetNonce(addr, value)
+		s.SetNonce(addr, value, reason)
 		return nil
 	})
 }
@@ -141,11 +139,10 @@ func (s *shadowVmStateDb) GetState(addr common.Address, key common.Hash) common.
 	return s.getHash("GetState", func(s state.VmStateDB) common.Hash { return s.GetState(addr, key) }, addr, key)
 }
 
-func (s *shadowVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) {
-	s.err = errors.Join(s.err, s.run("SetState", func(s state.VmStateDB) error {
-		s.SetState(addr, key, value)
-		return nil
-	}))
+func (s *shadowVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	return s.getHash("SetState", func(s state.VmStateDB) common.Hash {
+		return s.SetState(addr, key, value)
+	})
 }
 
 func (s *shadowVmStateDb) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -171,10 +168,9 @@ func (s *shadowVmStateDb) GetCodeHash(addr common.Address) common.Hash {
 	return s.getHash("GetCodeHash", func(s state.VmStateDB) common.Hash { return s.GetCodeHash(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SetCode(addr common.Address, code []byte) {
-	s.run("SetCode", func(s state.VmStateDB) error {
-		s.SetCode(addr, code)
-		return nil
+func (s *shadowVmStateDb) SetCode(addr common.Address, code []byte) []byte {
+	return s.getBytes("SetCode", func(s state.VmStateDB) []byte {
+		return s.SetCode(addr, code)
 	})
 }
 
@@ -202,6 +198,13 @@ func (s *shadowVmStateDb) BeginTransaction(tx uint32) error {
 
 func (s *shadowVmStateDb) EndTransaction() error {
 	return s.run("EndTransaction", func(s state.VmStateDB) error { return s.EndTransaction() })
+}
+
+func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
+	s.run("Finalise", func(s state.VmStateDB) error {
+		s.Finalise(deleteEmptyObjects)
+		return nil
+	})
 }
 
 func (s *shadowStateDb) BeginBlock(blk uint64) error {
@@ -345,10 +348,9 @@ func (s *shadowVmStateDb) CreateContract(addr common.Address) {
 	})
 }
 
-func (s *shadowVmStateDb) Selfdestruct6780(addr common.Address) {
-	s.run("Selfdestruct6780", func(s state.VmStateDB) error {
-		s.Selfdestruct6780(addr)
-		return nil
+func (s *shadowVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	return s.getUint256Bool("SelfDestruct6780", func(s state.VmStateDB) (uint256.Int, bool) {
+		return s.SelfDestruct6780(addr)
 	})
 }
 
@@ -412,6 +414,10 @@ func (s *shadowVmStateDb) AddPreimage(hash common.Hash, plain []byte) {
 		s.AddPreimage(hash, plain)
 		return nil
 	})
+}
+
+func (s *shadowVmStateDb) AccessEvents() *geth.AccessEvents {
+	return s.prime.AccessEvents()
 }
 
 func (s *shadowStateDb) StartBulkLoad(block uint64) (state.BulkLoad, error) {
@@ -673,7 +679,7 @@ func (s *shadowVmStateDb) getHash(opName string, op func(s state.VmStateDB) comm
 	return resP
 }
 
-func (s *shadowVmStateDb) getUint256(opName string, op func(s state.VmStateDB) *uint256.Int, args ...any) *uint256.Int {
+func (s *shadowVmStateDb) getUint256Ptr(opName string, op func(s state.VmStateDB) *uint256.Int, args ...any) *uint256.Int {
 	resP := op(s.prime)
 	resS := op(s.shadow)
 	if resP.Cmp(resS) != 0 {
@@ -681,6 +687,26 @@ func (s *shadowVmStateDb) getUint256(opName string, op func(s state.VmStateDB) *
 		s.err = fmt.Errorf("%v diverged from shadow DB.", getOpcodeString(opName, args))
 	}
 	return resP
+}
+
+func (s *shadowVmStateDb) getUint256(opName string, op func(s state.VmStateDB) uint256.Int, args ...any) uint256.Int {
+	resP := op(s.prime)
+	resS := op(s.shadow)
+	if resP.Cmp(&resS) != 0 {
+		s.logIssue(opName, resP, resS, args)
+		s.err = fmt.Errorf("%v diverged from shadow DB.", getOpcodeString(opName, args))
+	}
+	return resP
+}
+
+func (s *shadowVmStateDb) getUint256Bool(opName string, op func(s state.VmStateDB) (uint256.Int, bool), args ...any) (uint256.Int, bool) {
+	aP, bP := op(s.prime)
+	aS, bS := op(s.shadow)
+	if bP != bS || aP.Cmp(&aS) != 0 {
+		s.logIssue(opName, fmt.Sprintf("(%v,%t)", aP, bP), fmt.Sprintf("(%v,%t)", aS, bS), args)
+		s.err = fmt.Errorf("%v diverged from shadow DB.", getOpcodeString(opName, args))
+	}
+	return aP, bP
 }
 
 func (s *shadowVmStateDb) getBytes(opName string, op func(s state.VmStateDB) []byte, args ...any) []byte {

@@ -112,17 +112,16 @@ func newTestTxCtx(_ *testing.T, blkNumber uint64) txcontext.TxContext {
 	return txgenerator.NewTxContext(
 		testTxBlkEnv{blkNumber},
 		&core.Message{
-			To:                &common.Address{0x2},
-			From:              common.Address{0x1},
-			Nonce:             0,
-			Value:             big.NewInt(1),
-			GasLimit:          21_000,
-			GasPrice:          big.NewInt(1),
-			GasFeeCap:         big.NewInt(1),
-			GasTipCap:         big.NewInt(1),
-			Data:              []byte{},
-			AccessList:        types.AccessList{},
-			SkipAccountChecks: false,
+			To:         &common.Address{0x2},
+			From:       common.Address{0x1},
+			Nonce:      0,
+			Value:      big.NewInt(1),
+			GasLimit:   21_000,
+			GasPrice:   big.NewInt(1),
+			GasFeeCap:  big.NewInt(1),
+			GasTipCap:  big.NewInt(1),
+			Data:       []byte{},
+			AccessList: types.AccessList{},
 		},
 	)
 }

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 )
 
 const N = 1000
@@ -41,7 +42,7 @@ func fillDb(t *testing.T, directory string) (common.Hash, error) {
 	for i := 0; i < N; i++ {
 		address := common.Address{byte(i), byte(i >> 8)}
 		db.CreateAccount(address)
-		db.SetNonce(address, 12)
+		db.SetNonce(address, 12, tracing.NonceChangeUnspecified)
 		key := common.Hash{byte(i >> 8), byte(i)}
 		value := common.Hash{byte(15)}
 		db.SetState(address, key, value)

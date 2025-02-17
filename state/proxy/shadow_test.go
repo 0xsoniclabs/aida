@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	carmen "github.com/0xsoniclabs/carmen/go/state"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
@@ -185,7 +186,7 @@ func TestShadowState_NonceOperations(t *testing.T) {
 			// get randomized nonce
 			newNonce := state.GetRandom(t, 1, 5_000_000)
 
-			shadowDB.SetNonce(addr, newNonce)
+			shadowDB.SetNonce(addr, newNonce, tracing.NonceChangeUnspecified)
 
 			if shadowDB.GetNonce(addr) != newNonce {
 				t.Fatal("failed to update account nonce")

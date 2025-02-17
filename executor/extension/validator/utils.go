@@ -213,7 +213,7 @@ func overwriteWorldState(cfg *utils.Config, alloc txcontext.WorldState, db state
 			db.AddBalance(addr, accBalance, tracing.BalanceChangeUnspecified)
 		}
 		if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
-			db.SetNonce(addr, acc.GetNonce())
+			db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 
 		}
 		if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
@@ -253,7 +253,7 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 
 		if overwriteAccount {
 			if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
-				db.SetNonce(addr, acc.GetNonce())
+				db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 			}
 			if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
 				db.SetCode(addr, acc.GetCode())

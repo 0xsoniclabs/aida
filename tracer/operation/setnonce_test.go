@@ -24,6 +24,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 )
 
 func initSetNonce(t *testing.T) (*context.Replay, *SetNonce, common.Address, uint64) {
@@ -36,7 +37,7 @@ func initSetNonce(t *testing.T) (*context.Replay, *SetNonce, common.Address, uin
 	contract := ctx.EncodeContract(addr)
 
 	// create new operation
-	op := NewSetNonce(contract, nonce)
+	op := NewSetNonce(contract, nonce, tracing.NonceChangeUnspecified)
 	if op == nil {
 		t.Fatalf("failed to create operation")
 	}
@@ -58,7 +59,7 @@ func TestSetNonceReadWrite(t *testing.T) {
 // TestSetNonceDebug creates a new SetNonce object and checks its Debug message.
 func TestSetNonceDebug(t *testing.T) {
 	ctx, op, addr, value := initSetNonce(t)
-	testOperationDebug(t, ctx, op, fmt.Sprint(addr, value))
+	testOperationDebug(t, ctx, op, fmt.Sprint(addr, value, tracing.NonceChangeUnspecified))
 }
 
 // TestSetNonceExecute
@@ -70,6 +71,6 @@ func TestSetNonceExecute(t *testing.T) {
 	op.Execute(mock, ctx)
 
 	// check whether methods were correctly called
-	expected := []Record{{SetNonceID, []any{addr, nonce}}}
+	expected := []Record{{SetNonceID, []any{addr, nonce, tracing.NonceChangeUnspecified}}}
 	mock.compareRecordings(expected, t)
 }

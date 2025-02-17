@@ -21,6 +21,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -58,13 +59,13 @@ func (r *DeletionProxy) CreateAccount(addr common.Address) {
 }
 
 // SubBalance subtracts amount from a contract address.
-func (r *DeletionProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
-	r.db.SubBalance(addr, amount, reason)
+func (r *DeletionProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return r.db.SubBalance(addr, amount, reason)
 }
 
 // AddBalance adds amount to a contract address.
-func (r *DeletionProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
-	r.db.AddBalance(addr, amount, reason)
+func (r *DeletionProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return r.db.AddBalance(addr, amount, reason)
 }
 
 // GetBalance retrieves the amount of a contract address.
@@ -80,8 +81,8 @@ func (r *DeletionProxy) GetNonce(addr common.Address) uint64 {
 }
 
 // SetNonce sets the nonce of a contract address.
-func (r *DeletionProxy) SetNonce(addr common.Address, nonce uint64) {
-	r.db.SetNonce(addr, nonce)
+func (r *DeletionProxy) SetNonce(addr common.Address, nonce uint64, reason tracing.NonceChangeReason) {
+	r.db.SetNonce(addr, nonce, reason)
 }
 
 // GetCodeHash returns the hash of the EVM bytecode.
@@ -97,8 +98,8 @@ func (r *DeletionProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (r *DeletionProxy) SetCode(addr common.Address, code []byte) {
-	r.db.SetCode(addr, code)
+func (r *DeletionProxy) SetCode(addr common.Address, code []byte) []byte {
+	return r.db.SetCode(addr, code)
 }
 
 // GetCodeSize returns the EVM bytecode's size.
@@ -136,8 +137,8 @@ func (r *DeletionProxy) GetState(addr common.Address, key common.Hash) common.Ha
 }
 
 // SetState sets a value in the StateDB.
-func (r *DeletionProxy) SetState(addr common.Address, key common.Hash, value common.Hash) {
-	r.db.SetState(addr, key, value)
+func (r *DeletionProxy) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	return r.db.SetState(addr, key, value)
 }
 
 func (r *DeletionProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -151,9 +152,10 @@ func (r *DeletionProxy) GetTransientState(addr common.Address, key common.Hash) 
 // SelfDestruct marks the given account as suicided. This clears the account balance.
 // The account is still available until the state is committed;
 // return a non-nil account after SelfDestruct.
-func (r *DeletionProxy) SelfDestruct(addr common.Address) {
-	r.db.SelfDestruct(addr)
+func (r *DeletionProxy) SelfDestruct(addr common.Address) uint256.Int {
+	res := r.db.SelfDestruct(addr)
 	r.ch <- ContractLiveliness{Addr: addr, IsDeleted: true}
+	return res
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -244,6 +246,10 @@ func (r *DeletionProxy) Witness() *stateless.Witness {
 // AddPreimage adds a SHA3 preimage.
 func (r *DeletionProxy) AddPreimage(addr common.Hash, image []byte) {
 	r.db.AddPreimage(addr, image)
+}
+
+func (r *DeletionProxy) AccessEvents() *geth.AccessEvents {
+	return r.db.AccessEvents()
 }
 
 // Prepare sets the current transaction hash and index.
@@ -337,8 +343,8 @@ func (r *DeletionProxy) CreateContract(addr common.Address) {
 	r.db.CreateContract(addr)
 }
 
-func (r *DeletionProxy) Selfdestruct6780(addr common.Address) {
-	r.db.Selfdestruct6780(addr)
+func (r *DeletionProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	return r.db.SelfDestruct6780(addr)
 }
 
 func (r *DeletionProxy) GetStorageRoot(addr common.Address) common.Hash {

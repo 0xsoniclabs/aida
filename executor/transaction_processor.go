@@ -128,7 +128,23 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 	// got processed, they would at least update the nonce of the transaction sender, thereby influencing
 	// the resulting state hash. This would be detected as a failed test case.
 	msg := state.Data.GetMessage()
-	if len(msg.BlobHashes)*params.BlobTxBlobGasPerBlob > params.MaxBlobGasPerBlock {
+
+	// Compute the maximum blob gas limit per block.
+	maxBlobTransactions := 0
+	switch fork := strings.ToLower(state.Data.GetBlockEnvironment().GetFork()); fork {
+	case "shanghai":
+		maxBlobTransactions = 0
+	case "cancun":
+		maxBlobTransactions = 6
+	case "prague":
+		maxBlobTransactions = 9
+	default:
+		return fmt.Errorf("unknown fork: %s", fork)
+	}
+	maxBlobGasPerBlock := maxBlobTransactions * params.BlobTxBlobGasPerBlob
+
+	// Make sure the block's blob gas limit is not exceeded.
+	if len(msg.BlobHashes)*params.BlobTxBlobGasPerBlob > maxBlobGasPerBlock {
 		ctx.ExecutionResult = newTransactionResult([]*types.Log{}, msg, nil, errors.New("blob gas exceeds maximum"), msg.From)
 		return nil
 	}
@@ -337,8 +353,7 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 	snapshot := db.Snapshot()
 	blockCtx := prepareBlockCtx(inputEnv, &hashError)
 
-	txCtx := core.NewEVMTxContext(msg)
-	evm := vm.NewEVM(*blockCtx, txCtx, db, chainCfg, s.vmCfg)
+	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.vmCfg)
 
 	var msgResult messageResult
 	var gasPool = new(core.GasPool)
@@ -380,7 +395,7 @@ func (s *TxProcessor) processPseudoTx(ws txcontext.WorldState, db state.VmStateD
 	ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
 		db.SubBalance(addr, db.GetBalance(addr), tracing.BalanceChangeUnspecified)
 		db.AddBalance(addr, acc.GetBalance(), tracing.BalanceChangeUnspecified)
-		db.SetNonce(addr, acc.GetNonce())
+		db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 		db.SetCode(addr, acc.GetCode())
 		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
 			db.SetState(addr, keyHash, valueHash)
@@ -626,7 +641,7 @@ func (a *toscaTxContext) GetNonce(addr tosca.Address) uint64 {
 }
 
 func (a *toscaTxContext) SetNonce(addr tosca.Address, nonce uint64) {
-	a.db.SetNonce(common.Address(addr), nonce)
+	a.db.SetNonce(common.Address(addr), nonce, tracing.NonceChangeUnspecified)
 }
 
 func (a *toscaTxContext) GetCodeSize(addr tosca.Address) int {
@@ -706,7 +721,7 @@ func (a *toscaTxContext) SelfDestruct(addr tosca.Address, beneficiary tosca.Addr
 	selfdestructed := !a.db.HasSelfDestructed(common.Address(addr))
 
 	if a.blockEnvironment.GetFork() == tosca.R13_Cancun.String() {
-		a.db.Selfdestruct6780(common.Address(addr))
+		a.db.SelfDestruct6780(common.Address(addr))
 	} else {
 		a.db.SelfDestruct(common.Address(addr))
 	}

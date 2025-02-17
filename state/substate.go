@@ -23,13 +23,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/triedb"
 )
 
 // NewOffTheChainStateDB returns an empty in-memory *state.StateDB without disk caches
 func NewOffTheChainStateDB() *state.StateDB {
 	db := rawdb.NewMemoryDatabase()
-	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(db), nil)
+	trieDb := triedb.NewDatabase(db, &triedb.Config{})
+	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(trieDb, nil))
 	return statedb
 }
 
@@ -39,7 +42,7 @@ func MakeOffTheChainStateDB(alloc txcontext.WorldState, block uint64, chainCondu
 	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
 		code := acc.GetCode()
 		statedb.SetCode(addr, code)
-		statedb.SetNonce(addr, acc.GetNonce())
+		statedb.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeGenesis)
 		statedb.SetBalance(addr, acc.GetBalance(), 0)
 		// DON'T USE SetStorage because it makes REVERT and dirtyStorage unavailble
 		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
@@ -48,7 +51,7 @@ func MakeOffTheChainStateDB(alloc txcontext.WorldState, block uint64, chainCondu
 	})
 
 	// Commit and re-open to start with a clean state.
-	_, err := statedb.Commit(block, false)
+	_, err := statedb.Commit(block, false, false)
 	if err != nil {
 		return nil, fmt.Errorf("cannot commit offTheChainDb; %v", err)
 	}

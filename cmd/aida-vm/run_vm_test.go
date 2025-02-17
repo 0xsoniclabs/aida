@@ -93,6 +93,9 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		db.EXPECT().EndTransaction(),
 	)
 
+	// Code may be fetched at any time.
+	db.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
+
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {
 		t.Fatalf("failed to create processor: %v", err)
@@ -260,6 +263,9 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
 	)
 
+	// Code may be fetched at any time.
+	db.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
+
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {
 		t.Fatalf("failed to create processor: %v", err)
@@ -308,6 +314,8 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 		db.EXPECT().RevertToSnapshot(15),
 		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
 	)
+
+	db.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {

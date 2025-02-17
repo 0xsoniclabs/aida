@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	etests "github.com/ethereum/go-ethereum/tests"
@@ -159,7 +158,7 @@ func TestStBlockEnvironment_GetBlobBaseFee(t *testing.T) {
 			name:        "PostCancun_Calculates",
 			blobBaseFee: 1,
 			fork:        "Cancun",
-			want:        eip4844.CalcBlobFee(1),
+			want:        big.NewInt(1),
 		},
 	}
 	for _, test := range tests {

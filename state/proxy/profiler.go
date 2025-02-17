@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -59,17 +60,21 @@ func (p *ProfilerProxy) CreateAccount(addr common.Address) {
 }
 
 // SubBalance subtracts amount from a contract address.
-func (p *ProfilerProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (p *ProfilerProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	var res uint256.Int
 	p.do(operation.SubBalanceID, func() {
-		p.db.SubBalance(addr, amount, reason)
+		res = p.db.SubBalance(addr, amount, reason)
 	})
+	return res
 }
 
 // AddBalance adds amount to a contract address.
-func (p *ProfilerProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (p *ProfilerProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	var res uint256.Int
 	p.do(operation.AddBalanceID, func() {
-		p.db.AddBalance(addr, amount, reason)
+		res = p.db.AddBalance(addr, amount, reason)
 	})
+	return res
 }
 
 // GetBalance retrieves the amount of a contract address.
@@ -91,9 +96,9 @@ func (p *ProfilerProxy) GetNonce(addr common.Address) uint64 {
 }
 
 // SetNonce sets the nonce of a contract address.
-func (p *ProfilerProxy) SetNonce(addr common.Address, nonce uint64) {
+func (p *ProfilerProxy) SetNonce(addr common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	p.do(operation.SetNonceID, func() {
-		p.db.SetNonce(addr, nonce)
+		p.db.SetNonce(addr, nonce, reason)
 	})
 }
 
@@ -116,10 +121,12 @@ func (p *ProfilerProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (p *ProfilerProxy) SetCode(addr common.Address, code []byte) {
+func (p *ProfilerProxy) SetCode(addr common.Address, code []byte) []byte {
+	var res []byte
 	p.do(operation.SetCodeID, func() {
-		p.db.SetCode(addr, code)
+		res = p.db.SetCode(addr, code)
 	})
+	return res
 }
 
 // GetCodeSize returns the EVM bytecode's size.
@@ -173,10 +180,12 @@ func (p *ProfilerProxy) GetState(addr common.Address, key common.Hash) common.Ha
 }
 
 // SetState sets a value in the StateDB.
-func (p *ProfilerProxy) SetState(addr common.Address, key common.Hash, value common.Hash) {
+func (p *ProfilerProxy) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	var res common.Hash
 	p.do(operation.SetStateID, func() {
-		p.db.SetState(addr, key, value)
+		res = p.db.SetState(addr, key, value)
 	})
+	return res
 }
 
 func (p *ProfilerProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -196,10 +205,12 @@ func (p *ProfilerProxy) GetTransientState(addr common.Address, key common.Hash) 
 // SelfDestruct marks the given account as self destructed. This clears the account balance.
 // The account is still available until the state is committed;
 // return a non-nil account after SelfDestruct.
-func (p *ProfilerProxy) SelfDestruct(addr common.Address) {
+func (p *ProfilerProxy) SelfDestruct(addr common.Address) uint256.Int {
+	var res uint256.Int
 	p.do(operation.SelfDestructID, func() {
-		p.db.SelfDestruct(addr)
+		res = p.db.SelfDestruct(addr)
 	})
+	return res
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -395,6 +406,10 @@ func (p *ProfilerProxy) AddPreimage(addr common.Hash, image []byte) {
 	})
 }
 
+func (p *ProfilerProxy) AccessEvents() *geth.AccessEvents {
+	return p.db.AccessEvents()
+}
+
 // Prepare sets the current transaction hash and index.
 func (p *ProfilerProxy) SetTxContext(thash common.Hash, ti int) {
 	p.do(operation.SetTxContextID, func() {
@@ -473,10 +488,13 @@ func (p *ProfilerProxy) CreateContract(addr common.Address) {
 	})
 }
 
-func (p *ProfilerProxy) Selfdestruct6780(addr common.Address) {
+func (p *ProfilerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	var balance uint256.Int
+	var deleted bool
 	p.do(operation.SelfDestruct6780ID, func() {
-		p.db.Selfdestruct6780(addr)
+		balance, deleted = p.db.SelfDestruct6780(addr)
 	})
+	return balance, deleted
 }
 
 func (p *ProfilerProxy) GetStorageRoot(addr common.Address) common.Hash {

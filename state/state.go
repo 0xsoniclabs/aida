@@ -23,6 +23,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -40,23 +41,23 @@ type VmStateDB interface {
 	Exist(common.Address) bool
 	Empty(common.Address) bool
 
-	SelfDestruct(common.Address)
-	Selfdestruct6780(common.Address)
+	SelfDestruct(common.Address) uint256.Int
+	SelfDestruct6780(common.Address) (uint256.Int, bool)
 	HasSelfDestructed(common.Address) bool
 
 	// Balance
 	GetBalance(common.Address) *uint256.Int
-	AddBalance(common.Address, *uint256.Int, tracing.BalanceChangeReason)
-	SubBalance(common.Address, *uint256.Int, tracing.BalanceChangeReason)
+	AddBalance(common.Address, *uint256.Int, tracing.BalanceChangeReason) uint256.Int
+	SubBalance(common.Address, *uint256.Int, tracing.BalanceChangeReason) uint256.Int
 
 	// Nonce
 	GetNonce(common.Address) uint64
-	SetNonce(common.Address, uint64)
+	SetNonce(common.Address, uint64, tracing.NonceChangeReason)
 
 	// State
 	GetCommittedState(common.Address, common.Hash) common.Hash
 	GetState(common.Address, common.Hash) common.Hash
-	SetState(common.Address, common.Hash, common.Hash)
+	SetState(common.Address, common.Hash, common.Hash) common.Hash
 	GetStorageRoot(addr common.Address) common.Hash
 
 	SetTransientState(common.Address, common.Hash, common.Hash)
@@ -65,7 +66,7 @@ type VmStateDB interface {
 	// Code handling.
 	GetCodeHash(common.Address) common.Hash
 	GetCode(common.Address) []byte
-	SetCode(common.Address, []byte)
+	SetCode(common.Address, []byte) []byte
 	GetCodeSize(common.Address) int
 
 	// Gas calculation
@@ -106,6 +107,9 @@ type VmStateDB interface {
 	BeginTransaction(uint32) error
 	EndTransaction() error
 
+	// Finalise is go-ethereum's name for EndTransaction.
+	Finalise(deleteEmptyObjects bool)
+
 	// ---- Artifacts from Geth dependency ----
 
 	// The following functions may be used by the Geth implementations for backward-compatibility
@@ -113,6 +117,8 @@ type VmStateDB interface {
 	// chose to ignore those.
 
 	AddPreimage(common.Hash, []byte)
+
+	AccessEvents() *state.AccessEvents
 
 	// ---- Optional Development & Debugging Features ----
 

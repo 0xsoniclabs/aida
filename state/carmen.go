@@ -17,6 +17,7 @@
 package state
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	_ "github.com/0xsoniclabs/carmen/go/state/cppstate"
 	_ "github.com/0xsoniclabs/carmen/go/state/gostate"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -102,14 +104,16 @@ func MakeCarmenStateDB(
 
 	return &carmenHeadState{
 		carmenStateDB: carmenStateDB{
-			db: db,
+			db:           db,
+			accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
 		},
 	}, nil
 }
 
 type carmenStateDB struct {
-	db    carmen.Database
-	txCtx carmen.TransactionContext
+	db           carmen.Database
+	txCtx        carmen.TransactionContext
+	accessEvents *state.AccessEvents
 }
 
 type carmenHeadState struct {
@@ -139,13 +143,15 @@ func (s *carmenStateDB) Empty(addr common.Address) bool {
 	return s.txCtx.Empty(carmen.Address(addr))
 }
 
-func (s *carmenStateDB) SelfDestruct(addr common.Address) {
+func (s *carmenStateDB) SelfDestruct(addr common.Address) uint256.Int {
+	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
 	s.txCtx.SelfDestruct(carmen.Address(addr))
+	return before
 }
 
-func (s *carmenStateDB) Selfdestruct6780(addr common.Address) {
-	s.txCtx.SelfDestruct6780(carmen.Address(addr))
-	return
+func (s *carmenStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
+	return before, s.txCtx.SelfDestruct6780(carmen.Address(addr))
 }
 
 func (s *carmenStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -157,19 +163,23 @@ func (s *carmenStateDB) GetBalance(addr common.Address) *uint256.Int {
 	return &value
 }
 
-func (s *carmenStateDB) AddBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) {
+func (s *carmenStateDB) AddBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) uint256.Int {
+	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
 	s.txCtx.AddBalance(carmen.Address(addr), carmen.NewAmountFromUint256(value))
+	return before
 }
 
-func (s *carmenStateDB) SubBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) {
+func (s *carmenStateDB) SubBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) uint256.Int {
+	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
 	s.txCtx.SubBalance(carmen.Address(addr), carmen.NewAmountFromUint256(value))
+	return before
 }
 
 func (s *carmenStateDB) GetNonce(addr common.Address) uint64 {
 	return s.txCtx.GetNonce(carmen.Address(addr))
 }
 
-func (s *carmenStateDB) SetNonce(addr common.Address, value uint64) {
+func (s *carmenStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
 	s.txCtx.SetNonce(carmen.Address(addr), value)
 }
 
@@ -181,8 +191,10 @@ func (s *carmenStateDB) GetState(addr common.Address, key common.Hash) common.Ha
 	return common.Hash(s.txCtx.GetState(carmen.Address(addr), carmen.Key(key)))
 }
 
-func (s *carmenStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) {
+func (s *carmenStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	before := s.txCtx.GetState(carmen.Address(addr), carmen.Key(key))
 	s.txCtx.SetState(carmen.Address(addr), carmen.Key(key), carmen.Value(value))
+	return common.Hash(before)
 }
 
 func (s *carmenStateDB) GetStorageRoot(addr common.Address) common.Hash {
@@ -219,8 +231,10 @@ func (s *carmenStateDB) GetCodeHash(addr common.Address) common.Hash {
 	return common.Hash(s.txCtx.GetCodeHash(carmen.Address(addr)))
 }
 
-func (s *carmenStateDB) SetCode(addr common.Address, code []byte) {
+func (s *carmenStateDB) SetCode(addr common.Address, code []byte) []byte {
+	before := bytes.Clone(s.GetCode(addr))
 	s.txCtx.SetCode(carmen.Address(addr), code)
+	return before
 }
 
 func (s *carmenStateDB) Snapshot() int {
@@ -390,6 +404,10 @@ func (s *carmenStateDB) GetSubstatePostAlloc() txcontext.WorldState {
 func (s *carmenStateDB) AddPreimage(common.Hash, []byte) {
 	// ignored
 	panic("AddPreimage not implemented")
+}
+
+func (s *carmenStateDB) AccessEvents() *state.AccessEvents {
+	return s.accessEvents
 }
 
 func (s *carmenStateDB) Error() error {

@@ -66,6 +66,7 @@ func TestVmSdb_Substate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().BeginTransaction(uint32(1)),
 		db.EXPECT().SetTxContext(gomock.Any(), 1),
 		db.EXPECT().Snapshot().Return(15),
+		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
@@ -76,6 +77,7 @@ func TestVmSdb_Substate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().BeginTransaction(uint32(2)),
 		db.EXPECT().SetTxContext(gomock.Any(), 2),
 		db.EXPECT().Snapshot().Return(17),
+		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(17),
@@ -88,6 +90,7 @@ func TestVmSdb_Substate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().BeginTransaction(uint32(1)),
 		db.EXPECT().SetTxContext(gomock.Any(), 1),
 		db.EXPECT().Snapshot().Return(19),
+		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(19),
@@ -227,7 +230,7 @@ func TestVmSdb_Substate_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 		db.EXPECT().SubBalance(testSender, gasCosts, tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().Prepare(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()),
 		db.EXPECT().GetNonce(testSender).Return(uint64(1)),
-		db.EXPECT().SetNonce(testSender, uint64(2)),
+		db.EXPECT().SetNonce(testSender, uint64(2), gomock.Any()),
 		db.EXPECT().GetBalance(testSender).Return(new(uint256.Int).SetUint64(1)),
 
 		// Actual contract call
@@ -246,6 +249,7 @@ func TestVmSdb_Substate_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 
 	db.EXPECT().Witness().AnyTimes()
 	db.EXPECT().GetRefund().Return(uint64(0)).AnyTimes()
+	db.EXPECT().GetCode(gomock.Any()).Return([]byte{}).AnyTimes()
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {
@@ -281,6 +285,7 @@ func TestVmSdb_Substate_ValidationFailsOnInvalidTransaction(t *testing.T) {
 		// Pre-check and Gas buying
 		db.EXPECT().SetTxContext(gomock.Any(), 1),
 		db.EXPECT().Snapshot().Return(15),
+		db.EXPECT().GetCode(testSender).Return(nil),
 		db.EXPECT().GetBalance(testSender).Return(uint256.NewInt(0)), // < this is not enough for the gas
 		db.EXPECT().RevertToSnapshot(15),
 		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),

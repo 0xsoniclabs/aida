@@ -69,19 +69,19 @@ func (t *substateData) GetMessage() *core.Message {
 	}
 
 	return &core.Message{
-		To:                (*common.Address)(t.Message.To),
-		From:              common.Address(t.Message.From),
-		Nonce:             t.Message.Nonce,
-		Value:             t.Message.Value,
-		GasLimit:          t.Message.Gas,
-		GasPrice:          t.Message.GasPrice,
-		GasFeeCap:         t.Message.GasFeeCap,
-		GasTipCap:         t.Message.GasTipCap,
-		Data:              t.Message.Data,
-		AccessList:        list,
-		BlobGasFeeCap:     t.Message.BlobGasFeeCap,
-		BlobHashes:        blobHashes,
-		SkipAccountChecks: !t.Message.CheckNonce,
+		To:              (*common.Address)(t.Message.To),
+		From:            common.Address(t.Message.From),
+		Nonce:           t.Message.Nonce,
+		Value:           t.Message.Value,
+		GasLimit:        t.Message.Gas,
+		GasPrice:        t.Message.GasPrice,
+		GasFeeCap:       t.Message.GasFeeCap,
+		GasTipCap:       t.Message.GasTipCap,
+		Data:            t.Message.Data,
+		AccessList:      list,
+		BlobGasFeeCap:   t.Message.BlobGasFeeCap,
+		BlobHashes:      blobHashes,
+		SkipNonceChecks: !t.Message.CheckNonce,
 	}
 }
 
