@@ -21,6 +21,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -44,7 +45,18 @@ func (s *stBlockEnvironment) GetCoinbase() common.Address {
 
 func (s *stBlockEnvironment) GetBlobBaseFee() *big.Int {
 	if s.chainCfg.IsCancun(new(big.Int), s.Timestamp.Uint64()) && s.ExcessBlobGas != nil {
-		return eip4844.CalcBlobFee(s.ExcessBlobGas.Uint64())
+		cancunTime := uint64(0)
+		config := &params.ChainConfig{}
+		config.LondonBlock = big.NewInt(0)
+		config.CancunTime = &cancunTime
+		config.BlobScheduleConfig = &params.BlobScheduleConfig{
+			Cancun: params.DefaultCancunBlobConfig,
+		}
+		excessBlobGas := s.ExcessBlobGas.Uint64()
+		header := &types.Header{
+			ExcessBlobGas: &excessBlobGas,
+		}
+		return eip4844.CalcBlobFee(config, header)
 	}
 
 	return nil

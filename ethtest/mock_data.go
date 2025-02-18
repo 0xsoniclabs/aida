@@ -53,6 +53,7 @@ func CreateTestTransaction(t *testing.T) txcontext.TxContext {
 			Timestamp:  newBigInt(1),
 			BaseFee:    newBigInt(1),
 			chainCfg:   chainCfg,
+			fork:       "Cancun",
 		},
 		inputState: types.GenesisAlloc{
 			common.HexToAddress("0x1"): core.GenesisAccount{
@@ -162,6 +163,9 @@ func CreateTransactionThatFailsBlobGasExceedCheck(*testing.T) txcontext.TxContex
 			// add many blob hashes to fail the check
 			{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 		}},
+		env: &stBlockEnvironment{
+			fork: "cancun",
+		},
 	}
 }
 
@@ -180,6 +184,9 @@ func CreateTransactionWithInvalidTxBytes(t *testing.T) txcontext.TxContext {
 	return &StateTestContext{
 		txBytes: txBytes,
 		msg:     &core.Message{},
+		env: &stBlockEnvironment{
+			fork: "cancun",
+		},
 	}
 }
 func CreateTransactionThatFailsSenderValidation(t *testing.T) txcontext.TxContext {

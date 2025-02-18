@@ -17,6 +17,7 @@
 package state
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -43,7 +45,12 @@ func MakeEmptyGethInMemoryStateDB(variant string) (StateDB, error) {
 // MakeInMemoryStateDB creates a StateDB instance reflecting the state
 // captured by the provided Substate allocation.
 func MakeInMemoryStateDB(ws txcontext.WorldState, block uint64) StateDB {
-	return &inMemoryStateDB{ws: ws, state: makeSnapshot(nil, 0), blockNum: block}
+	return &inMemoryStateDB{
+		ws:           ws,
+		state:        makeSnapshot(nil, 0),
+		blockNum:     block,
+		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+	}
 }
 
 // inMemoryStateDB implements the interface of a state.StateDB and can be
@@ -53,6 +60,7 @@ type inMemoryStateDB struct {
 	state            *snapshot
 	snapshot_counter int
 	blockNum         uint64
+	accessEvents     *state.AccessEvents
 }
 
 func (db *inMemoryStateDB) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -125,17 +133,21 @@ func (db *inMemoryStateDB) CreateContract(addr common.Address) {
 	db.state.createdContracts[addr] = struct{}{}
 }
 
-func (db *inMemoryStateDB) SubBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) {
+func (db *inMemoryStateDB) SubBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) uint256.Int {
+	before := *db.GetBalance(addr)
 	if value.Sign() == 0 {
-		return
+		return before
 	}
 	db.state.touched[addr] = 0
 	db.state.balances[addr] = new(uint256.Int).Sub(db.GetBalance(addr), value)
+	return before
 }
 
-func (db *inMemoryStateDB) AddBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) {
+func (db *inMemoryStateDB) AddBalance(addr common.Address, value *uint256.Int, _ tracing.BalanceChangeReason) uint256.Int {
+	before := *db.GetBalance(addr)
 	db.state.touched[addr] = 0
 	db.state.balances[addr] = new(uint256.Int).Add(db.GetBalance(addr), value)
+	return before
 }
 
 func (db *inMemoryStateDB) GetBalance(addr common.Address) *uint256.Int {
@@ -144,6 +156,9 @@ func (db *inMemoryStateDB) GetBalance(addr common.Address) *uint256.Int {
 		if exists {
 			return val
 		}
+	}
+	if db.ws == nil {
+		return new(uint256.Int)
 	}
 	acc := db.ws.Get(addr)
 	if acc == nil {
@@ -166,7 +181,7 @@ func (db *inMemoryStateDB) GetNonce(addr common.Address) uint64 {
 	return acc.GetNonce()
 }
 
-func (db *inMemoryStateDB) SetNonce(addr common.Address, value uint64) {
+func (db *inMemoryStateDB) SetNonce(addr common.Address, value uint64, _ tracing.NonceChangeReason) {
 	db.state.touched[addr] = 0
 	db.state.nonces[addr] = value
 }
@@ -191,9 +206,11 @@ func (db *inMemoryStateDB) GetCode(addr common.Address) []byte {
 	return db.ws.Get(addr).GetCode()
 }
 
-func (db *inMemoryStateDB) SetCode(addr common.Address, code []byte) {
+func (db *inMemoryStateDB) SetCode(addr common.Address, code []byte) []byte {
+	before := bytes.Clone(db.GetCode(addr))
 	db.state.touched[addr] = 0
 	db.state.codes[addr] = code
+	return before
 }
 
 func (db *inMemoryStateDB) GetCodeSize(addr common.Address) int {
@@ -234,9 +251,11 @@ func (db *inMemoryStateDB) GetState(addr common.Address, key common.Hash) common
 	return db.ws.Get(addr).GetStorageAt(key)
 }
 
-func (db *inMemoryStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) {
+func (db *inMemoryStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	before := db.GetState(addr, key)
 	db.state.touched[addr] = 0
 	db.state.storage[slot{addr, key}] = value
+	return before
 }
 
 func (db *inMemoryStateDB) GetStorageRoot(addr common.Address) common.Hash {
@@ -252,9 +271,11 @@ func (db *inMemoryStateDB) GetStorageRoot(addr common.Address) common.Hash {
 	return empty
 }
 
-func (db *inMemoryStateDB) SelfDestruct(addr common.Address) {
+func (db *inMemoryStateDB) SelfDestruct(addr common.Address) uint256.Int {
+	before := *db.GetBalance(addr)
 	db.state.suicided[addr] = 0
 	db.state.balances[addr] = new(uint256.Int) // Apparently when you die all your money is gone.
+	return before
 }
 
 func (db *inMemoryStateDB) hasBeenCreatedInThisTransaction(addr common.Address) bool {
@@ -266,10 +287,11 @@ func (db *inMemoryStateDB) hasBeenCreatedInThisTransaction(addr common.Address) 
 	return false
 }
 
-func (db *inMemoryStateDB) Selfdestruct6780(addr common.Address) {
+func (db *inMemoryStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
 	if db.hasBeenCreatedInThisTransaction(addr) {
-		db.SelfDestruct(addr)
+		return db.SelfDestruct(addr), true
 	}
+	return *db.GetBalance(addr), false
 }
 
 func (db *inMemoryStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -369,6 +391,10 @@ func (db *inMemoryStateDB) AddLog(log *types.Log) {
 func (db *inMemoryStateDB) AddPreimage(common.Hash, []byte) {
 	// ignored
 	panic("not implemented")
+}
+
+func (s *inMemoryStateDB) AccessEvents() *state.AccessEvents {
+	return s.accessEvents
 }
 
 func (db *inMemoryStateDB) SetTxContext(common.Hash, int) {

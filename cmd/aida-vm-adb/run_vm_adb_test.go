@@ -70,6 +70,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(1)),
 		archiveBlockOne.EXPECT().SetTxContext(gomock.Any(), 1),
 		archiveBlockOne.EXPECT().Snapshot().Return(15),
+		archiveBlockOne.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(15),
@@ -79,6 +80,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(2)),
 		archiveBlockOne.EXPECT().SetTxContext(gomock.Any(), 2),
 		archiveBlockOne.EXPECT().Snapshot().Return(16),
+		archiveBlockOne.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(16),
@@ -90,6 +92,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockTwo.EXPECT().BeginTransaction(uint32(1)),
 		archiveBlockTwo.EXPECT().SetTxContext(gomock.Any(), 1),
 		archiveBlockTwo.EXPECT().Snapshot().Return(17),
+		archiveBlockTwo.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockTwo.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockTwo.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockTwo.EXPECT().RevertToSnapshot(17),
@@ -154,6 +157,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(1)),
 		archiveBlockOne.EXPECT().SetTxContext(gomock.Any(), 1),
 		archiveBlockOne.EXPECT().Snapshot().Return(15),
+		archiveBlockOne.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(15),
@@ -163,6 +167,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(2)),
 		archiveBlockOne.EXPECT().SetTxContext(gomock.Any(), 2),
 		archiveBlockOne.EXPECT().Snapshot().Return(19),
+		archiveBlockOne.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(19),
@@ -177,6 +182,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockTwo.EXPECT().BeginTransaction(uint32(1)),
 		archiveBlockTwo.EXPECT().SetTxContext(gomock.Any(), 1),
 		archiveBlockTwo.EXPECT().Snapshot().Return(17),
+		archiveBlockTwo.EXPECT().GetCode(gomock.Any()).Return(nil),
 		archiveBlockTwo.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockTwo.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockTwo.EXPECT().RevertToSnapshot(17),
@@ -402,6 +408,9 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 		// end transaction is not called because we expect fail
 	)
 
+	// Code may be fetched at any time.
+	archive.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
+
 	processor, err := executor.MakeArchiveDbTxProcessor(cfg)
 	if err != nil {
 		t.Fatalf("failed to create processor: %v", err)
@@ -451,6 +460,8 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 		archive.EXPECT().RevertToSnapshot(15),
 		archive.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
 	)
+
+	archive.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
 
 	processor, err := executor.MakeArchiveDbTxProcessor(cfg)
 	if err != nil {

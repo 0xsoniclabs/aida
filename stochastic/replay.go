@@ -29,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
 )
 
@@ -440,7 +441,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 
 	case SetNonceID:
 		value := uint64(rg.Intn(NonceRange))
-		db.SetNonce(addr, value)
+		db.SetNonce(addr, value, tracing.NonceChangeUnspecified)
 
 	case SetStateID:
 		db.SetState(addr, key, value)
@@ -477,7 +478,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		}
 
 	case SelfDestruct6780ID:
-		db.Selfdestruct6780(addr)
+		db.SelfDestruct6780(addr)
 		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
 			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
 		}

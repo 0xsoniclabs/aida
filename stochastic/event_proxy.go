@@ -22,6 +22,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth_state "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -56,21 +57,21 @@ func (p *EventProxy) CreateAccount(address common.Address) {
 }
 
 // SubBalance subtracts amount from a contract address.
-func (p *EventProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (p *EventProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	// register event
 	p.registry.RegisterAddressOp(SubBalanceID, &address)
 
 	// call real StateDB
-	p.db.SubBalance(address, amount, reason)
+	return p.db.SubBalance(address, amount, reason)
 }
 
 // AddBalance adds amount to a contract address.
-func (p *EventProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (p *EventProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	// register event
 	p.registry.RegisterAddressOp(AddBalanceID, &address)
 
 	// call real StateDB
-	p.db.AddBalance(address, amount, reason)
+	return p.db.AddBalance(address, amount, reason)
 }
 
 // GetBalance retrieves the amount of a contract address.
@@ -92,12 +93,12 @@ func (p *EventProxy) GetNonce(address common.Address) uint64 {
 }
 
 // SetNonce sets the nonce of a contract address.
-func (p *EventProxy) SetNonce(address common.Address, nonce uint64) {
+func (p *EventProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	// register event
 	p.registry.RegisterAddressOp(SetNonceID, &address)
 
 	// call real StateDB
-	p.db.SetNonce(address, nonce)
+	p.db.SetNonce(address, nonce, reason)
 }
 
 // GetCodeHash returns the hash of the EVM bytecode.
@@ -118,13 +119,13 @@ func (p *EventProxy) GetCode(address common.Address) []byte {
 	return p.db.GetCode(address)
 }
 
-// Setcode sets the EVM bytecode of a contract.
-func (p *EventProxy) SetCode(address common.Address, code []byte) {
+// SetCode sets the EVM bytecode of a contract.
+func (p *EventProxy) SetCode(address common.Address, code []byte) []byte {
 	// register event
 	p.registry.RegisterAddressOp(SetCodeID, &address)
 
 	// call real StateDB
-	p.db.SetCode(address, code)
+	return p.db.SetCode(address, code)
 }
 
 // GetCodeSize returns the EVM bytecode's size.
@@ -173,12 +174,12 @@ func (p *EventProxy) GetState(address common.Address, key common.Hash) common.Ha
 }
 
 // SetState sets a value in the StateDB.
-func (p *EventProxy) SetState(address common.Address, key common.Hash, value common.Hash) {
+func (p *EventProxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
 	// register event
 	p.registry.RegisterValueOp(SetStateID, &address, &key, &value)
 
 	// call real StateDB
-	p.db.SetState(address, key, value)
+	return p.db.SetState(address, key, value)
 }
 func (p *EventProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
 	p.registry.RegisterValueOp(SetTransientStateID, &addr, &key, &value)
@@ -191,12 +192,12 @@ func (p *EventProxy) GetTransientState(addr common.Address, key common.Hash) com
 }
 
 // SelfDestruct an account.
-func (p *EventProxy) SelfDestruct(address common.Address) {
+func (p *EventProxy) SelfDestruct(address common.Address) uint256.Int {
 	// register event
 	p.registry.RegisterAddressOp(SelfDestructID, &address)
 
 	// call real StateDB
-	p.db.SelfDestruct(address)
+	return p.db.SelfDestruct(address)
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -318,6 +319,10 @@ func (p *EventProxy) Witness() *stateless.Witness {
 func (p *EventProxy) AddPreimage(address common.Hash, image []byte) {
 	// call real StateDB
 	p.db.AddPreimage(address, image)
+}
+
+func (p *EventProxy) AccessEvents() *geth_state.AccessEvents {
+	return p.db.AccessEvents()
 }
 
 // SetTxContext sets the current transaction hash and index.
@@ -451,9 +456,9 @@ func (p *EventProxy) CreateContract(addr common.Address) {
 	p.db.CreateContract(addr)
 }
 
-func (p *EventProxy) Selfdestruct6780(addr common.Address) {
+func (p *EventProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
 	p.registry.RegisterOp(SelfDestruct6780ID)
-	p.db.Selfdestruct6780(addr)
+	return p.db.SelfDestruct6780(addr)
 }
 
 func (p *EventProxy) GetStorageRoot(addr common.Address) common.Hash {

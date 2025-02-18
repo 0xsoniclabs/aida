@@ -21,7 +21,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -47,7 +47,7 @@ func compact(ctx *cli.Context) error {
 
 	log := logger.NewLogger(cfg.LogLevel, "aida-db-compact")
 
-	targetDb, err := rawdb.NewLevelDBDatabase(cfg.TargetDb, 1024, 100, "profiling", false)
+	targetDb, err := leveldb.New(cfg.TargetDb, 1024, 100, "profiling", false)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}

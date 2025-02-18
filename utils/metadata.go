@@ -29,7 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
-	"github.com/ethereum/go-ethereum/core/rawdb"
+	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -1086,7 +1086,7 @@ func (md *AidaDbMetadata) getBlockRange() error {
 
 // HasStateHashPatch checks whether given db has already acquired patch with StateHashes.
 func HasStateHashPatch(path string) (bool, error) {
-	db, err := rawdb.NewLevelDBDatabase(path, 1024, 100, "profiling", true)
+	db, err := geth_leveldb.New(path, 1024, 100, "profiling", true)
 	if err != nil {
 		// if AidaDb does not exist force downloading the state hash patch
 		if errors.Is(err, os.ErrNotExist) {

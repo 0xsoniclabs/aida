@@ -114,7 +114,8 @@ func (tx *stTransaction) toMessage(ps stPost, baseFee *BigInt) (*core.Message, e
 		if tx.MaxPriorityFeePerGas == nil {
 			tx.MaxPriorityFeePerGas = tx.MaxFeePerGas
 		}
-		gasPrice = &BigInt{*math.BigMin(new(big.Int).Add(tx.MaxPriorityFeePerGas.Convert(), baseFee.Convert()),
+
+		gasPrice = &BigInt{*bigMin(new(big.Int).Add(tx.MaxPriorityFeePerGas.Convert(), baseFee.Convert()),
 			tx.MaxFeePerGas.Convert())}
 	}
 	if gasPrice == nil {
@@ -122,19 +123,25 @@ func (tx *stTransaction) toMessage(ps stPost, baseFee *BigInt) (*core.Message, e
 	}
 
 	msg := &core.Message{
-		To:                to,
-		From:              from,
-		Nonce:             tx.Nonce.Uint64(),
-		Value:             value,
-		GasLimit:          gasLimit.Uint64(),
-		GasPrice:          gasPrice.Convert(),
-		GasFeeCap:         tx.MaxFeePerGas.Convert(),
-		GasTipCap:         tx.MaxPriorityFeePerGas.Convert(),
-		Data:              data,
-		AccessList:        accessList,
-		BlobGasFeeCap:     tx.BlobGasFeeCap.Convert(),
-		BlobHashes:        tx.BlobHashes,
-		SkipAccountChecks: false,
+		To:            to,
+		From:          from,
+		Nonce:         tx.Nonce.Uint64(),
+		Value:         value,
+		GasLimit:      gasLimit.Uint64(),
+		GasPrice:      gasPrice.Convert(),
+		GasFeeCap:     tx.MaxFeePerGas.Convert(),
+		GasTipCap:     tx.MaxPriorityFeePerGas.Convert(),
+		Data:          data,
+		AccessList:    accessList,
+		BlobGasFeeCap: tx.BlobGasFeeCap.Convert(),
+		BlobHashes:    tx.BlobHashes,
 	}
 	return msg, nil
+}
+
+func bigMin(a, b *big.Int) *big.Int {
+	if a.Cmp(b) < 0 {
+		return a
+	}
+	return b
 }

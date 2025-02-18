@@ -113,7 +113,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().SubBalance(common.HexToAddress("0x1"), uint256.NewInt(1), tracing.BalanceChangeUnspecified),
 		db.EXPECT().AddBalance(common.HexToAddress("0x1"), uint256.NewInt(1000), tracing.BalanceChangeUnspecified),
 		db.EXPECT().GetNonce(common.HexToAddress("0x1")),
-		db.EXPECT().SetNonce(common.HexToAddress("0x1"), gomock.Any()),
+		db.EXPECT().SetNonce(common.HexToAddress("0x1"), gomock.Any(), gomock.Any()),
 		db.EXPECT().GetCode(common.HexToAddress("0x1")),
 		db.EXPECT().GetState(common.HexToAddress("0x1"), common.HexToHash("0x1")),
 		db.EXPECT().SetState(common.HexToAddress("0x1"), common.HexToHash("0x1"), common.HexToHash("0x2")),
@@ -125,7 +125,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().SubBalance(common.HexToAddress("0x2"), uint256.NewInt(2), tracing.BalanceChangeUnspecified),
 		db.EXPECT().AddBalance(common.HexToAddress("0x2"), uint256.NewInt(2000), tracing.BalanceChangeUnspecified),
 		db.EXPECT().GetNonce(common.HexToAddress("0x2")),
-		db.EXPECT().SetNonce(common.HexToAddress("0x2"), gomock.Any()),
+		db.EXPECT().SetNonce(common.HexToAddress("0x2"), gomock.Any(), gomock.Any()),
 		db.EXPECT().GetCode(common.HexToAddress("0x2")).Return([]byte{0x1}),
 		db.EXPECT().SetCode(common.HexToAddress("0x2"), gomock.Any()),
 	)

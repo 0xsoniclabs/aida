@@ -307,7 +307,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.AddBalance(mockAddress, uint256.NewInt(0), tracing.BalanceChangeUnspecified) },
 		func() { db.GetBalance(mockAddress) },
 		func() { db.GetNonce(mockAddress) },
-		func() { db.SetNonce(mockAddress, 0) },
+		func() { db.SetNonce(mockAddress, 0, tracing.NonceChangeUnspecified) },
 		func() { db.GetCodeHash(mockAddress) },
 		func() { db.GetCode(mockAddress) },
 		func() { db.SetCode(mockAddress, []byte{0}) },
@@ -322,7 +322,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.SetState(mockAddress, mockHash, mockHash) },
 		func() { db.SetTransientState(mockAddress, mockHash, mockHash) },
 		func() { db.SelfDestruct(mockAddress) },
-		func() { db.Selfdestruct6780(mockAddress) },
+		func() { db.SelfDestruct6780(mockAddress) },
 		func() { db.HasSelfDestructed(mockAddress) },
 		func() { db.Exist(mockAddress) },
 		func() { db.Empty(mockAddress) },
@@ -370,7 +370,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetBalance(gomock.Any()).AnyTimes()
 	m.EXPECT().GetNonce(gomock.Any()).AnyTimes()
-	m.EXPECT().SetNonce(gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetCodeHash(gomock.Any()).AnyTimes()
 	m.EXPECT().GetCode(gomock.Any()).AnyTimes()
 	m.EXPECT().SetCode(gomock.Any(), gomock.Any()).AnyTimes()
@@ -385,7 +385,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SetTransientState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
-	m.EXPECT().Selfdestruct6780(gomock.Any()).AnyTimes()
+	m.EXPECT().SelfDestruct6780(gomock.Any()).AnyTimes()
 	m.EXPECT().HasSelfDestructed(gomock.Any()).AnyTimes()
 	m.EXPECT().Exist(gomock.Any()).AnyTimes()
 	m.EXPECT().Empty(gomock.Any()).AnyTimes()
@@ -423,7 +423,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().GetBalance(gomock.Any())
 	m.EXPECT().GetNonce(gomock.Any())
-	m.EXPECT().SetNonce(gomock.Any(), gomock.Any())
+	m.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().GetCodeHash(gomock.Any())
 	m.EXPECT().GetCode(gomock.Any())
 	m.EXPECT().SetCode(gomock.Any(), gomock.Any())
@@ -438,7 +438,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().SetTransientState(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().SelfDestruct(gomock.Any())
-	m.EXPECT().Selfdestruct6780(gomock.Any())
+	m.EXPECT().SelfDestruct6780(gomock.Any())
 	m.EXPECT().HasSelfDestructed(gomock.Any())
 	m.EXPECT().Exist(gomock.Any())
 	m.EXPECT().Empty(gomock.Any())

@@ -27,6 +27,7 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -71,8 +72,9 @@ func (s *MockStateDB) Empty(addr common.Address) bool {
 	return false
 }
 
-func (s *MockStateDB) SelfDestruct(addr common.Address) {
+func (s *MockStateDB) SelfDestruct(addr common.Address) uint256.Int {
 	s.recording = append(s.recording, Record{SelfDestructID, []any{addr}})
+	return uint256.Int{}
 }
 
 func (s *MockStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -80,8 +82,9 @@ func (s *MockStateDB) HasSelfDestructed(addr common.Address) bool {
 	return false
 }
 
-func (s *MockStateDB) Selfdestruct6780(addr common.Address) {
+func (s *MockStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
 	s.recording = append(s.recording, Record{SelfDestruct6780ID, []any{addr}})
+	return uint256.Int{}, false
 }
 
 func (s *MockStateDB) GetBalance(addr common.Address) *uint256.Int {
@@ -89,12 +92,14 @@ func (s *MockStateDB) GetBalance(addr common.Address) *uint256.Int {
 	return &uint256.Int{}
 }
 
-func (s *MockStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
+func (s *MockStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	s.recording = append(s.recording, Record{AddBalanceID, []any{addr, value, reason}})
+	return uint256.Int{}
 }
 
-func (s *MockStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
+func (s *MockStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	s.recording = append(s.recording, Record{SubBalanceID, []any{addr, value, reason}})
+	return uint256.Int{}
 }
 
 func (s *MockStateDB) GetNonce(addr common.Address) uint64 {
@@ -102,8 +107,8 @@ func (s *MockStateDB) GetNonce(addr common.Address) uint64 {
 	return uint64(0)
 }
 
-func (s *MockStateDB) SetNonce(addr common.Address, value uint64) {
-	s.recording = append(s.recording, Record{SetNonceID, []any{addr, value}})
+func (s *MockStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
+	s.recording = append(s.recording, Record{SetNonceID, []any{addr, value, reason}})
 }
 
 func (s *MockStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
@@ -116,8 +121,9 @@ func (s *MockStateDB) GetState(addr common.Address, key common.Hash) common.Hash
 	return common.Hash{}
 }
 
-func (s *MockStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) {
+func (s *MockStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
 	s.recording = append(s.recording, Record{SetStateID, []any{addr, key, value}})
+	return common.Hash{}
 }
 
 func (s *MockStateDB) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -144,8 +150,9 @@ func (s *MockStateDB) GetCodeSize(addr common.Address) int {
 	return 0
 }
 
-func (s *MockStateDB) SetCode(addr common.Address, code []byte) {
+func (s *MockStateDB) SetCode(addr common.Address, code []byte) []byte {
 	s.recording = append(s.recording, Record{SetCodeID, []any{addr, code}})
+	return nil
 }
 
 func (s *MockStateDB) Snapshot() int {
@@ -268,6 +275,10 @@ func (s *MockStateDB) AddLog(log *types.Log) {
 
 func (s *MockStateDB) AddPreimage(hash common.Hash, preimage []byte) {
 	s.recording = append(s.recording, Record{AddPreimageID, []any{hash, preimage}})
+}
+
+func (s *MockStateDB) AccessEvents() *geth.AccessEvents {
+	return nil
 }
 
 func (s *MockStateDB) ForEachStorage(addr common.Address, cb func(common.Hash, common.Hash) bool) error {

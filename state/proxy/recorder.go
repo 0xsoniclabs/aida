@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -60,17 +61,17 @@ func (r *RecorderProxy) CreateAccount(addr common.Address) {
 }
 
 // SubBalance subtracts amount from a contract address.
-func (r *RecorderProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (r *RecorderProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	contract := r.ctx.EncodeContract(addr)
 	r.write(operation.NewSubBalance(contract, amount, reason))
-	r.db.SubBalance(addr, amount, reason)
+	return r.db.SubBalance(addr, amount, reason)
 }
 
 // AddBalance adds amount to a contract address.
-func (r *RecorderProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) {
+func (r *RecorderProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	contract := r.ctx.EncodeContract(addr)
 	r.write(operation.NewAddBalance(contract, amount, reason))
-	r.db.AddBalance(addr, amount, reason)
+	return r.db.AddBalance(addr, amount, reason)
 }
 
 // GetBalance retrieves the amount of a contract address.
@@ -90,10 +91,10 @@ func (r *RecorderProxy) GetNonce(addr common.Address) uint64 {
 }
 
 // SetNonce sets the nonce of a contract address.
-func (r *RecorderProxy) SetNonce(addr common.Address, nonce uint64) {
+func (r *RecorderProxy) SetNonce(addr common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	contract := r.ctx.EncodeContract(addr)
-	r.write(operation.NewSetNonce(contract, nonce))
-	r.db.SetNonce(addr, nonce)
+	r.write(operation.NewSetNonce(contract, nonce, reason))
+	r.db.SetNonce(addr, nonce, reason)
 }
 
 // GetCodeHash returns the hash of the EVM bytecode.
@@ -119,10 +120,10 @@ func (r *RecorderProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (r *RecorderProxy) SetCode(addr common.Address, code []byte) {
+func (r *RecorderProxy) SetCode(addr common.Address, code []byte) []byte {
 	contract := r.ctx.EncodeContract(addr)
 	r.write(operation.NewSetCode(contract, code))
-	r.db.SetCode(addr, code)
+	return r.db.SetCode(addr, code)
 }
 
 // GetCodeSize returns the EVM bytecode's size.
@@ -186,7 +187,7 @@ func (r *RecorderProxy) GetState(addr common.Address, key common.Hash) common.Ha
 }
 
 // SetState sets a value in the StateDB.
-func (r *RecorderProxy) SetState(addr common.Address, key common.Hash, value common.Hash) {
+func (r *RecorderProxy) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
 	previousContract := r.ctx.PrevContract()
 	contract := r.ctx.EncodeContract(addr)
 	key, kPos := r.ctx.EncodeKey(key)
@@ -195,7 +196,7 @@ func (r *RecorderProxy) SetState(addr common.Address, key common.Hash, value com
 	} else {
 		r.write(operation.NewSetState(contract, key, value))
 	}
-	r.db.SetState(addr, key, value)
+	return r.db.SetState(addr, key, value)
 }
 
 func (r *RecorderProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -235,10 +236,10 @@ func (r *RecorderProxy) GetTransientState(addr common.Address, key common.Hash) 
 // SelfDestruct marks the given account as suicided. This clears the account balance.
 // The account is still available until the state is committed;
 // return a non-nil account after SelfDestruct.
-func (r *RecorderProxy) SelfDestruct(addr common.Address) {
+func (r *RecorderProxy) SelfDestruct(addr common.Address) uint256.Int {
 	contract := r.ctx.EncodeContract(addr)
 	r.write(operation.NewSelfDestruct(contract))
-	r.db.SelfDestruct(addr)
+	return r.db.SelfDestruct(addr)
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -337,6 +338,10 @@ func (r *RecorderProxy) Witness() *stateless.Witness {
 // AddPreimage adds a SHA3 preimage.
 func (r *RecorderProxy) AddPreimage(addr common.Hash, image []byte) {
 	r.db.AddPreimage(addr, image)
+}
+
+func (r *RecorderProxy) AccessEvents() *geth.AccessEvents {
+	return r.db.AccessEvents()
 }
 
 // SetTxContext sets the current transaction hash and index.
@@ -440,8 +445,8 @@ func (r *RecorderProxy) CreateContract(addr common.Address) {
 	r.db.CreateContract(addr)
 }
 
-func (r *RecorderProxy) Selfdestruct6780(addr common.Address) {
-	r.db.Selfdestruct6780(addr)
+func (r *RecorderProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	return r.db.SelfDestruct6780(addr)
 }
 
 func (r *RecorderProxy) GetStorageRoot(addr common.Address) common.Hash {

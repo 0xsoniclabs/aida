@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -82,9 +83,10 @@ func (s *loggingVmStateDb) Empty(addr common.Address) bool {
 	return res
 }
 
-func (s *loggingVmStateDb) SelfDestruct(addr common.Address) {
-	s.db.SelfDestruct(addr)
-	s.writeLog("SelfDestruct, %v", addr)
+func (s *loggingVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
+	res := s.db.SelfDestruct(addr)
+	s.writeLog("SelfDestruct, %v, %v", addr, res)
+	return res
 }
 
 func (s *loggingVmStateDb) HasSelfDestructed(addr common.Address) bool {
@@ -99,14 +101,16 @@ func (s *loggingVmStateDb) GetBalance(addr common.Address) *uint256.Int {
 	return res
 }
 
-func (s *loggingVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.db.AddBalance(addr, value, reason)
-	s.writeLog("AddBalance, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason)
+func (s *loggingVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	res := s.db.AddBalance(addr, value, reason)
+	s.writeLog("AddBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
+	return res
 }
 
-func (s *loggingVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.db.SubBalance(addr, value, reason)
-	s.writeLog("SubBalance, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason)
+func (s *loggingVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	res := s.db.SubBalance(addr, value, reason)
+	s.writeLog("SubBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
+	return res
 }
 
 func (s *loggingVmStateDb) GetNonce(addr common.Address) uint64 {
@@ -115,9 +119,9 @@ func (s *loggingVmStateDb) GetNonce(addr common.Address) uint64 {
 	return res
 }
 
-func (s *loggingVmStateDb) SetNonce(addr common.Address, value uint64) {
-	s.db.SetNonce(addr, value)
-	s.writeLog("SetNonce, %v, %v", addr, value)
+func (s *loggingVmStateDb) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
+	s.db.SetNonce(addr, value, reason)
+	s.writeLog("SetNonce, %v, %v, %v", addr, value, reason)
 }
 
 func (s *loggingVmStateDb) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
@@ -132,9 +136,10 @@ func (s *loggingVmStateDb) GetState(addr common.Address, key common.Hash) common
 	return res
 }
 
-func (s *loggingVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) {
-	s.db.SetState(addr, key, value)
-	s.writeLog("SetState, %v, %v, %v", addr, key, value)
+func (s *loggingVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	res := s.db.SetState(addr, key, value)
+	s.writeLog("SetState, %v, %v, %v, %v", addr, key, value, res)
+	return res
 }
 
 func (s *loggingVmStateDb) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
@@ -166,9 +171,10 @@ func (s *loggingVmStateDb) GetCodeHash(addr common.Address) common.Hash {
 	return res
 }
 
-func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte) {
-	s.db.SetCode(addr, code)
-	s.writeLog("SetCode, %v, %v", addr, code)
+func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte) []byte {
+	res := s.db.SetCode(addr, code)
+	s.writeLog("SetCode, %v, %v, %v", addr, code, res)
+	return res
 }
 
 func (s *loggingVmStateDb) Snapshot() int {
@@ -196,6 +202,11 @@ func (s *loggingVmStateDb) BeginTransaction(tx uint32) error {
 func (s *loggingVmStateDb) EndTransaction() error {
 	s.writeLog("EndTransaction")
 	return s.db.EndTransaction()
+}
+
+func (s *loggingVmStateDb) Finalise(deleteEmptyObjects bool) {
+	s.writeLog("Finalise, %v", deleteEmptyObjects)
+	s.db.Finalise(deleteEmptyObjects)
 }
 
 func (s *LoggingStateDb) BeginBlock(blk uint64) error {
@@ -308,7 +319,7 @@ func (s *loggingVmStateDb) PointCache() *utils.PointCache {
 // Witness retrieves the current state witness.
 func (s *loggingVmStateDb) Witness() *stateless.Witness {
 	res := s.db.Witness()
-	s.writeLog("Witness, %s", res)
+	s.writeLog("Witness, %v", res)
 	return res
 }
 
@@ -348,6 +359,12 @@ func (s *loggingVmStateDb) GetSubstatePostAlloc() txcontext.WorldState {
 func (s *loggingVmStateDb) AddPreimage(hash common.Hash, data []byte) {
 	s.db.AddPreimage(hash, data)
 	s.writeLog("AddPreimage, %v, %v", hash, data)
+}
+
+func (s *loggingVmStateDb) AccessEvents() *geth.AccessEvents {
+	res := s.db.AccessEvents()
+	s.writeLog("AccessEvents, %v", res)
+	return res
 }
 
 func (s *LoggingStateDb) StartBulkLoad(block uint64) (state.BulkLoad, error) {
@@ -396,9 +413,10 @@ func (s *loggingVmStateDb) CreateContract(addr common.Address) {
 	s.db.CreateContract(addr)
 }
 
-func (s *loggingVmStateDb) Selfdestruct6780(addr common.Address) {
-	s.writeLog("Selfdestruct6780, %v", addr)
-	s.db.Selfdestruct6780(addr)
+func (s *loggingVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	balance, success := s.db.SelfDestruct6780(addr)
+	s.writeLog("SelfDestruct6780, %v, %v, %v", addr, balance, success)
+	return balance, success
 }
 
 func (s *loggingVmStateDb) GetStorageRoot(addr common.Address) common.Hash {

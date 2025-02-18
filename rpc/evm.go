@@ -26,7 +26,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/ethapi"
-	"github.com/0xsoniclabs/sonic/evmcore"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -125,7 +124,6 @@ func (e *EvmExecutor) newEVM(msg *core.Message, hashErr *error) *vm.EVM {
 		getHash  func(uint64) common.Hash
 		blockCtx vm.BlockContext
 		vmConfig vm.Config
-		txCtx    vm.TxContext
 	)
 
 	getHash = func(_ uint64) common.Hash {
@@ -150,9 +148,7 @@ func (e *EvmExecutor) newEVM(msg *core.Message, hashErr *error) *vm.EVM {
 	vmConfig.NoBaseFee = true
 	vmConfig.Interpreter = e.vmImpl
 
-	txCtx = evmcore.NewEVMTxContext(msg)
-
-	return vm.NewEVM(blockCtx, txCtx, e.archive, e.chainCfg, vmConfig)
+	return vm.NewEVM(blockCtx, e.archive, e.chainCfg, vmConfig)
 }
 
 // sendCall executes the call method in the EvmExecutor with given archive

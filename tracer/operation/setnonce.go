@@ -24,6 +24,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 )
@@ -32,6 +33,7 @@ import (
 type SetNonce struct {
 	Contract common.Address
 	Nonce    uint64 // nonce
+	Reason   tracing.NonceChangeReason
 }
 
 // GetId returns the set-nonce operation identifier.
@@ -40,8 +42,8 @@ func (op *SetNonce) GetId() byte {
 }
 
 // NewSetNonce creates a new set-nonce operation.
-func NewSetNonce(contract common.Address, nonce uint64) *SetNonce {
-	return &SetNonce{Contract: contract, Nonce: nonce}
+func NewSetNonce(contract common.Address, nonce uint64, reason tracing.NonceChangeReason) *SetNonce {
+	return &SetNonce{Contract: contract, Nonce: nonce, Reason: reason}
 }
 
 // ReadSetNonce reads a set-nonce operation from a file.
@@ -61,11 +63,11 @@ func (op *SetNonce) Write(f io.Writer) error {
 func (op *SetNonce) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
-	db.SetNonce(contract, op.Nonce)
+	db.SetNonce(contract, op.Nonce, op.Reason)
 	return time.Since(start)
 }
 
 // Debug prints a debug message for the set-nonce operation.
 func (op *SetNonce) Debug(ctx *context.Context) {
-	fmt.Print(op.Contract, op.Nonce)
+	fmt.Print(op.Contract, op.Nonce, op.Reason)
 }

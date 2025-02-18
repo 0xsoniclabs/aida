@@ -29,7 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -298,7 +298,7 @@ func printStateHash(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, err := rawdb.NewLevelDBDatabase(cfg.AidaDb, 1024, 100, "profiling", true)
+	aidaDb, err := leveldb.New(cfg.AidaDb, 1024, 100, "profiling", true)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %v", err)
 	}

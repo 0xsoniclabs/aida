@@ -23,6 +23,7 @@ import (
 
 	carmen "github.com/0xsoniclabs/carmen/go/state"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
@@ -180,7 +181,7 @@ func TestCarmenState_NonceOperations(t *testing.T) {
 			// get randomized nonce
 			newNonce := GetRandom(t, 1, 5_000_000)
 
-			csDB.SetNonce(addr, newNonce)
+			csDB.SetNonce(addr, newNonce, tracing.NonceChangeUnspecified)
 
 			if csDB.GetNonce(addr) != newNonce {
 				t.Fatal("failed to update account nonce")

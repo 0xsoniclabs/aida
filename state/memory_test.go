@@ -20,7 +20,7 @@ func TestInMemoryDb_SelfDestruct6780OnlyDeletesContractsCreatedInSameTransaction
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
 	}
 
-	db.Selfdestruct6780(a) // < this should work
+	db.SelfDestruct6780(a) // < this should work
 
 	if want, got := true, db.HasSelfDestructed(a); want != got {
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", a, want, got)
@@ -29,7 +29,7 @@ func TestInMemoryDb_SelfDestruct6780OnlyDeletesContractsCreatedInSameTransaction
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
 	}
 
-	db.Selfdestruct6780(b) // < this should be ignored
+	db.SelfDestruct6780(b) // < this should be ignored
 
 	if want, got := true, db.HasSelfDestructed(a); want != got {
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", a, want, got)

@@ -29,8 +29,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie/utils"
+	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
 )
 
@@ -46,15 +48,16 @@ func MakeGethStateDB(directory, variant string, rootHash common.Hash, isArchiveM
 	}
 	const cacheSize = 512
 	const fileHandle = 128
-	ldb, err := rawdb.NewLevelDBDatabase(directory, cacheSize, fileHandle, "", false)
+	ldb, err := leveldb.New(directory, cacheSize, fileHandle, "", false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a new Level DB. %v", err)
+		return nil, fmt.Errorf("failed to create a new Level DB, %w", err)
 	}
-	evmState := geth.NewDatabase(ldb)
+	trieDb := triedb.NewDatabase(rawdb.NewDatabase(ldb), &triedb.Config{})
+	evmState := geth.NewDatabase(trieDb, nil)
 	if rootHash == (common.Hash{}) {
 		rootHash = types.EmptyRootHash
 	}
-	db, err := geth.New(rootHash, evmState, nil)
+	db, err := geth.New(rootHash, evmState)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +70,14 @@ func MakeGethStateDB(directory, variant string, rootHash common.Hash, isArchiveM
 		isArchiveMode: isArchiveMode,
 		chainConduit:  chainConduit,
 		backend:       ldb,
+		accessEvents:  geth.NewAccessEvents(utils.NewPointCache(4096)),
 	}, nil
 }
 
 // openStateDB creates a new statedb from an existing geth database
 func (s *gethStateDB) openStateDB() error {
 	var err error
-	s.db, err = geth.New(s.stateRoot, s.evmState, nil)
+	s.db, err = geth.New(s.stateRoot, s.evmState)
 	return err
 }
 
@@ -85,7 +89,8 @@ type gethStateDB struct {
 	isArchiveMode bool
 	chainConduit  *ChainConduit // chain configuration
 	block         uint64
-	backend       ethdb.Database
+	backend       *leveldb.Database
+	accessEvents  *geth.AccessEvents
 }
 
 func (s *gethStateDB) CreateAccount(addr common.Address) {
@@ -104,12 +109,12 @@ func (s *gethStateDB) Empty(addr common.Address) bool {
 	return s.db.Empty(addr)
 }
 
-func (s *gethStateDB) SelfDestruct(addr common.Address) {
-	s.db.SelfDestruct(addr)
+func (s *gethStateDB) SelfDestruct(addr common.Address) uint256.Int {
+	return s.db.SelfDestruct(addr)
 }
 
-func (s *gethStateDB) Selfdestruct6780(addr common.Address) {
-	s.db.Selfdestruct6780(addr)
+func (s *gethStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	return s.db.SelfDestruct6780(addr)
 }
 
 func (s *gethStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -120,20 +125,20 @@ func (s *gethStateDB) GetBalance(addr common.Address) *uint256.Int {
 	return s.db.GetBalance(addr)
 }
 
-func (s *gethStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.db.AddBalance(addr, value, reason)
+func (s *gethStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return s.db.AddBalance(addr, value, reason)
 }
 
-func (s *gethStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) {
-	s.db.SubBalance(addr, value, reason)
+func (s *gethStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	return s.db.SubBalance(addr, value, reason)
 }
 
 func (s *gethStateDB) GetNonce(addr common.Address) uint64 {
 	return s.db.GetNonce(addr)
 }
 
-func (s *gethStateDB) SetNonce(addr common.Address, value uint64) {
-	s.db.SetNonce(addr, value)
+func (s *gethStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
+	s.db.SetNonce(addr, value, reason)
 }
 
 func (s *gethStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
@@ -144,8 +149,8 @@ func (s *gethStateDB) GetState(addr common.Address, key common.Hash) common.Hash
 	return s.db.GetState(addr, key)
 }
 
-func (s *gethStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) {
-	s.db.SetState(addr, key, value)
+func (s *gethStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	return s.db.SetState(addr, key, value)
 }
 
 func (s *gethStateDB) GetStorageRoot(addr common.Address) common.Hash {
@@ -172,8 +177,8 @@ func (s *gethStateDB) GetCodeSize(addr common.Address) int {
 	return s.db.GetCodeSize(addr)
 }
 
-func (s *gethStateDB) SetCode(addr common.Address, code []byte) {
-	s.db.SetCode(addr, code)
+func (s *gethStateDB) SetCode(addr common.Address, code []byte) []byte {
+	return s.db.SetCode(addr, code)
 }
 
 func (s *gethStateDB) Snapshot() int {
@@ -261,7 +266,7 @@ func (s *gethStateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 
 func (s *gethStateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
 	if db, ok := s.db.(*geth.StateDB); ok {
-		return db.Commit(block, deleteEmptyObjects)
+		return db.Commit(block, deleteEmptyObjects, false)
 	}
 	return common.Hash{}, nil
 }
@@ -293,7 +298,7 @@ func (s *gethStateDB) Close() error {
 		return nil
 	}
 	// Commit data to trie.
-	hash, err := state.Commit(s.block, true)
+	hash, err := state.Commit(s.block, true, false)
 	if err != nil {
 		return err
 	}
@@ -343,6 +348,10 @@ func (s *gethStateDB) AddLog(log *types.Log) {
 func (s *gethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
 	panic("Add Preimage")
 	s.db.AddPreimage(hash, preimage)
+}
+
+func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
+	return s.accessEvents
 }
 
 func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
@@ -399,7 +408,7 @@ func (l *gethBulkLoad) SetBalance(addr common.Address, value *uint256.Int) {
 }
 
 func (l *gethBulkLoad) SetNonce(addr common.Address, nonce uint64) {
-	l.db.SetNonce(addr, nonce)
+	l.db.SetNonce(addr, nonce, tracing.NonceChangeGenesis)
 }
 
 func (l *gethBulkLoad) SetState(addr common.Address, key common.Hash, value common.Hash) {
