@@ -85,7 +85,7 @@ func (s *loggingVmStateDb) Empty(addr common.Address) bool {
 
 func (s *loggingVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
 	res := s.db.SelfDestruct(addr)
-	s.writeLog("SelfDestruct, %v", addr)
+	s.writeLog("SelfDestruct, %v, %v", addr, res)
 	return res
 }
 
@@ -103,13 +103,13 @@ func (s *loggingVmStateDb) GetBalance(addr common.Address) *uint256.Int {
 
 func (s *loggingVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	res := s.db.AddBalance(addr, value, reason)
-	s.writeLog("AddBalance, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason)
+	s.writeLog("AddBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	res := s.db.SubBalance(addr, value, reason)
-	s.writeLog("SubBalance, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason)
+	s.writeLog("SubBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
 	return res
 }
 
@@ -121,7 +121,7 @@ func (s *loggingVmStateDb) GetNonce(addr common.Address) uint64 {
 
 func (s *loggingVmStateDb) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
 	s.db.SetNonce(addr, value, reason)
-	s.writeLog("SetNonce, %v, %v", addr, value)
+	s.writeLog("SetNonce, %v, %v, %v", addr, value, reason)
 }
 
 func (s *loggingVmStateDb) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
@@ -138,7 +138,7 @@ func (s *loggingVmStateDb) GetState(addr common.Address, key common.Hash) common
 
 func (s *loggingVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
 	res := s.db.SetState(addr, key, value)
-	s.writeLog("SetState, %v, %v, %v, %v", addr, key, res, value)
+	s.writeLog("SetState, %v, %v, %v, %v", addr, key, value, res)
 	return res
 }
 
@@ -173,7 +173,7 @@ func (s *loggingVmStateDb) GetCodeHash(addr common.Address) common.Hash {
 
 func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte) []byte {
 	res := s.db.SetCode(addr, code)
-	s.writeLog("SetCode, %v, %v", addr, code)
+	s.writeLog("SetCode, %v, %v, %v", addr, code, res)
 	return res
 }
 
@@ -414,8 +414,9 @@ func (s *loggingVmStateDb) CreateContract(addr common.Address) {
 }
 
 func (s *loggingVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	s.writeLog("SelfDestruct6780, %v", addr)
-	return s.db.SelfDestruct6780(addr)
+	balance, success := s.db.SelfDestruct6780(addr)
+	s.writeLog("SelfDestruct6780, %v, %v, %v", addr, balance, success)
+	return balance, success
 }
 
 func (s *loggingVmStateDb) GetStorageRoot(addr common.Address) common.Hash {
