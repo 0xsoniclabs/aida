@@ -132,6 +132,11 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 	// Compute the maximum blob gas limit per block.
 	maxBlobTransactions := 0
 	switch fork := strings.ToLower(state.Data.GetBlockEnvironment().GetFork()); fork {
+	case "istanbul":
+	case "berlin":
+	case "london":
+	case "merge":
+	case "paris":
 	case "shanghai":
 		maxBlobTransactions = 0
 	case "cancun":
