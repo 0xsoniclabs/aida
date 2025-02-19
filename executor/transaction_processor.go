@@ -205,6 +205,9 @@ func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
 	switch cfg.ChainID {
 	case utils.EthereumChainID:
 		break
+	case utils.SonicMainnetChainID:
+		vmCfg = opera.DefaultVMConfig
+		vmCfg.NoBaseFee = false
 	case utils.TestnetChainID:
 		fallthrough
 	case utils.MainnetChainID:
@@ -359,6 +362,10 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 	blockCtx := prepareBlockCtx(inputEnv, &hashError)
 
 	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.vmCfg)
+
+	// TODO determine if needed
+	evm.Reset(txCtx, db)
+	evm.Config.NoBaseFee = msg.SkipAccountChecks
 
 	var msgResult messageResult
 	var gasPool = new(core.GasPool)

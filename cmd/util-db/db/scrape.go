@@ -48,7 +48,7 @@ func scrapePrepare(ctx *cli.Context) error {
 	log := logger.NewLogger(cfg.LogLevel, "UtilDb-Scrape")
 	log.Infof("Scraping for range %d-%d", cfg.First, cfg.Last)
 
-	database, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	database, err := db.NewDefaultBaseDB(cfg.TargetDb)
 	if err != nil {
 		return fmt.Errorf("error opening stateHash leveldb %s: %v", cfg.TargetDb, err)
 	}

@@ -48,8 +48,10 @@ type validator struct {
 func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDbMetadata) ([]byte, error) {
 	var url string
 
-	if chainId == utils.MainnetChainID {
-		url = utils.AidaDbRepositoryMainnetUrl
+	if chainId == utils.SonicMainnetChainID {
+		url = utils.AidaDbRepositorySonicUrl
+	} else if chainId == utils.MainnetChainID {
+		url = utils.AidaDbRepositoryOperaUrl
 	} else if chainId == utils.TestnetChainID {
 		url = utils.AidaDbRepositoryTestnetUrl
 	}
