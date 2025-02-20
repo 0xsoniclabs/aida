@@ -19,9 +19,7 @@ package utildb
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -142,12 +140,11 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 // mergePatch takes decompressed patches and merges them into aida-db
 func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
 	var (
-		err                       error
-		patchDb                   db.BaseDB
-		targetMD                  *utils.AidaDbMetadata
-		patchDbHash, targetDbHash []byte
-		isNewDb                   bool
-		log                       = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
+		err      error
+		patchDb  db.BaseDB
+		targetMD *utils.AidaDbMetadata
+		isNewDb  bool
+		log      = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
 	)
 
 	if lastAidaDbBlock == 0 {
@@ -217,15 +214,6 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				patchDb, err = db.NewReadOnlyBaseDB(extractedPatchPath)
 				if err != nil {
 					return fmt.Errorf("cannot open targetDb; %v", err)
-				}
-
-				// we only check metadata if not applying stateHashPatch
-				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					// save patch dbHash - last hash gets validated if validation is turned on
-					patchDbHash, err = targetMD.CheckUpdateMetadata(cfg, patchDb)
-					if err != nil {
-						return err
-					}
 				}
 
 				m := NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
