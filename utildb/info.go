@@ -119,7 +119,7 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	start := db.SubstateDBBlockPrefix(cfg.First)[2:]
-	iter := database.NewIterator([]byte(db.SubstateDBPrefix), start)
+	iter := database.NewIterator([]byte(db.UpdateDBPrefix), start)
 	defer iter.Release()
 	for iter.Next() {
 		block, err := db.DecodeUpdateSetKey(iter.Key())
