@@ -81,8 +81,11 @@ func validateCmd(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "ValidateCMD")
 
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	if err != nil {
+		return fmt.Errorf("cannot parse config; %v", err)
+	}
 
-	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
