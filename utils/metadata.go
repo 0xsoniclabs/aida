@@ -986,7 +986,7 @@ func (md *AidaDbMetadata) UpdateMetadataInOldAidaDb(chainId ChainID, firstAidaDb
 }
 
 // FindBlockRangeInSubstate if AidaDb does not yet have metadata
-func FindBlockRangeInSubstate(db db.SubstateDB) (uint64, uint64, bool) {
+func FindBlockRangeInSubstate(db db.ISubstateDB) (uint64, uint64, bool) {
 	firstSubstate := db.GetFirstSubstate()
 	if firstSubstate == nil {
 		return 0, 0, false

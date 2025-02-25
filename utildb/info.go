@@ -75,7 +75,7 @@ func FindBlockRangeInStateHash(db db.BaseDB, log logger.Logger) (uint64, uint64,
 }
 
 // GetSubstateCount in given AidaDb
-func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
+func GetSubstateCount(cfg *utils.Config, sdb db.ISubstateDB) uint64 {
 
 	var count uint64
 

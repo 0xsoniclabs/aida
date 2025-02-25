@@ -50,7 +50,7 @@ func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB
 // substateProvider is an adapter of Aida's SubstateProvider interface defined above to the
 // current substate implementation offered by github.com/0xsoniclabs/substate.
 type substateProvider struct {
-	db                  db.SubstateDB
+	db                  db.ISubstateDB
 	ctxt                *cli.Context
 	numParallelDecoders int
 }
