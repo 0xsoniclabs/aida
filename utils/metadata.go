@@ -53,7 +53,6 @@ const (
 	TimestampPrefix         = db.MetadataPrefix + "ti"
 	DbHashPrefix            = db.MetadataPrefix + "md"
 	HasStateHashPatchPrefix = db.MetadataPrefix + "sh"
-	StateHashPrefix         = "dbh"
 )
 
 // merge is determined by what are we merging
