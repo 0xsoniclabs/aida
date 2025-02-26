@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	RPCMainnet = "https://rpcapi.fantom.network"
-	RPCTestnet = "https://rpc.blaze.soniclabs.com"
+	RPCSonicMainnet = "https://rpc.soniclabs.com"
+	RPCOperaMainnet = "https://rpcapi.fantom.network"
+	RPCTestnet      = "https://rpc.blaze.soniclabs.com"
 )
 
 var RPCUnsupported = fmt.Errorf("chain-id is not supported")
@@ -73,8 +74,10 @@ func SendRpcRequest(payload JsonRPCRequest, chainId ChainID) (map[string]interfa
 }
 
 func GetProvider(chainId ChainID) (string, error) {
-	if chainId == MainnetChainID {
-		return RPCMainnet, nil
+	if chainId == SonicMainnetChainID {
+		return RPCSonicMainnet, nil
+	} else if chainId == MainnetChainID {
+		return RPCOperaMainnet, nil
 	} else if chainId == TestnetChainID {
 		return RPCTestnet, nil
 	} else if chainId == EthereumChainID {

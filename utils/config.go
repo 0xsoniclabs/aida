@@ -69,20 +69,31 @@ const (
 )
 
 const (
-	UnknownChainID  ChainID = 0
-	EthereumChainID ChainID = 1
-	MainnetChainID  ChainID = 250
-	TestnetChainID  ChainID = 4002
+	UnknownChainID      ChainID = 0
+	EthereumChainID     ChainID = 1
+	SonicMainnetChainID ChainID = 146
+	MainnetChainID      ChainID = 250
+	TestnetChainID      ChainID = 4002
 	// EthTestsChainID is a mock ChainID which is necessary for setting
 	// the chain rules to allow any block number for any fork.
 	EthTestsChainID ChainID = 1337
 )
 
-var RealChainIDs = ChainIDs{MainnetChainID: "mainnet", TestnetChainID: "testnet", EthereumChainID: "ethereum"}
-var AllowedChainIDs = ChainIDs{MainnetChainID: "mainnet", TestnetChainID: "testnet", EthereumChainID: "ethereum", EthTestsChainID: "eth-tests"}
+var RealChainIDs = ChainIDs{
+	SonicMainnetChainID: "mainnet-sonic",
+	MainnetChainID:      "mainnet-opera",
+	TestnetChainID:      "testnet",
+	EthereumChainID:     "ethereum"}
+var AllowedChainIDs = ChainIDs{
+	SonicMainnetChainID: "mainnet-sonic",
+	MainnetChainID:      "mainnet-opera",
+	TestnetChainID:      "testnet",
+	EthereumChainID:     "ethereum",
+	EthTestsChainID:     "eth-tests"}
 
 const (
-	AidaDbRepositoryMainnetUrl  = "https://storage.googleapis.com/aida-repository-public/mainnet/aida-patches"
+	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository-public/sonic/aida-patches"
+	AidaDbRepositoryOperaUrl    = "https://storage.googleapis.com/aida-repository-public/mainnet/aida-patches"
 	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository-public/testnet/aida-patches"
 	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository-public/ethereum/aida-patches"
 )
@@ -104,6 +115,19 @@ const (
 
 // A map of key blocks on Fantom chain
 var KeywordBlocks = map[ChainID]map[string]uint64{
+	SonicMainnetChainID: {
+		"zero":        0,
+		"opera":       0,
+		"istanbul":    0,
+		"muirglacier": 0,
+		"berlin":      0,
+		"london":      0,
+		"shanghai":    0, //timestamp
+		"cancun":      0, //timestamp
+		"first":       0,
+		"last":        maxLastBlock,
+		"lastpatch":   0,
+	},
 	MainnetChainID: {
 		"zero":        0,
 		"opera":       4_564_026,
@@ -406,15 +430,17 @@ func (cc *configContext) setFirstOperaBlock() error {
 // setAidaDbRepositoryUrl based on chain id selects correct aida-db repository url
 func (cc *configContext) setAidaDbRepositoryUrl() error {
 	switch cc.cfg.ChainID {
+	case SonicMainnetChainID:
+		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
 	case MainnetChainID:
-		AidaDbRepositoryUrl = AidaDbRepositoryMainnetUrl
+		AidaDbRepositoryUrl = AidaDbRepositoryOperaUrl
 	case TestnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryTestnetUrl
 	case EthereumChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryEthereumUrl
 	default:
 		cc.log.Warningf("%v chain-id does not have aida-db repository url set - setting to mainnet", cc.cfg)
-		AidaDbRepositoryUrl = AidaDbRepositoryMainnetUrl
+		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
 	}
 
 	return nil
