@@ -139,8 +139,8 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"muirglacier": 9_200_000,
 		"berlin":      12_244_000,
 		"london":      12_965_000,
-		"shanghai":    maxLastBlock, //timestamp
-		"cancun":      maxLastBlock, //timestamp
+		"shanghai":    1681338455, //timestamp - https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md
+		"cancun":      1710338135, //timestamp - https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
