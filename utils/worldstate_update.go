@@ -32,6 +32,13 @@ func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB)
 		deletedAccounts  []substatetypes.Address
 	)
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	if cfg.SubstateEncoding != "" {
+		var err error
+		sdb, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to set substate encoding. %v", err)
+		}
+	}
 	stateIter := sdb.NewSubstateIterator(int(first), cfg.Workers)
 	update := make(substate.WorldState)
 	defer stateIter.Release()
