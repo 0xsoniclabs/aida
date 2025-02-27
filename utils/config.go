@@ -83,13 +83,15 @@ var RealChainIDs = ChainIDs{
 	SonicMainnetChainID: "mainnet-sonic",
 	MainnetChainID:      "mainnet-opera",
 	TestnetChainID:      "testnet",
-	EthereumChainID:     "ethereum"}
+	EthereumChainID:     "ethereum",
+}
 var AllowedChainIDs = ChainIDs{
 	SonicMainnetChainID: "mainnet-sonic",
 	MainnetChainID:      "mainnet-opera",
 	TestnetChainID:      "testnet",
 	EthereumChainID:     "ethereum",
-	EthTestsChainID:     "eth-tests"}
+	EthTestsChainID:     "eth-tests",
+}
 
 const (
 	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository-public/sonic/aida-patches"

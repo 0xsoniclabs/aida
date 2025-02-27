@@ -74,15 +74,16 @@ func SendRpcRequest(payload JsonRPCRequest, chainId ChainID) (map[string]interfa
 }
 
 func GetProvider(chainId ChainID) (string, error) {
-	if chainId == SonicMainnetChainID {
+	switch {
+	case chainId == SonicMainnetChainID:
 		return RPCSonicMainnet, nil
-	} else if chainId == MainnetChainID {
+	case chainId == MainnetChainID:
 		return RPCOperaMainnet, nil
-	} else if chainId == TestnetChainID {
+	case chainId == TestnetChainID:
 		return RPCTestnet, nil
-	} else if chainId == EthereumChainID {
+	case chainId == EthereumChainID:
 		return "", RPCUnsupported
-	} else {
+	default:
 		return "", fmt.Errorf("unknown chain-id %v", chainId)
 	}
 }
