@@ -33,6 +33,8 @@ import (
 	"github.com/status-im/keycard-go/hexutils"
 )
 
+const StateHashPrefix = "dbh"
+
 type StateHashProvider interface {
 	GetStateHash(blockNumber int) (common.Hash, error)
 }
