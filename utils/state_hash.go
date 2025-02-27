@@ -76,7 +76,7 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 	// If firstBlock is 0, we need to get the state root for block 1 and save it as the state root for block 0
 	// this is because the correct state root for block 0 is not available from the rpc node (at least in fantom mainnet and testnet)
 	if firstBlock == 0 {
-		block, err := RetrieveBlock(client, "0x1")
+		block, err := RetrieveBlock(client, "0x1", false)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 
 	for ; i <= lastBlock; i++ {
 		blockNumber := fmt.Sprintf("0x%x", i)
-		block, err := RetrieveBlock(client, blockNumber)
+		block, err := RetrieveBlock(client, blockNumber, false)
 		if err != nil {
 			return err
 		}
@@ -155,10 +155,20 @@ func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
 	return nil
 }
 
+// RetrieveTxReceipt gets the transaction receipt from the rpc node
+func RetrieveTxReceipt(client *rpc.Client, hash string) (map[string]interface{}, error) {
+	var receipt map[string]interface{}
+	err := client.Call(&receipt, "eth_getTransactionReceipt", hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx receipt %s: %v", hash, err)
+	}
+	return receipt, nil
+}
+
 // RetrieveBlock gets the  block from the rpc node
-func RetrieveBlock(client *rpc.Client, blockNumber string) (map[string]interface{}, error) {
+func RetrieveBlock(client *rpc.Client, blockNumber string, txInfo bool) (map[string]interface{}, error) {
 	var block map[string]interface{}
-	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
+	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, txInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block %s: %v", blockNumber, err)
 	}
