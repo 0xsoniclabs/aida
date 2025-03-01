@@ -149,7 +149,8 @@ func Test_getClient(t *testing.T) {
 		want    *rpc.Client
 		wantErr bool
 	}{
-		{"testGetClientRpcMainnet", args{context.Background(), MainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcSonicMainnet", args{context.Background(), SonicMainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcOperaMainnet", args{context.Background(), MainnetChainID, ""}, &rpc.Client{}, false},
 		{"testGetClientRpcTestnet", args{context.Background(), TestnetChainID, ""}, &rpc.Client{}, false},
 		{"testGetClientIpcNonExistant", args{context.Background(), TestnetChainID, "/non-existant-path"}, nil, false},
 		{"testGetClientRpcUnknownChainId", args{context.Background(), 88888, ""}, nil, true},

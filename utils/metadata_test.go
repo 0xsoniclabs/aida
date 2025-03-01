@@ -19,7 +19,7 @@ package utils
 import "testing"
 
 func TestDownloadPatchesJson(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositoryMainnetUrl
+	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
@@ -32,7 +32,7 @@ func TestDownloadPatchesJson(t *testing.T) {
 }
 
 func TestGetPatchFirstBlock_Positive(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositoryMainnetUrl
+	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
