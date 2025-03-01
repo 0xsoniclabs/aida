@@ -182,6 +182,8 @@ func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
 	switch cfg.ChainID {
 	case utils.EthereumChainID:
 		break
+	case utils.SonicMainnetChainID:
+		fallthrough
 	case utils.TestnetChainID:
 		fallthrough
 	case utils.MainnetChainID:
