@@ -106,6 +106,10 @@ func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
 			return 0, 0, err
 		}
 		defer sdb.Close()
+		sdb, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to set substate encoding. %v", err)
+		}
 
 		firstAidaDbBlock, lastAidaDbBlock, ok := utils.FindBlockRangeInSubstate(sdb)
 		if !ok {

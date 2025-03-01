@@ -36,6 +36,7 @@ var UpdateCommand = cli.Command{
 		&utils.DbTmpFlag,
 		&utils.ValidateFlag,
 		&utils.UpdateTypeFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: ` 
 Updates aida-db by downloading patches from aida-db generation server.
