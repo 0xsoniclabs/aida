@@ -48,17 +48,34 @@ func RunSubstate(ctx *cli.Context) error {
 
 	cfg.StateValidationMode = utils.SubsetCheck
 
-	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open aida-db; %w", err)
-	}
-	defer aidaDb.Close()
+	var aidaDb db.BaseDB
+	var substateIterator executor.Provider[txcontext.TxContext]
 
-	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open substate provider; %w", err)
+	if cfg.SubstateRecording {
+		//aidaDb, err = db.NewDefaultBaseDB(cfg.AidaDb)
+		//if err != nil {
+		//	return fmt.Errorf("cannot open aida-db; %w", err)
+		//}
+		//defer aidaDb.Close()
+
+		substateIterator, err = executor.OpenRPCSubstateProvider(cfg, ctx)
+		if err != nil {
+			return fmt.Errorf("cannot open substate provider; %w", err)
+		}
+		defer substateIterator.Close()
+	} else {
+		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		defer aidaDb.Close()
+
+		substateIterator, err = executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open substate provider; %w", err)
+		}
+		defer substateIterator.Close()
 	}
-	defer substateIterator.Close()
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {
