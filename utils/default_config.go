@@ -107,6 +107,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		StateValidationMode:    SubsetCheck,
 		SubstateDb:             getFlagValue(ctx, AidaDbFlag).(string),
 		SubstateEncoding:       getFlagValue(ctx, SubstateEncodingFlag).(string),
+		SubstateRecording:      getFlagValue(ctx, SubstateRecordingFlag).(bool),
 		SyncPeriodLength:       getFlagValue(ctx, SyncPeriodLengthFlag).(uint64),
 		TargetDb:               getFlagValue(ctx, TargetDbFlag).(string),
 		TargetEpoch:            getFlagValue(ctx, TargetEpochFlag).(uint64),
