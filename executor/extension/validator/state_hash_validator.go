@@ -67,7 +67,12 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 		return errors.New("state-hash-validation only works with db-impl carmen or geth")
 	}
 
-	e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	if e.cfg.SubstateRecording {
+		e.hashProvider = utils.MakeStateHashQueueProvider()
+	} else {
+		e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	}
+
 	return nil
 }
 
@@ -78,11 +83,7 @@ func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor
 
 	want, err := e.getStateHash(state.Block)
 	if err != nil {
-		if state.Block == 2 {
-			want = common.HexToHash("0xd42e0169416137af1be7149f624cadc0f18e5cb1d5bdf0aef4486f4f65d7e248")
-		} else {
-			return err
-		}
+		return err
 	}
 
 	// NOTE: ContinueOnFailure does not make sense here, if hash does not
