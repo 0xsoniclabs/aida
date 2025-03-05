@@ -24,6 +24,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"sync"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -56,31 +57,114 @@ func OpenRPCSubstateProvider(cfg *utils.Config, ctxt *cli.Context) (Provider[txc
 }
 
 // rpcSubstateProvider is an adapter of Aida's RPCRpcsubstateProvider interface defined above to the
-// current substate implementation offered by github.com/0xsoniclabs/substate.
+// current substate impementation offered by github.com/0xsoniclabs/substate.
 type rpcSubstateProvider struct {
 	client              *rpc.Client
 	ctxt                *cli.Context
 	numParallelDecoders int
 }
 
-func (s rpcSubstateProvider) Run(from int, to int, consumer Consumer[txcontext.TxContext]) error {
+func (s *rpcSubstateProvider) Run(from int, to int, consumer Consumer[txcontext.TxContext]) error {
 	if to == -1 {
 		return fmt.Errorf("substate recording doesn't support 'last' as block range boundary")
 	}
+
+	var wg sync.WaitGroup
+	abort := make(chan struct{})
+	//defer close(abort)
+
+	workerChannels := make([]chan int, s.numParallelDecoders)
+	resultsChannels := make([]chan *BlockWrapped, s.numParallelDecoders)
+
+	for i := 0; i < s.numParallelDecoders; i++ {
+		workerChannels[i] = make(chan int)
+		resultsChannels[i] = make(chan *BlockWrapped)
+	}
+
+	for i := 0; i < s.numParallelDecoders; i++ {
+		wg.Add(1)
+		go func(workerChannel chan int, resultChannel chan *BlockWrapped) {
+			defer wg.Done()
+			for {
+				select {
+				case <-abort:
+					{
+						return
+					}
+				case blk, ok := <-workerChannel:
+					if !ok {
+						close(resultChannel)
+						return
+					}
+					err := s.fetchBlockTxs(blk, resultChannel)
+					if err != nil {
+						fmt.Printf("failed to fetch block %d txs; %v\n", blk, err)
+						abort <- struct{}{}
+						return
+					}
+				}
+			}
+		}(workerChannels[i], resultsChannels[i])
+	}
+
+	// block feeder
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for blk := from; blk < to; blk++ {
+			select {
+			case <-abort:
+				return
+			case workerChannels[blk%s.numParallelDecoders] <- blk:
+			}
+		}
+		for i := 0; i < s.numParallelDecoders; i++ {
+			close(workerChannels[i])
+		}
+	}()
+
+	return s.processResults(from, to, resultsChannels, consumer, &wg, abort)
+}
+
+type BlockWrapped struct {
+	StateRoot string
+	Txs       []TransactionInfo[txcontext.TxContext]
+}
+
+func (s *rpcSubstateProvider) processResults(from int, to int, resultsChannels []chan *BlockWrapped, consumer Consumer[txcontext.TxContext], wg *sync.WaitGroup, abort chan struct{}) error {
 	for blk := from; blk < to; blk++ {
-		err := s.fetchBlockTxs(blk, consumer)
-		if err != nil {
-			return fmt.Errorf("failed to fetch block %d txs; %w", blk, err)
+		select {
+		case <-abort:
+			{
+				return nil
+			}
+		case r, ok := <-resultsChannels[blk%s.numParallelDecoders]:
+			if !ok {
+				wg.Wait()
+				return nil
+			}
+			if r == nil || r.Txs == nil || len(r.Txs) == 0 {
+				continue
+			}
+
+			utils.StateHashQueue.AddStateHash(r.StateRoot)
+
+			for _, cc := range r.Txs {
+				err := consumer(cc)
+				if err != nil {
+					return fmt.Errorf("failed to consume block %d txs; %v", blk, err)
+				}
+			}
 		}
 	}
 	return nil
 }
 
-func (s rpcSubstateProvider) Close() {
+func (s *rpcSubstateProvider) Close() {
 	s.client.Close()
 }
 
-func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.TxContext]) error {
+func (s *rpcSubstateProvider) fetchBlockTxs(blk int, ress chan *BlockWrapped) error {
 	res, err := utils.RetrieveBlock(s.client, fmt.Sprintf("0x%x", blk), true)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve block %d; %w", blk, err)
@@ -93,11 +177,14 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 	txs := res["transactions"].([]interface{})
 
-	if len(txs) > 0 {
-		utils.StateHashQueue.AddStateHash(stateRoot)
+	if len(txs) == 0 {
+		ress <- nil
+		return nil
 	}
 
-	for _, txI := range txs {
+	output := make([]TransactionInfo[txcontext.TxContext], len(txs))
+
+	for txInt, txI := range txs {
 		tx := txI.(map[string]interface{})
 
 		txHash := tx["hash"].(string)
@@ -264,11 +351,10 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		result := substate.NewResult(status, bloom, logs, contractAddress, gasUsed)
 
 		txSubstate := substate.NewSubstate(nil, nil, env, msg, result, uint64(blk), int(txIndex))
-		err = consumer(TransactionInfo[txcontext.TxContext]{blk, int(txIndex), substatecontext.NewTxContext(txSubstate)})
-		if err != nil {
-			return err
-		}
+		output[txInt] = TransactionInfo[txcontext.TxContext]{blk, int(txIndex), substatecontext.NewTxContext(txSubstate)}
 
 	}
+
+	ress <- &BlockWrapped{stateRoot, output}
 	return nil
 }

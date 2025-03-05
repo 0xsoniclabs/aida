@@ -43,5 +43,5 @@ func (p *StateHashQueueProvider) GetStateHash(number int) (common.Hash, error) {
 }
 
 func (p *StateHashQueueProvider) AddStateHash(stateHash string) {
-	p.stateHashQueue <- stateHash
+	p.stateHashQueue <- stateHash[:]
 }
