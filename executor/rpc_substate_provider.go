@@ -86,12 +86,17 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		return fmt.Errorf("failed to retrieve block %d; %w", blk, err)
 	}
 
-	fmt.Printf("Block %d: %s\n", blk, res)
+	//fmt.Printf("Block %d: %s\n", blk, res)
 	//TODO store stateroot
 	stateRoot := res["stateRoot"].(string)
-	fmt.Printf("stateroot %s\n", stateRoot)
+	//fmt.Printf("stateroot %s\n", stateRoot)
 
 	txs := res["transactions"].([]interface{})
+
+	if len(txs) > 0 {
+		utils.StateHashQueue.AddStateHash(stateRoot)
+	}
+
 	for _, txI := range txs {
 		tx := txI.(map[string]interface{})
 
@@ -128,6 +133,7 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		baseFee.SetString(res["baseFeePerGas"].(string)[2:], 16)
 
 		var blobBaseFee *big.Int
+		// TODO
 		blobBaseFee = big.NewInt(1)
 
 		var blockHashes map[uint64]types.Hash
@@ -151,7 +157,7 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var gasPrice *big.Int
 		gasPrice = new(big.Int)
-		gasPrice.SetString(tx["gasPrice"].(string), 16)
+		gasPrice.SetString(tx["gasPrice"].(string)[2:], 16)
 
 		var gas uint64
 		gas, err = strconv.ParseUint(tx["gas"].(string), 0, 64)
@@ -170,7 +176,7 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var value *big.Int
 		value = new(big.Int)
-		value.SetString(tx["value"].(string), 16)
+		value.SetString(tx["value"].(string)[2:], 16)
 
 		var data []byte
 		data, err = hex.DecodeString(tx["input"].(string)[2:])
@@ -195,9 +201,15 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var accessList types.AccessList
 		var gasFeeCap *big.Int
-		gasFeeCap = big.NewInt(0)
+		gasFeeCap = new(big.Int)
+		if tx["maxFeePerGas"] != nil {
+			gasFeeCap.SetString(tx["maxFeePerGas"].(string)[2:], 16)
+		}
 		var gasTipCap *big.Int
-		gasTipCap = big.NewInt(0)
+		gasTipCap = new(big.Int)
+		if tx["maxPriorityFeePerGas"] != nil {
+			gasTipCap.SetString(tx["maxPriorityFeePerGas"].(string)[2:], 16)
+		}
 		var blobGasFeeCap *big.Int
 		var blobHashes []types.Hash
 		msg := substate.NewMessage(nonce, checkNonce, gasPrice, gas, from, to, value, data, dataHash, ProtobufTxType, accessList, gasFeeCap, gasTipCap, blobGasFeeCap, blobHashes)
@@ -240,7 +252,7 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var contractAddress types.Address
 		if receipt["contractAddress"] != nil {
-			contractAddress.SetBytes([]byte(receipt["contractAddress"].(string)))
+			contractAddress = types.HexToAddress(receipt["contractAddress"].(string))
 		}
 		var gasUsed uint64
 		gasUsed, err = strconv.ParseUint(receipt["gasUsed"].(string), 0, 64)
@@ -256,6 +268,7 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		if err != nil {
 			return err
 		}
+
 	}
 	return nil
 }
