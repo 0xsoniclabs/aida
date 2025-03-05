@@ -104,13 +104,11 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var coinbase types.Address
 		// TODO probably incorrect determine when "coinbase" and when "miner"
-		if res["miner"] != nil {
-			coinbase.SetBytes([]byte(res["miner"].(string)))
-		}
+		coinbase = types.HexToAddress(res["miner"].(string))
 
 		var difficulty *big.Int
 		difficulty = new(big.Int)
-		difficulty.SetString(res["difficulty"].(string), 16)
+		difficulty.SetString(res["difficulty"].(string)[2:], 16)
 
 		var gasLimit uint64
 		gasLimit, err = strconv.ParseUint(res["gasLimit"].(string), 0, 64)
@@ -126,16 +124,19 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		}
 
 		var baseFee *big.Int
-		// TODO probably not needed
+		baseFee = new(big.Int)
+		baseFee.SetString(res["baseFeePerGas"].(string)[2:], 16)
 
 		var blobBaseFee *big.Int
-		// TODO probably not needed
+		blobBaseFee = big.NewInt(1)
 
 		var blockHashes map[uint64]types.Hash
 		// TODO probably not needed
 
 		var random *types.Hash
 		// TODO probably not needed
+		random = new(types.Hash)
+		random.SetBytes([]byte(""))
 
 		env := substate.NewEnv(coinbase, difficulty, gasLimit, number, timestamp, baseFee, blobBaseFee, blockHashes, random)
 
@@ -159,12 +160,12 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 		}
 
 		var from types.Address
-		from.SetBytes([]byte(tx["from"].(string)))
+		from = types.HexToAddress(tx["from"].(string))
 
 		var to *types.Address
 		if tx["to"] != nil {
-			to = new(types.Address)
-			to.SetBytes([]byte(tx["to"].(string)))
+			toA := types.HexToAddress(tx["to"].(string))
+			to = &toA
 		}
 
 		var value *big.Int
@@ -194,7 +195,9 @@ func (s rpcSubstateProvider) fetchBlockTxs(blk int, consumer Consumer[txcontext.
 
 		var accessList types.AccessList
 		var gasFeeCap *big.Int
+		gasFeeCap = big.NewInt(0)
 		var gasTipCap *big.Int
+		gasTipCap = big.NewInt(0)
 		var blobGasFeeCap *big.Int
 		var blobHashes []types.Hash
 		msg := substate.NewMessage(nonce, checkNonce, gasPrice, gas, from, to, value, data, dataHash, ProtobufTxType, accessList, gasFeeCap, gasTipCap, blobGasFeeCap, blobHashes)

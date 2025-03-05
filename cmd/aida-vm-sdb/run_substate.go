@@ -52,11 +52,11 @@ func RunSubstate(ctx *cli.Context) error {
 	var substateIterator executor.Provider[txcontext.TxContext]
 
 	if cfg.SubstateRecording {
-		//aidaDb, err = db.NewDefaultBaseDB(cfg.AidaDb)
-		//if err != nil {
-		//	return fmt.Errorf("cannot open aida-db; %w", err)
-		//}
-		//defer aidaDb.Close()
+		aidaDb, err = db.NewDefaultBaseDB(cfg.AidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		defer aidaDb.Close()
 
 		substateIterator, err = executor.OpenRPCSubstateProvider(cfg, ctx)
 		if err != nil {
