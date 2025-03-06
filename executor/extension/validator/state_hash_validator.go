@@ -68,7 +68,7 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	}
 
 	if e.cfg.SubstateRecording {
-		e.hashProvider = utils.MakeStateHashQueueProvider()
+		e.hashProvider = utils.MakeStateHashQueueProvider(e.cfg)
 	} else {
 		e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
 	}
