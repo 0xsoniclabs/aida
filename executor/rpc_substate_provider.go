@@ -127,8 +127,7 @@ func (s *rpcSubstateProvider) Run(from int, to int, consumer Consumer[txcontext.
 }
 
 type BlockWrapped struct {
-	StateRoot string
-	Txs       []TransactionInfo[txcontext.TxContext]
+	Txs []TransactionInfo[txcontext.TxContext]
 }
 
 func (s *rpcSubstateProvider) processResults(from int, to int, resultsChannels []chan *BlockWrapped, consumer Consumer[txcontext.TxContext], wg *sync.WaitGroup, abort chan struct{}) error {
@@ -146,8 +145,6 @@ func (s *rpcSubstateProvider) processResults(from int, to int, resultsChannels [
 			if r == nil || r.Txs == nil || len(r.Txs) == 0 {
 				continue
 			}
-
-			utils.StateHashQueue.AddStateHash(r.StateRoot)
 
 			for _, cc := range r.Txs {
 				err := consumer(cc)
@@ -355,6 +352,7 @@ func (s *rpcSubstateProvider) fetchBlockTxs(blk int, ress chan *BlockWrapped) er
 
 	}
 
-	ress <- &BlockWrapped{stateRoot, output}
+	utils.StateHashQueue.AddStateHash(blk, stateRoot)
+	ress <- &BlockWrapped{output}
 	return nil
 }

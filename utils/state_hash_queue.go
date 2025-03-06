@@ -17,31 +17,48 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 var StateHashQueue StateHashQueueProvider
 
-func MakeStateHashQueueProvider() StateHashProvider {
-	StateHashQueue = StateHashQueueProvider{stateHashQueue: make(chan string, 10)}
+func MakeStateHashQueueProvider(cfg *Config) StateHashProvider {
+	ipcPath := cfg.OperaDb + "/sonic.ipc"
+
+	log := logger.NewLogger("info", "StateHashQueueProvider")
+	client, err := GetRpcOrIpcClient(context.Background(), cfg.ChainID, ipcPath, log)
+	if err != nil {
+		return nil
+	}
+	cache, _ := lru.New(1000) // Create an LRU cache with a capacity of 10
+	StateHashQueue = StateHashQueueProvider{stateHashCache: cache, client: client}
 	return &StateHashQueue
 }
 
 type StateHashQueueProvider struct {
-	stateHashQueue chan string
+	stateHashCache *lru.Cache
+	client         *rpc.Client
 }
 
 func (p *StateHashQueueProvider) GetStateHash(number int) (common.Hash, error) {
-	stateRoot, ok := <-p.stateHashQueue
-	if !ok {
-		return common.Hash{}, fmt.Errorf("unexpected end of state hash queue")
+	//stateRoot, ok := p.stateHashCache.Get(number)
+	//if ok {
+	//	return common.HexToHash(stateRoot.(string)), nil
+	//}
+	numberHex := fmt.Sprintf("0x%x", number)
+	blk, err := RetrieveBlock(p.client, numberHex, false)
+	if err != nil {
+		return common.Hash{}, err
 	}
-
-	return common.HexToHash(stateRoot), nil
+	return common.HexToHash(blk["stateRoot"].(string)), nil
 }
 
-func (p *StateHashQueueProvider) AddStateHash(stateHash string) {
-	p.stateHashQueue <- stateHash[:]
+func (p *StateHashQueueProvider) AddStateHash(number int, stateHash string) {
+	p.stateHashCache.Add(number, stateHash)
 }
