@@ -4,6 +4,7 @@ date: "`r Sys.Date()`"
 params:
   HwInfo: (Hardware Info)
   OsInfo: (OS Info)
+  Timestamp: (Timestamp)
   Machine: (Machine Info)
   GoInfo: (GO Info)
   GitHash: (GithubKey)

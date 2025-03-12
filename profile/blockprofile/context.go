@@ -249,7 +249,9 @@ func (ctx *Context) GetProfileData(curBlock uint64, tBlock time.Duration) (*Prof
 	// the size of minimum chain cover is equal to the size of the maximum anti-chain
 	// and the maximum anti-chain is the largest number of transactions that can
 	// run independently.
-	ubNumProc := int64(len(graphutil.MinChainCover(ctx.txDependencies)))
+	var ubNumProc int64 = 0
+	// TODO fix this for sonic dataset
+	ubNumProc = int64(len(graphutil.MinChainCover(ctx.txDependencies)))
 
 	// transfer fields from context to profile record
 	tTransactions := make([]int64, 0, len(ctx.tTransactions))
