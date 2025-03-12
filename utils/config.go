@@ -618,6 +618,12 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 		cc.log.Warningf("Cannot open AidaDB; %v", err)
 		return defaultFirst, defaultLast, defaultLastPatch, nil
 	}
+	defer func() {
+		if err := aidaDb.Close(); err != nil {
+			cc.log.Warningf("Cannot close AidaDB; %v", err)
+		}
+	}()
+
 	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 	err = md.getBlockRange()
 	if err != nil {
@@ -628,11 +634,6 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	lastPatchBlock, err := getPatchFirstBlock(md.LastBlock)
 	if err != nil {
 		cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
-	}
-
-	err = aidaDb.Close()
-	if err != nil {
-		return defaultFirst, defaultLast, defaultLastPatch, fmt.Errorf("cannot close db; %v", err)
 	}
 
 	return md.FirstBlock, md.LastBlock, lastPatchBlock, nil
