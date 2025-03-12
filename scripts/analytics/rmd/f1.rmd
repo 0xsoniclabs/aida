@@ -23,11 +23,11 @@ last <- Metadata %>% filter(key == "Last")
 recent <- max(as.integer(last$value) - recentRange, as.integer(first$value))
 
 # load block and transaction tables into data frames and exclude lachesis transition block
-TxData <- dbReadTable(con, 'stats') %>% 
+TxData <- dbReadTable(con, 'stats') %>%
 	filter(start >= as.integer(first$value) & end <= as.integer(last$value)) %>%
 	mutate(total_disk = as.numeric(live_disk) + as.numeric(archive_disk))
 
-RecentTxData <- TxData %>% 
+RecentTxData <- TxData %>%
 	filter(start >= as.integer(recent))
 
 # close database connection
@@ -39,12 +39,12 @@ dbDisconnect(con)
 ## 1. Summary
 
 ```{r, echo=FALSE, message=FALSE}
-maxMemory <- TxData %>% filter(memory == max(memory)) %>% filter(start == min(start)) %>% distinct(memory, start) 
-maxTotalDisk <- TxData %>% filter(total_disk == max(total_disk)) %>% filter(start == min(start)) %>% distinct(total_disk, start) 
-maxLiveDisk <- TxData %>% filter(live_disk == max(live_disk)) %>% filter(start == min(start)) %>% distinct(live_disk, start) 
-maxArchiveDisk <- TxData %>% filter(archive_disk == max(archive_disk)) %>% filter(start == min(start)) %>% distinct(archive_disk, start) 
+maxMemory <- TxData %>% filter(memory == max(memory)) %>% filter(start == min(start)) %>% distinct(memory, start)
+maxTotalDisk <- TxData %>% filter(total_disk == max(total_disk)) %>% filter(start == min(start)) %>% distinct(total_disk, start)
+maxLiveDisk <- TxData %>% filter(live_disk == max(live_disk)) %>% filter(start == min(start)) %>% distinct(live_disk, start)
+maxArchiveDisk <- TxData %>% filter(archive_disk == max(archive_disk)) %>% filter(start == min(start)) %>% distinct(archive_disk, start)
 maxTxRate <- TxData %>% filter(tx_rate == max(tx_rate)) %>% filter(start == min(start)) %>% distinct(tx_rate, start)
-maxGasRate <- TxData %>% filter(gas_rate == max(gas_rate)) %>% filter(start == min(start)) %>% distinct(gas_rate, start) 
+maxGasRate <- TxData %>% filter(gas_rate == max(gas_rate)) %>% filter(start == min(start)) %>% distinct(gas_rate, start)
 
 runId <- Metadata %>% filter(key == "RunId")
 runSucceed <- Metadata %>% filter(key == "RunSucceed")
@@ -140,6 +140,7 @@ processor <- Metadata %>% filter(key == "Processor")
 memory <- Metadata %>% filter(key == "Memory")
 disks <- Metadata %>% filter(key == "Disks")
 OsInfo <- Metadata %>% filter(key == "Os")
+TimestampInfo <- Metadata %>% filter(key == "Timestamp")
 GoInfo <- Metadata %>% filter(key == "GoVersion")
 aidaHash <- Metadata %>% filter(key == "AidaGitHash")
 carmenHash <- Metadata %>% filter(key == "CarmenGitHash")
@@ -152,6 +153,7 @@ vmImpl <- Metadata %>% filter(key == "VmImpl")
 The experiment is run on the machine **`r hostname$value`**(**`r ip$value`**), which is a **`r processor$value`**, **`r memory$value`** computer.
 The operating system is **`r OsInfo$value`**.
 The system has installed **`r GoInfo$value`**.
+The experiment started at **`r Timestamp$value`**.
 
 The github hash of the libraries are:
 
@@ -164,12 +166,12 @@ For this experiment, we use **`r dbImpl$value`**(**`r dbVariant$value`** **`r ca
 
 ## 3. Transaction Rate
 
-The average transaction rate is **`r format(mean(TxData$tx_rate), big.mark=",", digit=4)`** TPS. The max transaction rate  is **`r format(maxTxRate$tx_rate, big.mark=",", digit=4)`** TPS at block height **`r format(maxTxRate$start, big.mark=",")`**. 
+The average transaction rate is **`r format(mean(TxData$tx_rate), big.mark=",", digit=4)`** TPS. The max transaction rate  is **`r format(maxTxRate$tx_rate, big.mark=",", digit=4)`** TPS at block height **`r format(maxTxRate$start, big.mark=",")`**.
 
 The dashed line shows the average transaction rate achieve up until the block height.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
-TxData %>% 
+TxData %>%
    mutate(tx_rate = as.numeric(tx_rate), start = as.numeric(start) * 1e-6) %>%
    ggplot(aes(x = start, y = tx_rate)) +
    geom_line(aes(x = start, y = overall_tx_rate), linetype = "longdash", color = "tomato") +
@@ -183,7 +185,7 @@ thresholdRecent <- 0.40 # print if recent range is smaller than %total. 0 to alw
 isRecentPrintable <- thresholdRecent > (recentRange / (as.integer(last$value) - as.integer(first$value)))
 ```
 
-`r 
+`r
 if(isRecentPrintable){
 paste(
 	paste0("In the most recent 10 million blocks, the average transaction rate is ", b(format(mean(RecentTxData$tx_rate), big.mark=",", digit=4)), " TPS. ")
@@ -192,7 +194,7 @@ paste(
 `
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8, eval=isRecentPrintable}
-RecentTxData %>% 
+RecentTxData %>%
    mutate(tx_rate = as.numeric(tx_rate), start = as.numeric(start) * 1e-6) %>%
    ggplot(aes(x = start, y = tx_rate)) +
    geom_point(alpha=0.3) +
@@ -204,12 +206,12 @@ RecentTxData %>%
 
 ## 4. Gas Rate
 
-The average gas rate is **`r format(mean(TxData$gas_rate) * 1e-6, big.mark=",", digit=4)`** MGasPS. The max gas rate  is **`r format(maxGasRate$gas_rate * 1e-6, big.mark=",", digit=4)`** MGasPS at block height **`r format(maxGasRate$start, big.mark=",")`**. 
+The average gas rate is **`r format(mean(TxData$gas_rate) * 1e-6, big.mark=",", digit=4)`** MGasPS. The max gas rate  is **`r format(maxGasRate$gas_rate * 1e-6, big.mark=",", digit=4)`** MGasPS at block height **`r format(maxGasRate$start, big.mark=",")`**.
 
 The dashed line shows the average gas rate achieve up until the block height.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
-TxData %>% 
+TxData %>%
    mutate(gas_rate = as.numeric(gas_rate) * 1e-6, start = as.numeric(start) * 1e-6, overall_gas_rate = as.numeric(overall_gas_rate) * 1e-6) %>%
    ggplot(aes(x = start, y = gas_rate)) +
    geom_line(aes(x = start, y = overall_gas_rate), linetype = "longdash", color = "tomato") +
@@ -219,7 +221,7 @@ TxData %>%
    labs(x="Block Height", y="Million Gas Per Second", title="Gas Rate")
 ```
 
-`r 
+`r
 if(isRecentPrintable){
 paste(
 	paste0("In the most recent 10 million blocks, the average gas rate is ", b(format(mean(RecentTxData$gas_rate) * 1e-6, big.mark=",", digit=4)), " MGasPS ")
@@ -228,7 +230,7 @@ paste(
 `
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8, eval=isRecentPrintable}
-RecentTxData %>% 
+RecentTxData %>%
    mutate(gas_rate = as.numeric(gas_rate) * 1e-6, start = as.numeric(start) * 1e-6) %>%
    ggplot(aes(x = start, y = gas_rate)) +
    geom_point(alpha=0.3) +
@@ -245,7 +247,7 @@ RecentTxData %>%
 
 The experiment was conducted for the block range from **`r format(min(TxData$start),big.mark=",")`**  to **`r format(max(TxData$end),big.mark=",")`**.
 
-Max RAM Usage throughout the run is **`r format(as.numeric(maxMemory$memory) * 1e-9, big.mark=",", digit=3)`** GB at block height **`r format(maxMemory$start, big.mark=",")`**. 
+Max RAM Usage throughout the run is **`r format(as.numeric(maxMemory$memory) * 1e-9, big.mark=",", digit=3)`** GB at block height **`r format(maxMemory$start, big.mark=",")`**.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
 TxData %>% mutate(memory = as.numeric(memory) * 1e-9, start = as.numeric(start) * 1e-6) %>%

@@ -4,6 +4,7 @@ date: "`r Sys.Date()`"
 params:
   HwInfo: (Hardware Info)
   OsInfo: (OS Info)
+  Timestamp: (Timestamp)
   Machine: (Machine Info)
   GoInfo: (GO Info)
   GitHash: (GithubKey)
@@ -39,6 +40,7 @@ The system has installed `r params$GoInfo`.
 The github hash of the Aida repository is `r params$GitHash`.
 For this experiment, we use **`r params$StateDB`** as a StateDB and **`r params$VM`** as a virtual machine.
 The data set for this experiment is stored in the database `r params$db`.
+The experiment started at `r params$Timestamp`.
 
 The experiment was conducted for the block range from **`r format(min(data$block),big.mark=",")`**  to **`r format(max(data$block),big.mark=",")`**.
 

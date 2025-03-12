@@ -21,7 +21,7 @@ first <- Metadata %>% filter(key == "First")
 last <- Metadata %>% filter(key == "Last")
 
 # load block and transaction tables into data frames and exclude lachesis transition block
-TxData <- dbReadTable(conn, 'stats_rpc') 
+TxData <- dbReadTable(conn, 'stats_rpc')
 
 # close database connection
 dbDisconnect(conn)
@@ -32,10 +32,10 @@ dbDisconnect(conn)
 ## 1. Summary
 
 ```{r, echo=FALSE, message=FALSE}
-maxReqRate <- TxData %>% filter(req_rate == max(req_rate)) %>% filter(count == min(count)) %>% distinct(req_rate, count) 
-maxGasRate <- TxData %>% filter(gas_rate == max(gas_rate)) %>% filter(count == min(count)) %>% distinct(gas_rate, count) 
-maxOverallReqRate <- TxData %>% filter(overall_req_rate == max(overall_req_rate)) %>% filter(count == min(count)) %>% distinct(overall_req_rate, count) 
-maxOverallGasRate <- TxData %>% filter(overall_gas_rate == max(overall_gas_rate)) %>% filter(count == min(count)) %>% distinct(overall_gas_rate, count) 
+maxReqRate <- TxData %>% filter(req_rate == max(req_rate)) %>% filter(count == min(count)) %>% distinct(req_rate, count)
+maxGasRate <- TxData %>% filter(gas_rate == max(gas_rate)) %>% filter(count == min(count)) %>% distinct(gas_rate, count)
+maxOverallReqRate <- TxData %>% filter(overall_req_rate == max(overall_req_rate)) %>% filter(count == min(count)) %>% distinct(overall_req_rate, count)
+maxOverallGasRate <- TxData %>% filter(overall_gas_rate == max(overall_gas_rate)) %>% filter(count == min(count)) %>% distinct(overall_gas_rate, count)
 
 runId <- Metadata %>% filter(key == "RunId")
 runSucceed <- Metadata %>% filter(key == "RunSucceed")
@@ -130,6 +130,7 @@ processor <- Metadata %>% filter(key == "Processor")
 memory <- Metadata %>% filter(key == "Memory")
 disks <- Metadata %>% filter(key == "Disks")
 OsInfo <- Metadata %>% filter(key == "Os")
+TimestampInfo <- Metadata %>% filter(key == "Timestamp")
 GoInfo <- Metadata %>% filter(key == "GoVersion")
 aidaHash <- Metadata %>% filter(key == "AidaGitHash")
 carmenHash <- Metadata %>% filter(key == "CarmenGitHash")
@@ -146,6 +147,7 @@ rpcRecordings <- Metadata %>% filter(key == "RpcRecordings")
 The experiment is run on the machine **`r hostname$value`**(**`r ip$value`**), which is a **`r processor$value`**, **`r memory$value`** computer.
 The operating system is **`r OsInfo$value`**.
 The system has installed **`r GoInfo$value`**.
+The experiment started at **`r Timestamp$value`**.
 
 The github hash of the libraries are:
 
@@ -165,12 +167,12 @@ The data set used for this experiment is stored in the database `r b(params$db)`
 
 ## 3. Request Rate
 
-The average request rate is **`r format(mean(TxData$req_rate), big.mark=",", digit=4)`** ReqPS. The max transaction rate  is **`r format(maxReqRate$req_rate, big.mark=",", digit=4)`** ReqPS at request #**`r format(maxReqRate$count, big.mark=",")`**. 
+The average request rate is **`r format(mean(TxData$req_rate), big.mark=",", digit=4)`** ReqPS. The max transaction rate  is **`r format(maxReqRate$req_rate, big.mark=",", digit=4)`** ReqPS at request #**`r format(maxReqRate$count, big.mark=",")`**.
 
 The dashed line shows the average request rate achieve up until the request number.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
-TxData %>% 
+TxData %>%
    mutate(req_rate = as.numeric(req_rate), count = as.numeric(count)) %>%
    ggplot(aes(x = count, y = req_rate)) +
    geom_line(aes(x = count, y = overall_req_rate), linetype = "longdash", color = "tomato") +
@@ -183,12 +185,12 @@ TxData %>%
 
 ## 4. Gas Rate
 
-The average gas rate is **`r format(mean(TxData$gas_rate) * 1e-6, big.mark=",", digit=4)`** MGasPS. The max gas rate  is **`r format(maxGasRate$gas_rate * 1e-6, big.mark=",", digit=4)`** MGasPS at request #**`r format(maxGasRate$count, big.mark=",")`**. 
+The average gas rate is **`r format(mean(TxData$gas_rate) * 1e-6, big.mark=",", digit=4)`** MGasPS. The max gas rate  is **`r format(maxGasRate$gas_rate * 1e-6, big.mark=",", digit=4)`** MGasPS at request #**`r format(maxGasRate$count, big.mark=",")`**.
 
 The dashed line shows the average gas rate achieve up until the request number.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
-TxData %>% 
+TxData %>%
    mutate(gas_rate = as.numeric(gas_rate) * 1e-6, start = as.numeric(count), overall_gas_rate = as.numeric(overall_gas_rate) * 1e-6) %>%
    ggplot(aes(x = count, y = gas_rate)) +
    geom_line(aes(x = count, y = overall_gas_rate), linetype = "longdash", color = "tomato") +
@@ -204,5 +206,5 @@ TxData %>%
 ```{r, echo=FALSE, message=FALSE}
 sorted_metadata <- Metadata %>% arrange(key)
 gt(sorted_metadata)
- 
+
 ```
