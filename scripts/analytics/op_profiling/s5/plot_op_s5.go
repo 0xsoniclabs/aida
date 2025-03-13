@@ -370,7 +370,6 @@ func main() {
 		ram         string = "125GB RAM"
 		disk        string = "Samsung Electronics Disk, WDC WUH721816AL, Samsung Electronics Disk, WDC WUH721816AL"
 		os          string = "Agent pid 1400011 Ubuntu 22.04.2 LTS"
-		timestamp   string = "1990-01-01 12:00:00"
 		goVersion   string = "go1.21.1 linux/amd64"
 		aidaVersion string = "81703de9537bb746c1e4e67c51b9fcae3f89e1e8"
 		stateDbType string = "carmen(go-file 5)"
