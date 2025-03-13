@@ -268,7 +268,7 @@ func (ctx *context) GetProfileData(curBlock uint64, tBlock time.Duration) (*Prof
 	// run independently.
 	var ubNumProc int64 = 0
 	// TODO fix this for sonic dataset
-	ubNumProc = int64(len(graphutil.MinChainCover(ctx.txDependencies)))
+	//ubNumProc = int64(len(graphutil.MinChainCover(ctx.txDependencies)))
 
 	// transfer fields from context to profile record
 	tTransactions := make([]int64, 0, len(ctx.tTransactions))
