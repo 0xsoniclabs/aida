@@ -267,7 +267,6 @@ func main() {
 		html.P(`The experiment is run on the machine <b>%s</b> - CPU: <b>%s</b>, Ram: <b>%s</b>, Disk: <b>%s</b>.`, machine, cpu, ram, disk),
 		html.P(`The operating system is <b>%s</b>. The system has installed go version <b>%s</b>`, os, goVersion),
 		html.P(`The github hash of the Aida repository is <b>%s</b>. For this experiment, we use <b>%s</b> as a StateDB and <b>%s</b> as a virtual machine. The profiling result for this experiment is stored in the database <b>%s</b>.`, aidaVersion, stateDbType, vmType, dbPath),
-		html.P(`The experiment started at <b>%s</b>.`, timestamp),
 	))
 
 	// Tx Rate

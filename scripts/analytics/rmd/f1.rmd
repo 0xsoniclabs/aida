@@ -140,7 +140,6 @@ processor <- Metadata %>% filter(key == "Processor")
 memory <- Metadata %>% filter(key == "Memory")
 disks <- Metadata %>% filter(key == "Disks")
 OsInfo <- Metadata %>% filter(key == "Os")
-TimestampInfo <- Metadata %>% filter(key == "Timestamp")
 GoInfo <- Metadata %>% filter(key == "GoVersion")
 aidaHash <- Metadata %>% filter(key == "AidaGitHash")
 carmenHash <- Metadata %>% filter(key == "CarmenGitHash")
@@ -153,7 +152,6 @@ vmImpl <- Metadata %>% filter(key == "VmImpl")
 The experiment is run on the machine **`r hostname$value`**(**`r ip$value`**), which is a **`r processor$value`**, **`r memory$value`** computer.
 The operating system is **`r OsInfo$value`**.
 The system has installed **`r GoInfo$value`**.
-The experiment started at **`r Timestamp$value`**.
 
 The github hash of the libraries are:
 
