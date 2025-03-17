@@ -1,10 +1,10 @@
 ---
 title: "Wallet Transfer Report on Mainnet"
-date: "profiling.db recorded on `r params$Timestamp` (report generated on `r Sys.Date()`)"
+date: "profiling.db recorded on `r params$CreateTimestamp` (report generated on `r Sys.Date()`)"
 params:
   HwInfo: (Hardware Info)
   OsInfo: (OS Info)
-  Timestamp: (Timestamp)
+  CreateTimestamp: (CreateTimestamp)
   Machine: (Machine Info)
   GoInfo: (GO Info)
   GitHash: (GithubKey)
