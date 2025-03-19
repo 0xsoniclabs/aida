@@ -21,7 +21,7 @@ pipeline {
         // Other parameters
         TRACEDIR = 'tracefiles'
         FROMBLOCK = 'opera'
-        TOBLOCK = 'opera+5000'
+        TOBLOCK = '4570000'
     }
 
     stages {
@@ -91,8 +91,8 @@ pipeline {
                         sh "mkdir -p ${TRACEDIR}"
                         sh "rm -rf ${TRACEDIR}/*"
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${FROMBLOCK} ${FROMBLOCK}+100"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${FROMBLOCK}+101 ${FROMBLOCK}+200"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${FROMBLOCK} ${FROMBLOCK}+50"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${FROMBLOCK}+51 ${FROMBLOCK}+100"
                         }
                     }
                 }
