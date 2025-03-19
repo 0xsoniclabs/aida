@@ -100,6 +100,7 @@ type ProfileDB struct {
 }
 
 // NewProfileDB constructs a new profiling database.
+// For unknown chain or testing, chainID may be 0.
 func NewProfileDB(dbFile string, chainID utils.ChainID) (*ProfileDB, error) {
 	// open SQLITE3 DB
 	sqlDB, err := sql.Open("sqlite3", dbFile)
@@ -227,42 +228,41 @@ func (db *ProfileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, er
 func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID) error {
 	metadataStmt, err := sqlDB.Prepare(insertMetadataSQL)
 	if err != nil {
-		return fmt.Errorf("failed to prepare a SQL statement for metadata; %v", err)
+		return fmt.Errorf("failed to prepare a SQL statement for metadata; %w", err)
 	}
 
 	processor, err := getProcessor()
 	if err != nil {
-		return fmt.Errorf("failed to get processor information; %v", err)
+		return fmt.Errorf("failed to get processor information; %w", err)
 	}
 	memory, err := getMemory()
 	if err != nil {
-		return fmt.Errorf("failed to get memory information; %v", err)
+		return fmt.Errorf("failed to get memory information; %w", err)
 	}
 	disks, err := getDisks()
 	if err != nil {
-		return fmt.Errorf("failed to get disk information; %v", err)
+		return fmt.Errorf("failed to get disk information; %w", err)
 	}
 	os, err := getOS()
 	if err != nil {
-		return fmt.Errorf("failed to get OS information; %v", err)
+		return fmt.Errorf("failed to get OS information; %w", err)
 	}
-
 	machine, err := getMachine()
 	if err != nil {
-		return fmt.Errorf("failed to get machine information; %v", err)
+		return fmt.Errorf("failed to get machine information; %w", err)
 	}
 
 	tx, err := sqlDB.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction; %v", err)
+		return fmt.Errorf("failed to begin transaction; %w", err)
 	}
 	_, err = tx.Stmt(metadataStmt).Exec(chainID, processor, memory, disks, os, machine)
 	if err != nil {
-		return fmt.Errorf("failed to execute metadata statement; %v", err)
+		return fmt.Errorf("failed to execute metadata statement; %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction; %v", err)
+		return fmt.Errorf("failed to commit transaction; %w", err)
 	}
 	return nil
 }
