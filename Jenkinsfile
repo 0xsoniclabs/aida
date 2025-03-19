@@ -21,7 +21,7 @@ pipeline {
         // Other parameters
         TRACEDIR = 'tracefiles'
         FROMBLOCK = 'opera'
-        TOBLOCK = '4600000'
+        TOBLOCK = 'opera+5000'
     }
 
     stages {
@@ -159,7 +159,7 @@ pipeline {
                                 --db-impl geth \
                                 ${TMPDB} \
                                 --fork Cancun \
-                                ${env.WORKSPACE}/eth-test-package"""
+                                ${env.WORKSPACE}/eth-test-package/GeneralStateTests/stTransactionTest"""
                         }
                     }
                 }
