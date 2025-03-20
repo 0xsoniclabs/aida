@@ -45,6 +45,7 @@ var UtilDbApp = cli.App{
 		&db.ValidateCommand,
 		&db.GenDeletedAccountsCommand,
 		&db.SubstateDumpCommand,
+		&db.SubstateDumpTxTraceDiffCommand,
 		&db.GenerateDbHashCommand,
 		&db.PrintDbHashCommand,
 		&db.PrintPrefixHashCommand,
