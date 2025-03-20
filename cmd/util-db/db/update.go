@@ -34,7 +34,6 @@ var UpdateCommand = cli.Command{
 		&logger.LogLevelFlag,
 		&utils.CompactDbFlag,
 		&utils.DbTmpFlag,
-		&utils.ValidateFlag,
 		&utils.UpdateTypeFlag,
 		&utils.SubstateEncodingFlag,
 	},
