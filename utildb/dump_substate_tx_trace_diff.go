@@ -111,7 +111,7 @@ func SubstateDumpTxTraceDiffFunc(getTransactionTraceFromRpc func(block uint64, t
 			}
 		}
 
-		log.Infof("block: %v Transaction: %v\n", block, tx)
+		log.Infof("Block: %v Transaction: %v\n", block, tx)
 		postAllocMap := formatWorldState(postAllocPrinting)
 		preAllocMap := formatWorldState(preAllocPrinting)
 
