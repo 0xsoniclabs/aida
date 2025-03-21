@@ -37,7 +37,7 @@ var SubstateDumpCommand = cli.Command{
 		&utils.SubstateEncodingFlag,
 	},
 	Description: `
-The aida-vm dump command requires two arguments:
+The util-db substate-dump command requires two arguments:
 <blockNumFirst> <blockNumLast>
 
 <blockNumFirst> and <blockNumLast> are the first and

@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"reflect"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
@@ -30,10 +32,11 @@ import (
 var emptyStorage = types.Hash{0x0}
 
 // SubstateDumpTxTraceDiffFunc returns a function that converts single tx from substate to transactionTrace diff mode format
-func SubstateDumpTxTraceDiffFunc(txNum int) func(block uint64, tx int, recording *substate.Substate, taskPool *db.SubstateTaskPool) error {
+func SubstateDumpTxTraceDiffFunc(getTransactionTraceFromRpc func(block uint64, tx int) (map[string]interface{}, error), log logger.Logger) func(block uint64, tx int, recording *substate.Substate, taskPool *db.SubstateTaskPool) error {
 	return func(block uint64, tx int, recording *substate.Substate, taskPool *db.SubstateTaskPool) error {
-		if tx != txNum {
-			return nil
+		wanted, err := getTransactionTraceFromRpc(block, tx)
+		if err != nil {
+			return fmt.Errorf("unable to get the diff from rpc: %v", err)
 		}
 
 		inputAlloc := recording.InputSubstate
@@ -90,15 +93,16 @@ func SubstateDumpTxTraceDiffFunc(txNum int) func(block uint64, tx int, recording
 				accPreDiff.Storage = make(map[types.Hash]types.Hash)
 				accPostDiff.Storage = make(map[types.Hash]types.Hash)
 				for k, sPost := range accPost.Storage {
-					if sPre, ok2 := accPre.Storage[k]; ok2 {
+					if sPre, ok2 := accPre.Storage[k]; !ok2 {
+						// new storage is listed just in post
+						accPostDiff.Storage[k] = sPost
+					} else {
 						if sPost.Compare(sPre) != 0 {
 							accPostDiff.Storage[k] = sPost
 							if sPre.Compare(emptyStorage) != 0 {
 								accPreDiff.Storage[k] = sPre
 							}
 						}
-					} else {
-						accPostDiff.Storage[k] = sPost
 					}
 				}
 
@@ -121,6 +125,15 @@ func SubstateDumpTxTraceDiffFunc(txNum int) func(block uint64, tx int, recording
 		if err != nil {
 			return err
 		}
+
+		// jbytes back to map[string]interface{}
+		resultOrdered := make(map[string]interface{})
+		err = json.Unmarshal(jbytes, &resultOrdered)
+
+		if !reflect.DeepEqual(resultOrdered, wanted) {
+			return fmt.Errorf("produced substate generated diff does not match expected diff from rpc")
+		}
+
 		fmt.Println(string(jbytes))
 
 		return nil
@@ -156,9 +169,15 @@ func formatAccount(a *substate.Account) map[string]interface{} {
 	if a.Storage != nil && len(a.Storage) > 0 {
 		resultStorage := make(map[string]interface{})
 		for key, val := range a.Storage {
-			resultStorage[key.String()] = val.String()
+			if val.Compare(emptyStorage) != 0 {
+				resultStorage[key.String()] = val.String()
+			}
 		}
-		result["storage"] = resultStorage
+
+		// check if all values were not empty
+		if len(resultStorage) > 0 {
+			result["storage"] = resultStorage
+		}
 	}
 	return result
 }

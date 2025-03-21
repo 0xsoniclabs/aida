@@ -157,13 +157,13 @@ func Test_getClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getClient(tt.args.ctx, tt.args.chainId, tt.args.ipcPath, log)
+			got, err := GetClient(tt.args.ctx, tt.args.chainId, tt.args.ipcPath, log)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getClient() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.want != nil && got == nil {
-				t.Errorf("getClient() got nil, want non-nil")
+				t.Errorf("GetClient() got nil, want non-nil")
 			}
 		})
 	}
