@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -56,5 +57,5 @@ func MakeOffTheChainStateDB(alloc txcontext.WorldState, block uint64, chainCondu
 		return nil, fmt.Errorf("cannot commit offTheChainDb; %v", err)
 	}
 
-	return &gethStateDB{db: statedb, block: block, chainConduit: chainConduit}, nil
+	return &GethStateDB{Db: statedb, block: block, chainConduit: chainConduit, SubstatePreAlloc: substate.NewWorldState(), SubstatePostAlloc: substate.NewWorldState(), AccessedStorage: make(map[common.Address]map[common.Hash]common.Hash)}, nil
 }
