@@ -111,7 +111,7 @@ func SubstateDumpTxTraceDiffFunc(getTransactionTraceFromRpc func(block uint64, t
 			}
 		}
 
-		fmt.Printf("block: %v Transaction: %v\n", block, tx)
+		log.Infof("block: %v Transaction: %v\n", block, tx)
 		postAllocMap := formatWorldState(postAllocPrinting)
 		preAllocMap := formatWorldState(preAllocPrinting)
 
@@ -134,7 +134,7 @@ func SubstateDumpTxTraceDiffFunc(getTransactionTraceFromRpc func(block uint64, t
 			return fmt.Errorf("produced substate generated diff does not match expected diff from rpc")
 		}
 
-		fmt.Println(string(jbytes))
+		log.Debugf(string(jbytes))
 
 		return nil
 	}

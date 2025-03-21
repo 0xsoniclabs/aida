@@ -38,6 +38,7 @@ var SubstateDumpTxTraceDiffCommand = cli.Command{
 		&utils.OperaDbFlag,
 		&utils.ChainIDFlag,
 		&utils.SubstateEncodingFlag,
+		&logger.LogLevelFlag,
 	},
 	Description: `
 The util-db dump-substate-tx-trace-diff command requires two arguments:
