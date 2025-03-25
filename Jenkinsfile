@@ -38,29 +38,28 @@ pipeline {
             }
         }
 
-        stage('Run tests') {
+        stage('Lint and build') {
             stages {
                 stage('Check formatting') {
                     steps {
+                        script {
+                            currentBuild.description = "Building on ${env.NODE_NAME}"
+                        }
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
                             sh '''diff=`find . \\( -path ./carmen -o -path ./tosca -o -path ./sonic \\) -prune -o -name '*.go' -exec gofmt -s -l {} \\;`
                                   echo $diff
                                   test -z $diff
                                '''
                         }
-                    }
-                }
-
-                stage('Build') {
-                    steps {
-                        script {
-                            currentBuild.description = "Building on ${env.NODE_NAME}"
-                        }
                         sh "git submodule update --init --recursive"
                         sh "make all -j 4"
                     }
                 }
+            }
+        }
 
+        stage('Parallel stages') {
+            parallel {
                 stage('Run unit tests') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
@@ -95,11 +94,6 @@ pipeline {
                             sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} 1000 1500"
                             sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} 1501 2000"
                         }
-                    }
-                }
-
-                stage('aida-sdb replay') {
-                    steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
                             sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
                             sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
