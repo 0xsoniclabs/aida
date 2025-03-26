@@ -336,7 +336,7 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	// this is the run
 	errorText := "This is one random error!"
 	ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf(errorText))
+	ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf("%s", errorText))
 
 	// check if RunSucceed is recorded after postrun
 	ms := []metadataResponse{}
