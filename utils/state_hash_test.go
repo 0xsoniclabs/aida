@@ -34,7 +34,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(nil, TestnetChainID, "", database, 0, 1, log)
+	err = StateHashScraper(nil, OperaTestnetID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(nil, TestnetChainID, "", database, 0, 100, log)
+	err = StateHashScraper(nil, OperaTestnetID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -150,9 +150,9 @@ func Test_getClient(t *testing.T) {
 		wantErr bool
 	}{
 		{"testGetClientRpcSonicMainnet", args{context.Background(), SonicMainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcOperaMainnet", args{context.Background(), MainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcTestnet", args{context.Background(), TestnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientIpcNonExistant", args{context.Background(), TestnetChainID, "/non-existant-path"}, nil, false},
+		{"testGetClientRpcOperaMainnet", args{context.Background(), OperaMainnetID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcTestnet", args{context.Background(), OperaTestnetID, ""}, &rpc.Client{}, false},
+		{"testGetClientIpcNonExistant", args{context.Background(), OperaTestnetID, "/non-existant-path"}, nil, false},
 		{"testGetClientRpcUnknownChainId", args{context.Background(), 88888, ""}, nil, true},
 	}
 	for _, tt := range tests {

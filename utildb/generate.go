@@ -600,7 +600,7 @@ func (g *Generator) calculatePatchEnd() error {
 	g.TargetEpoch = g.Opera.FirstEpoch
 
 	// next patch will be at least X epochs large
-	if g.Cfg.ChainID == utils.MainnetChainID {
+	if g.Cfg.ChainID == utils.OperaMainnetID {
 		// mainnet currently takes about 250 epochs per day
 		g.TargetEpoch += 250
 	} else {
