@@ -21,7 +21,7 @@ pipeline {
         // Other parameters
         TRACEDIR = 'tracefiles'
         FROMBLOCK = 'opera'
-        TOBLOCK = '4600000'
+        TOBLOCK = '4570000'
     }
 
     stages {
@@ -91,8 +91,9 @@ pipeline {
                         sh "mkdir -p ${TRACEDIR}"
                         sh "rm -rf ${TRACEDIR}/*"
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${FROMBLOCK} ${FROMBLOCK}+100"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${FROMBLOCK}+101 ${FROMBLOCK}+200"
+                            // use fixed ranges to control the priming time
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} 1000 1500"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} 1501 2000"
                         }
                     }
                 }
@@ -100,8 +101,8 @@ pipeline {
                 stage('aida-sdb replay') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat ${FROMBLOCK} ${TOBLOCK}"
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} ${FROMBLOCK} ${TOBLOCK}"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
                         }
                         sh "rm -rf ${TRACEDIR}"
                     }
@@ -159,7 +160,7 @@ pipeline {
                                 --db-impl geth \
                                 ${TMPDB} \
                                 --fork Cancun \
-                                ${env.WORKSPACE}/eth-test-package"""
+                                ${env.WORKSPACE}/eth-test-package/GeneralStateTests/stTransactionTest"""
                         }
                     }
                 }
