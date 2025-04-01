@@ -8,6 +8,10 @@ pipeline {
     }
 
     environment {
+        // Go options
+        GOGC = '50'
+        GOMEMLIMIT = '28GiB'
+
         // Aida CLI options
         STATEDB = '--db-impl carmen --db-variant go-file --carmen-schema 5'
         ARCHIVE = '--archive --archive-variant s5'
