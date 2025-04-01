@@ -191,7 +191,7 @@ func doSubsetValidation(alloc txcontext.WorldState, db state.VmStateDB) error {
 	})
 
 	if len(err) > 0 {
-		return fmt.Errorf(err)
+		return fmt.Errorf("%s", err)
 	}
 	return nil
 }

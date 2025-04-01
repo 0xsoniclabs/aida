@@ -8,12 +8,16 @@ pipeline {
     }
 
     environment {
+        // Go options
+        GOGC = '50'
+        GOMEMLIMIT = '28GiB'
+
         // Aida CLI options
         STATEDB = '--db-impl carmen --db-variant go-file --carmen-schema 5'
         ARCHIVE = '--archive --archive-variant s5'
         PRIME = '--update-buffer-size 4000'
         VM = '--vm-impl lfvm'
-        AIDADB = '--aida-db /mnt/aida-db-mainnet/aida-db'
+        AIDADB = '--aida-db /mnt/substate-opera-mainnet/aida-db'
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
         PROFILE = '--cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown'

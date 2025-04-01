@@ -321,8 +321,8 @@ func (s *shadowVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash comm
 	equal := len(logsP) == len(logsS)
 	if equal {
 		// check bloom
-		bloomP := types.BytesToBloom(types.LogsBloom(logsP))
-		bloomS := types.BytesToBloom(types.LogsBloom(logsS))
+		bloomP := types.CreateBloom(&types.Receipt{Logs: logsP})
+		bloomS := types.CreateBloom(&types.Receipt{Logs: logsS})
 		if bloomP != bloomS {
 			equal = false
 		}

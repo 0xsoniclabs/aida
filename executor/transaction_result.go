@@ -95,12 +95,14 @@ func newTransactionResult(logs []*types.Log, msg *core.Message, msgResult execut
 		}
 	}
 
+	bloom := types.CreateBloom(&types.Receipt{Logs: logs})
+
 	return transactionResult{
 		result:          returnData,
 		err:             err,
 		contractAddress: contract,
 		logs:            logs,
-		bloom:           types.BytesToBloom(types.LogsBloom(logs)),
+		bloom:           bloom,
 		status:          status,
 		gasUsed:         gasUsed,
 	}
