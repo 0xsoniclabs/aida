@@ -109,7 +109,7 @@ func validateCmd(ctx *cli.Context) error {
 	// we need to make sure aida-db starts from beginning, otherwise validation is impossible
 	// todo simplify condition once lachesis patch is ready for testnet
 	md.FirstBlock = md.GetFirstBlock()
-	if (md.ChainId == utils.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == utils.TestnetChainID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
+	if (md.ChainId == utils.OperaMainnetID && md.FirstBlock != 0) || (md.ChainId == utils.OperaTestnetID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
 		return fmt.Errorf("validation cannot be performed - your db does not start at block 0; your first block: %v", md.FirstBlock)
 	}
 

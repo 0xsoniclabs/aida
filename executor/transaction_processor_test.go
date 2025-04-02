@@ -106,7 +106,7 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 	for name, check := range tests {
 		t.Run(name, func(t *testing.T) {
 			cfg := &utils.Config{
-				ChainID: utils.MainnetChainID,
+				ChainID: utils.OperaMainnetID,
 				EvmImpl: name,
 				VmImpl:  "geth",
 			}

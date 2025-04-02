@@ -62,7 +62,7 @@ func TestStateDbManager_DbClosureWithKeepDb(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -93,7 +93,7 @@ func TestStateDbManager_DoNotKeepDb(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = false
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -127,7 +127,7 @@ func TestStateDbManager_KeepDbAndDoesntUnderflowBellowZero(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -161,7 +161,7 @@ func TestStateDbManager_StateDbInfoExistenceAndReadable(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -207,7 +207,7 @@ func TestStateDbManager_OverrideArchiveMode(t *testing.T) {
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 	cfg.ArchiveMode = false
 
 	ext := MakeStateDbManager[any](cfg, "")
@@ -255,7 +255,7 @@ func TestStateDbManager_OverrideArchiveMode(t *testing.T) {
 			cfg := &utils.Config{}
 			cfg.DbTmp = tmpDir
 			cfg.DbImpl = "carmen"
-			cfg.ChainID = utils.MainnetChainID
+			cfg.ChainID = utils.OperaMainnetID
 			cfg.ArchiveMode = true
 			cfg.StateDbSrc = dbPath
 			if test.readOnlyTool {
@@ -289,7 +289,7 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 	cfg.ArchiveMode = true
 	cfg.ArchiveVariant = "ldb"
 
@@ -323,7 +323,7 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 	cfg = &utils.Config{}
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 	cfg.ArchiveMode = true
 	cfg.ArchiveVariant = "s5"
 	cfg.StateDbSrc = dbPath
@@ -353,7 +353,7 @@ func TestStateDbManager_NonExistentStateDbSrc(t *testing.T) {
 	cfg.StateDbSrc = "/non-existant-path/123456789"
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -381,7 +381,7 @@ func TestStateDbManager_StateDbSrcStateDbIsReadOnly(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -467,7 +467,7 @@ func TestStateDbManager_UsingExistingSourceDb(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -551,7 +551,7 @@ func TestStateDbManager_UsingExistingSourceDbAndOverWrite(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -658,7 +658,7 @@ func TestStateDbManager_StateDbBlockNumberDecrements(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -691,7 +691,7 @@ func TestStateDbManager_PreRunCreatesZeroStateDbInfo(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
