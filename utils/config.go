@@ -74,6 +74,8 @@ const (
 	SonicMainnetChainID ChainID = 146
 	MainnetChainID      ChainID = 250
 	TestnetChainID      ChainID = 4002
+	HoleskyChainID      ChainID = 17000
+	SepoliaChainID      ChainID = 11155111
 	// EthTestsChainID is a mock ChainID which is necessary for setting
 	// the chain rules to allow any block number for any fork.
 	EthTestsChainID ChainID = 1337
@@ -84,12 +86,16 @@ var RealChainIDs = ChainIDs{
 	MainnetChainID:      "mainnet-opera",
 	TestnetChainID:      "testnet",
 	EthereumChainID:     "ethereum",
+	HoleskyChainID:      "holesky",
+	SepoliaChainID:      "sepolia",
 }
 var AllowedChainIDs = ChainIDs{
 	SonicMainnetChainID: "mainnet-sonic",
 	MainnetChainID:      "mainnet-opera",
 	TestnetChainID:      "testnet",
 	EthereumChainID:     "ethereum",
+	HoleskyChainID:      "holesky",
+	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
 }
 
@@ -98,6 +104,8 @@ const (
 	AidaDbRepositoryOperaUrl    = "https://storage.googleapis.com/aida-repository-public/mainnet/aida-patches"
 	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository-public/testnet/aida-patches"
 	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository-public/ethereum/aida-patches"
+	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
+	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
 )
 
 const maxLastBlock = math.MaxUint64 - 1 // we decrease the value by one because params are always +1
@@ -158,6 +166,7 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 	},
 	// ethereum fork blocks are not stored in this structure as ethereum has already prepared config
 	// at params.MainnetChainConfig and it has bigger amount of forks than Fantom chain
+	// Ethereum config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L43
 	EthereumChainID: {
 		"zero":        0,
 		"opera":       0,
@@ -165,8 +174,38 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"muirglacier": 9_200_000,
 		"berlin":      12_244_000,
 		"london":      12_965_000,
-		"shanghai":    1681338455, //timestamp - https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md
-		"cancun":      1710338135, //timestamp - https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md
+		"shanghai":    1681338455, //timestamp
+		"cancun":      1710338135, //timestamp
+		"first":       0,
+		"last":        maxLastBlock,
+		"lastpatch":   0,
+	},
+	// Holesky config - https://github.com/ethereum/go-ethereum/blob/7d8aca95d28c4e8560a657fd1ff7852ad4eee72c/params/config.go#L69C2-L69C36
+	HoleskyChainID: {
+		"zero":        0,
+		"opera":       0,
+		"istanbul":    0,
+		"muirglacier": maxLastBlock, // is nil in geth implementation, probably all functionality is overwritten by later forks
+		"berlin":      0,
+		"london":      0,
+		"shanghai":    1696000704, //timestamp
+		"cancun":      1707305664, //timestamp
+		"prague":      1740434112, //timestamp
+		"first":       0,
+		"last":        maxLastBlock,
+		"lastpatch":   0,
+	},
+	// Sepolia config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L100
+	SepoliaChainID: {
+		"zero":        0,
+		"opera":       0,
+		"istanbul":    0,
+		"muirglacier": 0,
+		"berlin":      0,
+		"london":      0,
+		"shanghai":    1677557088, //timestamp
+		"cancun":      1706655072, //timestamp
+		"prague":      1741159776, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -440,6 +479,10 @@ func (cc *configContext) setAidaDbRepositoryUrl() error {
 		AidaDbRepositoryUrl = AidaDbRepositoryTestnetUrl
 	case EthereumChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryEthereumUrl
+	case HoleskyChainID:
+		AidaDbRepositoryUrl = AidaDbRepositoryHoleskyUrl
+	case SepoliaChainID:
+		AidaDbRepositoryUrl = AidaDbRepositorySepoliaUrl
 	default:
 		cc.log.Warningf("%v chain-id does not have aida-db repository url set - setting to mainnet", cc.cfg)
 		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
@@ -465,6 +508,14 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 	switch chainId {
 	case EthereumChainID:
 		chainConfig := params.MainnetChainConfig
+		chainConfig.DAOForkSupport = false
+		return chainConfig, nil
+	case HoleskyChainID:
+		chainConfig := params.HoleskyChainConfig
+		chainConfig.DAOForkSupport = false
+		return chainConfig, nil
+	case SepoliaChainID:
+		chainConfig := params.SepoliaChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
 	default:
@@ -880,4 +931,9 @@ func ToTitleCase(fork string) string {
 	fork = strings.Replace(strings.ToLower(fork), "glacier", "Glacier", -1)
 	fork = strings.Title(fork)
 	return fork
+}
+
+// IsEthereumFork checks if the chainID is an Ethereum fork.
+func IsEthereumFork(chainID ChainID) bool {
+	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == SepoliaChainID
 }
