@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const (
@@ -133,4 +134,52 @@ func getEpochByNumber(blockStr string, chainId ChainID) (uint64, error) {
 	}
 
 	return epoch, nil
+}
+
+// GetTraceTransactionDiff retrieves transaction diff from debug_traceTransaction json
+func GetTraceTransactionDiff(c *rpc.Client, block, tx string) (map[string]interface{}, error) {
+	txHash, err := getTransactionHash(c, block, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	var res = make(map[string]interface{})
+	err = c.Call(&res, "debug_traceTransaction", txHash, map[string]interface{}{
+		"tracer": "prestateTracer",
+		"tracerConfig": map[string]interface{}{
+			"diffMode":    true,
+			"disableCode": true,
+		},
+		"timeout": "2m",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res) != 2 {
+		return nil, fmt.Errorf("unexpected result: %v", res)
+	}
+	if _, ok := res["pre"]; !ok {
+		return nil, fmt.Errorf("missing \"pre\"; unexpected result %v", res)
+	}
+	if _, ok := res["post"]; !ok {
+		return nil, fmt.Errorf("missing \"post\"; unexpected result %v", res)
+	}
+
+	return res, nil
+}
+
+// getTransactionHash by block and tx index
+func getTransactionHash(c *rpc.Client, block, tx string) (string, error) {
+	var res = make(map[string]interface{})
+	err := c.Call(&res, "eth_getTransactionByBlockNumberAndIndex", block, tx)
+	if err != nil {
+		return "", err
+	}
+	txHash, ok := res["hash"].(string)
+	if !ok {
+		return "", fmt.Errorf("unexpected hash: %v", res)
+	}
+
+	return txHash, nil
 }
