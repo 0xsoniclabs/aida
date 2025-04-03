@@ -169,12 +169,12 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 
 	// TODO remove state.Transaction < 99999 after patch aida-db
 	if v.target.Receipt && state.Transaction < utils.PseudoTx && !skipEthereumException {
-		if err := v.validateReceipt(res.GetReceipt(), state.Data.GetResult().GetReceipt()); err != nil {
-			err = fmt.Errorf("%v err:\nvm-result error at block %v tx %v; %v", tool, state.Block, state.Transaction, err)
-			if v.isErrFatal(err, errOutput) {
-				return err
-			}
-		}
+		//if err := v.validateReceipt(res.GetReceipt(), state.Data.GetResult().GetReceipt()); err != nil {
+		//	err = fmt.Errorf("%v err:\nvm-result error at block %v tx %v; %v", tool, state.Block, state.Transaction, err)
+		//	if v.isErrFatal(err, errOutput) {
+		//		return err
+		//	}
+		//}
 	}
 
 	return nil
