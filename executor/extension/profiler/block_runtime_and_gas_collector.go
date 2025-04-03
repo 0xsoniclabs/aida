@@ -51,7 +51,7 @@ type BlockRuntimeAndGasCollector struct {
 // PreRun prepares the ProfileDB
 func (b *BlockRuntimeAndGasCollector) PreRun(executor.State[txcontext.TxContext], *executor.Context) error {
 	var err error
-	b.profileDb, err = blockprofile.NewProfileDB(b.cfg.ProfileDB)
+	b.profileDb, err = blockprofile.NewProfileDB(b.cfg.ProfileDB, b.cfg.ChainID)
 	if err != nil {
 		return fmt.Errorf("cannot create profile-db; %v", err)
 	}
