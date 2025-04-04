@@ -37,7 +37,7 @@ func MakeEthereumDbPostTransactionUpdater(cfg *utils.Config) executor.Extension[
 }
 
 func makeEthereumDbPostTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
-	if cfg.ChainID != utils.EthereumChainID || cfg.VmImpl != "lfvm" {
+	if !utils.IsEthereumFork(cfg.ChainID) || cfg.VmImpl != "lfvm" {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 

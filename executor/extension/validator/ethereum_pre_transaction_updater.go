@@ -32,7 +32,7 @@ func MakeEthereumDbPreTransactionUpdater(cfg *utils.Config) executor.Extension[t
 }
 
 func makeEthereumDbPreTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
-	if cfg.ChainID != utils.EthereumChainID {
+	if !utils.IsEthereumFork(cfg.ChainID) {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 

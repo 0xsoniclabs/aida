@@ -66,7 +66,7 @@ func (p *temporaryOffTheChainStatePrepper) PreRun(executor.State[txcontext.TxCon
 	if err != nil {
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
-	p.chainConduit = statedb.NewChainConduit(p.cfg.ChainID == utils.EthereumChainID, chainCfg)
+	p.chainConduit = statedb.NewChainConduit(utils.IsEthereumFork(p.cfg.ChainID), chainCfg)
 	return nil
 }
 
