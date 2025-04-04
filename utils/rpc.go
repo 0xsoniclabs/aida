@@ -85,6 +85,8 @@ func GetProvider(chainId ChainID) (string, error) {
 		return "", RPCUnsupported
 	case chainId == HoleskyChainID:
 		return "", RPCUnsupported
+	case chainId == HoodiChainID:
+		return "", RPCUnsupported
 	case chainId == SepoliaChainID:
 		return "", RPCUnsupported
 	default:

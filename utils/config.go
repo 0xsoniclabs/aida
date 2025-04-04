@@ -75,6 +75,7 @@ const (
 	MainnetChainID      ChainID = 250
 	TestnetChainID      ChainID = 4002
 	HoleskyChainID      ChainID = 17000
+	HoodiChainID        ChainID = 560048
 	SepoliaChainID      ChainID = 11155111
 	// EthTestsChainID is a mock ChainID which is necessary for setting
 	// the chain rules to allow any block number for any fork.
@@ -87,6 +88,7 @@ var RealChainIDs = ChainIDs{
 	TestnetChainID:      "testnet",
 	EthereumChainID:     "ethereum",
 	HoleskyChainID:      "holesky",
+	HoodiChainID:        "hoodi",
 	SepoliaChainID:      "sepolia",
 }
 var AllowedChainIDs = ChainIDs{
@@ -95,6 +97,7 @@ var AllowedChainIDs = ChainIDs{
 	TestnetChainID:      "testnet",
 	EthereumChainID:     "ethereum",
 	HoleskyChainID:      "holesky",
+	HoodiChainID:        "hoodi",
 	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
 }
@@ -105,6 +108,7 @@ const (
 	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository-public/testnet/aida-patches"
 	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository-public/ethereum/aida-patches"
 	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
+	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository-public/hoodi/aida-patches"
 	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
 )
 
@@ -191,6 +195,21 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1696000704, //timestamp
 		"cancun":      1707305664, //timestamp
 		"prague":      1740434112, //timestamp
+		"first":       0,
+		"last":        maxLastBlock,
+		"lastpatch":   0,
+	},
+	// Hoodi config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L130
+	HoodiChainID: {
+		"zero":        0,
+		"opera":       0,
+		"istanbul":    0,
+		"muirglacier": 0,
+		"berlin":      0,
+		"london":      0,
+		"shanghai":    0,          //timestamp
+		"cancun":      0,          //timestamp
+		"prague":      1742999832, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -481,6 +500,8 @@ func (cc *configContext) setAidaDbRepositoryUrl() error {
 		AidaDbRepositoryUrl = AidaDbRepositoryEthereumUrl
 	case HoleskyChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryHoleskyUrl
+	case HoodiChainID:
+		AidaDbRepositoryUrl = AidaDbRepositoryHoodiUrl
 	case SepoliaChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySepoliaUrl
 	default:
@@ -512,6 +533,10 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 		return chainConfig, nil
 	case HoleskyChainID:
 		chainConfig := params.HoleskyChainConfig
+		chainConfig.DAOForkSupport = false
+		return chainConfig, nil
+	case HoodiChainID:
+		chainConfig := params.HoodiChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
 	case SepoliaChainID:
@@ -935,5 +960,5 @@ func ToTitleCase(fork string) string {
 
 // IsEthereumFork checks if the chainID is an Ethereum fork.
 func IsEthereumFork(chainID ChainID) bool {
-	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == SepoliaChainID
+	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == HoodiChainID || chainID == SepoliaChainID
 }
