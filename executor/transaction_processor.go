@@ -207,9 +207,9 @@ func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
 		break
 	case utils.SonicMainnetChainID:
 		fallthrough
-	case utils.TestnetChainID:
+	case utils.OperaTestnetID:
 		fallthrough
-	case utils.MainnetChainID:
+	case utils.OperaMainnetID:
 		vmCfg = opera.DefaultVMConfig
 		vmCfg.NoBaseFee = true
 	}
