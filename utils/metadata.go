@@ -481,7 +481,12 @@ func (md *AidaDbMetadata) GetChainID() ChainID {
 		return 0
 	}
 
-	return ChainID(bigendian.BytesToUint16(chainIDBytes))
+	// chainID used to be 2 bytes long, now it is 8 bytes long
+	if len(chainIDBytes) == 2 {
+		return ChainID(bigendian.BytesToUint16(chainIDBytes))
+	}
+
+	return ChainID(bigendian.BytesToUint64(chainIDBytes))
 }
 
 // GetTimestamp and return it
@@ -570,7 +575,7 @@ func (md *AidaDbMetadata) SetLastEpoch(lastEpoch uint64) error {
 
 // SetChainID in given Db
 func (md *AidaDbMetadata) SetChainID(chainID ChainID) error {
-	chainIDBytes := bigendian.Uint16ToBytes(uint16(chainID))
+	chainIDBytes := bigendian.Uint64ToBytes(uint64(chainID))
 
 	if err := md.Db.Put([]byte(ChainIDPrefix), chainIDBytes); err != nil {
 		return fmt.Errorf("cannot put chain-id; %v", err)
