@@ -35,7 +35,7 @@ import (
 // OpenSubstateProvider opens a substate database as configured in the given parameters.
 func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB) (Provider[txcontext.TxContext], error) {
 	substateDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-	_, err := substateDb.SetSubstateEncoding(cfg.SubstateEncoding)
+	err := substateDb.SetSubstateEncoding(cfg.SubstateEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set substate encoding; %w", err)
 	}

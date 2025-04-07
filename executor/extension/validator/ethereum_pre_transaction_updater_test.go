@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
@@ -142,7 +141,7 @@ func createBeaconRootsAddressTestTransaction() txcontext.TxContext {
 	return substatecontext.NewTxContext(&substate.Substate{
 		InputSubstate: substate.WorldState{
 			substatetypes.BytesToAddress(params.BeaconRootsAddress.Bytes()): &substate.Account{
-				Balance: big.NewInt(1),
+				Balance: uint256.NewInt(1),
 				Storage: map[substatetypes.Hash]substatetypes.Hash{
 					substatetypes.BytesToHash([]byte{0x1}): substatetypes.BytesToHash([]byte{0x2})},
 			},
@@ -154,7 +153,7 @@ func createDaoForkAddressTestTransaction() txcontext.TxContext {
 	return substatecontext.NewTxContext(&substate.Substate{
 		InputSubstate: substate.WorldState{
 			substatetypes.BytesToAddress(params.DAODrainList()[0].Bytes()): &substate.Account{
-				Balance: big.NewInt(0),
+				Balance: uint256.NewInt(0),
 			},
 		},
 	})

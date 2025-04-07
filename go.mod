@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250318153505-712d1a76e929
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
-	github.com/0xsoniclabs/substate v0.0.0-20250226110130-2d8888bf47c6
+	github.com/0xsoniclabs/substate v0.0.0-20250407083445-08a2b03a3022
 	github.com/0xsoniclabs/tosca v0.0.0-20250403113434-e05672621553
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00

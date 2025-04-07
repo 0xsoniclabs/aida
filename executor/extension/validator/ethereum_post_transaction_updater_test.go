@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -140,17 +139,17 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 func createTestTransaction() txcontext.TxContext {
 	return substatecontext.NewTxContext(&substate.Substate{
 		InputSubstate: substate.WorldState{
-			substatetypes.HexToAddress("0x1"): substate.NewAccount(1, big.NewInt(1000), nil),
-			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, big.NewInt(2000), nil),
+			substatetypes.HexToAddress("0x1"): substate.NewAccount(1, uint256.NewInt(1000), nil),
+			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, uint256.NewInt(2000), nil),
 		},
 		OutputSubstate: substate.WorldState{
 			substatetypes.HexToAddress("0x1"): &substate.Account{
 				Nonce:   1,
-				Balance: big.NewInt(1000),
+				Balance: uint256.NewInt(1000),
 				Storage: map[substatetypes.Hash]substatetypes.Hash{
 					substatetypes.BytesToHash([]byte{0x1}): substatetypes.BytesToHash([]byte{0x2})},
 			},
-			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, big.NewInt(2000), nil),
+			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, uint256.NewInt(2000), nil),
 		},
 	})
 }
