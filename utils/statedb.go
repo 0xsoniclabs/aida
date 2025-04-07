@@ -232,7 +232,7 @@ func makeStateDBVariant(
 			variant,
 			rootHash,
 			cfg.ArchiveMode,
-			state.NewChainConduit(IsEthereumFork(cfg.ChainID), chainCfg),
+			state.NewChainConduit(IsEthereumNetwork(cfg.ChainID), chainCfg),
 		)
 	case "carmen":
 		// Disable archive if not enabled.

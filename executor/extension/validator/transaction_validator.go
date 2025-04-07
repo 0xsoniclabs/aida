@@ -164,7 +164,7 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 	_, skipEthereumException := ethereumLfvmBlockExceptions[state.Block]
 	if skipEthereumException {
 		// skip should only happen if we are on Ethereum chain and using lfvm
-		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumFork(v.cfg.ChainID)
+		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumNetwork(v.cfg.ChainID)
 	}
 
 	// TODO remove state.Transaction < 99999 after patch aida-db

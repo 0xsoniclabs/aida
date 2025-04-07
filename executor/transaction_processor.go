@@ -202,7 +202,7 @@ type TxProcessor struct {
 
 func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
 	var vmCfg vm.Config
-	if !utils.IsEthereumFork(cfg.ChainID) {
+	if !utils.IsEthereumNetwork(cfg.ChainID) {
 		//SonicMainnetChainID, TestnetChainID, MainnetChainID:
 		vmCfg = opera.DefaultVMConfig
 		vmCfg.NoBaseFee = true

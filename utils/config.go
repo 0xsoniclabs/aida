@@ -958,7 +958,8 @@ func ToTitleCase(fork string) string {
 	return fork
 }
 
-// IsEthereumFork checks if the chainID is an Ethereum fork.
-func IsEthereumFork(chainID ChainID) bool {
+// IsEthereumNetwork checks if the chainID is an Ethereum network - mainnet, holesky, hoodi or sepolia.
+// Special conditions for miner rewards and validation are applied.
+func IsEthereumNetwork(chainID ChainID) bool {
 	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == HoodiChainID || chainID == SepoliaChainID
 }
