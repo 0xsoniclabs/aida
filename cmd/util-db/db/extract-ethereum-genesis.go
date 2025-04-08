@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
@@ -28,6 +27,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
+	"github.com/holiman/uint256"
 	"github.com/urfave/cli/v2"
 )
 
@@ -98,7 +98,7 @@ func loadEthereumGenesisWorldState(genesis string) (substate.WorldState, error) 
 		// Convert the string key back to a common.Address
 		address := substatetypes.HexToAddress(k)
 
-		balance, _ := new(big.Int).SetString(v.(map[string]interface{})["balance"].(string), 10)
+		balance := uint256.MustFromHex(v.(map[string]interface{})["balance"].(string))
 		ssAccounts[address] = substate.NewAccount(0, balance, []byte{})
 	}
 

@@ -19,7 +19,6 @@ package state
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
@@ -460,7 +459,7 @@ func (db *inMemoryStateDB) getEffects() substate.WorldState {
 	for addr := range touched {
 		cur := new(substate.Account)
 		cur.Nonce = db.GetNonce(addr)
-		cur.Balance = db.GetBalance(addr).ToBig()
+		cur.Balance = db.GetBalance(addr)
 		cur.Code = db.GetCode(addr)
 		cur.Storage = make(map[substatetypes.Hash]substatetypes.Hash)
 
@@ -494,7 +493,7 @@ func (db *inMemoryStateDB) GetSubstatePostAlloc() txcontext.WorldState {
 		})
 		res[substatetypes.Address(addr)] = &substate.Account{
 			Nonce:   acc.GetNonce(),
-			Balance: acc.GetBalance().ToBig(),
+			Balance: acc.GetBalance(),
 			Storage: storage,
 			Code:    acc.GetCode(),
 		}
@@ -508,7 +507,7 @@ func (db *inMemoryStateDB) GetSubstatePostAlloc() txcontext.WorldState {
 			continue
 		}
 
-		entry.Balance = new(big.Int).Set(value.Balance)
+		entry.Balance = value.Balance
 		entry.Nonce = value.Nonce
 		entry.Code = value.Code
 		for key, value := range value.Storage {

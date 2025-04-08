@@ -19,7 +19,6 @@ package blockprofile
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 )
 
 // checkContext returns true if the context is consistent; otherwise false.
@@ -522,7 +522,7 @@ func TestGetTransactionType(t *testing.T) {
 		t.Errorf("incorrect transaction type, got: %v, expected %v", TypeLabel[tt], TypeLabel[TransferTx])
 	}
 	// to address exists in input substate but doesn't have byte-code
-	sub.InputSubstate[substatetypes.Address(toAddr)] = substate.NewAccount(1, big.NewInt(1), []byte{})
+	sub.InputSubstate[substatetypes.Address(toAddr)] = substate.NewAccount(1, uint256.NewInt(1), []byte{})
 	testTransaction.Data = substatecontext.NewTxContext(sub)
 	if tt := getTransactionType(testTransaction); tt != TransferTx {
 		t.Errorf("incorrect transaction type, got: %v, expected %v", TypeLabel[tt], TypeLabel[TransferTx])
@@ -540,7 +540,7 @@ func TestGetTransactionType(t *testing.T) {
 	// expect epoch sealing type
 	// from address 0 to an sfc address (with byte-code
 	sub.Message.From = substatetypes.Address(fromAddr2)
-	sub.InputSubstate[substatetypes.Address(toAddr)] = substate.NewAccount(1, big.NewInt(1), []byte{1, 2, 3, 4})
+	sub.InputSubstate[substatetypes.Address(toAddr)] = substate.NewAccount(1, uint256.NewInt(1), []byte{1, 2, 3, 4})
 	testTransaction.Data = substatecontext.NewTxContext(sub)
 	if tt := getTransactionType(testTransaction); tt != MaintenanceTx {
 		t.Errorf("incorrect transaction type, got: %v, expected %v", TypeLabel[tt], TypeLabel[MaintenanceTx])

@@ -1053,7 +1053,7 @@ func getIncorrectWorldState() substate.WorldState {
 	alloc := make(substate.WorldState)
 	alloc[substatetypes.Address{0}] = &substate.Account{
 		Nonce:   0,
-		Balance: new(big.Int),
+		Balance: uint256.NewInt(0),
 		Storage: make(map[substatetypes.Hash]substatetypes.Hash),
 		Code:    make([]byte, 0),
 	}

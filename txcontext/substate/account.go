@@ -37,7 +37,7 @@ func (a *account) GetNonce() uint64 {
 }
 
 func (a *account) GetBalance() *uint256.Int {
-	return uint256.MustFromBig(a.Balance)
+	return a.Balance
 }
 
 func (a *account) HasStorageAt(key common.Hash) bool {
