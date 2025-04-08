@@ -179,10 +179,7 @@ func insertMetadata(ctx *cli.Context) error {
 			return err
 		}
 	case utils.ChainIDPrefix:
-		if len(valArg) > 8 {
-			return fmt.Errorf("chain id is too big for uint64; %v", valArg)
-		}
-		val, err = strconv.ParseUint(valArg, 10, 64)
+		val, err := strconv.ParseInt(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
 		}
