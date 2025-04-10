@@ -67,7 +67,12 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 		return errors.New("state-hash-validation only works with db-impl carmen or geth")
 	}
 
-	e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	if e.cfg.SubstateRecording {
+		e.hashProvider = utils.MakeStateHashQueueProvider(e.cfg)
+	} else {
+		e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	}
+
 	return nil
 }
 
