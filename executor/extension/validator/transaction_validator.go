@@ -17,6 +17,7 @@
 package validator
 
 import (
+	"bytes"
 	"fmt"
 	"sync/atomic"
 
@@ -26,6 +27,10 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	cc "github.com/0xsoniclabs/carmen/go/common"
+	"github.com/0xsoniclabs/substate/substate"
+	stypes "github.com/0xsoniclabs/substate/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // MakeLiveDbValidator creates an extension which validates LIVE StateDb
@@ -150,27 +155,32 @@ func (v *stateDbValidator) runPreTxValidation(tool string, db state.VmStateDB, s
 	return nil
 }
 
-func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, state executor.State[txcontext.TxContext], res txcontext.Result, errOutput chan error) error {
+func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, state0 executor.State[txcontext.TxContext], res txcontext.Result, errOutput chan error) error {
 	if v.target.WorldState {
-		if err := validateWorldState(v.cfg, db, state.Data.GetOutputState(), v.log); err != nil {
-			err = fmt.Errorf("%v err:\nworld-state output error at block %v tx %v; %v", tool, state.Block, state.Transaction, err)
+		if err := validateWorldState(v.cfg, db, state0.Data.GetOutputState(), v.log); err != nil {
+			err = fmt.Errorf("%v err:\nworld-state0 output error at block %v tx %v; %v", tool, state0.Block, state0.Transaction, err)
 			if v.isErrFatal(err, errOutput) {
 				return err
 			}
 		}
+
+		err := doDbValidation(db, state0.Data.GetOutputState())
+		if err != nil {
+			return err
+		}
 	}
 
 	// ethereumLfvmBlockExceptions needs to skip receipt validation
-	_, skipEthereumException := ethereumLfvmBlockExceptions[state.Block]
+	_, skipEthereumException := ethereumLfvmBlockExceptions[state0.Block]
 	if skipEthereumException {
 		// skip should only happen if we are on Ethereum chain and using lfvm
 		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumNetwork(v.cfg.ChainID)
 	}
 
-	// TODO remove state.Transaction < 99999 after patch aida-db
-	if v.target.Receipt && state.Transaction < utils.PseudoTx && !skipEthereumException {
-		if err := v.validateReceipt(res.GetReceipt(), state.Data.GetResult().GetReceipt()); err != nil {
-			err = fmt.Errorf("%v err:\nvm-result error at block %v tx %v; %v", tool, state.Block, state.Transaction, err)
+	// TODO remove state0.Transaction < 99999 after patch aida-db
+	if v.target.Receipt && state0.Transaction < utils.PseudoTx && !skipEthereumException {
+		if err := v.validateReceipt(res.GetReceipt(), state0.Data.GetResult().GetReceipt()); err != nil {
+			err = fmt.Errorf("%v err:\nvm-result error at block %v tx %v; %v", tool, state0.Block, state0.Transaction, err)
 			if v.isErrFatal(err, errOutput) {
 				return err
 			}
@@ -178,6 +188,144 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 	}
 
 	return nil
+}
+
+func doDbValidation(db state.VmStateDB, alloc2 txcontext.WorldState) error {
+	gethDb, ok := db.(*state.GethStateDB)
+	if !ok {
+		return nil
+	}
+
+	generateDbPostAlloc(gethDb)
+	alloc := gethDb.SubstatePostAlloc
+
+	var err string
+
+	accountCount := 0
+	alloc2.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+		accountCount++
+		acc2, ok := alloc[stypes.Address(addr)]
+		if !ok {
+			err += fmt.Sprintf("  Account %v does not exist\n", addr.Hex())
+			return
+		}
+
+		accBalance := acc.GetBalance()
+
+		if accBalance.ToBig().Cmp(acc2.Balance) != 0 {
+			err += fmt.Sprintf("  Failed to validate balance for account %v\n"+
+				"    have %v\n"+
+				"    want %v\n",
+				addr.Hex(), acc2.Balance, accBalance)
+		}
+		if nonce := acc2.Nonce; nonce != acc.GetNonce() {
+			err += fmt.Sprintf("  Failed to validate nonce for account %v\n"+
+				"    have %v\n"+
+				"    want %v\n",
+				addr.Hex(), nonce, acc.GetNonce())
+		}
+		if code := acc2.Code; bytes.Compare(code, acc.GetCode()) != 0 {
+			err += fmt.Sprintf("  Failed to validate code for account %v\n"+
+				"    have len %v\n"+
+				"    want len %v\n",
+				addr.Hex(), len(code), len(acc.GetCode()))
+		}
+
+		// validate Storage
+		storageCount := 0
+		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+			value, _ := acc2.Storage[stypes.Hash(keyHash)]
+			if value != stypes.Hash(valueHash) {
+				err += fmt.Sprintf("  Failed to validate storage for account %v, key %v\n"+
+					"    have %v\n"+
+					"    want %v\n",
+					addr.Hex(), keyHash.Hex(), value, valueHash.Hex())
+			}
+			storageCount++
+		})
+
+		if storageCount != len(acc2.Storage) {
+			err += fmt.Sprintf("  Failed to validate storage count for account %v\n"+
+				"    have %v\n"+
+				"    want %v\n",
+				addr.Hex(), storageCount, len(acc2.Storage))
+		}
+	})
+
+	if accountCount != alloc2.Len() {
+		err += fmt.Sprintf("  Failed to validate account count\n"+
+			"    have %v\n"+
+			"    want %v\n",
+			accountCount, alloc2.Len())
+	}
+
+	if len(err) > 0 {
+		return fmt.Errorf(err)
+	}
+	return nil
+}
+
+func generateDbPostAlloc(gethDb *state.GethStateDB) {
+	dirtyAddresses := make(map[cc.Address]struct{})
+
+	// copy original storage values to Prestate and Poststate
+	for addr, sa := range gethDb.SubstatePreAlloc {
+		if sa == nil {
+			dirtyAddresses[cc.Address(addr)] = struct{}{}
+			delete(gethDb.SubstatePreAlloc, addr)
+			continue
+		}
+
+		comAddr := common.BytesToAddress(addr.Bytes())
+		ac, found := gethDb.AccessedStorage[comAddr]
+		if found {
+			for key := range ac {
+				value := gethDb.GetCommittedState(comAddr, key)
+
+				//if value != valueM {
+				//	panic("value mismatch")
+				//}
+
+				sa.Storage[stypes.Hash(key)] = stypes.Hash(value)
+
+			}
+		}
+		gethDb.SubstatePostAlloc[addr] = sa.Copy()
+	}
+
+	for address := range dirtyAddresses {
+		if gethDb.Db.Exist(common.Address(address)) {
+			s := make(map[stypes.Hash]stypes.Hash)
+			for key := range gethDb.AccessedStorage[common.Address(address)] {
+				s[stypes.Hash(key)] = stypes.Hash{}
+			}
+			gethDb.SubstatePostAlloc[stypes.Address(address)] = &substate.Account{Storage: s}
+		}
+	}
+
+	gethDb.AccessedStorage = nil
+
+	toDelete := make([]stypes.Address, 0)
+	for address, acc := range gethDb.SubstatePostAlloc {
+		if gethDb.Db.HasSelfDestructed(common.Address(address)) {
+			toDelete = append(toDelete, address)
+			continue
+		}
+
+		// update the account in StateDB.SubstatePostAlloc
+		acc.Balance = gethDb.Db.GetBalance(common.Address(address)).ToBig()
+		acc.Nonce = gethDb.Db.GetNonce(common.Address(address))
+		acc.Code = gethDb.Db.GetCode(common.Address(address))
+		storageToUpdate := make(map[stypes.Hash]stypes.Hash)
+		for key := range acc.Storage {
+			storageToUpdate[key] = stypes.Hash(gethDb.Db.GetState(common.Address(address), common.Hash(key)))
+		}
+		acc.Storage = storageToUpdate
+	}
+
+	for _, address := range toDelete {
+		delete(gethDb.SubstatePostAlloc, address)
+	}
 }
 
 // isErrFatal decides whether given error should stop the program or not depending on ContinueOnFailure and MaxNumErrors.
