@@ -49,7 +49,9 @@ func init() {
 }
 
 type ArgumentMode int
-type ChainID int
+
+// ChainID is typed int64 same as in go-ethereum
+type ChainID int64
 type ChainIDs map[ChainID]string
 type EthTestType int
 

@@ -179,7 +179,7 @@ func insertMetadata(ctx *cli.Context) error {
 			return err
 		}
 	case utils.ChainIDPrefix:
-		val, err = strconv.ParseUint(valArg, 10, 16)
+		val, err := strconv.ParseInt(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
 		}
