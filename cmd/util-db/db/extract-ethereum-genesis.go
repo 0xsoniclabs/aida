@@ -17,9 +17,12 @@
 package db
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
+	"strings"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
@@ -99,7 +102,42 @@ func loadEthereumGenesisWorldState(genesis string) (substate.WorldState, error) 
 		address := substatetypes.HexToAddress(k)
 
 		balance := uint256.MustFromHex(v.(map[string]interface{})["balance"].(string))
-		ssAccounts[address] = substate.NewAccount(0, balance, []byte{})
+		var nonce uint64
+		nonceS, ok := v.(map[string]interface{})["nonce"].(string)
+		if ok {
+			nonce, err = strconv.ParseUint(strings.TrimPrefix(nonceS, "0x"), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse nonce: %v", err)
+			}
+		}
+
+		var code []byte
+		codeS, ok := v.(map[string]interface{})["code"].(string)
+		if ok {
+			code, err = hex.DecodeString(strings.TrimPrefix(codeS, "0x"))
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode code: %v", err)
+			}
+		}
+
+		acc := substate.NewAccount(nonce, balance, code)
+
+		storageMap, ok := v.(map[string]interface{})["storage"]
+		if ok {
+			for key, value := range storageMap.(map[string]interface{}) {
+				decodedKey, err := hex.DecodeString(strings.TrimPrefix(key, "0x"))
+				if err != nil {
+					return nil, fmt.Errorf("failed to decode storage key: %v", err)
+				}
+				decodedValue, err := hex.DecodeString(strings.TrimPrefix(value.(string), "0x"))
+				if err != nil {
+					return nil, fmt.Errorf("failed to decode storage value: %v", err)
+				}
+				acc.Storage[substatetypes.BytesToHash(decodedKey)] = substatetypes.BytesToHash(decodedValue)
+			}
+		}
+
+		ssAccounts[address] = acc
 	}
 
 	return ssAccounts, err
