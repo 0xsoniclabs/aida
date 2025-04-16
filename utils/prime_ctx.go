@@ -64,6 +64,9 @@ func (pc *PrimeContext) mayApplyBulkLoad() error {
 
 // PrimeStateDB primes database with accounts from the world state.
 func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) error {
+	if ws == nil || ws.Len() == 0 {
+		return nil
+	}
 	numValues := 0 // number of storage values
 	ws.ForEachAccount(func(address common.Address, account txcontext.Account) {
 		numValues += account.GetStorageSize()
@@ -233,6 +236,10 @@ func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.Sta
 
 // SelfDestructAccounts clears storage of all input accounts.
 func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substatetypes.Address) {
+	if accounts == nil || len(accounts) == 0 {
+		return
+	}
+
 	count := 0
 	db.BeginSyncPeriod(0)
 	db.BeginBlock(pc.block)
