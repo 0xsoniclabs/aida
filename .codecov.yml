@@ -10,7 +10,16 @@ coverage:
   round: down
   precision: 2
   status:
-    project:
+    patch:
       default:
         target: 80% # target coverage of the changes
         threshold: 1% # allow the coverage to drop by <threshold>%
+
+ignore:
+  - "sonic/"
+  - "carmen/"
+  - "tosca/"
+  - "scripts/"
+  - "**/*_mock.go"
+  - "**/*_test.go"
+  - "**/*.pb.go"
