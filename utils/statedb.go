@@ -27,7 +27,6 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/google/martian/log"
 )
 
 const (
@@ -167,6 +166,7 @@ func makeNewStateDB(cfg *Config) (state.StateDB, string, error) {
 		stateDb     state.StateDB
 		stateDbPath string
 		tmpDir      string
+		log         = logger.NewLogger(cfg.LogLevel, "StateDB-NewStateDB")
 	)
 
 	// create a temporary working directory
