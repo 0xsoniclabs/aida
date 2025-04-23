@@ -28,7 +28,9 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
 
@@ -154,6 +156,10 @@ func TestSdbReplaySubstate_TxPrimerIsAddedIfDbImplIsNotMemory(t *testing.T) {
 
 	db.EXPECT().BeginBlock(uint64(0))
 	db.EXPECT().BeginTransaction(uint32(0))
+	db.EXPECT().Exist(common.HexToAddress("0x1")).Return(true)
+	bulkLoad.EXPECT().SetBalance(common.HexToAddress("0x1"), uint256.NewInt(1))
+	bulkLoad.EXPECT().SetNonce(common.HexToAddress("0x1"), uint64(0))
+	bulkLoad.EXPECT().SetCode(common.HexToAddress("0x1"), gomock.Any())
 	db.EXPECT().EndTransaction()
 	db.EXPECT().EndBlock()
 	db.EXPECT().StartBulkLoad(uint64(1)).Return(bulkLoad, nil)
@@ -187,5 +193,11 @@ var testTx = &substate.Substate{
 	},
 	Result: &substate.Result{
 		GasUsed: 1,
+	},
+	InputSubstate: substate.WorldState{
+		types.HexToAddress("0x1"): &substate.Account{Balance: uint256.NewInt(1)},
+	},
+	OutputSubstate: substate.WorldState{
+		types.HexToAddress("0x1"): &substate.Account{Balance: uint256.NewInt(1)},
 	},
 }

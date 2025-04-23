@@ -28,7 +28,6 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
-	"github.com/google/martian/log"
 )
 
 func MakeStateDbPrimer[T any](cfg *utils.Config) executor.Extension[T] {
@@ -164,7 +163,7 @@ func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error 
 	// advance from the latest precomputed update-set to the target block
 	// if the first block is 1, target must prime the genesis block
 	if block < p.cfg.First || p.cfg.First-1 == 0 {
-		log.Infof("\tPriming using substate from %v to %v", block, p.cfg.First-1)
+		p.log.Infof("\tPriming using substate from %v to %v", block, p.cfg.First-1)
 		update, deletedAccounts, err := utils.GenerateUpdateSet(block, p.cfg.First-1, p.cfg, aidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot generate update-set; %w", err)

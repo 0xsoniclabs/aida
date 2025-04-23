@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"testing"
 
@@ -30,7 +31,10 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
 
@@ -72,14 +76,18 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = ""
 	cfg.First = 2
+	cfg.UpdateBufferSize = 1024
+	cfg.Workers = 1
 
 	gomock.InOrder(
 		log.EXPECT().Infof("Update buffer size: %v bytes", cfg.UpdateBufferSize),
 		log.EXPECT().Noticef("Priming from block %v...", uint64(0)),
 		log.EXPECT().Noticef("Priming to block %v...", cfg.First-1),
-		log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 0, 0),
+		log.EXPECT().Infof("\tPriming using substate from %v to %v", uint64(0), uint64(1)),
+		log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 1, 0),
 		stateDb.EXPECT().BeginBlock(uint64(0)),
 		stateDb.EXPECT().BeginTransaction(uint32(0)),
+		stateDb.EXPECT().Exist(common.HexToAddress("0x1")),
 		stateDb.EXPECT().EndTransaction(),
 		stateDb.EXPECT().EndBlock(),
 		stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, errors.New("stop")),
@@ -90,6 +98,11 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	err = addNonEmptySubstate(aidaDb)
+	if err != nil {
+		t.Fatalf("cannot add test transaction; %v", err)
 	}
 
 	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
@@ -192,6 +205,43 @@ func TestPrime_PrimeStateDB(t *testing.T) {
 	}
 }
 
+func TestStateDbPrimerExtension_UserIsInformedPrimingButDatabaseHadNoData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	aidaDbPath := t.TempDir() + "aidadb"
+	stateDb := state.NewMockStateDB(ctrl)
+
+	cfg := &utils.Config{}
+	cfg.SkipPriming = false
+	cfg.StateDbSrc = ""
+	cfg.First = 10
+	cfg.PrimeRandom = true
+	cfg.RandomSeed = 111
+	cfg.PrimeThreshold = 10
+	cfg.UpdateBufferSize = 1024
+
+	ext := makeStateDbPrimer[any](cfg, log)
+
+	gomock.InOrder(
+		log.EXPECT().Infof("Randomized Priming enabled; Seed: %v, threshold: %v", int64(111), 10),
+		log.EXPECT().Infof("Update buffer size: %v bytes", uint64(1024)),
+		log.EXPECT().Noticef("Priming from block %v...", uint64(0)),
+		log.EXPECT().Noticef("Priming to block %v...", uint64(9)),
+		log.EXPECT().Infof("\tPriming using substate from %v to %v", uint64(0), uint64(9)),
+		log.EXPECT().Noticef("Delete destroyed accounts until block %v", uint64(9)),
+	)
+
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("cannot open test aida-db; %v", err)
+	}
+
+	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
+}
+
 func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -214,12 +264,9 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 		log.EXPECT().Infof("Update buffer size: %v bytes", uint64(1024)),
 		log.EXPECT().Noticef("Priming from block %v...", uint64(0)),
 		log.EXPECT().Noticef("Priming to block %v...", uint64(9)),
-		log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 0, 0),
-		stateDb.EXPECT().BeginBlock(uint64(0)),
-		stateDb.EXPECT().BeginTransaction(uint32(0)),
-		stateDb.EXPECT().EndTransaction(),
-		stateDb.EXPECT().EndBlock(),
-		stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, errors.New("stop")),
+		log.EXPECT().Infof("\tPriming using substate from %v to %v", uint64(0), uint64(9)),
+		//log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 0, 0),
+		log.EXPECT().Noticef("Delete destroyed accounts until block %v", uint64(9)),
 	)
 
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
@@ -228,14 +275,8 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	}
 
 	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
-	if err == nil {
-		t.Fatal("run must fail")
-	}
-
-	want := "cannot prime state-db; failed to prime StateDB: stop"
-
-	if err.Error() != want {
-		t.Fatalf("unexpected error\ngot: %v\nwant: %v", err, want)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
 	}
 }
 
@@ -407,4 +448,38 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 			})
 		})
 	}
+}
+
+// addNonEmptySubstate adds a test transaction to the Aida DB
+func addNonEmptySubstate(aidaDb db.BaseDB) error {
+	substateDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+
+	preState := substate.WorldState{}
+	postState := substate.WorldState{
+		types.HexToAddress("0x1"): &substate.Account{
+			Nonce:   1,
+			Balance: uint256.NewInt(1),
+			Code:    []byte{0x01, 0x02, 0x03},
+			Storage: make(map[types.Hash]types.Hash),
+		},
+	}
+	env := &substate.Env{}
+	message := &substate.Message{
+		GasPrice: big.NewInt(12),
+		Value:    big.NewInt(1),
+	}
+	result := &substate.Result{
+		GasUsed: 1,
+	}
+
+	block := uint64(0)
+	transaction := 0
+
+	// self test
+	ss := substate.NewSubstate(preState, postState, env, message, result, block, transaction)
+	err := substateDb.PutSubstate(ss)
+	if err != nil {
+		return fmt.Errorf("cannot put substate; %w", err)
+	}
+	return nil
 }
