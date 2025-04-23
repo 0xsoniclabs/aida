@@ -47,10 +47,7 @@ pipeline {
                 stage('Check formatting') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh '''diff=`find . \\( -path ./carmen -o -path ./tosca -o -path ./sonic \\) -prune -o -name '*.go' -exec gofmt -s -l {} \\;`
-                                  echo $diff
-                                  test -z $diff
-                               '''
+                            sh 'golangci-lint run ./...'
                         }
                     }
                 }
