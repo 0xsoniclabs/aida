@@ -82,6 +82,18 @@ func TestEthereumPreTransactionUpdater_DontFixBalanceIfLower(t *testing.T) {
 }
 
 func TestEthereumPreTransactionUpdater_BeaconRootsAddressStorageException(t *testing.T) {
+	testEthereumSystemContractStorageException(t, params.BeaconRootsAddress)
+}
+
+func TestEthereumPreTransactionUpdater_WithdrawalQueueAddressStorageException(t *testing.T) {
+	testEthereumSystemContractStorageException(t, params.WithdrawalQueueAddress)
+}
+
+func TestEthereumPreTransactionUpdater_ConsolidationQueueAddressStorageException(t *testing.T) {
+	testEthereumSystemContractStorageException(t, params.ConsolidationQueueAddress)
+}
+
+func testEthereumSystemContractStorageException(t *testing.T, address common.Address) {
 	cfg := &utils.Config{}
 	cfg.ChainID = utils.EthereumChainID
 
@@ -89,17 +101,17 @@ func TestEthereumPreTransactionUpdater_BeaconRootsAddressStorageException(t *tes
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	data := createBeaconRootsAddressTestTransaction()
+	data := createEthereumSystemContractTestTransaction(address)
 
 	ctx := new(executor.Context)
 	ctx.State = db
 	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
-		db.EXPECT().Exist(params.BeaconRootsAddress).Return(true),
-		db.EXPECT().GetBalance(params.BeaconRootsAddress).Return(uint256.NewInt(1)),
-		db.EXPECT().GetState(params.BeaconRootsAddress, common.HexToHash("0x1")),
-		db.EXPECT().SetState(params.BeaconRootsAddress, common.HexToHash("0x1"), common.HexToHash("0x2")),
+		db.EXPECT().Exist(address).Return(true),
+		db.EXPECT().GetBalance(address).Return(uint256.NewInt(1)),
+		db.EXPECT().GetState(address, common.HexToHash("0x1")),
+		db.EXPECT().SetState(address, common.HexToHash("0x1"), common.HexToHash("0x2")),
 	)
 
 	ext := makeEthereumDbPreTransactionUpdater(cfg, log)
@@ -137,10 +149,10 @@ func TestEthereumPreTransactionUpdater_DaoFork(t *testing.T) {
 	}
 }
 
-func createBeaconRootsAddressTestTransaction() txcontext.TxContext {
+func createEthereumSystemContractTestTransaction(address common.Address) txcontext.TxContext {
 	return substatecontext.NewTxContext(&substate.Substate{
 		InputSubstate: substate.WorldState{
-			substatetypes.BytesToAddress(params.BeaconRootsAddress.Bytes()): &substate.Account{
+			substatetypes.BytesToAddress(address.Bytes()): &substate.Account{
 				Balance: uint256.NewInt(1),
 				Storage: map[substatetypes.Hash]substatetypes.Hash{
 					substatetypes.BytesToHash([]byte{0x1}): substatetypes.BytesToHash([]byte{0x2})},
