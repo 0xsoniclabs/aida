@@ -19,6 +19,7 @@ package executor
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/sonic/evmcore"
 	"math/big"
 	"slices"
 	"strings"
@@ -327,6 +328,7 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 	snapshot := db.Snapshot()
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.cfg.VmCfg)
+	evm.SetTxContext(evmcore.NewEVMTxContext(msg))
 
 	var msgResult messageResult
 	var gasPool = new(core.GasPool)
