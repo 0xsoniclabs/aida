@@ -414,7 +414,7 @@ func TestStateDbPrimerExtension_DoesNotPrimePbToBlock1(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.First = 1
 	cfg.SubstateEncoding = "protobuf"
-	
+
 	ext := makeStateDbPrimer[any](cfg, nil)
 
 	err := ext.PreRun(executor.State[any]{}, nil)
