@@ -256,6 +256,7 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	cfg.RandomSeed = 111
 	cfg.PrimeThreshold = 10
 	cfg.UpdateBufferSize = 1024
+	cfg.Workers = 1
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
@@ -265,8 +266,13 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 		log.EXPECT().Noticef("Priming from block %v...", uint64(0)),
 		log.EXPECT().Noticef("Priming to block %v...", uint64(9)),
 		log.EXPECT().Infof("\tPriming using substate from %v to %v", uint64(0), uint64(9)),
-		//log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 0, 0),
-		log.EXPECT().Noticef("Delete destroyed accounts until block %v", uint64(9)),
+		log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 1, 0),
+		stateDb.EXPECT().BeginBlock(uint64(0)),
+		stateDb.EXPECT().BeginTransaction(uint32(0)),
+		stateDb.EXPECT().Exist(common.HexToAddress("0x1")),
+		stateDb.EXPECT().EndTransaction(),
+		stateDb.EXPECT().EndBlock(),
+		stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, errors.New("stop")),
 	)
 
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
@@ -274,9 +280,20 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 		t.Fatalf("cannot open test aida-db; %v", err)
 	}
 
-	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
+	err = addNonEmptySubstate(aidaDb)
 	if err != nil {
-		t.Fatalf("unexpected error; %v", err)
+		t.Fatalf("cannot add test transaction; %v", err)
+	}
+
+	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
+	if err == nil {
+		t.Fatal("run must fail")
+	}
+
+	want := "cannot prime state-db; failed to prime StateDB: stop"
+
+	if err.Error() != want {
+		t.Fatalf("unexpected error\ngot: %v\nwant: %v", err, want)
 	}
 }
 
