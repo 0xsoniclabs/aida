@@ -62,6 +62,7 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 
 	// RLP encoded substate starts at block 0
 	// whereas protobuf starts at block 1 - this causes miscall to primer
+	// TODO when opera substate is converted from RLP to PB, block 0 should be shifted to block 1
 	if p.cfg.First == 1 && p.cfg.SubstateEncoding == "protobuf" {
 		return nil
 	}
