@@ -216,6 +216,14 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 					return fmt.Errorf("cannot open targetDb; %v", err)
 				}
 
+				// we only check metadata if not applying stateHashPatch
+				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
+					err = targetMD.CheckUpdateMetadata(cfg, patchDb)
+					if err != nil {
+						return err
+					}
+				}
+
 				m := NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
 
 				err = m.Merge()

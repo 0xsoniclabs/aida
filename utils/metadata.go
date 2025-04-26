@@ -261,30 +261,37 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			md.log.Critical("ChainIDs in Dbs metadata does not match!")
 		}
 
+		targetHadNoRangeMetadata := md.FirstBlock == 0 && md.LastBlock == 0
+
 		// if database had no metadata we will look for blocks in substate
-		if md.FirstBlock == 0 {
+		if targetHadNoRangeMetadata {
 			// we need to close database before opening substate
 			if err = database.Close(); err != nil {
 				return nil, fmt.Errorf("cannot close database; %v", err)
 			}
 
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
+			err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+			if err != nil {
+				return nil, err
+			}
 			md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
 				md.log.Warningf("Cannot find blocks in substate; is substate present in given database? %v", paths[i])
 			} else {
 				md.log.Noticef("Found block range inside substate of %v (%v-%v)", paths[i], md.FirstBlock, md.LastBlock)
 			}
-
+		} else {
+			ok = true
 		}
 
 		// only check blocks when merged database has metadata or substate
 		if ok {
-			if md.FirstBlock < targetMD.FirstBlock || targetMD.FirstBlock == 0 {
+			if md.FirstBlock < targetMD.FirstBlock || targetHadNoRangeMetadata {
 				targetMD.FirstBlock = md.FirstBlock
 			}
 
-			if md.LastBlock > targetMD.LastBlock || targetMD.LastBlock == 0 {
+			if md.LastBlock > targetMD.LastBlock {
 				targetMD.LastBlock = md.LastBlock
 			}
 		}
@@ -315,6 +322,8 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 					return nil, errors.New("cannot prepend patch on clone")
 				}
 				continue
+			default:
+				targetMD.DbType = GenType
 			}
 		}
 
@@ -336,8 +345,11 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 		if err = targetMD.Db.Close(); err != nil {
 			return nil, fmt.Errorf("cannot close targetDb; %v", err)
 		}
-
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(targetMD.Db)
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return nil, err
+		}
 		targetMD.FirstBlock, targetMD.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 		if !ok {
 			targetMD.log.Warningf("Cannot find block range in substate of AidaDb (%v); this will in corrupted metadata but will not affect data itself", cfg.AidaDb)
@@ -610,6 +622,7 @@ func (md *AidaDbMetadata) SetDbType(dbType AidaDbType) error {
 	if err := md.Db.Put([]byte(TypePrefix), dbTypeBytes); err != nil {
 		return fmt.Errorf("cannot put db-type into aida-db; %v", err)
 	}
+	md.DbType = dbType
 
 	md.log.Info("METADATA: DB Type saved successfully")
 
@@ -765,7 +778,7 @@ func (md *AidaDbMetadata) findEpochs() error {
 
 // CheckUpdateMetadata goes through metadata of updated AidaDb and its patch,
 // looks if blocks and epoch align and if chainIDs are same for both Dbs
-func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) ([]byte, error) {
+func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) error {
 	var (
 		err                                   error
 		ignoreBlockAlignment, isLachesisPatch bool
@@ -780,7 +793,7 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) ([
 	md.GetMetadata()
 	if md.LastBlock == 0 {
 		if err = md.SetFreshMetadata(cfg.ChainID); err != nil {
-			return nil, fmt.Errorf("cannot set fresh metadata for existing AidaDb; %v", err)
+			return fmt.Errorf("cannot set fresh metadata for existing AidaDb; %v", err)
 		}
 	}
 	// we check if patch is lachesis with first condition
@@ -792,16 +805,16 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) ([
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(patchDb)
 			patchMD.FirstBlock, patchMD.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
-				return nil, errors.New("patch does not contain metadata and block range was not found in substate")
+				return errors.New("patch does not contain metadata and block range was not found in substate")
 			}
 
 			md.FirstEpoch, err = FindEpochNumber(md.FirstBlock, md.ChainId)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			md.LastEpoch, err = FindEpochNumber(md.LastBlock, md.ChainId)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 		// we need to check again whether first block is still 0 after substate search
@@ -823,14 +836,14 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) ([
 		// if patch is lachesis patch, we continue with merge
 
 		if !ignoreBlockAlignment {
-			return nil, fmt.Errorf("metadata blocks does not align; aida-db %v-%v, patch %v-%v", md.FirstBlock, md.LastBlock, patchMD.FirstBlock, patchMD.LastBlock)
+			return fmt.Errorf("metadata blocks does not align; aida-db %v-%v, patch %v-%v", md.FirstBlock, md.LastBlock, patchMD.FirstBlock, patchMD.LastBlock)
 		}
 
 	}
 
 	// if chainIDs doesn't match, we can't patch the DB
 	if md.ChainId != patchMD.ChainId {
-		return nil, fmt.Errorf("metadata chain-ids does not match; aida-db: %v, patch: %v", md.ChainId, patchMD.ChainId)
+		return fmt.Errorf("metadata chain-ids does not match; aida-db: %v, patch: %v", md.ChainId, patchMD.ChainId)
 	}
 
 	if isLachesisPatch {
@@ -846,7 +859,7 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) ([
 		md.LastEpoch = patchMD.LastEpoch
 	}
 
-	return patchMD.GetDbHash(), nil
+	return nil
 }
 
 // SetFreshMetadata for an existing AidaDb without metadata
