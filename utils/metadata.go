@@ -261,10 +261,10 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			md.log.Critical("ChainIDs in Dbs metadata does not match!")
 		}
 
-		targetHadNoRangeMetadata := md.FirstBlock == 0 && md.LastBlock == 0
+		hasNoBlockRangeInMetadata := md.FirstBlock == 0 && md.LastBlock == 0
 
 		// if database had no metadata we will look for blocks in substate
-		if targetHadNoRangeMetadata {
+		if hasNoBlockRangeInMetadata {
 			// we need to close database before opening substate
 			if err = database.Close(); err != nil {
 				return nil, fmt.Errorf("cannot close database; %v", err)
@@ -287,7 +287,7 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 
 		// only check blocks when merged database has metadata or substate
 		if ok {
-			if md.FirstBlock < targetMD.FirstBlock || targetHadNoRangeMetadata {
+			if md.FirstBlock < targetMD.FirstBlock || hasNoBlockRangeInMetadata {
 				targetMD.FirstBlock = md.FirstBlock
 			}
 
