@@ -55,6 +55,18 @@ type stateDbPrimer[T any] struct {
 
 // PreRun primes StateDb to given block.
 func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (err error) {
+	if p.cfg.SkipPriming {
+		p.log.Warning("Skipping priming (disabled by user)...")
+		return nil
+	}
+
+	// RLP encoded substate starts at block 0
+	// whereas protobuf starts at block 1 - this causes miscall to primer
+	// TODO when opera substate is converted from RLP to PB, block 0 should be shifted to block 1
+	if p.cfg.First == 1 && p.cfg.SubstateEncoding == "protobuf" {
+		return nil
+	}
+
 	// is used to determine block from which the priming starts
 	var primingStartBlock uint64
 	if p.cfg.IsExistingStateDb {
@@ -69,11 +81,6 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 			return fmt.Errorf("cannot read state db info; %w", err)
 		}
 		primingStartBlock = stateDbInfo.Block + 1
-	}
-
-	if p.cfg.SkipPriming {
-		p.log.Warning("Skipping priming (disabled by user)...")
-		return nil
 	}
 
 	if primingStartBlock == p.cfg.First {
