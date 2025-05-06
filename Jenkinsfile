@@ -66,9 +66,13 @@ pipeline {
                 }
 
                 stage('Run unit tests') {
+                    environment {
+                        CODECOV_TOKEN = credentials('codecov-uploader-0xsoniclabs-global')
+                    }
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                             sh 'go test ./...'
+                             sh 'go test ./... -coverprofile=coverage.txt'
+                             sh ('codecov upload-process -r 0xsoniclabs/aida -f ./coverage.txt -t ${CODECOV_TOKEN}')
                         }
                     }
                 }
