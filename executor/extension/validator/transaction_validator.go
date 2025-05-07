@@ -161,7 +161,7 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 	}
 
 	// ethereumLfvmBlockExceptions needs to skip receipt validation
-	_, skipEthereumException := ethereumLfvmBlockExceptions[state.Block]
+	_, skipEthereumException := ethereumLfvmBlockExceptions[v.cfg.ChainID][state.Block]
 	if skipEthereumException {
 		// skip should only happen if we are on Ethereum chain and using lfvm
 		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumNetwork(v.cfg.ChainID)
