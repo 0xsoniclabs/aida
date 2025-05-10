@@ -224,6 +224,11 @@ var (
 		Usage: "select encoding when reading substate from disk: rlp (default) or protobuf",
 		Value: "rlp",
 	}
+	SubstateRecordingFlag = cli.BoolFlag{
+		Name:  "substate-recording",
+		Usage: "enable substate recording",
+		Value: false,
+	}
 	TraceFlag = cli.BoolFlag{
 		Name:  "trace",
 		Usage: "enable tracing",
