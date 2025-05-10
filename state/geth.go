@@ -20,6 +20,8 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/substate/substate"
+	stypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -62,144 +64,202 @@ func MakeGethStateDB(directory, variant string, rootHash common.Hash, isArchiveM
 		return nil, err
 	}
 
-	return &gethStateDB{
-		db:            db,
-		evmState:      evmState,
-		stateRoot:     rootHash,
-		triegc:        prque.New[uint64, common.Hash](nil),
-		isArchiveMode: isArchiveMode,
-		chainConduit:  chainConduit,
-		backend:       ldb,
-		accessEvents:  geth.NewAccessEvents(utils.NewPointCache(4096)),
+	return &GethStateDB{
+		Db:                db,
+		evmState:          evmState,
+		stateRoot:         rootHash,
+		triegc:            prque.New[uint64, common.Hash](nil),
+		isArchiveMode:     isArchiveMode,
+		chainConduit:      chainConduit,
+		backend:           ldb,
+		accessEvents:      geth.NewAccessEvents(utils.NewPointCache(4096)),
+		SubstatePreAlloc:  substate.NewWorldState(),
+		SubstatePostAlloc: substate.NewWorldState(),
+		AccessedStorage:   make(map[common.Address]map[common.Hash]common.Hash),
 	}, nil
 }
 
 // openStateDB creates a new statedb from an existing geth database
-func (s *gethStateDB) openStateDB() error {
+func (s *GethStateDB) openStateDB() error {
 	var err error
-	s.db, err = geth.New(s.stateRoot, s.evmState)
+	s.Db, err = geth.New(s.stateRoot, s.evmState)
 	return err
 }
 
-type gethStateDB struct {
-	db            vm.StateDB    // statedb
-	evmState      geth.Database // key-value database
-	stateRoot     common.Hash   // lastest root hash
-	triegc        *prque.Prque[uint64, common.Hash]
-	isArchiveMode bool
-	chainConduit  *ChainConduit // chain configuration
-	block         uint64
-	backend       *leveldb.Database
-	accessEvents  *geth.AccessEvents
+type GethStateDB struct {
+	Db                vm.StateDB    // statedb
+	evmState          geth.Database // key-value database
+	stateRoot         common.Hash   // lastest root hash
+	triegc            *prque.Prque[uint64, common.Hash]
+	isArchiveMode     bool
+	chainConduit      *ChainConduit // chain configuration
+	block             uint64
+	backend           *leveldb.Database
+	accessEvents      *geth.AccessEvents
+	SubstatePreAlloc  substate.WorldState
+	SubstatePostAlloc substate.WorldState
+	AccessedStorage   map[common.Address]map[common.Hash]common.Hash
 }
 
-func (s *gethStateDB) CreateAccount(addr common.Address) {
-	s.db.CreateAccount(addr)
+func (c *GethStateDB) substateRecordAccess(addr common.Address) {
+	if c.Db.Exist(addr) && !c.Db.HasSelfDestructed(addr) {
+		// insert the account in StateDB.SubstatePreAlloc
+		if _, exist := c.SubstatePreAlloc[stypes.Address(addr)]; !exist {
+			c.SubstatePreAlloc[stypes.Address(addr)] = substate.NewAccount(c.Db.GetNonce(addr), c.Db.GetBalance(addr).ToBig(), c.Db.GetCode(addr))
+		}
+	}
+
+	// insert empty account in StateDB.SubstatePreAlloc
+	// This will prevent insertion of new account created in txs
+	if _, exist := c.SubstatePreAlloc[stypes.Address(addr)]; !exist {
+		c.SubstatePreAlloc[stypes.Address(addr)] = nil
+	}
 }
 
-func (s *gethStateDB) CreateContract(addr common.Address) {
-	s.db.CreateContract(addr)
+func (c *GethStateDB) substateStorageAccess(addr common.Address, key common.Hash, value common.Hash) {
+	if l, found := c.AccessedStorage[addr]; found {
+		if _, f2 := l[key]; !f2 {
+			c.AccessedStorage[addr][key] = value
+		}
+	} else {
+		c.AccessedStorage[addr] = make(map[common.Hash]common.Hash)
+		c.AccessedStorage[addr][key] = value
+	}
 }
 
-func (s *gethStateDB) Exist(addr common.Address) bool {
-	return s.db.Exist(addr)
+func (s *GethStateDB) CreateAccount(addr common.Address) {
+	s.substateRecordAccess(addr)
+	s.Db.CreateAccount(addr)
 }
 
-func (s *gethStateDB) Empty(addr common.Address) bool {
-	return s.db.Empty(addr)
+func (s *GethStateDB) CreateContract(addr common.Address) {
+	s.substateRecordAccess(addr)
+	s.Db.CreateContract(addr)
 }
 
-func (s *gethStateDB) SelfDestruct(addr common.Address) uint256.Int {
-	return s.db.SelfDestruct(addr)
+func (s *GethStateDB) Exist(addr common.Address) bool {
+	s.substateRecordAccess(addr)
+	return s.Db.Exist(addr)
 }
 
-func (s *gethStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	return s.db.SelfDestruct6780(addr)
+func (s *GethStateDB) Empty(addr common.Address) bool {
+	s.substateRecordAccess(addr)
+	return s.Db.Empty(addr)
 }
 
-func (s *gethStateDB) HasSelfDestructed(addr common.Address) bool {
-	return s.db.HasSelfDestructed(addr)
+func (s *GethStateDB) SelfDestruct(addr common.Address) uint256.Int {
+	s.substateRecordAccess(addr)
+	return s.Db.SelfDestruct(addr)
 }
 
-func (s *gethStateDB) GetBalance(addr common.Address) *uint256.Int {
-	return s.db.GetBalance(addr)
+func (s *GethStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	s.substateRecordAccess(addr)
+	return s.Db.SelfDestruct6780(addr)
 }
 
-func (s *gethStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	return s.db.AddBalance(addr, value, reason)
+func (s *GethStateDB) HasSelfDestructed(addr common.Address) bool {
+	s.substateRecordAccess(addr)
+	return s.Db.HasSelfDestructed(addr)
 }
 
-func (s *gethStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	return s.db.SubBalance(addr, value, reason)
+func (s *GethStateDB) GetBalance(addr common.Address) *uint256.Int {
+	s.substateRecordAccess(addr)
+	return s.Db.GetBalance(addr)
 }
 
-func (s *gethStateDB) GetNonce(addr common.Address) uint64 {
-	return s.db.GetNonce(addr)
+func (s *GethStateDB) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	s.substateRecordAccess(addr)
+	return s.Db.AddBalance(addr, value, reason)
 }
 
-func (s *gethStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
-	s.db.SetNonce(addr, value, reason)
+func (s *GethStateDB) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	s.substateRecordAccess(addr)
+	return s.Db.SubBalance(addr, value, reason)
 }
 
-func (s *gethStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
-	return s.db.GetCommittedState(addr, key)
+func (s *GethStateDB) GetNonce(addr common.Address) uint64 {
+	s.substateRecordAccess(addr)
+	return s.Db.GetNonce(addr)
 }
 
-func (s *gethStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
-	return s.db.GetState(addr, key)
+func (s *GethStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
+	s.substateRecordAccess(addr)
+	s.Db.SetNonce(addr, value, reason)
 }
 
-func (s *gethStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
-	return s.db.SetState(addr, key, value)
+func (s *GethStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
+	s.substateRecordAccess(addr)
+	return s.Db.GetCommittedState(addr, key)
 }
 
-func (s *gethStateDB) GetStorageRoot(addr common.Address) common.Hash {
-	return s.db.GetStorageRoot(addr)
+func (s *GethStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
+	value := s.Db.GetState(addr, key)
+
+	s.substateRecordAccess(addr)
+	s.substateStorageAccess(addr, key, value)
+	return s.Db.GetState(addr, key)
 }
 
-func (s *gethStateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	return s.db.GetTransientState(addr, key)
+func (s *GethStateDB) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
+	s.substateRecordAccess(addr)
+	s.substateStorageAccess(addr, key, value)
+	return s.Db.SetState(addr, key, value)
 }
 
-func (s *gethStateDB) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	s.db.SetTransientState(addr, key, value)
+func (s *GethStateDB) GetStorageRoot(addr common.Address) common.Hash {
+	s.substateRecordAccess(addr)
+	return s.Db.GetStorageRoot(addr)
 }
 
-func (s *gethStateDB) GetCode(addr common.Address) []byte {
-	return s.db.GetCode(addr)
+func (s *GethStateDB) GetTransientState(addr common.Address, key common.Hash) common.Hash {
+	s.substateRecordAccess(addr)
+	return s.Db.GetTransientState(addr, key)
 }
 
-func (s *gethStateDB) GetCodeHash(addr common.Address) common.Hash {
-	return s.db.GetCodeHash(addr)
+func (s *GethStateDB) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
+	s.substateRecordAccess(addr)
+	s.Db.SetTransientState(addr, key, value)
 }
 
-func (s *gethStateDB) GetCodeSize(addr common.Address) int {
-	return s.db.GetCodeSize(addr)
+func (s *GethStateDB) GetCode(addr common.Address) []byte {
+	s.substateRecordAccess(addr)
+	return s.Db.GetCode(addr)
 }
 
-func (s *gethStateDB) SetCode(addr common.Address, code []byte) []byte {
-	return s.db.SetCode(addr, code)
+func (s *GethStateDB) GetCodeHash(addr common.Address) common.Hash {
+	s.substateRecordAccess(addr)
+	return s.Db.GetCodeHash(addr)
 }
 
-func (s *gethStateDB) Snapshot() int {
-	return s.db.Snapshot()
+func (s *GethStateDB) GetCodeSize(addr common.Address) int {
+	s.substateRecordAccess(addr)
+	return s.Db.GetCodeSize(addr)
 }
 
-func (s *gethStateDB) RevertToSnapshot(id int) {
-	s.db.RevertToSnapshot(id)
+func (s *GethStateDB) SetCode(addr common.Address, code []byte) []byte {
+	s.substateRecordAccess(addr)
+	return s.Db.SetCode(addr, code)
 }
 
-func (s *gethStateDB) Error() error {
+func (s *GethStateDB) Snapshot() int {
+	return s.Db.Snapshot()
+}
+
+func (s *GethStateDB) RevertToSnapshot(id int) {
+	s.Db.RevertToSnapshot(id)
+}
+
+func (s *GethStateDB) Error() error {
 	// TODO return geth's dberror
 	return nil
 }
 
-func (s *gethStateDB) BeginTransaction(number uint32) error {
+func (s *GethStateDB) BeginTransaction(number uint32) error {
 	// ignored
 	return nil
 }
 
-func (s *gethStateDB) EndTransaction() error {
+func (s *GethStateDB) EndTransaction() error {
 	if s.chainConduit == nil || s.chainConduit.IsFinalise(s.block) {
 		// Opera or Ethereum after Byzantium
 		s.Finalise(true)
@@ -210,7 +270,7 @@ func (s *gethStateDB) EndTransaction() error {
 	return nil
 }
 
-func (s *gethStateDB) BeginBlock(number uint64) error {
+func (s *GethStateDB) BeginBlock(number uint64) error {
 	if err := s.openStateDB(); err != nil {
 		return fmt.Errorf("cannot open geth state-db; %w", err)
 	}
@@ -218,7 +278,7 @@ func (s *gethStateDB) BeginBlock(number uint64) error {
 	return nil
 }
 
-func (s *gethStateDB) EndBlock() error {
+func (s *GethStateDB) EndBlock() error {
 	var err error
 	//commit at the end of a block
 	s.stateRoot, err = s.Commit(s.block, true)
@@ -235,11 +295,11 @@ func (s *gethStateDB) EndBlock() error {
 	return nil
 }
 
-func (s *gethStateDB) BeginSyncPeriod(number uint64) {
+func (s *GethStateDB) BeginSyncPeriod(number uint64) {
 	// ignored
 }
 
-func (s *gethStateDB) EndSyncPeriod() {
+func (s *GethStateDB) EndSyncPeriod() {
 	// if not archival node, flush trie to disk after each sync-period
 	if s.evmState != nil && !s.isArchiveMode {
 		s.trieCleanCommit()
@@ -247,42 +307,42 @@ func (s *gethStateDB) EndSyncPeriod() {
 	}
 }
 
-func (s *gethStateDB) GetHash() (common.Hash, error) {
+func (s *GethStateDB) GetHash() (common.Hash, error) {
 	return s.IntermediateRoot(true), nil
 }
 
-func (s *gethStateDB) Finalise(deleteEmptyObjects bool) {
-	if db, ok := s.db.(*geth.StateDB); ok {
+func (s *GethStateDB) Finalise(deleteEmptyObjects bool) {
+	if db, ok := s.Db.(*geth.StateDB); ok {
 		db.Finalise(deleteEmptyObjects)
 	}
 }
 
-func (s *gethStateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	if db, ok := s.db.(*geth.StateDB); ok {
+func (s *GethStateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+	if db, ok := s.Db.(*geth.StateDB); ok {
 		return db.IntermediateRoot(deleteEmptyObjects)
 	}
 	return common.Hash{}
 }
 
-func (s *gethStateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
-	if db, ok := s.db.(*geth.StateDB); ok {
+func (s *GethStateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
+	if db, ok := s.Db.(*geth.StateDB); ok {
 		return db.Commit(block, deleteEmptyObjects, false)
 	}
 	return common.Hash{}, nil
 }
 
-func (s *gethStateDB) SetTxContext(thash common.Hash, ti int) {
-	if db, ok := s.db.(*geth.StateDB); ok {
+func (s *GethStateDB) SetTxContext(thash common.Hash, ti int) {
+	if db, ok := s.Db.(*geth.StateDB); ok {
 		db.SetTxContext(thash, ti)
 	}
 	return
 }
 
-func (s *gethStateDB) PrepareSubstate(substate txcontext.WorldState, block uint64) {
+func (s *GethStateDB) PrepareSubstate(substate txcontext.WorldState, block uint64) {
 	// ignored
 }
 
-func (s *gethStateDB) GetSubstatePostAlloc() txcontext.WorldState {
+func (s *GethStateDB) GetSubstatePostAlloc() txcontext.WorldState {
 	//TODO reenable equal check
 	//if db, ok := s.db.(*geth.StateDB); ok {
 	//	return substatecontext.NewWorldState(db.GetPostWorldState())
@@ -291,9 +351,9 @@ func (s *gethStateDB) GetSubstatePostAlloc() txcontext.WorldState {
 	return nil
 }
 
-func (s *gethStateDB) Close() error {
+func (s *GethStateDB) Close() error {
 	// Skip closing if implementation is not Geth based.
-	state, ok := s.db.(*geth.StateDB)
+	state, ok := s.Db.(*geth.StateDB)
 	if !ok {
 		return nil
 	}
@@ -315,61 +375,61 @@ func (s *gethStateDB) Close() error {
 	return s.backend.Close()
 }
 
-func (s *gethStateDB) AddRefund(gas uint64) {
-	s.db.AddRefund(gas)
+func (s *GethStateDB) AddRefund(gas uint64) {
+	s.Db.AddRefund(gas)
 }
 
-func (s *gethStateDB) SubRefund(gas uint64) {
-	s.db.SubRefund(gas)
+func (s *GethStateDB) SubRefund(gas uint64) {
+	s.Db.SubRefund(gas)
 }
-func (s *gethStateDB) GetRefund() uint64 {
-	return s.db.GetRefund()
+func (s *GethStateDB) GetRefund() uint64 {
+	return s.Db.GetRefund()
 }
-func (s *gethStateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList) {
-	s.db.Prepare(rules, sender, coinbase, dest, precompiles, txAccesses)
-}
-
-func (s *gethStateDB) AddressInAccessList(addr common.Address) bool {
-	return s.db.AddressInAccessList(addr)
-}
-func (s *gethStateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool) {
-	return s.db.SlotInAccessList(addr, slot)
-}
-func (s *gethStateDB) AddAddressToAccessList(addr common.Address) {
-	s.db.AddAddressToAccessList(addr)
-}
-func (s *gethStateDB) AddSlotToAccessList(addr common.Address, slot common.Hash) {
-	s.db.AddSlotToAccessList(addr, slot)
+func (s *GethStateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList) {
+	s.Db.Prepare(rules, sender, coinbase, dest, precompiles, txAccesses)
 }
 
-func (s *gethStateDB) AddLog(log *types.Log) {
-	s.db.AddLog(log)
+func (s *GethStateDB) AddressInAccessList(addr common.Address) bool {
+	return s.Db.AddressInAccessList(addr)
 }
-func (s *gethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
+func (s *GethStateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool) {
+	return s.Db.SlotInAccessList(addr, slot)
+}
+func (s *GethStateDB) AddAddressToAccessList(addr common.Address) {
+	s.Db.AddAddressToAccessList(addr)
+}
+func (s *GethStateDB) AddSlotToAccessList(addr common.Address, slot common.Hash) {
+	s.Db.AddSlotToAccessList(addr, slot)
+}
+
+func (s *GethStateDB) AddLog(log *types.Log) {
+	s.Db.AddLog(log)
+}
+func (s *GethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
 	panic("Add Preimage")
-	s.db.AddPreimage(hash, preimage)
+	s.Db.AddPreimage(hash, preimage)
 }
 
-func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
+func (s *GethStateDB) AccessEvents() *geth.AccessEvents {
 	return s.accessEvents
 }
 
-func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
-	if db, ok := s.db.(*geth.StateDB); ok {
+func (s *GethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
+	if db, ok := s.Db.(*geth.StateDB); ok {
 		return db.GetLogs(hash, block, blockHash)
 	}
 	return []*types.Log{}
 }
 
-func (s *gethStateDB) PointCache() *utils.PointCache {
-	return s.db.PointCache()
+func (s *GethStateDB) PointCache() *utils.PointCache {
+	return s.Db.PointCache()
 }
 
-func (s *gethStateDB) Witness() *stateless.Witness {
-	return s.db.Witness()
+func (s *GethStateDB) Witness() *stateless.Witness {
+	return s.Db.Witness()
 }
 
-func (s *gethStateDB) StartBulkLoad(block uint64) (BulkLoad, error) {
+func (s *GethStateDB) StartBulkLoad(block uint64) (BulkLoad, error) {
 	if err := s.BeginBlock(block); err != nil {
 		return nil, err
 	}
@@ -379,21 +439,21 @@ func (s *gethStateDB) StartBulkLoad(block uint64) (BulkLoad, error) {
 	return &gethBulkLoad{db: s}, nil
 }
 
-func (s *gethStateDB) GetArchiveState(block uint64) (NonCommittableStateDB, error) {
+func (s *GethStateDB) GetArchiveState(block uint64) (NonCommittableStateDB, error) {
 	return nil, fmt.Errorf("archive states are not (yet) supported by this DB implementation")
 }
 
-func (s *gethStateDB) GetArchiveBlockHeight() (uint64, bool, error) {
+func (s *GethStateDB) GetArchiveBlockHeight() (uint64, bool, error) {
 	return 0, false, fmt.Errorf("archive states are not (yet) supported by this DB implementation")
 }
 
-func (s *gethStateDB) GetMemoryUsage() *MemoryUsage {
+func (s *GethStateDB) GetMemoryUsage() *MemoryUsage {
 	// not supported yet
 	return &MemoryUsage{uint64(0), nil}
 }
 
 type gethBulkLoad struct {
-	db    *gethStateDB
+	db    *GethStateDB
 	block uint64
 }
 
@@ -428,7 +488,7 @@ func (l *gethBulkLoad) Close() error {
 }
 
 // trieCommit commits changes to disk if archive node; otherwise, performs garbage collection.
-func (s *gethStateDB) trieCommit() error {
+func (s *GethStateDB) trieCommit() error {
 	triedb := s.evmState.TrieDB()
 	// If we're applying genesis or running an archive node, always flush
 	if s.isArchiveMode {
@@ -462,7 +522,7 @@ func (s *gethStateDB) trieCommit() error {
 }
 
 // trieCleanCommit cleans old state trie and commit changes.
-func (s *gethStateDB) trieCleanCommit() error {
+func (s *GethStateDB) trieCleanCommit() error {
 	// Don't need to reference the current state root
 	// due to it already be referenced on `Commit()` function
 	triedb := s.evmState.TrieDB()
@@ -485,7 +545,7 @@ func (s *gethStateDB) trieCleanCommit() error {
 }
 
 // trieCap flushes matured singleton nodes to disk.
-func (s *gethStateDB) trieCap() {
+func (s *GethStateDB) trieCap() {
 	triedb := s.evmState.TrieDB()
 	_, nodes, imgs := triedb.Size()
 	if nodes > memoryUpperLimit+ethdb.IdealBatchSize || imgs > imgUpperLimit {
@@ -494,6 +554,6 @@ func (s *gethStateDB) trieCap() {
 	}
 }
 
-func (s *gethStateDB) GetShadowDB() StateDB {
+func (s *GethStateDB) GetShadowDB() StateDB {
 	return nil
 }
