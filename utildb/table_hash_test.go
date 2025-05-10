@@ -243,9 +243,14 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int) {
 		state := substate.Substate{
 			Block:       uint64(i),
 			Transaction: 0,
-			Env:         &substate.Env{Number: uint64(i)},
+			Env: &substate.Env{
+				Number:     uint64(i),
+				Difficulty: big.NewInt(int64(i)),
+				GasLimit:   uint64(i),
+			},
 			Message: &substate.Message{
-				Value: big.NewInt(int64(rand.Intn(100))),
+				Value:    big.NewInt(int64(rand.Intn(100))),
+				GasPrice: big.NewInt(int64(rand.Intn(100))),
 			},
 			InputSubstate:  substate.WorldState{substatetypes.Address{0x0}: acc},
 			OutputSubstate: substate.WorldState{substatetypes.Address{0x0}: acc},
