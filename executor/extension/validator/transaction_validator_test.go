@@ -980,7 +980,7 @@ func TestValidateStateDb_ValidateReceiptEthereumSkip(t *testing.T) {
 	// mismatch is skipped
 	sub = &substate.Substate{Result: getDummyResult()}
 	sub.Result.Status = types.ReceiptStatusSuccessful
-	err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: substatecontext.NewTxContext(sub), Block: getExceptionBlock()}, ctx)
+	err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: substatecontext.NewTxContext(sub), Block: getEthereumExceptionBlock()}, ctx)
 	if err != nil {
 		t.Fatalf("unexpected error\ngot: %v\nwant: nil", err)
 	}
