@@ -39,8 +39,10 @@ func TestEmptyMatching(t *testing.T) {
 	if !checkStrictPartialOrder(por) {
 		t.Errorf("Ordinal numbers in strict partial order are not topological orderings")
 	}
-	if len(maxMatching(por)) != 0 {
-		t.Errorf("Empty matches expected")
+
+	matches, _ := maxMatching(por)
+	if len(matches) != 0 {
+		t.Errorf("Expected empty matching, got %d", len(matches))
 	}
 }
 
@@ -52,8 +54,12 @@ func TestSingletonMatching(t *testing.T) {
 	if !checkStrictPartialOrder(por) {
 		t.Errorf("Ordinal numbers in strict partial order are not topological orderings")
 	}
-	if len(maxMatching(por)) != 0 {
-		t.Errorf("Empty matches expected")
+	matches, err := maxMatching(por)
+	if err != nil {
+		t.Errorf("Successful maxMatching expected, got %v", err)
+	}
+	if len(matches) != 0 {
+		t.Errorf("Expected empty matching, got %d", len(matches))
 	}
 }
 
@@ -69,7 +75,10 @@ func TestSimple1Matching(t *testing.T) {
 	if !checkStrictPartialOrder(por) {
 		t.Errorf("Ordinal numbers in strict partial order are not topological orderings")
 	}
-	matches := maxMatching(por)
+	matches, err := maxMatching(por)
+	if err != nil {
+		t.Errorf("Error during matching: %v", err)
+	}
 	if len(matches) != 2 {
 		t.Errorf("Wrong number of matches")
 	}
@@ -101,7 +110,10 @@ func TestSimple2Matching(t *testing.T) {
 	if !checkStrictPartialOrder(por) {
 		t.Errorf("Ordinal numbers in strict partial order are not topological orderings")
 	}
-	matches := maxMatching(por)
+	matches, err := maxMatching(por)
+	if err != nil {
+		t.Errorf("Error during matching: %v", err)
+	}
 	if len(matches) != 2 {
 		t.Errorf("Wrong number of matches")
 	}
@@ -128,8 +140,9 @@ func TestSimple2Matching(t *testing.T) {
 // TestEmptyChainCover tests whether an empty strict partial order returns an empty minimum chain cover.
 func TestEmptyChainCover(t *testing.T) {
 	por := StrictPartialOrder{}
-	if len(MinChainCover(por)) != 0 {
-		t.Errorf("Empty matches expected")
+	chains, _ := MinChainCover(por)
+	if len(chains) != 0 {
+		t.Errorf("Empty matches expected, got %d", len(chains))
 	}
 }
 
@@ -140,7 +153,10 @@ func TestSimple1MinCover(t *testing.T) {
 		OrdinalSet{0: struct{}{}},
 		OrdinalSet{0: struct{}{}, 1: struct{}{}},
 	}
-	chains := MinChainCover(por)
+	chains, err := MinChainCover(por)
+	if err != nil {
+		t.Errorf("Error during MinChainCover: %v", err)
+	}
 	if len(chains) != 1 {
 		t.Errorf("Wrong number of chains")
 	}
@@ -159,7 +175,10 @@ func TestSimple2MinCover(t *testing.T) {
 		OrdinalSet{0: struct{}{}, 1: struct{}{}}, // 2 |-> {0, 1}
 		OrdinalSet{0: struct{}{}, 1: struct{}{}}, // 3 |-> {0, 1}
 	}
-	chains := MinChainCover(por)
+	chains, err := MinChainCover(por)
+	if err != nil {
+		t.Errorf("Error during MinChainCover: %v", err)
+	}
 	if len(chains) != 2 {
 		t.Errorf("Wrong number of chains")
 	}
@@ -205,7 +224,10 @@ func TestComplexMinCover(t *testing.T) {
 		OrdinalSet{0: struct{}{}, 1: struct{}{}, 2: struct{}{}, 3: struct{}{}, 4: struct{}{}, 5: struct{}{}}, // 6 |-> {0, 1, 2, 3, 4, 5}
 		OrdinalSet{0: struct{}{}, 1: struct{}{}, 3: struct{}{}, 5: struct{}{}},                               // 7 |-> {0, 1, 3, 5}
 	}
-	chains := MinChainCover(por)
+	chains, err := MinChainCover(por)
+	if err != nil {
+		t.Errorf("Error during MinChainCover: %v", err)
+	}
 	if len(chains) != 2 {
 		t.Errorf("Wrong number of chains")
 	}
