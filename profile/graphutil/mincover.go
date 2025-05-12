@@ -16,8 +16,6 @@
 
 package graphutil
 
-import "github.com/onsi/gomega/matchers/support/goraph/bipartitegraph"
-
 // Computes the minimum chain cover of a strict partial order
 // using Koenig's bipartite construction and graph matching. The carrier set
 // of the strict partial order is represented by ordinal numbers
@@ -41,31 +39,42 @@ type matching [][2]int
 // maxMatching constructs a bipartite graph for the strict partial order using Koenig's construction,
 // performs a maximum matching, and returns the matches. See Dilworth's Theorem on Wikipedia for more
 // information.
-func maxMatching(rel StrictPartialOrder) matching {
-	// construct Koenig's bi-partite graph for DAG
+func maxMatching(rel StrictPartialOrder) (matching, error) {
+	// construct bipartite graph
 	n := len(rel)
-	nodes := make([]interface{}, n)
-	for i := 0; i < n; i++ {
-		nodes[i] = i
+	graph := NewBipartiteGraph(uint32(n))
+	if graph == nil {
+		return matching{}, nil
 	}
-	edges := func(x, y interface{}) (bool, error) {
-		i := x.(int)
-		j := y.(int)
-		if _, ok := rel[i][j]; ok {
-			return true, nil
-		} else {
-			return false, nil
+
+	for i, set := range rel {
+		for j := range set {
+			err := graph.AddEdge(uint32(i), uint32(j))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-	graph, _ := bipartitegraph.NewBipartiteGraph(nodes, nodes, edges)
 
-	// translate matching back to ordinal numbers
-	match := matching{}
-	for _, edge := range graph.LargestMatching() {
-		// use ID (not actual value - naughty!)
-		match = append(match, [2]int{edge.Node1, edge.Node2 - n})
+	// hopcroft-karp
+	_, err := graph.MaxMatching()
+	if err != nil {
+		return nil, err
 	}
-	return match
+
+	err = CheckConsistentPairing(graph.MatchU, graph.MatchV)
+	if err != nil {
+		return nil, err
+	}
+
+	// package result as matching
+	matches := matching{}
+	for u := uint32(0); u < uint32(len(graph.MatchU)); u++ {
+		if graph.MatchU[u] != NoMatch {
+			matches = append(matches, [2]int{int(u), int(graph.MatchU[u])})
+		}
+	}
+	return matches, nil
 }
 
 // Chain is a list of ordinal numbers which are pairwise-comparable, and the elements are ordered in ascending order.
@@ -122,9 +131,13 @@ func computeCover(n int, matches matching) ChainSet {
 }
 
 // MinChainCover computes the minimum chain cover of a strict partial order.
-func MinChainCover(order StrictPartialOrder) ChainSet {
+func MinChainCover(order StrictPartialOrder) (ChainSet, error) {
+	matches, err := maxMatching(order)
+	if err != nil {
+		return nil, err
+	}
+
 	n := len(order)
-	matches := maxMatching(order)
 	cover := computeCover(n, matches)
-	return cover
+	return cover, nil
 }
