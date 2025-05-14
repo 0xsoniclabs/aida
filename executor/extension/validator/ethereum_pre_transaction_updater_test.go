@@ -30,7 +30,7 @@ func TestEthereumPreTransactionUpdater_FixBalanceWhenNewBalanceIsHigher(t *testi
 	data := createTestTransaction()
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(common.HexToAddress("0x1")).Return(true),
@@ -62,7 +62,7 @@ func TestEthereumPreTransactionUpdater_DontFixBalanceIfLower(t *testing.T) {
 	data := ethtest.CreateTestTransaction(t)
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(common.HexToAddress("0x1")).Return(true),
@@ -105,7 +105,7 @@ func testEthereumSystemContractStorageException(t *testing.T, address common.Add
 
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(address).Return(true),
@@ -133,7 +133,7 @@ func TestEthereumPreTransactionUpdater_DaoFork(t *testing.T) {
 
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(params.DAODrainList()[0]).Return(true),

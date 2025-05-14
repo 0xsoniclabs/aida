@@ -50,7 +50,7 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 			ctx := new(executor.Context)
 			ctx.State = db
 
-			st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+			st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 			ext := makeEthereumDbPostTransactionUpdater(cfg, log)
 			if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
@@ -79,7 +79,7 @@ func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t 
 
 	nonExceptionBlock := 1
 
-	if _, ok := ethereumLfvmBlockExceptions[nonExceptionBlock]; ok {
+	if _, ok := ethereumLfvmBlockExceptions[utils.EthereumChainID][nonExceptionBlock]; ok {
 		t.Fatal("nonExceptionBlock is in ethereumLfvmBlockExceptions; invalid test conditions")
 	}
 
@@ -104,7 +104,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 	data := createTestTransaction()
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(common.HexToAddress("0x1")).Return(true),
@@ -154,9 +154,9 @@ func createTestTransaction() txcontext.TxContext {
 	})
 }
 
-func getExceptionBlock() int {
+func getEthereumExceptionBlock() int {
 	// retrieving exception block
-	for key := range ethereumLfvmBlockExceptions {
+	for key := range ethereumLfvmBlockExceptions[utils.EthereumChainID] {
 		return key
 	}
 	return -1
