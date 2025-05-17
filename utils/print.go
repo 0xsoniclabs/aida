@@ -26,6 +26,8 @@ import (
 )
 
 // Printer is a utility class to output data from the system
+//
+//go:generate mockgen -source print.go -destination print_mock.go -package utils
 type Printer interface {
 	Print() error
 	Close()
@@ -203,7 +205,7 @@ type PrinterToBuffer struct {
 	capacity int
 	f        func() [][]any
 	buffer   [][]any
-	flusher  *Flusher
+	flusher  IFlusher
 }
 
 func (p *PrinterToBuffer) Print() error {
@@ -225,6 +227,11 @@ func (p *PrinterToBuffer) Reset() {
 
 func (p *PrinterToBuffer) Length() int {
 	return len(p.buffer)
+}
+
+type IFlusher interface {
+	Print() error
+	Close()
 }
 
 type Flusher struct {

@@ -268,3 +268,110 @@ func TestStatedb_PrepareStateDBEmpty(t *testing.T) {
 		}
 	}(sDB)
 }
+
+func TestStateDB_makeNewStateDB(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := &Config{
+		DbImpl:                 "memory",
+		DbVariant:              "",
+		ShadowImpl:             "geth",
+		ShadowDb:               true,
+		ArchiveMode:            true,
+		ArchiveVariant:         "",
+		PathToStateDb:          tempDir,
+		StateDbSrc:             tempDir,
+		StateDbSrcDirectAccess: true,
+		ChainID:                MainnetChainID,
+	}
+
+	db, dbPath, err := makeNewStateDB(cfg)
+	if err != nil {
+		t.Fatalf("failed to create state DB: %v", err)
+	}
+	defer func(path string) {
+		e := os.RemoveAll(path)
+		if e != nil {
+			t.Fatalf("failed to remove state DB path: %v", e)
+		}
+	}(dbPath)
+
+	if db == nil {
+		t.Fatal("expected non-nil state DB")
+	}
+}
+
+func TestStateDB_useExistingStateDB(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := &Config{
+		DbImpl:                 "memory",
+		DbVariant:              "",
+		ShadowImpl:             "geth",
+		ShadowDb:               true,
+		ArchiveMode:            true,
+		ArchiveVariant:         "",
+		PathToStateDb:          tempDir,
+		StateDbSrc:             tempDir,
+		StateDbSrcDirectAccess: true,
+		ChainID:                MainnetChainID,
+	}
+
+	// Create state DB info of existing state DB
+	dbInfo := StateDbInfo{
+		Impl:           cfg.DbImpl,
+		Variant:        cfg.DbVariant,
+		ArchiveMode:    cfg.ArchiveMode,
+		ArchiveVariant: "xyz",
+		Schema:         0,
+		Block:          cfg.Last,
+		RootHash:       common.Hash{},
+		GitCommit:      GitCommit,
+		CreateTime:     time.Now().UTC().Format(time.UnixDate),
+	}
+
+	// Create json file for the existing state DB info
+	dbInfoJson, err := json.Marshal(dbInfo)
+	if err != nil {
+		t.Fatalf("failed to create DB info json: %v", err)
+	}
+
+	// Fill the json file with the info
+	err = os.Mkdir(filepath.Join(cfg.PathToStateDb, PathToPrimaryStateDb), 0755)
+	if err != nil {
+		t.Fatalf("failed to create directory for DB info json file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(cfg.PathToStateDb, PathToPrimaryStateDb, PathToDbInfo), dbInfoJson, 0755)
+	if err != nil {
+		t.Fatalf("failed to write into DB info json file: %v", err)
+	}
+	err = os.Mkdir(filepath.Join(cfg.PathToStateDb, PathToShadowStateDb), 0755)
+	if err != nil {
+		t.Fatalf("failed to create directory for DB info json file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(cfg.PathToStateDb, PathToShadowStateDb, PathToDbInfo), dbInfoJson, 0755)
+	if err != nil {
+		t.Fatalf("failed to write into DB info json file: %v", err)
+	}
+
+	// remove files after test ends
+	defer func(path string) {
+		err = os.RemoveAll(path)
+		if err != nil {
+
+		}
+	}(cfg.StateDbSrc)
+
+	db, dbPath, err := useExistingStateDB(cfg)
+	if err != nil {
+		t.Fatalf("failed to create state DB: %v", err)
+	}
+	defer func(path string) {
+		err := os.RemoveAll(path)
+		if err != nil {
+			t.Fatalf("failed to remove state DB path: %v", err)
+		}
+	}(dbPath)
+
+	if db == nil {
+		t.Fatal("expected non-nil state DB")
+	}
+}

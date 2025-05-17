@@ -18,6 +18,11 @@ package utils
 
 import (
 	"context"
+	"errors"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -167,4 +172,108 @@ func Test_getClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStateHash_GetStateHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	mockDb := db.NewMockBaseDB(ctrl)
+	mockDb.EXPECT().Get(gomock.Any()).Return([]byte("abcdefghijabcdefghijabcdefghij32"), nil)
+	stateHash := MakeStateHashProvider(mockDb)
+	hash, err := stateHash.GetStateHash(1234)
+	assert.NoError(t, err)
+	assert.Equal(t, "0x6162636465666768696a6162636465666768696a6162636465666768696a3332", hash.String())
+
+	// case error
+	mockDb = db.NewMockBaseDB(ctrl)
+	mockDb.EXPECT().Get(gomock.Any()).Return(nil, leveldb.ErrNotFound)
+	stateHash = MakeStateHashProvider(mockDb)
+	hash, err = stateHash.GetStateHash(1234)
+	assert.Equal(t, leveldb.ErrNotFound, err)
+	assert.Equal(t, common.Hash{}, hash)
+
+	// case empty
+	mockDb = db.NewMockBaseDB(ctrl)
+	mockDb.EXPECT().Get(gomock.Any()).Return(nil, nil)
+	stateHash = MakeStateHashProvider(mockDb)
+	hash, err = stateHash.GetStateHash(1234)
+	assert.NoError(t, err)
+	assert.Equal(t, common.Hash{}, hash)
+}
+
+func TestStateHash_SaveStateRoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	mockDb := db.NewMockBaseDB(ctrl)
+	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil)
+	err := SaveStateRoot(mockDb, "0x1234", "0x5678")
+	assert.NoError(t, err)
+
+	// case error
+	mockDb = db.NewMockBaseDB(ctrl)
+	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(leveldb.ErrNotFound)
+	err = SaveStateRoot(mockDb, "0x1234", "0x5678")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "leveldb: not found")
+}
+
+func TestStateHash_StateHashKeyToUint64(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	output, err := StateHashKeyToUint64([]byte("dbh0x1234"))
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(0x1234), output)
+
+	// case error
+	output, err = StateHashKeyToUint64([]byte("ggggggg"))
+	assert.Equal(t, uint64(0), output)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "invalid syntax")
+}
+
+func TestStateHash_retrieveStateRoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	client := NewMockIRpcClient(ctrl)
+	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(nil)
+	output, err := retrieveStateRoot(client, "0x1234")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}(nil), output)
+
+	// case error
+	mockErr := errors.New("error")
+	client = NewMockIRpcClient(ctrl)
+	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(mockErr)
+	output, err = retrieveStateRoot(client, "0x1234")
+	assert.Error(t, err)
+	assert.Nil(t, output)
+}
+
+func TestStateHash_GetFirstStateHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockBaseDB(ctrl)
+	output, err := GetFirstStateHash(mockDb)
+	assert.Equal(t, uint64(0x0), output)
+	assert.Error(t, err)
+
+}
+
+func TestStateHash_GetLastStateHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockBaseDB(ctrl)
+	output, err := GetLastStateHash(mockDb)
+	assert.Equal(t, uint64(0x0), output)
+	assert.Error(t, err)
 }

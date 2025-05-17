@@ -19,6 +19,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"strconv"
 	"strings"
 	"testing"
@@ -103,4 +104,40 @@ func TestSendRPCRequest_InvalidChainID(t *testing.T) {
 		t.Fatalf("SendRpcRequest returned unexpected error: %v", err.Error())
 	}
 
+}
+
+func TestRpc_FindEpochNumber(t *testing.T) {
+	// case success
+	output, err := FindEpochNumber(uint64(1234), MainnetChainID)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(11), output)
+
+	// case error
+	output, err = FindEpochNumber(uint64(1234), invalidChainID)
+	assert.Error(t, err)
+	assert.Equal(t, uint64(0), output)
+}
+
+func TestRpc_FindHeadEpochNumber(t *testing.T) {
+	// case success
+	output, err := FindHeadEpochNumber(MainnetChainID)
+	assert.NoError(t, err)
+	assert.Greater(t, output, uint64(0))
+
+	// case error
+	output, err = FindHeadEpochNumber(invalidChainID)
+	assert.Error(t, err)
+	assert.Equal(t, uint64(0), output)
+}
+
+func TestRpc_getEpochByNumber(t *testing.T) {
+	// case success
+	output, err := getEpochByNumber("0x4e20", MainnetChainID)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(228), output)
+
+	// case error
+	output, err = getEpochByNumber("0x4e20", invalidChainID)
+	assert.Error(t, err)
+	assert.Equal(t, uint64(0), output)
 }

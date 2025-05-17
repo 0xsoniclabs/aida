@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"slices"
@@ -55,4 +56,46 @@ func TestGetFilesWithinDirectories(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetFreeSpace(t *testing.T) {
+	// Valid directory should return a positive free space
+	dir := t.TempDir()
+	space, err := GetFreeSpace(dir)
+	assert.NoError(t, err)
+	assert.Greater(t, space, int64(0))
+
+	// Non-existent directory should return an error
+	invalid := filepath.Join(dir, "does_not_exist")
+	_, err = GetFreeSpace(invalid)
+	assert.Error(t, err)
+}
+
+func TestGetDirectorySize(t *testing.T) {
+	// Setup a temporary directory with files
+	root := t.TempDir()
+	file1 := filepath.Join(root, "file1.txt")
+	content1 := []byte("hello")
+	err := os.WriteFile(file1, content1, 0644)
+	assert.NoError(t, err)
+
+	subdir := filepath.Join(root, "sub")
+	err = os.Mkdir(subdir, 0755)
+	assert.NoError(t, err)
+
+	file2 := filepath.Join(subdir, "file2.txt")
+	content2 := []byte("world!")
+	err = os.WriteFile(file2, content2, 0644)
+	assert.NoError(t, err)
+
+	// Verify total size equals sum of file sizes
+	size, err := GetDirectorySize(root)
+	assert.NoError(t, err)
+	expected := int64(len(content1) + len(content2))
+	assert.Equal(t, expected, size)
+
+	// Non-existent directory should return an nil
+	invalid := filepath.Join(root, "no_such_dir")
+	_, err = GetDirectorySize(invalid)
+	assert.Nil(t, err)
 }

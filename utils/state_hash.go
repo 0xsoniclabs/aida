@@ -16,7 +16,7 @@
 
 package utils
 
-//go:generate mockgen -source state_hash.go -destination state_hash_mocks.go -package utils
+//go:generate mockgen -source state_hash.go -destination state_hash_mock.go -package utils
 
 import (
 	"bytes"
@@ -34,6 +34,23 @@ import (
 )
 
 const StateHashPrefix = "dbh"
+
+// ClientInterface defines the methods that an RPC client must implement.
+type IRpcClient interface {
+	RegisterName(name string, receiver interface{}) error
+	SupportedModules() (map[string]string, error)
+	Close()
+	SetHeader(key, value string)
+	Call(result interface{}, method string, args ...interface{}) error
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
+	BatchCall(b []rpc.BatchElem) error
+	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
+	Notify(ctx context.Context, method string, args ...interface{}) error
+	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	SupportsSubscriptions() bool
+}
 
 type StateHashProvider interface {
 	GetStateHash(blockNumber int) (common.Hash, error)
@@ -156,7 +173,7 @@ func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
 }
 
 // retrieveStateRoot gets the state root hash from the rpc node
-func retrieveStateRoot(client *rpc.Client, blockNumber string) (map[string]interface{}, error) {
+func retrieveStateRoot(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
 	var block map[string]interface{}
 	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
 	if err != nil {

@@ -112,3 +112,13 @@ help: Makefile
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
+
+install-dev-tools:
+	@go install golang.org/x/tools/cmd/goimports@v0.30.0
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+
+#check:
+#	@golangci-lint run --timeout 5m0s
+
+check:
+	@golangci-lint run -c .golangci.yml  ./utils
