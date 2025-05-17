@@ -25,15 +25,20 @@ import (
 // TODO MERGE IN FUTURE - this file has almost same functionality as getLastSubstateKey in static_substate_db.go
 // either should be generalised there or functionality could be moved to separate library and used in both places
 
+//go:generate mockgen -source db_search.go -destination db_search_mock.go -package utils
+type ethDatabase interface {
+	ethdb.Database
+}
+
 type SearchableDB struct {
 	ethdb.Database
 }
 
-func NewSearchableDB(backend ethdb.Database) *SearchableDB {
+func NewSearchableDB(backend ethDatabase) *SearchableDB {
 	return &SearchableDB{backend}
 }
 
-func GetLastKey(dbIn ethdb.Database, keyPrefix string) (uint64, error) {
+func GetLastKey(dbIn ethDatabase, keyPrefix string) (uint64, error) {
 	db := NewSearchableDB(dbIn)
 
 	zeroBytes, err := db.getLongestEncodedKeyZeroPrefixLength(keyPrefix)

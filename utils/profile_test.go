@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/tosca/go/tosca"
 	"go.uber.org/mock/gomock"
-	"os"
-	"path/filepath"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -113,7 +113,7 @@ func (p *temp) DumpProfile() {
 }
 
 func (p *temp) String() string {
-	return fmt.Sprintf("temp")
+	return "temp"
 }
 
 func TestMemoryBreakdown(t *testing.T) {

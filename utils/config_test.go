@@ -19,14 +19,15 @@ package utils
 import (
 	"flag"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"os"
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
@@ -245,6 +246,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 1100
 	lastArg = 1900
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstArg, lastArg, first, last)
 	}
@@ -252,6 +256,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 3000
 	lastArg = 4000
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if first != 0 && last != 0 {
+		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", 0, 0, first, last)
+	}
 	if err == nil {
 		t.Fatalf("Ranges not overlapped. Expected an error.")
 	}
@@ -260,6 +267,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 100
 	lastArg = 1000
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", lastArg, lastArg, first, last)
 	}
@@ -267,6 +277,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 2000
 	lastArg = 2200
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstArg, firstArg, first, last)
 	}
@@ -317,7 +330,10 @@ func TestUtilsConfig_getMdBlockRange(t *testing.T) {
 
 	cfg.AidaDb = "./test.db" //db exists
 	// open an existing AidaDb
-	cc.setAidaDbRepositoryUrl()
+	err = cc.setAidaDbRepositoryUrl()
+	if err != nil {
+		t.Fatalf("cannot set AidaDb repository url; %v", err)
+	}
 	first, last, lastpatch, err = cc.getMdBlockRange()
 	if !cc.hasMetadata || first != firstBlock || last != lastBlock {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstBlock, lastBlock, first, last)
@@ -616,7 +632,10 @@ func TestUtilsConfig_adjustMissingConfigValues(t *testing.T) {
 	}()
 
 	// set missing values
-	cc.adjustMissingConfigValues()
+	err = cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.DbVariant == dbVariant {
@@ -673,7 +692,10 @@ func TestUtilsConfig_adjustMissingConfigValuesValidationOn(t *testing.T) {
 		t.Run("validation adjustment", func(t *testing.T) {
 			// set missing values
 			cc := NewConfigContext(&cfg, nil)
-			cc.adjustMissingConfigValues()
+			err := cc.adjustMissingConfigValues()
+			if err != nil {
+				t.Fatalf("failed to adjust missing config values; %v", err)
+			}
 
 			// checks
 			if !cfg.ValidateTxState {
@@ -697,7 +719,10 @@ func TestUtilsConfig_adjustMissingConfigValuesValidationOff(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.ValidateTxState {
@@ -718,7 +743,10 @@ func TestUtilsConfig_adjustMissingConfigValuesKeepStateDb(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.KeepDb {
@@ -737,7 +765,10 @@ func TestUtilsConfig_adjustMissingConfigValuesWrongDbTmp(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.DbTmp != os.TempDir() {
@@ -917,6 +948,7 @@ func Test_getChainConfig(t *testing.T) {
 
 	chainConfig, err = getChainConfig(ChainID(999), "Frontier")
 	assert.Error(t, err)
+	assert.Nil(t, chainConfig)
 }
 
 func Test_SetStateDbSrcReadOnly(t *testing.T) {

@@ -2,18 +2,14 @@ package utils
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
-
-//go:generate mockgen -source db_search_test.go -destination db_search_mock.go -package utils
-type ethDatabase interface {
-	ethdb.Database
-}
 
 func TestSearchableDB_NewSearchableDB(t *testing.T) {
 	ctrl := gomock.NewController(t)

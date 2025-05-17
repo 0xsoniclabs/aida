@@ -1,16 +1,18 @@
 package utils
 
 import (
+	"testing"
+
+	"github.com/0xsoniclabs/substate/rlp"
+
 	db "github.com/0xsoniclabs/substate/db"
-	"github.com/0xsoniclabs/substate/protobuf"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/types/rlp"
+	trlp "github.com/0xsoniclabs/substate/types/rlp"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
@@ -24,12 +26,15 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	input := getTestSubstate("default")
 	input.Block = 0
 	input.Transaction = 1
-	encoded, err := protobuf.Encode(input, 0, 1)
+	encoded, err := trlp.EncodeToBytes(rlp.NewRLP(input))
+	if err != nil {
+		t.Fatalf("Failed to encode substate: %v", err)
+	}
 
 	expectedDestroyed := []substatetypes.Address{{1}, {2}}
 	expectedResurrected := []substatetypes.Address{{3}}
 	list := db.SuicidedAccountLists{DestroyedAccounts: expectedDestroyed, ResurrectedAccounts: expectedResurrected}
-	value, _ := rlp.EncodeToBytes(list)
+	value, _ := trlp.EncodeToBytes(list)
 
 	kv := &testutil.KeyValue{}
 	kv.PutU(db.SubstateDBKey(input.Block, input.Transaction), encoded)
@@ -41,7 +46,7 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 
 	set, i, err := GenerateUpdateSet(0, 2, &Config{
 		Workers:          1,
-		SubstateEncoding: "default",
+		SubstateEncoding: "rlp",
 	}, baseDb)
 	assert.NoError(t, err)
 	assert.NotNil(t, set)

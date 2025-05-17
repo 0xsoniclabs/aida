@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -1026,23 +1026,25 @@ func (md *AidaDbMetadata) getVerboseDbType() string {
 }
 
 // DownloadPatchesJson downloads list of available patches from aida-db generation server.
-func DownloadPatchesJson() ([]PatchJson, error) {
+func DownloadPatchesJson() (data []PatchJson, err error) {
 	// Make the HTTP GET request
 	patchesUrl := AidaDbRepositoryUrl + "/patches.json"
 	response, err := http.Get(patchesUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request for %s: %v", patchesUrl, err)
 	}
-	defer response.Body.Close()
+	defer func(Body io.ReadCloser) {
+		e := Body.Close()
+		if e != nil {
+			err = errors.Join(err, e)
+		}
+	}(response.Body)
 
 	// Read the response body
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
-
-	// Parse the JSON data
-	var data []PatchJson
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {

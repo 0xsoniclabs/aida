@@ -8,7 +8,10 @@ import (
 
 func RlpHash(x interface{}) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		return [32]byte{}
+	}
 	hw.Sum(h[:0])
 	return h
 }

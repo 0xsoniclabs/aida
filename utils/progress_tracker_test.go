@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestNewProgressTracker(t *testing.T) {

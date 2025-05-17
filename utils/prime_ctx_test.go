@@ -2,6 +2,9 @@ package utils
 
 import (
 	"errors"
+	"math/big"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -10,8 +13,6 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"math/big"
-	"testing"
 )
 
 func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {

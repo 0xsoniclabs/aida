@@ -19,10 +19,11 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/exp/maps"
 )
@@ -42,7 +43,7 @@ func TestSendRPCRequest_Positive(t *testing.T) {
 		t.Run(fmt.Sprintf("ChainID %v", id), func(t *testing.T) {
 
 			res, err := SendRpcRequest(req, id)
-			if errors.Is(err, RPCUnsupported) {
+			if errors.Is(err, ErrRPCUnsupported) {
 				t.Skip("RPC is not supported")
 			}
 			if err != nil {

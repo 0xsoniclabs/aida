@@ -139,7 +139,12 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
 			}
 
-			defer daDB.Close()
+			defer func(daDB *db.DestroyedAccountDB) {
+				e := daDB.Close()
+				if e != nil {
+					t.Fatalf("failed to close destroyed accounts DB: %v", e)
+				}
+			}(daDB)
 
 			// Initialization of state DB
 			sDB, _, err := PrepareStateDB(cfg)

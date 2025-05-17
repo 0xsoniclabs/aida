@@ -19,11 +19,12 @@ package utils
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"go.uber.org/mock/gomock"
-	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
@@ -39,7 +40,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(nil, TestnetChainID, "", database, 0, 1, log)
+	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -52,7 +53,12 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		e := database.Close()
+		if e != nil {
+			t.Fatalf("error closing stateHash leveldb %s: %v", tmpDir, e)
+		}
+	}(database)
 
 	shp := MakeStateHashProvider(database)
 
@@ -81,7 +87,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(nil, TestnetChainID, "", database, 0, 100, log)
+	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -94,7 +100,12 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		e := database.Close()
+		if e != nil {
+			t.Fatalf("error closing stateHash leveldb %s: %v", tmpDir, e)
+		}
+	}(database)
 
 	shp := MakeStateHashProvider(database)
 

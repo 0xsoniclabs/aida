@@ -1,12 +1,13 @@
 package utils
 
 import (
+	"math/big"
+
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
-	"math/big"
 )
 
 var testUpdateSet = &updateset.UpdateSet{

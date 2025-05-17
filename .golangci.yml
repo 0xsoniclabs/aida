@@ -16,3 +16,9 @@ linters:
         - "-ST1021" # Using 'bytes.Equal' to compare two 'net.IP'.
         - "-ST1022" #
         - "-ST1023" # Modifying the buffer in an 'io.Writer' implementation.
+formatters:
+  # Enable specific formatter.
+  # Default: [] (uses standard Go formatting)
+  enable:
+    - gofmt
+    - goimports

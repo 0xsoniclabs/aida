@@ -3,12 +3,13 @@ package utils
 import (
 	"database/sql"
 	"errors"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestPrinter_NewPrinter(t *testing.T) {
@@ -366,6 +367,7 @@ func TestFlusher_Close(t *testing.T) {
 			flusher:  &Flusher{},
 		},
 	}
+	mockDb.ExpectClose()
 	assert.NotPanics(t, f.Close)
 	if err := mockDb.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)

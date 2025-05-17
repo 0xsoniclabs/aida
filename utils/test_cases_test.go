@@ -17,6 +17,7 @@
 package utils
 
 import (
+	crytporand "crypto/rand"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -54,7 +55,7 @@ func MakeRandomByteSlice(t *testing.T, bufferLength int) []byte {
 	buffer := make([]byte, bufferLength)
 
 	// fill the slice with random data
-	_, err := rand.Read(buffer)
+	_, err := crytporand.Read(buffer)
 	if err != nil {
 		t.Fatalf("failed test data; can not generate random byte slice; %s", err.Error())
 	}
@@ -65,7 +66,7 @@ func MakeRandomByteSlice(t *testing.T, bufferLength int) []byte {
 // GetRandom generates random number in from given range
 func GetRandom(rangeLower int, rangeUpper int) int {
 	// seed the PRNG
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// get randomized balance
 	randInt := rangeLower + rand.Intn(rangeUpper-rangeLower+1)
