@@ -157,7 +157,8 @@ pipeline {
                         dir('eth-test-package') {
                             checkout scmGit(
                                 userRemoteConfigs: [[url: 'https://github.com/ethereum/tests.git']],
-                                branches: [[name: 'develop']]
+                                // Last commit with GeneralStateTests
+                                branches: [[name: '57935b91beceb43b68c772678bd5d8d53409ce34']]
                             )
                         }
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
