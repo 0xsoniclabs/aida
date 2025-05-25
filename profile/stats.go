@@ -17,6 +17,7 @@
 package profile
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -148,8 +149,16 @@ func (ps *Stats) writeCsv(builder strings.Builder) error {
 	if err != nil {
 		return fmt.Errorf("unable to print profiling; %v", err)
 	}
-	defer file.Close()
-	file.WriteString(builder.String())
+	defer func(file *os.File) {
+		e := file.Close()
+		if e != nil {
+			err = errors.Join(err, e)
+		}
+	}(file)
+	_, err = file.WriteString(builder.String())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
