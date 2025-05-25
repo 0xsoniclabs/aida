@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250318153505-712d1a76e929
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
-	github.com/0xsoniclabs/substate v0.0.0-20250407083445-08a2b03a3022
+	github.com/0xsoniclabs/substate v0.0.0-20250525122120-1e94fe6c5a85
 	github.com/0xsoniclabs/tosca v0.0.0-20250403113434-e05672621553
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
@@ -34,6 +34,7 @@ require (
 	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.36.0
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
+	golang.org/x/text v0.23.0
 	gonum.org/v1/gonum v0.12.0
 )
 
@@ -120,7 +121,6 @@ require (
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -145,5 +145,3 @@ replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundati
 // Sonic client is integrated as a git-submodule to make version configuration easier
 // when running tests.
 replace github.com/0xsoniclabs/sonic => ./sonic
-
-replace github.com/0xsoniclabs/substate => ./../substate
