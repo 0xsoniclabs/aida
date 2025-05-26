@@ -95,7 +95,7 @@ func genDeletedAccountsTask(
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
 
-	conduit := state.NewChainConduit(cfg.ChainID == utils.EthereumChainID, chainCfg)
+	conduit := state.NewChainConduit(utils.IsEthereumNetwork(cfg.ChainID), chainCfg)
 	statedb, err = state.MakeOffTheChainStateDB(ss.GetInputState(), tx.Block, conduit)
 	if err != nil {
 		return err

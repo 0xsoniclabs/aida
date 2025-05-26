@@ -191,7 +191,7 @@ func doSubsetValidation(alloc txcontext.WorldState, db state.VmStateDB) error {
 	})
 
 	if len(err) > 0 {
-		return fmt.Errorf(err)
+		return fmt.Errorf("%s", err)
 	}
 	return nil
 }
@@ -260,8 +260,8 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 			}
 		}
 
-		// BeaconRootsAddress is a special case where the storage is diverging
-		if overwriteAccount || addr == params.BeaconRootsAddress {
+		// BeaconRootsAddress, ConsolidationQueueAddress and WithdrawalQueueAddress are a special cases, where the storage is diverging
+		if overwriteAccount || addr == params.BeaconRootsAddress || addr == params.ConsolidationQueueAddress || addr == params.WithdrawalQueueAddress {
 			acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
 				if db.GetState(addr, keyHash) != valueHash {
 					db.SetState(addr, keyHash, valueHash)

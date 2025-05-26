@@ -17,15 +17,12 @@
 package db
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math/big"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
-	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/urfave/cli/v2"
@@ -55,7 +52,7 @@ func extractEthereumGenesis(ctx *cli.Context) error {
 	log := logger.NewLogger(cfg.LogLevel, "Ethereum Update")
 
 	log.Notice("Load Ethereum initial world state")
-	ws, err := loadEthereumGenesisWorldState(ctx.Args().Get(0))
+	ws, err := utildb.LoadEthereumGenesisWorldState(ctx.Args().Get(0))
 	if err != nil {
 		return err
 	}
@@ -69,38 +66,4 @@ func extractEthereumGenesis(ctx *cli.Context) error {
 	log.Noticef("PutUpdateSet(0, %v, []common.Address{})", ws)
 
 	return udb.PutUpdateSet(&updateset.UpdateSet{WorldState: ws, Block: 0}, make([]substatetypes.Address, 0))
-}
-
-// loadEthereumGenesisWorldState loads opera initial world state from worldstate-db as WorldState
-func loadEthereumGenesisWorldState(genesis string) (substate.WorldState, error) {
-	var jsData map[string]interface{}
-	// Read the content of the JSON file
-	jsonData, err := ioutil.ReadFile(genesis)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read genesis file: %v", err)
-	}
-
-	// Unmarshal JSON data
-	if err := json.Unmarshal(jsonData, &jsData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal genesis file: %v", err)
-	}
-
-	// get field alloc
-	alloc, ok := jsData["alloc"]
-	if !ok {
-		return nil, fmt.Errorf("failed to get alloc field from genesis file")
-	}
-
-	ssAccounts := make(substate.WorldState)
-
-	// loop over all the accounts
-	for k, v := range alloc.(map[string]interface{}) {
-		// Convert the string key back to a common.Address
-		address := substatetypes.HexToAddress(k)
-
-		balance, _ := new(big.Int).SetString(v.(map[string]interface{})["balance"].(string), 10)
-		ssAccounts[address] = substate.NewAccount(0, balance, []byte{})
-	}
-
-	return ssAccounts, err
 }

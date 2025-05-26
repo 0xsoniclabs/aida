@@ -83,6 +83,12 @@ func GetProvider(chainId ChainID) (string, error) {
 		return RPCTestnet, nil
 	case chainId == EthereumChainID:
 		return "", RPCUnsupported
+	case chainId == HoleskyChainID:
+		return "", RPCUnsupported
+	case chainId == HoodiChainID:
+		return "", RPCUnsupported
+	case chainId == SepoliaChainID:
+		return "", RPCUnsupported
 	default:
 		return "", fmt.Errorf("unknown chain-id %v", chainId)
 	}

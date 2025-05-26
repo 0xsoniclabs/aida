@@ -51,6 +51,7 @@ func TestStateDbPrimerExtension_PrimingExistingStateDbMissingDbInfo(t *testing.T
 
 	cfg := &utils.Config{}
 	cfg.IsExistingStateDb = true
+	cfg.First = 2
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
@@ -108,16 +109,24 @@ func TestStateDbPrimerExtension_AttemptToPrimeBlockZeroDoesNotFail(t *testing.T)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
+	tmpStateDb := t.TempDir()
+
 	cfg := &utils.Config{}
 	cfg.SkipPriming = false
-	cfg.StateDbSrc = ""
-	cfg.First = 0
+	cfg.StateDbSrc = tmpStateDb
+	cfg.IsExistingStateDb = true
+	cfg.First = 2
+
+	err := utils.WriteStateDbInfo(tmpStateDb, cfg, 1, common.Hash{}, false)
+	if err != nil {
+		t.Fatalf("cannot write state db info: %v", err)
+	}
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
-	log.EXPECT().Debugf("skipping priming; first priming block %v; first block %v", ^uint64(0), uint64(0))
+	log.EXPECT().Debugf("skipping priming; first priming block %v; first block %v", uint64(1), uint64(2))
 
-	err := ext.PreRun(executor.State[any]{}, &executor.Context{})
+	err = ext.PreRun(executor.State[any]{}, &executor.Context{})
 	if err != nil {
 		t.Errorf("priming should not happen hence should not fail")
 	}

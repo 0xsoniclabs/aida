@@ -55,6 +55,17 @@ type stateDbPrimer[T any] struct {
 
 // PreRun primes StateDb to given block.
 func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (err error) {
+	if p.cfg.SkipPriming {
+		p.log.Warning("Skipping priming (disabled by user)...")
+		return nil
+	}
+
+	// As different substates start on different blocks (either 0 or 1)
+	// we must check the starting block with the key word "first" with appropriate chainid
+	if p.cfg.First == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
+		return nil
+	}
+
 	// is used to determine block from which the priming starts
 	var primingStartBlock uint64
 	if p.cfg.IsExistingStateDb {
@@ -69,11 +80,6 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 			return fmt.Errorf("cannot read state db info; %w", err)
 		}
 		primingStartBlock = stateDbInfo.Block + 1
-	}
-
-	if p.cfg.SkipPriming {
-		p.log.Warning("Skipping priming (disabled by user)...")
-		return nil
 	}
 
 	if primingStartBlock == p.cfg.First {

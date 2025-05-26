@@ -980,7 +980,7 @@ func TestValidateStateDb_ValidateReceiptEthereumSkip(t *testing.T) {
 	// mismatch is skipped
 	sub = &substate.Substate{Result: getDummyResult()}
 	sub.Result.Status = types.ReceiptStatusSuccessful
-	err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: substatecontext.NewTxContext(sub), Block: getExceptionBlock()}, ctx)
+	err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: substatecontext.NewTxContext(sub), Block: getEthereumExceptionBlock()}, ctx)
 	if err != nil {
 		t.Fatalf("unexpected error\ngot: %v\nwant: nil", err)
 	}
@@ -1053,7 +1053,7 @@ func getIncorrectWorldState() substate.WorldState {
 	alloc := make(substate.WorldState)
 	alloc[substatetypes.Address{0}] = &substate.Account{
 		Nonce:   0,
-		Balance: new(big.Int),
+		Balance: uint256.NewInt(0),
 		Storage: make(map[substatetypes.Hash]substatetypes.Hash),
 		Code:    make([]byte, 0),
 	}

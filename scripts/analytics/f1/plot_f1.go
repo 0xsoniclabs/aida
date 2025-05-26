@@ -244,7 +244,7 @@ func main() {
 	// Report header
 	writer.Write(html.Div(
 		html.H1("F1 - Functional Correctness of LiveDB using Testnet"),
-		html.P(time.Now().Format("2006-01-02")),
+		html.P("%s", time.Now().Format("2006-01-02")),
 	))
 
 	// Experimental setup

@@ -8,12 +8,16 @@ pipeline {
     }
 
     environment {
+        // Go options
+        GOGC = '50'
+        GOMEMLIMIT = '28GiB'
+
         // Aida CLI options
         STATEDB = '--db-impl carmen --db-variant go-file --carmen-schema 5'
         ARCHIVE = '--archive --archive-variant s5'
         PRIME = '--update-buffer-size 4000'
         VM = '--vm-impl lfvm'
-        AIDADB = '--aida-db /mnt/aida-db-mainnet/aida-db'
+        AIDADB = '--aida-db /mnt/substate-opera-mainnet/aida-db'
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
         PROFILE = '--cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown'
@@ -21,7 +25,7 @@ pipeline {
         // Other parameters
         TRACEDIR = 'tracefiles'
         FROMBLOCK = 'opera'
-        TOBLOCK = '4600000'
+        TOBLOCK = '4570000'
     }
 
     stages {
@@ -62,9 +66,13 @@ pipeline {
                 }
 
                 stage('Run unit tests') {
+                    environment {
+                        CODECOV_TOKEN = credentials('codecov-uploader-0xsoniclabs-global')
+                    }
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                             sh 'go test ./...'
+                             sh 'go test ./... -coverprofile=coverage.txt'
+                             sh ('codecov upload-process -r 0xsoniclabs/aida -f ./coverage.txt -t ${CODECOV_TOKEN}')
                         }
                     }
                 }
@@ -91,8 +99,9 @@ pipeline {
                         sh "mkdir -p ${TRACEDIR}"
                         sh "rm -rf ${TRACEDIR}/*"
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${FROMBLOCK} ${FROMBLOCK}+100"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${FROMBLOCK}+101 ${FROMBLOCK}+200"
+                            // use fixed ranges to control the priming time
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} 1000 1500"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} 1501 2000"
                         }
                     }
                 }
@@ -100,8 +109,8 @@ pipeline {
                 stage('aida-sdb replay') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat ${FROMBLOCK} ${TOBLOCK}"
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} ${FROMBLOCK} ${TOBLOCK}"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
                         }
                         sh "rm -rf ${TRACEDIR}"
                     }
@@ -148,7 +157,8 @@ pipeline {
                         dir('eth-test-package') {
                             checkout scmGit(
                                 userRemoteConfigs: [[url: 'https://github.com/ethereum/tests.git']],
-                                branches: [[name: 'develop']]
+                                // Last commit with GeneralStateTests
+                                branches: [[name: '57935b91beceb43b68c772678bd5d8d53409ce34']]
                             )
                         }
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
@@ -159,7 +169,7 @@ pipeline {
                                 --db-impl geth \
                                 ${TMPDB} \
                                 --fork Cancun \
-                                ${env.WORKSPACE}/eth-test-package"""
+                                ${env.WORKSPACE}/eth-test-package/GeneralStateTests/stTransactionTest"""
                         }
                     }
                 }

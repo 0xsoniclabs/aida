@@ -38,6 +38,7 @@ var MergeCommand = cli.Command{
 		&logger.LogLevelFlag,
 		&utils.CompactDbFlag,
 		&flags.SkipMetadata,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Creates target aida-db by merging source databases from arguments:

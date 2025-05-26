@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -51,7 +50,7 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 			ctx := new(executor.Context)
 			ctx.State = db
 
-			st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+			st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 			ext := makeEthereumDbPostTransactionUpdater(cfg, log)
 			if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
@@ -80,7 +79,7 @@ func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t 
 
 	nonExceptionBlock := 1
 
-	if _, ok := ethereumLfvmBlockExceptions[nonExceptionBlock]; ok {
+	if _, ok := ethereumLfvmBlockExceptions[utils.EthereumChainID][nonExceptionBlock]; ok {
 		t.Fatal("nonExceptionBlock is in ethereumLfvmBlockExceptions; invalid test conditions")
 	}
 
@@ -105,7 +104,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 	data := createTestTransaction()
 	ctx := new(executor.Context)
 	ctx.State = db
-	st := executor.State[txcontext.TxContext]{Block: getExceptionBlock(), Transaction: 1, Data: data}
+	st := executor.State[txcontext.TxContext]{Block: getEthereumExceptionBlock(), Transaction: 1, Data: data}
 
 	gomock.InOrder(
 		db.EXPECT().Exist(common.HexToAddress("0x1")).Return(true),
@@ -140,24 +139,24 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 func createTestTransaction() txcontext.TxContext {
 	return substatecontext.NewTxContext(&substate.Substate{
 		InputSubstate: substate.WorldState{
-			substatetypes.HexToAddress("0x1"): substate.NewAccount(1, big.NewInt(1000), nil),
-			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, big.NewInt(2000), nil),
+			substatetypes.HexToAddress("0x1"): substate.NewAccount(1, uint256.NewInt(1000), nil),
+			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, uint256.NewInt(2000), nil),
 		},
 		OutputSubstate: substate.WorldState{
 			substatetypes.HexToAddress("0x1"): &substate.Account{
 				Nonce:   1,
-				Balance: big.NewInt(1000),
+				Balance: uint256.NewInt(1000),
 				Storage: map[substatetypes.Hash]substatetypes.Hash{
 					substatetypes.BytesToHash([]byte{0x1}): substatetypes.BytesToHash([]byte{0x2})},
 			},
-			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, big.NewInt(2000), nil),
+			substatetypes.HexToAddress("0x2"): substate.NewAccount(2, uint256.NewInt(2000), nil),
 		},
 	})
 }
 
-func getExceptionBlock() int {
+func getEthereumExceptionBlock() int {
 	// retrieving exception block
-	for key := range ethereumLfvmBlockExceptions {
+	for key := range ethereumLfvmBlockExceptions[utils.EthereumChainID] {
 		return key
 	}
 	return -1

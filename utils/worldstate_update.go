@@ -33,7 +33,7 @@ func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB)
 		err              error
 	)
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-	sdb, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to set substate encoding. %v", err)
 	}

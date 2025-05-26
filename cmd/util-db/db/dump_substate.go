@@ -61,7 +61,7 @@ func substateDumpAction(ctx *cli.Context) error {
 	defer sdb.Close()
 
 	// set encoding type
-	_, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 	if err != nil {
 		return fmt.Errorf("cannot set substate encoding; %w", err)
 	}

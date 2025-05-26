@@ -360,7 +360,7 @@ func main() {
 	// header
 	writer.Write(html.Div(
 		html.H1("Operation Profiling Report"),
-		html.P(time.Now().Format("2006-01-02")),
+		html.P("%s", time.Now().Format("2006-01-02")),
 	))
 
 	// experimental setup

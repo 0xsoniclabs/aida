@@ -19,9 +19,7 @@ package utildb
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -106,7 +104,7 @@ func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
 			return 0, 0, err
 		}
 		defer sdb.Close()
-		sdb, err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to set substate encoding. %v", err)
 		}
@@ -142,12 +140,11 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 // mergePatch takes decompressed patches and merges them into aida-db
 func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
 	var (
-		err                       error
-		patchDb                   db.BaseDB
-		targetMD                  *utils.AidaDbMetadata
-		patchDbHash, targetDbHash []byte
-		isNewDb                   bool
-		log                       = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
+		err      error
+		patchDb  db.BaseDB
+		targetMD *utils.AidaDbMetadata
+		isNewDb  bool
+		log      = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
 	)
 
 	if lastAidaDbBlock == 0 {
@@ -166,26 +163,8 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 			}
 		case extractedPatchPath, ok := <-decompressChan:
 			{
+				// no more data then return
 				if !ok {
-					if cfg.Validate {
-						if patchDbHash == nil {
-							log.Critical("DbHash not found in downloaded Patch - cannot perform validation. If you were missing only lachesis patch, this would be normal behaviour.")
-						} else {
-							log.Notice("Starting db-validation. This may take several hours...")
-							targetDbHash, err = GenerateDbHash(targetMD.Db, cfg.LogLevel)
-							if err != nil {
-								return fmt.Errorf("cannot create DbHash of merged AidaDb; %v", err)
-							}
-
-							if cmp := bytes.Compare(patchDbHash, targetDbHash); cmp != 0 {
-								log.Criticalf("db hashes are not same! \nPatch: %v; Calculated: %v", hex.EncodeToString(patchDbHash), hex.EncodeToString(targetDbHash))
-							} else {
-								log.Notice("Validation successful!")
-								return targetMD.SetDbHash(patchDbHash)
-							}
-						}
-					}
-
 					return nil
 				}
 
@@ -239,8 +218,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 
 				// we only check metadata if not applying stateHashPatch
 				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					// save patch dbHash - last hash gets validated if validation is turned on
-					patchDbHash, err = targetMD.CheckUpdateMetadata(cfg, patchDb)
+					err = targetMD.CheckUpdateMetadata(cfg, patchDb)
 					if err != nil {
 						return err
 					}

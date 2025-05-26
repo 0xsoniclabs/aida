@@ -31,6 +31,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -236,7 +237,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int) {
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
 	// Generate a random number between 1 and 5
 	numSubstates := rand.Intn(5) + 1
-	acc := substate.NewAccount(1, big.NewInt(1), []byte{1})
+	acc := substate.NewAccount(1, uint256.NewInt(1), []byte{1})
 
 	for i := 0; i < numSubstates; i++ {
 		state := substate.Substate{
@@ -276,7 +277,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int) {
 
 	for i := 0; i < numUpdates; i++ {
 		sa := new(substate.Account)
-		sa.Balance = big.NewInt(int64(utils.GetRandom(1, 1000*5000)))
+		sa.Balance = uint256.NewInt(uint64(utils.GetRandom(1, 1000*5000)))
 		randomAddress := substatetypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
 		worldState := substate.WorldState{
 
