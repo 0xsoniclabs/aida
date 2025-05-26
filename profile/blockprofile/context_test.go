@@ -445,7 +445,8 @@ func TestGetProfileDataWith2Transactions(t *testing.T) {
 		t.Errorf("speed up does not match expected one")
 	}
 
-	if pd.ubNumProc != int64(len(graphutil.MinChainCover(ctx.txDependencies))) {
+	chainset, _ := graphutil.MinChainCover(ctx.txDependencies)
+	if pd.ubNumProc != int64(len(chainset)) {
 		t.Errorf("ubNumProc does not match expected one")
 	}
 
