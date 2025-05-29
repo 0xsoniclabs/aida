@@ -115,7 +115,7 @@ func clonePatch(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func createDbClone(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func createCustomClone(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
