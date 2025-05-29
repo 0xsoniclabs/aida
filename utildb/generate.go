@@ -376,12 +376,12 @@ func (g *Generator) createPatch() (string, error) {
 	g.Cfg.First = g.Opera.firstBlock
 	g.Cfg.Last = g.Opera.lastBlock
 
-	patchDb, err := db.NewReadOnlyBaseDB(g.Cfg.TargetDb)
+	patchDb, err := db.NewReadOnlySubstateDB(g.Cfg.TargetDb)
 	if err != nil {
 		return "", fmt.Errorf("cannot open patch db; %v", err)
 	}
 
-	err = CreatePatchClone(g.Cfg, g.AidaDb, patchDb, g.Opera.FirstEpoch, g.Opera.lastEpoch, g.Opera.isNew)
+	err = CreatePatchClone(g.Cfg, db.MakeDefaultSubstateDBFromBaseDB(g.AidaDb), patchDb, g.Opera.FirstEpoch, g.Opera.lastEpoch, g.Opera.isNew)
 	if err != nil {
 		return "", fmt.Errorf("cannot create patch clone; %v", err)
 	}
