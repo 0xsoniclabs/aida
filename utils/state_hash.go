@@ -65,7 +65,7 @@ func (p *stateHashProvider) GetStateHash(number int) (common.Hash, error) {
 func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
 	ipcPath := operaPath + "/sonic.ipc"
 
-	client, err := getClient(ctx, chainId, ipcPath, log)
+	client, err := GetClient(ctx, chainId, ipcPath, log)
 	if err != nil {
 		return err
 	}
@@ -116,8 +116,8 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 	return nil
 }
 
-// getClient returns a rpc/ipc client
-func getClient(ctx context.Context, chainId ChainID, ipcPath string, log logger.Logger) (*rpc.Client, error) {
+// GetClient returns a rpc/ipc client
+func GetClient(ctx context.Context, chainId ChainID, ipcPath string, log logger.Logger) (*rpc.Client, error) {
 	var client *rpc.Client
 	var err error
 
