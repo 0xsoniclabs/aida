@@ -105,7 +105,7 @@ func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 		defer close(feederChan)
 
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-		err := sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		err := sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			errChan <- err
 			return
