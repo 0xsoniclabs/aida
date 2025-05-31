@@ -52,6 +52,7 @@ var cmdCount = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -63,6 +64,7 @@ var cmdRange = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -114,6 +116,10 @@ func printCount(ctx *cli.Context) error {
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
+		}
 		count := utildb.GetSubstateCount(cfg, sdb)
 		log.Noticef("Found %v substates", count)
 	}
@@ -170,6 +176,10 @@ func printRange(ctx *cli.Context) error {
 		sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
 
 		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
