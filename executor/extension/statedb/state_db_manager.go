@@ -102,8 +102,8 @@ func (m *stateDbManager[T]) PreRun(_ executor.State[T], ctx *executor.Context) e
 		if err != nil {
 			return fmt.Errorf("failed to read state-db info file; %v", err)
 		}
-		m.log.Infof("Resuming from block %v", blockNum)
 		blockNum = dbinfo.Block
+		m.log.Infof("Resuming from block %v", blockNum)
 	}
 
 	// Mark state-db info with incomplete state.
