@@ -116,7 +116,7 @@ func printCount(ctx *cli.Context) error {
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
@@ -177,7 +177,7 @@ func printRange(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
 		}
-		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
