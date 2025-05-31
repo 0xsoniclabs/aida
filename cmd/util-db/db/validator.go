@@ -201,6 +201,7 @@ var PrintTableHashCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
