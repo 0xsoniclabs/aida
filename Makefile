@@ -121,6 +121,6 @@ install-dev-tools:
 #	@golangci-lint run --timeout 5m0s
 
 check:
-	@goimports -w ./profile
-	@gofmt -s -d -w ./profile
-	@golangci-lint run -c .golangci.yml ./profile
+	@goimports -w ./profile ./txcontext
+	@gofmt -s -d -w ./profile ./txcontext
+	@golangci-lint run -c .golangci.yml ./profile ./txcontext
