@@ -596,7 +596,7 @@ func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
 	require.True(t, ok, "code does not exist")
 }
 
-func TestCloner_PutCode_DoesNotNilAndEmptyCodes(t *testing.T) {
+func TestCloner_PutCode_DoesNotPutNilCode(t *testing.T) {
 	srcPath := t.TempDir()
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
@@ -604,14 +604,15 @@ func TestCloner_PutCode_DoesNotNilAndEmptyCodes(t *testing.T) {
 	require.NoError(t, err, "failed to set substate encoding")
 
 	// Create one substate with nil code and one with empty code
-	ss1 := createTestSubstate(t, 1, nil, []byte{})
+	ss1 := createTestSubstate(t, 1, nil, []byte{123})
 	err = srcDb.PutSubstate(ss1)
 	require.NoError(t, err, "failed to put substate")
 
 	// PutCode must be called only once for each code
 	ctrl := gomock.NewController(t)
 	dstDb := db.NewMockSubstateDB(ctrl)
-	// nothing is expected
+	// only one code should be put
+	dstDb.EXPECT().PutCode([]byte{123}).Times(1)
 
 	clnr := cloner{
 		cfg: &utils.Config{

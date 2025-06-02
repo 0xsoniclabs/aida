@@ -551,7 +551,7 @@ func (c *cloner) cloneCodes() error {
 // putCode puts code into the cloneDb and increments the count
 func (c *cloner) putCode(code []byte) error {
 	// skip empty codes
-	if code == nil || len(code) == 0 {
+	if code == nil {
 		return nil
 	}
 	c.count++
