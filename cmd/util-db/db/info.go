@@ -174,13 +174,17 @@ func printRange(ctx *cli.Context) error {
 	if argErr != nil {
 		return argErr
 	}
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
 
+	return printRangeRun(cfg, log)
+}
+
+// printRangeRun prints range of given db component in given AidaDb
+func printRangeRun(cfg *utils.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
 	}
-
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
 
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
@@ -211,8 +215,9 @@ func printRange(ctx *cli.Context) error {
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %v", err)
+		} else {
+			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
-		log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		udb.Close()
 	}
 
