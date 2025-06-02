@@ -230,6 +230,32 @@ func TestTableHash_JustStateHash(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
+	tmpDir := t.TempDir() + "/aidaDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer database.Close()
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	// Create a config with an invalid substate encoding
+	cfg := &utils.Config{
+		DbComponent:      string(dbcomponent.Substate),
+		SubstateEncoding: "invalid_encoding",
+	}
+
+	gomock.InOrder(
+		log.EXPECT().Info(gomock.Any()),
+	)
+
+	err = TableHash(cfg, database, log)
+	assert.Error(t, err)
+}
+
 func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int) {
 	// Seed the random number generator
 	rand.NewSource(time.Now().UnixNano())
