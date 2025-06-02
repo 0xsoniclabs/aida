@@ -562,7 +562,7 @@ func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
 
-	ss := createTestSubstate(t, 1)
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{2})
 	err = srcDb.PutSubstate(ss)
 	require.NoError(t, err, "failed to put substate")
 
@@ -596,26 +596,22 @@ func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
 	require.True(t, ok, "code does not exist")
 }
 
-func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
+func TestCloner_PutCode_DoesNotNilAndEmptyCodes(t *testing.T) {
 	srcPath := t.TempDir()
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
 
-	// Create two identical substates with different tx numbers
-	ss1 := createTestSubstate(t, 1)
+	// Create one substate with nil code and one with empty code
+	ss1 := createTestSubstate(t, 1, nil, []byte{})
 	err = srcDb.PutSubstate(ss1)
-	require.NoError(t, err, "failed to put substate")
-	ss2 := createTestSubstate(t, 2)
-	err = srcDb.PutSubstate(ss2)
 	require.NoError(t, err, "failed to put substate")
 
 	// PutCode must be called only once for each code
 	ctrl := gomock.NewController(t)
 	dstDb := db.NewMockSubstateDB(ctrl)
-	dstDb.EXPECT().PutCode([]byte{1}).MaxTimes(1)
-	dstDb.EXPECT().PutCode([]byte{2}).MaxTimes(1)
+	// nothing is expected
 
 	clnr := cloner{
 		cfg: &utils.Config{
@@ -633,21 +629,21 @@ func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
 	require.NoError(t, err, "failed to clone codes")
 }
 
-func createTestSubstate(t *testing.T, tx int) *substate.Substate {
+func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Substate {
 	t.Helper()
 	random := types.Hash{1}
 	to := types.Address{1}
 	return &substate.Substate{
 		InputSubstate: substate.WorldState{
 			types.Address{1}: &substate.Account{
-				Code:    []byte{1},
+				Code:    codeA,
 				Balance: uint256.NewInt(10),
 				Storage: make(map[types.Hash]types.Hash),
 			},
 		},
 		OutputSubstate: substate.WorldState{
 			types.Address{2}: &substate.Account{
-				Code:    []byte{2},
+				Code:    codeB,
 				Balance: uint256.NewInt(10),
 				Storage: make(map[types.Hash]types.Hash),
 			},

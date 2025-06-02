@@ -19,7 +19,6 @@ package clone
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/types"
 	"os"
 	"time"
 
@@ -526,38 +525,39 @@ func (c *cloner) cloneCodes() error {
 	iter := c.aidaDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
 	defer iter.Release()
 
-	alreadyWrittenCodes := make(map[types.Address]struct{})
 	for iter.Next() {
 		ss := iter.Value()
 		if ss.Block > c.cfg.Last {
 			return nil
 		}
 
-		for addr, acc := range ss.InputSubstate {
-			// only write code if it is not already written
-			if _, ok := alreadyWrittenCodes[addr]; !ok {
-				c.count++
-				err := c.cloneDb.PutCode(acc.Code)
-				if err != nil {
-					return fmt.Errorf("failed to put code from address: %s ; %v", addr, err)
-				}
-				alreadyWrittenCodes[addr] = struct{}{}
+		for _, acc := range ss.InputSubstate {
+			if err := c.putCode(acc.Code); err != nil {
+				return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 			}
 		}
 
-		for addr, acc := range ss.OutputSubstate {
-			// only write code if it is not already written
-			if _, ok := alreadyWrittenCodes[addr]; !ok {
-				c.count++
-				err := c.cloneDb.PutCode(acc.Code)
-				if err != nil {
-					return fmt.Errorf("failed to put code from address: %s ; %v", addr, err)
-				}
-				alreadyWrittenCodes[addr] = struct{}{}
+		for _, acc := range ss.OutputSubstate {
+			if err := c.putCode(acc.Code); err != nil {
+				return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 			}
 		}
 
 	}
 	c.log.Noticef("Prefix %v done", db.CodeDBPrefix)
+	return nil
+}
+
+// putCode puts code into the cloneDb and increments the count
+func (c *cloner) putCode(code []byte) error {
+	// skip empty codes
+	if code == nil || len(code) == 0 {
+		return nil
+	}
+	c.count++
+	err := c.cloneDb.PutCode(code)
+	if err != nil {
+		return err
+	}
 	return nil
 }
