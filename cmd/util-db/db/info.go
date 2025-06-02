@@ -58,7 +58,7 @@ var cmdCount = cli.Command{
 }
 
 var cmdRange = cli.Command{
-	Action: printRange,
+	Action: printRangeRun,
 	Name:   "range",
 	Usage:  "Prints range of all types in AidaDb",
 	Flags: []cli.Flag{
@@ -168,19 +168,19 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	return nil
 }
 
-// printRange prints range of given db component in given AidaDb
-func printRange(ctx *cli.Context) error {
+// printRangeRun prints range of given db component in given AidaDb
+func printRangeRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
 
-	return printRangeRun(cfg, log)
+	return printRange(cfg, log)
 }
 
-// printRangeRun prints range of given db component in given AidaDb
-func printRangeRun(cfg *utils.Config, log logger.Logger) error {
+// printRange prints range of given db component in given AidaDb
+func printRange(cfg *utils.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
