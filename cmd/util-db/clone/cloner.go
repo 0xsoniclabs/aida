@@ -19,6 +19,7 @@ package clone
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"os"
 	"time"
 
@@ -525,6 +526,7 @@ func (c *cloner) cloneCodes() error {
 	iter := c.aidaDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
 	defer iter.Release()
 
+	savedCodes := make(map[common.Hash]struct{})
 	for iter.Next() {
 		ss := iter.Value()
 		if ss.Block > c.cfg.Last {
@@ -532,14 +534,20 @@ func (c *cloner) cloneCodes() error {
 		}
 
 		for _, acc := range ss.InputSubstate {
-			if err := c.putCode(acc.Code); err != nil {
-				return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+			if _, ok := savedCodes[common.Hash(acc.CodeHash())]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[common.Hash(acc.CodeHash())] = struct{}{}
 			}
 		}
 
 		for _, acc := range ss.OutputSubstate {
-			if err := c.putCode(acc.Code); err != nil {
-				return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+			if _, ok := savedCodes[common.Hash(acc.CodeHash())]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[common.Hash(acc.CodeHash())] = struct{}{}
 			}
 		}
 
@@ -551,7 +559,7 @@ func (c *cloner) cloneCodes() error {
 // putCode puts code into the cloneDb and increments the count
 func (c *cloner) putCode(code []byte) error {
 	// skip empty codes
-	if code == nil {
+	if code == nil || len(code) == 0 {
 		return nil
 	}
 	c.count++
