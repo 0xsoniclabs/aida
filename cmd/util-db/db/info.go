@@ -45,7 +45,7 @@ var InfoCommand = cli.Command{
 }
 
 var cmdCount = cli.Command{
-	Action:    printCount,
+	Action:    printCountRun,
 	Name:      "count",
 	Usage:     "Count records in AidaDb.",
 	ArgsUsage: "<firstBlockNum>, <lastBlockNum>",
@@ -91,19 +91,25 @@ var cmdPrintStateHash = cli.Command{
 	},
 }
 
-// printCount prints count of given db component in given AidaDb
-func printCount(ctx *cli.Context) error {
+// printCountRun prints count of given db component in given AidaDb
+func printCountRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
 
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
+
+	return printCount(cfg, log)
+}
+
+// printCount prints count of given db component in given AidaDb
+func printCount(cfg *utils.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
 	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
 
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
@@ -111,7 +117,12 @@ func printCount(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func() {
+		err = base.Close()
+		if err != nil {
+			log.Warningf("Error closing base db: %v", err)
+		}
+	}()
 
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
