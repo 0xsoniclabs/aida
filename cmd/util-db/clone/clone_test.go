@@ -630,6 +630,39 @@ func TestCloner_PutCode_DoesNotPutNilCode(t *testing.T) {
 	require.NoError(t, err, "failed to clone codes")
 }
 
+func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	// Create two identical substates with different tx numbers
+	ss1 := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss1)
+	require.NoError(t, err, "failed to put substate")
+
+	// PutCode must be called only once for each code
+	ctrl := gomock.NewController(t)
+	dstDb := db.NewMockSubstateDB(ctrl)
+	dstDb.EXPECT().PutCode([]byte{1}).Times(1)
+
+	clnr := cloner{
+		cfg: &utils.Config{
+			First:            1,
+			Last:             10,
+			Workers:          1,
+			SubstateEncoding: "protobuf",
+		},
+		aidaDb:  srcDb,
+		cloneDb: dstDb,
+		log:     logger.NewLogger("warn", "CloneCodesTest"),
+	}
+
+	err = clnr.cloneCodes()
+	require.NoError(t, err, "failed to clone codes")
+}
+
 func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Substate {
 	t.Helper()
 	random := types.Hash{1}
