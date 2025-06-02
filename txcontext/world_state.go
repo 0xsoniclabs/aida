@@ -25,6 +25,8 @@ import (
 )
 
 // WorldState represents an interface for managing and interacting with a collection of Ethereum-like accounts.
+//
+//go:generate mockgen -source world_state.go -destination world_state_mock.go -package txcontext
 type WorldState interface {
 	// Get retrieves the account associated with the given address.
 	// Get should return nil if account is not found.
@@ -101,6 +103,7 @@ func WorldStateEqual(x, y WorldState) (isEqual bool) {
 		return false
 	}
 
+	isEqual = true
 	x.ForEachAccount(func(addr common.Address, acc Account) {
 		yAcc := y.Get(addr)
 		if yAcc == nil {
@@ -114,7 +117,7 @@ func WorldStateEqual(x, y WorldState) (isEqual bool) {
 		}
 	})
 
-	return true
+	return isEqual
 }
 
 func WorldStateString(a WorldState) string {
