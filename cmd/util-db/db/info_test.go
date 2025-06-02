@@ -281,7 +281,7 @@ func TestPrintRange_Logging(t *testing.T) {
 
 			}
 
-			err = printRangeRun(cfg, log)
+			err = printRange(cfg, log)
 			assert.NoError(t, err)
 		})
 	}
