@@ -42,7 +42,7 @@ func TestPrintCount_IntegrationTest(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPrintCountWithConfig_Logging(t *testing.T) {
+func TestPrintCount_Logging(t *testing.T) {
 	type testCase struct {
 		name         string
 		first        uint64
@@ -168,6 +168,120 @@ func TestPrintCountWithConfig_Logging(t *testing.T) {
 			}
 
 			err = printCount(cfg, log)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestPrintRange_Logging(t *testing.T) {
+	type testCase struct {
+		name         string
+		dbComponent  string
+		expectedLogs []struct {
+			method string
+			format string
+			args   []interface{}
+		}
+	}
+	tests := []testCase{
+		{
+			name:        "AllComponents_EmptyDbAll",
+			dbComponent: "all",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Warning", "No substate found", []interface{}{}},
+				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+			},
+		},
+		{
+			name:        "SubstateOnly_EmptyDb",
+			dbComponent: "substate",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Warning", "No substate found", []interface{}{}},
+			},
+		},
+		{
+			name:        "UpdateOnly_EmptyDb",
+			dbComponent: "update",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
+			},
+		},
+		{
+			name:        "DeleteOnly_EmptyDb",
+			dbComponent: "delete",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
+			},
+		},
+		{
+			name:        "StateHashOnly_EmptyDb",
+			dbComponent: "state-hash",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			aidaDbPath := t.TempDir() + "aida-db"
+
+			aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if aidaDb == nil {
+				t.Fatal("aidaDb is nil")
+			}
+			err = aidaDb.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := &utils.Config{
+				AidaDb:      aidaDbPath,
+				DbComponent: tc.dbComponent,
+				LogLevel:    "info",
+			}
+
+			ctrl := gomock.NewController(t)
+			log := logger.NewMockLogger(ctrl)
+
+			for _, l := range tc.expectedLogs {
+				switch l.method {
+				case "Infof":
+					log.EXPECT().Infof(l.format, l.args...)
+				case "Warningf":
+					log.EXPECT().Warningf(l.format, l.args...)
+				case "Warning":
+					log.EXPECT().Warning(l.format)
+				}
+
+			}
+
+			err = printRangeRun(cfg, log)
 			assert.NoError(t, err)
 		})
 	}
