@@ -1,11 +1,16 @@
 package db
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
@@ -42,7 +47,7 @@ func TestPrintCount_IntegrationTest(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPrintCount_Logging(t *testing.T) {
+func TestPrintCount_LoggingEmpty(t *testing.T) {
 	type testCase struct {
 		name         string
 		first        uint64
@@ -173,7 +178,7 @@ func TestPrintCount_Logging(t *testing.T) {
 	}
 }
 
-func TestPrintRange_Logging(t *testing.T) {
+func TestPrintRange_LoggingEmpty(t *testing.T) {
 	type testCase struct {
 		name         string
 		dbComponent  string
@@ -285,4 +290,65 @@ func TestPrintRange_Logging(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestPrintRange_IntegrationTest(t *testing.T) {
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aidaDb == nil {
+		t.Fatal("aidaDb is nil")
+	}
+
+	// insert substate
+	state := substate.Substate{
+		Block:       10,
+		Transaction: 7,
+		Env:         &substate.Env{},
+		Message: &substate.Message{
+			Value: big.NewInt(12),
+		},
+		InputSubstate:  substate.WorldState{},
+		OutputSubstate: substate.WorldState{},
+		Result:         &substate.Result{},
+	}
+	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	err = sdb.PutSubstate(&state)
+	assert.NoError(t, err)
+
+	us := updateset.UpdateSet{
+		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:           0,
+		DeletedAccounts: []types.Address{},
+	}
+
+	// insert update
+	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	err = udb.PutUpdateSet(&us, us.DeletedAccounts)
+	assert.NoError(t, err)
+
+	// insert deleted account?
+
+	// insert state hash?
+
+	err = aidaDb.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{
+		"info", "range",
+		"--aida-db", aidaDbPath,
+		"--db-component=all",
+	}
+
+	app := cli.App{
+		Commands: []*cli.Command{
+			&cmdRange,
+		}}
+	err = app.Run(args)
+	assert.NoError(t, err)
 }
