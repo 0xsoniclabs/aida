@@ -382,6 +382,24 @@ func (c *cloner) readStateHashes() error {
 	return nil
 }
 
+// readExceptionSet from UpdateDb
+func (c *cloner) readExceptionSet() error {
+	endCond := func(key []byte) (bool, error) {
+		block, err := db.DecodeExceptionDBKey(key)
+		if err != nil {
+			return false, err
+		}
+		if block > c.cfg.Last {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	c.read([]byte(db.ExceptionDBPrefix), c.cfg.First, endCond)
+
+	return nil
+}
+
 func (c *cloner) sendToWriteChan(k, v []byte) bool {
 	// make deep read key and value
 	// need to pass deep read of values into the channel
@@ -476,6 +494,13 @@ func (c *cloner) readDataCustom() error {
 		err := c.readStateHashes()
 		if err != nil {
 			return err
+		}
+	}
+
+	if c.cloneComponent == dbcomponent.Exception || c.cloneComponent == dbcomponent.All {
+		err := c.readExceptionSet()
+		if err != nil {
+			return fmt.Errorf("cannot read exception set; %v", err)
 		}
 	}
 
