@@ -286,7 +286,7 @@ type Config struct {
 	ContinueOnFailure        bool                      // continue validation when an error detected
 	ContractNumber           int64                     // number of contracts to create
 	CustomDbName             string                    // name of state-db directory
-	DbComponent              string                    // options for util-db info are 'all', 'substate', 'delete', 'update', 'state-hash'
+	DbComponent              string                    // options for util-db info are 'all', 'substate', 'delete', 'update', 'state-hash', 'exception'
 	DbImpl                   string                    // storage implementation
 	DbLogging                string                    // set to true if all DB operations should be logged
 	DbTmp                    string                    // path to temporary database
