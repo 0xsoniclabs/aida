@@ -41,6 +41,7 @@ var InfoCommand = cli.Command{
 		&cmdCount,
 		&cmdRange,
 		&cmdPrintStateHash,
+		&cmdPrintException,
 	},
 }
 
@@ -52,6 +53,7 @@ var cmdCount = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -63,6 +65,7 @@ var cmdRange = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -83,6 +86,16 @@ var cmdPrintStateHash = cli.Command{
 	Action:    printStateHash,
 	Name:      "state-hash",
 	Usage:     "Prints state hash for given block number.",
+	ArgsUsage: "<BlockNum>",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+	},
+}
+
+var cmdPrintException = cli.Command{
+	Action:    printException,
+	Name:      "exception",
+	Usage:     "Prints exception for given block number.",
 	ArgsUsage: "<BlockNum>",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
@@ -114,6 +127,10 @@ func printCount(ctx *cli.Context) error {
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
+		}
 		count := utildb.GetSubstateCount(cfg, sdb)
 		log.Noticef("Found %v substates", count)
 	}
@@ -148,6 +165,16 @@ func printCount(ctx *cli.Context) error {
 		}
 	}
 
+	// print exception count
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		count, err := utildb.GetExceptionCount(cfg, base)
+		if err != nil {
+			log.Warningf("cannot print exception count; %v", err)
+		} else {
+			log.Noticef("Found %v exceptions", count)
+		}
+	}
+
 	return nil
 }
 
@@ -170,6 +197,10 @@ func printRange(ctx *cli.Context) error {
 		sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
 
 		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
@@ -222,6 +253,20 @@ func printRange(ctx *cli.Context) error {
 		} else {
 			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
 		}
+	}
+
+	// print exception range
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		edb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open update db")
+		}
+		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInException(edb)
+		if err != nil {
+			log.Warningf("cannot find exception range; %v", err)
+		}
+		log.Infof("Exception block range: %v - %v", firstUsBlock, lastUsBlock)
+		edb.Close()
 	}
 	return nil
 }
@@ -313,6 +358,39 @@ func printStateHash(ctx *cli.Context) error {
 	}
 
 	log.Noticef("State hash for block %v is 0x%v", blockNum, hex.EncodeToString(bytes))
+
+	return nil
+}
+
+func printException(ctx *cli.Context) error {
+	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	if argErr != nil {
+		return argErr
+	}
+
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-Exception")
+
+	blockNum, err := strconv.ParseUint(ctx.Args().Slice()[0], 10, 64)
+	if err != nil {
+		return err
+	}
+
+	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %v", err)
+	}
+
+	exception, err := exceptionDb.GetException(blockNum)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			log.Warningf("No exception found for block %d", blockNum)
+			return nil
+		}
+
+		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
+	}
+
+	log.Noticef("Exception for block %v: %v", blockNum, exception)
 
 	return nil
 }

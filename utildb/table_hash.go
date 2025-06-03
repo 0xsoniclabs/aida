@@ -76,6 +76,15 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 		log.Infof("State-Hashes hash: %x; count %v", aidaDbStateHashesHash, count)
 	}
 
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		log.Info("Generating Exception hash...")
+		exceptionHash, count, err := GetExceptionDbHash(cfg, base, log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Exception hash: %x; count %v", exceptionHash, count)
+	}
+
 	return nil
 }
 
@@ -105,6 +114,11 @@ func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 		defer close(feederChan)
 
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		err := sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
+		if err != nil {
+			errChan <- err
+			return
+		}
 		it := sdb.NewSubstateIterator(int(cfg.First), 10)
 		defer it.Release()
 
@@ -250,6 +264,42 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 		}
 	}
 
+	return parallelHashComputing(feeder)
+}
+
+func GetExceptionDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	feeder := func(feederChan chan any, errChan chan error) {
+		defer close(feederChan)
+
+		startingBlockBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+
+		edb := db.MakeDefaultExceptionDBFromBaseDB(base)
+		iter := edb.NewIterator([]byte(db.ExceptionDBPrefix), startingBlockBytes)
+		defer iter.Release()
+
+		for iter.Next() {
+			block, err := db.DecodeExceptionDBKey(iter.Key())
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if block > cfg.Last {
+				break
+			}
+
+			value := iter.Value()
+			select {
+			case err = <-errChan:
+				errChan <- err
+				return
+			case feederChan <- value:
+			}
+		}
+	}
 	return parallelHashComputing(feeder)
 }
 

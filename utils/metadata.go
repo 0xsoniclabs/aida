@@ -271,7 +271,7 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			}
 
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
-			err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+			err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
 			if err != nil {
 				return nil, err
 			}
@@ -346,7 +346,7 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			return nil, fmt.Errorf("cannot close targetDb; %v", err)
 		}
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(targetMD.Db)
-		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		err = sdb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
 		if err != nil {
 			return nil, err
 		}
