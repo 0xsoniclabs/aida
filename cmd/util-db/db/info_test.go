@@ -16,7 +16,13 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestPrintCount_IntegrationTest(t *testing.T) {
+func TestPrintCount(t *testing.T) {
+	type testCase struct {
+		name    string
+		args    []string
+		wantErr string
+	}
+
 	aidaDbPath := t.TempDir() + "aida-db"
 
 	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
@@ -31,20 +37,55 @@ func TestPrintCount_IntegrationTest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	args := []string{
-		"info", "count",
-		"--aida-db", aidaDbPath,
-		"--db-component=all",
-		"1", "2",
+	tests := []testCase{
+		{
+			name: "IntegrationTest",
+			args: []string{
+				"info", "count",
+				"--aida-db", aidaDbPath,
+				"--db-component=all",
+				"1", "2",
+			},
+			wantErr: "",
+		},
+		{
+			name: "InvalidArgs",
+			args: []string{
+				"info", "count",
+				"--aida-db", aidaDbPath,
+				"--db-component=all",
+			},
+			wantErr: "unable to parse cli arguments; command requires 2 arguments",
+		},
+		{
+			name: "InvalidEncoding",
+			args: []string{
+				"info", "count",
+				"--aida-db", aidaDbPath,
+				"--db-component=all",
+				"--substate-encoding=invalidEncoding",
+				"1", "2",
+			},
+			wantErr: "cannot set substate encoding; failed to set decoder; encoding not supported: invalidEncoding",
+		},
 	}
 
-	// app is replacement of UtilDbApp
-	app := cli.App{
-		Commands: []*cli.Command{
-			&cmdCount,
-		}}
-	err = app.Run(args)
-	assert.NoError(t, err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			app := cli.App{
+				Commands: []*cli.Command{
+					&cmdCount,
+				}}
+			err := app.Run(tc.args)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				if err == nil || err.Error() != tc.wantErr {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+			}
+		})
+	}
 }
 
 func TestPrintCount_LoggingEmpty(t *testing.T) {
