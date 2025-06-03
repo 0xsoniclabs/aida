@@ -11,6 +11,8 @@ import (
 	"math/big"
 )
 
+// NewParentBlockHashProcessor creates a new instance of parent block hash processor which saves the
+// parent block hash in the blockchain. This is required for Prague fork and later (https://eips.ethereum.org/EIPS/eip-2935).
 func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
 	return &parentBlockHashProcessor{
 		cfg:          cfg,
