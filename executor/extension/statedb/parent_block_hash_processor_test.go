@@ -3,6 +3,7 @@ package statedb
 import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb/mocks"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substateCtx "github.com/0xsoniclabs/aida/txcontext/substate"
@@ -19,20 +20,15 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockProvider := utils.NewMockStateHashProvider(ctrl)
 	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := common.Hash{123}
-	// All actions are called only once as only one PreBlock passes conditions
-	gomock.InOrder(
-		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
-		mockState.EXPECT().AddAddressToAccessList(gomock.Any()),
-		mockState.EXPECT().Snapshot().Return(1),
-		mockState.EXPECT().Exist(gomock.Any()).Return(false),
-		mockState.EXPECT().Finalise(gomock.Any()),
-	)
+	// Processor is called only once
+	mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any())
 
 	hashProcessor := parentBlockHashProcessor{
+		hashProvider: mockProvider,
 		// At the time of implementation, Sonic does not have Prague time yet
 		cfg:          utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
-		hashProvider: mockProvider,
 		NilExtension: extension.NilExtension[txcontext.TxContext]{},
 	}
 

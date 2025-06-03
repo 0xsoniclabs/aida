@@ -1,5 +1,7 @@
 package statedb
 
+//go:generate mockgen -source parent_block_hash_processor.go -destination mocks/parent_block_hash_processor_mock.go -package mocks
+
 import (
 	"fmt"
 	"github.com/0xsoniclabs/aida/executor"
@@ -7,6 +9,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/evmcore"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 )
@@ -15,15 +18,33 @@ import (
 // parent block hash in the blockchain. This is required for Prague fork and later (https://eips.ethereum.org/EIPS/eip-2935).
 func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
 	return &parentBlockHashProcessor{
+		processor:    evmProcessor{},
 		cfg:          cfg,
 		NilExtension: extension.NilExtension[txcontext.TxContext]{},
 	}
 }
 
 type parentBlockHashProcessor struct {
-	cfg          *utils.Config
 	hashProvider utils.StateHashProvider
+	processor    iEvmProcessor
+	cfg          *utils.Config
 	extension.NilExtension[txcontext.TxContext]
+}
+
+// iEvmProcessor is an interface that defines the method to process the parent block hash.
+
+type iEvmProcessor interface {
+	ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM)
+}
+
+// evmProcessor is a wrapper around evmcore.ProcessParentBlockHash.
+type evmProcessor struct{}
+
+func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM) {
+	evmcore.ProcessParentBlockHash(
+		prevHash,
+		evm,
+	)
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
@@ -57,10 +78,7 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
-	evmcore.ProcessParentBlockHash(
-		prevBlockHash,
-		evm,
-	)
+	p.processor.ProcessParentBlockHash(prevBlockHash, evm)
 
 	if hashError != nil {
 		return fmt.Errorf("hash error while processing parent block hash: %v", err)
