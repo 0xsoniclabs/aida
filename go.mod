@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250318153505-712d1a76e929
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
-	github.com/0xsoniclabs/substate v0.0.0-20250407083445-08a2b03a3022
+	github.com/0xsoniclabs/substate v0.0.0-20250603022208-00667162c245
 	github.com/0xsoniclabs/tosca v0.0.0-20250414093812-91b42e73396f
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
@@ -31,7 +31,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/urfave/cli/v2 v2.27.5
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.35.0
+	golang.org/x/crypto v0.36.0
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 	gonum.org/v1/gonum v0.12.0
 )
@@ -72,7 +72,6 @@ require (
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -115,9 +114,9 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	pgregory.net/rand v1.0.2 // indirect

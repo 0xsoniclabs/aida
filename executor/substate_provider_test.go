@@ -173,9 +173,14 @@ func createSubstateDb(t *testing.T, path string) error {
 	state := substate.Substate{
 		Block:       10,
 		Transaction: 7,
-		Env:         &substate.Env{},
+		Env: &substate.Env{
+			Number:     11,
+			Difficulty: big.NewInt(1),
+			GasLimit:   uint64(15),
+		},
 		Message: &substate.Message{
-			Value: big.NewInt(12),
+			Value:    big.NewInt(12),
+			GasPrice: big.NewInt(14),
 		},
 		InputSubstate:  substate.WorldState{},
 		OutputSubstate: substate.WorldState{},
