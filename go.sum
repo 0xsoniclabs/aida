@@ -1,7 +1,7 @@
 github.com/0xsoniclabs/go-ethereum v0.0.0-20250403075908-a6b1c7063681 h1:0cGG6PL3gPMHUzlog9ivCQJ6L3Lrmm0H+Jn3h2ke7zo=
 github.com/0xsoniclabs/go-ethereum v0.0.0-20250403075908-a6b1c7063681/go.mod h1:neQD30i5v+/u41EUK4C9lFAnjefSWD6xhbdGI/rg6YQ=
-github.com/0xsoniclabs/substate v0.0.0-20250603022208-00667162c245 h1:KFxj2WMinDmWU9omyOnkT7OaPdbaU8em84SuNdpjqxs=
-github.com/0xsoniclabs/substate v0.0.0-20250603022208-00667162c245/go.mod h1:7Hx9hLSJ9ZvBETy0ClSFqUii7O9BeyAuxv+jEp2rESM=
+github.com/0xsoniclabs/substate v0.0.0-20250603114206-1e8e868c7657 h1:M9Q/HR/hMfjKaMsMt2eCJr7PTTdAyjMNbieqKaQkg24=
+github.com/0xsoniclabs/substate v0.0.0-20250603114206-1e8e868c7657/go.mod h1:7Hx9hLSJ9ZvBETy0ClSFqUii7O9BeyAuxv+jEp2rESM=
 github.com/DataDog/zstd v1.5.6 h1:LbEglqepa/ipmmQJUDnSsfvA8e8IStVcGaFWDuxvGOY=
 github.com/DataDog/zstd v1.5.6/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e h1:ahyvB3q25YnZWly5Gq1ekg6jcmWaGj/vG/MhF4aisoc=
