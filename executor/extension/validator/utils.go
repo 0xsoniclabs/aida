@@ -196,41 +196,6 @@ func doSubsetValidation(alloc txcontext.WorldState, db state.VmStateDB) error {
 	return nil
 }
 
-// overwriteWorldState overwrites the StateDb with the expected state.
-func overwriteWorldState(cfg *utils.Config, alloc txcontext.WorldState, db state.VmStateDB) error {
-	if cfg.StateValidationMode != utils.SubsetCheck {
-		return nil
-	}
-
-	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-		if !db.Exist(addr) {
-			db.CreateAccount(addr)
-		}
-		accBalance := acc.GetBalance()
-		balance := db.GetBalance(addr)
-		if accBalance.Cmp(balance) != 0 {
-			db.SubBalance(addr, balance, tracing.BalanceChangeUnspecified)
-			db.AddBalance(addr, accBalance, tracing.BalanceChangeUnspecified)
-		}
-		if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
-			db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
-
-		}
-		if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
-			db.SetCode(addr, acc.GetCode())
-		}
-
-		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-			if db.GetState(addr, keyHash) != valueHash {
-				db.SetState(addr, keyHash, valueHash)
-			}
-		})
-
-	})
-
-	return nil
-}
-
 // updateStateDbOnEthereumChain is used to fix exceptions in ethereum dataset inconsistencies
 func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, overwriteAccount bool) error {
 	stateModified := false

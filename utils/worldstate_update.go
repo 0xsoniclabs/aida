@@ -17,13 +17,18 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 )
 
 // GenerateUpdateSet generates an update set for a block range.
@@ -118,4 +123,39 @@ func ClearAccountStorage(update substate.WorldState, accounts []substatetypes.Ad
 			update[addr].Storage = make(map[substatetypes.Hash]substatetypes.Hash)
 		}
 	}
+}
+
+// OverwriteWorldState overwrites the StateDb with the expected state.
+func OverwriteWorldState(cfg *Config, alloc txcontext.WorldState, db state.VmStateDB) error {
+	if cfg.StateValidationMode != SubsetCheck {
+		return nil
+	}
+
+	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+		if !db.Exist(addr) {
+			db.CreateAccount(addr)
+		}
+		accBalance := acc.GetBalance()
+		balance := db.GetBalance(addr)
+		if accBalance.Cmp(balance) != 0 {
+			db.SubBalance(addr, balance, tracing.BalanceChangeUnspecified)
+			db.AddBalance(addr, accBalance, tracing.BalanceChangeUnspecified)
+		}
+		if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
+			db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
+
+		}
+		if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
+			db.SetCode(addr, acc.GetCode())
+		}
+
+		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+			if db.GetState(addr, keyHash) != valueHash {
+				db.SetState(addr, keyHash, valueHash)
+			}
+		})
+
+	})
+
+	return nil
 }
