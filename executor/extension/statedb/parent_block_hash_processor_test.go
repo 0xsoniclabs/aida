@@ -23,10 +23,12 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := common.Hash{123}
 	// Processor is called only once
+	mockProvider.EXPECT().GetStateHash(2).Return(hash, nil)
 	mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any())
 
 	hashProcessor := parentBlockHashProcessor{
 		hashProvider: mockProvider,
+		processor:    mockProcessor,
 		// At the time of implementation, Sonic does not have Prague time yet
 		cfg:          utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
 		NilExtension: extension.NilExtension[txcontext.TxContext]{},
