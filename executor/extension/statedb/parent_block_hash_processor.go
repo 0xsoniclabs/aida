@@ -4,6 +4,8 @@ package statedb
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -11,7 +13,6 @@ import (
 	"github.com/0xsoniclabs/sonic/evmcore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"math/big"
 )
 
 // NewParentBlockHashProcessor creates a new instance of parent block hash processor which saves the
@@ -32,7 +33,6 @@ type parentBlockHashProcessor struct {
 }
 
 // iEvmProcessor is an interface that defines the method to process the parent block hash.
-
 type iEvmProcessor interface {
 	ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM)
 }
