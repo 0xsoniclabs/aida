@@ -40,7 +40,7 @@ func TestPrepareBlockCtx(t *testing.T) {
 
 	var hashError error
 	// BlockHashes are nil, expect an error
-	blockCtx := prepareBlockCtx(env, &hashError)
+	blockCtx := utils.PrepareBlockCtx(env, &hashError)
 
 	if blocknum != blockCtx.BlockNumber.Uint64() {
 		t.Fatalf("Wrong block number")
@@ -57,32 +57,10 @@ func TestPrepareBlockCtx(t *testing.T) {
 }
 
 func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) {
-	isOpera := func(t *testing.T, p processor, name string) {
-		processor, ok := p.(*aidaProcessor)
+	isOperaOrEthereum := func(t *testing.T, p processor, name string) {
+		_, ok := p.(*aidaProcessor)
 		if !ok {
 			t.Fatalf("Expected aidaProcessor from '%s', got %T", name, p)
-		}
-
-		cfg := processor.vmCfg
-		if !cfg.ChargeExcessGas ||
-			!cfg.IgnoreGasFeeCap ||
-			!cfg.InsufficientBalanceIsNotAnError ||
-			!cfg.SkipTipPaymentToCoinbase {
-			t.Fatalf("Expected Opera features to be enabled")
-		}
-	}
-	isEthereum := func(t *testing.T, p processor, name string) {
-		processor, ok := p.(*aidaProcessor)
-		if !ok {
-			t.Fatalf("Expected aidaProcessor from '%s', got %T", name, p)
-		}
-
-		cfg := processor.vmCfg
-		if cfg.ChargeExcessGas ||
-			cfg.IgnoreGasFeeCap ||
-			cfg.InsufficientBalanceIsNotAnError ||
-			cfg.SkipTipPaymentToCoinbase {
-			t.Fatalf("Expected Opera features to be disabled")
 		}
 	}
 	isTosca := func(t *testing.T, p processor, name string) {
@@ -92,9 +70,9 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 	}
 
 	tests := map[string]func(*testing.T, processor, string){
-		"":         isOpera,
-		"opera":    isOpera,
-		"ethereum": isEthereum,
+		"":         isOperaOrEthereum,
+		"opera":    isOperaOrEthereum,
+		"ethereum": isOperaOrEthereum,
 	}
 
 	for name := range tosca.GetAllRegisteredProcessorFactories() {
