@@ -19,7 +19,7 @@ package utildb
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/0xsoniclabs/substate/types"
 	"os"
 	"time"
 
@@ -506,7 +506,7 @@ func OpenCloningDbs(aidaDbPath, targetDbPath, substateEncoding string) (db.Subst
 		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
 	}
 
-	err = aidaDb.SetSubstateEncoding(substateEncoding)
+	err = aidaDb.SetSubstateEncoding(db.SubstateEncodingSchema(substateEncoding))
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
@@ -518,7 +518,7 @@ func OpenCloningDbs(aidaDbPath, targetDbPath, substateEncoding string) (db.Subst
 	}
 	// open createDbClone
 	cloneDb = db.MakeDefaultSubstateDBFromBaseDB(baseDb)
-	err = cloneDb.SetSubstateEncoding(substateEncoding)
+	err = cloneDb.SetSubstateEncoding(db.SubstateEncodingSchema(substateEncoding))
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
@@ -533,7 +533,7 @@ func (c *cloner) cloneCodes() error {
 	iter := c.aidaDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
 	defer iter.Release()
 
-	savedCodes := make(map[common.Hash]struct{})
+	savedCodes := make(map[types.Hash]struct{})
 	for iter.Next() {
 		ss := iter.Value()
 		if ss.Block > c.cfg.Last {
@@ -541,20 +541,20 @@ func (c *cloner) cloneCodes() error {
 		}
 
 		for _, acc := range ss.InputSubstate {
-			if _, ok := savedCodes[common.Hash(acc.CodeHash())]; !ok {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
 				if err := c.putCode(acc.Code); err != nil {
 					return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 				}
-				savedCodes[common.Hash(acc.CodeHash())] = struct{}{}
+				savedCodes[acc.CodeHash()] = struct{}{}
 			}
 		}
 
 		for _, acc := range ss.OutputSubstate {
-			if _, ok := savedCodes[common.Hash(acc.CodeHash())]; !ok {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
 				if err := c.putCode(acc.Code); err != nil {
 					return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 				}
-				savedCodes[common.Hash(acc.CodeHash())] = struct{}{}
+				savedCodes[acc.CodeHash()] = struct{}{}
 			}
 		}
 
