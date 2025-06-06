@@ -376,7 +376,7 @@ func (g *Generator) createPatch() (string, error) {
 	g.Cfg.First = g.Opera.firstBlock
 	g.Cfg.Last = g.Opera.lastBlock
 
-	patchDb, err := db.NewReadOnlySubstateDB(g.Cfg.TargetDb)
+	patchDb, err := db.NewDefaultSubstateDB(g.Cfg.TargetDb)
 	if err != nil {
 		return "", fmt.Errorf("cannot open patch db; %v", err)
 	}
