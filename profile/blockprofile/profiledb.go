@@ -69,6 +69,14 @@ CREATE TABLE IF NOT EXISTS txProfile (
 `
 )
 
+//go:generate mockgen -source profiledb.go -destination profiledb_mock.go -package blockprofile
+type IProfileDB interface {
+	Close() error
+	Add(data ProfileData) error
+	Flush() error
+	DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error)
+}
+
 // ProfileDB is a profiling database for block processing.
 type ProfileDB struct {
 	sql       *sql.DB       // Sqlite3 database

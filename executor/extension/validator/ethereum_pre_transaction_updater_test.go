@@ -3,6 +3,9 @@ package validator
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
@@ -169,4 +172,26 @@ func createDaoForkAddressTestTransaction() txcontext.TxContext {
 			},
 		},
 	})
+}
+
+func TestEthereumDbPreTransactionUpdater_PreRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	cfg := &utils.Config{}
+	st := executor.State[txcontext.TxContext]{}
+	ctx := new(executor.Context)
+	log.EXPECT().Warning(gomock.Any())
+	ext := &ethereumDbPreTransactionUpdater{
+		cfg: cfg,
+		log: log,
+	}
+	err := ext.PreRun(st, ctx)
+	assert.NoError(t, err)
+}
+
+func TestMakeEthereumDbPreTransactionUpdater(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.ChainID = utils.PseudoTx
+	ext := MakeEthereumDbPreTransactionUpdater(cfg)
+	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }

@@ -23,6 +23,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -549,6 +552,214 @@ func Test_RPCComparator_InvalidArgumentInSomeMethodsDoesNotCauseError(t *testing
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
+		})
+	}
+
+}
+
+func TestNewUnexpectedDataTypeErr(t *testing.T) {
+	t.Run("Response is not nil", func(t *testing.T) {
+		data := &rpc.RequestAndResults{
+			Query: &rpc.Body{
+				Method: "ftm_getBalance",
+			},
+			Response: &rpc.Response{
+				Result: []byte("unexpected data type"),
+			},
+		}
+
+		err := newUnexpectedDataTypeErr(data)
+		assert.Error(t, err)
+	})
+	t.Run("Response is nil", func(t *testing.T) {
+		data := &rpc.RequestAndResults{
+			Query: &rpc.Body{
+				Method: "ftm_getBalance",
+			},
+			Error: &rpc.ErrorResponse{
+				Error: rpc.ErrorMessage{
+					Code: 1000,
+				},
+			},
+		}
+		err := newUnexpectedDataTypeErr(data)
+		assert.Error(t, err)
+	})
+}
+
+func TestNewNoMatchingErrorsErr(t *testing.T) {
+	data := &rpc.RequestAndResults{
+		Query: &rpc.Body{
+			Method: "ftm_getBalance",
+		},
+		Response: &rpc.Response{
+			Result: []byte("no matching errors"),
+		},
+	}
+
+	err := newNoMatchingErrorsErr("stateDbError", "expectedError", data, 0)
+	assert.Error(t, err)
+}
+
+func TestNewCannotUnmarshalResult(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	data := &rpc.RequestAndResults{
+		Query: &rpc.Body{
+			Method: "ftm_getBalance",
+		},
+		Response: &rpc.Response{
+			Result: []byte("cannot unmarshal result"),
+		},
+	}
+
+	result := txcontext.NewMockResult(ctrl)
+	result.EXPECT().GetRawResult().Return(nil, errors.New("unmarshal error")).AnyTimes()
+
+	err := newCannotUnmarshalResult(result, data, 0)
+	assert.Error(t, err)
+}
+
+func TestNewCannotSendRPCRequestErr(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	data := &rpc.RequestAndResults{
+		Query: &rpc.Body{
+			Method: "ftm_getBalance",
+		},
+		Response: &rpc.Response{
+			Result: []byte("cannot unmarshal result"),
+		},
+	}
+
+	result := txcontext.NewMockResult(ctrl)
+	result.EXPECT().GetRawResult().Return(nil, errors.New("unmarshal error")).AnyTimes()
+
+	err := newCannotSendRPCRequestErr(result, data, 0)
+	assert.Error(t, err)
+}
+func TestNewComparatorError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	data := &rpc.RequestAndResults{
+		Query: &rpc.Body{
+			Method: "ftm_getBalance",
+		},
+		Response: &rpc.Response{
+			Result: []byte("cannot unmarshal result"),
+		},
+	}
+
+	result := txcontext.NewMockResult(ctrl)
+	result.EXPECT().GetRawResult().Return(nil, errors.New("unmarshal error")).AnyTimes()
+
+	err := newComparatorError(result, "a", "b", data, 0, noMatchingErrors)
+	assert.Error(t, err)
+
+	err = newComparatorError(result, "a", "b", data, 0, unexpectedDataType)
+	assert.Error(t, err)
+
+	err = newComparatorError(result, "a", "b", data, 0, cannotUnmarshalResult)
+	assert.Error(t, err)
+
+	err = newComparatorError(result, "a", "b", data, 0, internalError)
+	assert.Error(t, err)
+
+	err = newComparatorError(result, "a", "b", data, 0, cannotSendRpcRequest)
+	assert.Error(t, err)
+
+	err = newComparatorError(result, "a", "b", data, 0, comparatorErrorType(0x11))
+	assert.Error(t, err)
+}
+
+func TestCompareEVMStateDBError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("case 1", func(t *testing.T) {
+		data := &rpc.RequestAndResults{
+			Query: &rpc.Body{
+				Method: "ftm_getBalance",
+			},
+			Response: &rpc.Response{
+				Result: []byte("cannot unmarshal result"),
+			},
+			Error: &rpc.ErrorResponse{
+				Error: rpc.ErrorMessage{
+					Code: invalidArgumentErrCode,
+				},
+			},
+		}
+
+		result := txcontext.NewMockResult(ctrl)
+		result.EXPECT().GetRawResult().Return(nil, errors.New("unmarshal error")).AnyTimes()
+
+		err := compareEVMStateDBError(result, errors.New("mock error"), data, 0)
+		assert.Error(t, err)
+	})
+	t.Run("case 2", func(t *testing.T) {
+		data := &rpc.RequestAndResults{
+			Query: &rpc.Body{
+				Method: "ftm_getBalance",
+			},
+			Response: &rpc.Response{
+				Result: []byte("cannot unmarshal result"),
+			},
+			Error: &rpc.ErrorResponse{
+				Error: rpc.ErrorMessage{
+					Code: internalErrorCode,
+				},
+			},
+		}
+
+		result := txcontext.NewMockResult(ctrl)
+		result.EXPECT().GetRawResult().Return(nil, errors.New("unmarshal error")).AnyTimes()
+
+		err := compareEVMStateDBError(result, errors.New("mock error"), data, 0)
+		assert.Error(t, err)
+	})
+}
+
+func TestCompare(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	inputs := []string{
+		"getBalance",
+		"getTransactionCount",
+		"call",
+		"estimateGas",
+		"getCode",
+		"getStorageAt",
+		"unknownMethod",
+	}
+	for _, input := range inputs {
+		t.Run("case "+input, func(t *testing.T) {
+			data := &rpc.RequestAndResults{
+				Query: &rpc.Body{
+					MethodBase: input,
+				},
+				Response: &rpc.Response{
+					Result: []byte("cannot unmarshal result"),
+				},
+				Error: &rpc.ErrorResponse{
+					Error: rpc.ErrorMessage{
+						Code: invalidArgumentErrCode,
+					},
+				},
+			}
+			ss := executor.State[*rpc.RequestAndResults]{
+				Data:  data,
+				Block: 1,
+			}
+			result := txcontext.NewMockResult(ctrl)
+			result.EXPECT().GetRawResult().Return([]byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}, nil).AnyTimes()
+
+			err := compare(result, ss)
+			assert.Error(t, err)
 		})
 	}
 

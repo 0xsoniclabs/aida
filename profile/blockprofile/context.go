@@ -54,6 +54,23 @@ var TypeLabel = map[TxType]string{
 	MaintenanceTx: "maintenance",
 }
 
+// IContext defines the interface for block processing profiling.
+//
+//go:generate mockgen -source context.go -destination context_mock.go -package blockprofile
+type IContext interface {
+	// RecordTransaction collects addresses and computes earliest time.
+	RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error
+
+	// GetProfileData produces a profile record for the profiling database.
+	GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error)
+
+	// earliestTimeToRun computes the earliest time to run a transaction with given addresses.
+	earliestTimeToRun(addresses AddressSet) time.Duration
+
+	// dependencies finds the transaction dependencies for given addresses.
+	dependencies(addresses AddressSet) graphutil.OrdinalSet
+}
+
 // Context stores the book-keeping information for block processing profiling.
 type Context struct {
 	n              int                          // number of transactions

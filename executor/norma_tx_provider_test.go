@@ -17,7 +17,17 @@
 package executor
 
 import (
+	"context"
+	"errors"
+	"math/big"
 	"testing"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
@@ -199,4 +209,278 @@ func TestNormaTxProvider_RunAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to run provider: %v", err)
 	}
+}
+
+func TestFakeRpcClient_CodeAt(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	client := newFakeRpcClient(mockStateDb, nil)
+	addr := common.HexToAddress("0x123")
+	expectedCode := []byte{0x60, 0x80, 0x60, 0x40}
+
+	t.Run("Success", func(t *testing.T) {
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetCode(addr).Return(expectedCode)
+		mockStateDb.EXPECT().EndTransaction().Return(nil)
+
+		code, err := client.CodeAt(context.Background(), addr, nil)
+		require.NoError(t, err)
+		assert.Equal(t, expectedCode, code)
+	})
+
+	t.Run("BeginTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("begin tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(expectedErr)
+
+		code, err := client.CodeAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Nil(t, code)
+	})
+
+	t.Run("EndTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("end tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetCode(addr).Return(expectedCode) // This will still be called
+		mockStateDb.EXPECT().EndTransaction().Return(expectedErr)
+
+		code, err := client.CodeAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Nil(t, code) // Code should be nil if EndTransaction fails
+	})
+}
+
+func TestFakeRpcClient_CallContract(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	ret, err := client.CallContract(context.Background(), ethereum.CallMsg{}, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, ret)
+}
+
+func TestFakeRpcClient_HeaderByNumber(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	header, err := client.HeaderByNumber(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, &types.Header{}, header)
+}
+
+func TestFakeRpcClient_PendingNonceAt(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	nonce, err := client.PendingNonceAt(context.Background(), common.Address{})
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(0), nonce)
+}
+
+func TestFakeRpcClient_SuggestGasTipCap(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	tipCap, err := client.SuggestGasTipCap(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(0), tipCap)
+}
+
+func TestFakeRpcClient_FilterLogs(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{})
+	assert.NoError(t, err)
+	assert.Nil(t, logs)
+}
+
+func TestFakeRpcClient_SubscribeFilterLogs(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	sub, err := client.SubscribeFilterLogs(context.Background(), ethereum.FilterQuery{}, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, sub)
+}
+
+func TestFakeRpcClient_Call(t *testing.T) {
+	client := newFakeRpcClient(nil, nil)
+	err := client.Call(nil, "")
+	assert.NoError(t, err)
+}
+
+func TestFakeRpcClient_NonceAt(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	client := newFakeRpcClient(mockStateDb, nil)
+	addr := common.HexToAddress("0xabc")
+	expectedNonce := uint64(5)
+
+	t.Run("Success", func(t *testing.T) {
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetNonce(addr).Return(expectedNonce)
+		mockStateDb.EXPECT().EndTransaction().Return(nil)
+
+		nonce, err := client.NonceAt(context.Background(), addr, nil)
+		require.NoError(t, err)
+		assert.Equal(t, expectedNonce, nonce)
+	})
+
+	t.Run("BeginTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("begin tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(expectedErr)
+
+		nonce, err := client.NonceAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, uint64(0), nonce)
+	})
+
+	t.Run("EndTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("end tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetNonce(addr).Return(expectedNonce)
+		mockStateDb.EXPECT().EndTransaction().Return(expectedErr)
+
+		nonce, err := client.NonceAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, uint64(0), nonce)
+	})
+}
+
+func TestFakeRpcClient_BalanceAt(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	client := newFakeRpcClient(mockStateDb, nil)
+	addr := common.HexToAddress("0xdef")
+	expectedBalance := uint256.NewInt(1000)
+
+	t.Run("Success", func(t *testing.T) {
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetBalance(addr).Return(expectedBalance)
+		mockStateDb.EXPECT().EndTransaction().Return(nil)
+
+		balance, err := client.BalanceAt(context.Background(), addr, nil)
+		require.NoError(t, err)
+		assert.Equal(t, expectedBalance.ToBig(), balance)
+	})
+
+	t.Run("BeginTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("begin tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(expectedErr)
+
+		balance, err := client.BalanceAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Nil(t, balance)
+	})
+
+	t.Run("EndTransactionError", func(t *testing.T) {
+		expectedErr := errors.New("end tx error")
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+		mockStateDb.EXPECT().GetBalance(addr).Return(expectedBalance)
+		mockStateDb.EXPECT().EndTransaction().Return(expectedErr)
+
+		balance, err := client.BalanceAt(context.Background(), addr, nil)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Nil(t, balance)
+	})
+}
+
+func TestFakeRpcClient_SendTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Generate a new private key for the sender
+	privateKey, err := crypto.GenerateKey()
+	require.NoError(t, err)
+	senderAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	chainID := big.NewInt(297) // Example Chain ID from normaTxProvider
+	signer := types.NewEIP155Signer(chainID)
+
+	t.Run("ContractDeployment_Success", func(t *testing.T) {
+		var consumedTx *types.Transaction
+		var consumedSender *common.Address
+
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
+			consumedTx = tx
+			consumedSender = sender
+			return nil
+		}
+		client := newFakeRpcClient(nil, mockConsumer)
+
+		txData := []byte{0x60, 0x01, 0x60, 0x02}
+		gas := uint64(21000)
+		gasPrice := big.NewInt(1000000000) // 1 Gwei
+		nonce := uint64(0)
+
+		tx := types.NewTx(&types.LegacyTx{
+			Nonce:    nonce,
+			GasPrice: gasPrice,
+			Gas:      gas,
+			To:       nil, // Contract deployment
+			Value:    big.NewInt(0),
+			Data:     txData,
+		})
+		signedTx, err := types.SignTx(tx, signer, privateKey)
+		require.NoError(t, err)
+
+		err = client.SendTransaction(context.Background(), signedTx)
+		require.NoError(t, err)
+
+		assert.NotNil(t, consumedTx)
+		assert.Equal(t, signedTx.Hash(), consumedTx.Hash())
+		assert.Nil(t, consumedSender) // Sender is nil in consumer for SendTransaction
+
+		expectedContractAddress := crypto.CreateAddress(senderAddress, nonce)
+		assert.Equal(t, txData, client.pendingCodes[expectedContractAddress])
+	})
+
+	t.Run("RegularTransaction_Success", func(t *testing.T) {
+		var consumedTx *types.Transaction
+		var consumedSender *common.Address
+
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
+			consumedTx = tx
+			consumedSender = sender
+			return nil
+		}
+		client := newFakeRpcClient(nil, mockConsumer)
+		initialPendingCodesCount := len(client.pendingCodes)
+
+		toAddress := common.HexToAddress("0xRecipient")
+		tx := types.NewTx(&types.LegacyTx{
+			Nonce:    uint64(1),
+			GasPrice: big.NewInt(1000000000),
+			Gas:      uint64(21000),
+			To:       &toAddress,
+			Value:    big.NewInt(100),
+			Data:     nil,
+		})
+		signedTx, err := types.SignTx(tx, signer, privateKey)
+		require.NoError(t, err)
+
+		err = client.SendTransaction(context.Background(), signedTx)
+		require.NoError(t, err)
+
+		assert.NotNil(t, consumedTx)
+		assert.Equal(t, signedTx.Hash(), consumedTx.Hash())
+		assert.Nil(t, consumedSender)
+		assert.Equal(t, initialPendingCodesCount, len(client.pendingCodes), "Pending codes should not change for regular tx")
+	})
+
+	t.Run("ConsumerError", func(t *testing.T) {
+		expectedErr := errors.New("consumer failed")
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
+			return expectedErr
+		}
+		client := newFakeRpcClient(nil, mockConsumer)
+
+		tx := types.NewTx(&types.LegacyTx{Nonce: 0, To: &common.Address{}}) // Minimal valid tx
+		signedTx, err := types.SignTx(tx, signer, privateKey)
+		require.NoError(t, err)
+
+		err = client.SendTransaction(context.Background(), signedTx)
+		require.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
 }

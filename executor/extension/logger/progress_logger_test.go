@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -133,4 +135,12 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
 	ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+}
+
+func TestMakeProgressLogger(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeProgressLogger[any](cfg, -1)
+
+	_, ok := ext.(*progressLogger[any])
+	assert.True(t, ok)
 }

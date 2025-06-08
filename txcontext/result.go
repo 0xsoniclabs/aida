@@ -101,11 +101,10 @@ func (r result) Equal(y Receipt) bool {
 }
 
 func ReceiptEqual(x, y Receipt) bool {
-	if x == y {
+	if x == nil && y == nil {
 		return true
 	}
-
-	if (x == nil || y == nil) && x != y {
+	if x == nil || y == nil {
 		return false
 	}
 

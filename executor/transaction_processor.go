@@ -48,6 +48,8 @@ import (
 )
 
 // MakeLiveDbTxProcessor creates a executor.Processor which processes transaction into LIVE StateDb.
+//
+//go:generate mockgen -source transaction_processor.go -destination transaction_processor_mock.go -package executor
 func MakeLiveDbTxProcessor(cfg *utils.Config) (*LiveDbTxProcessor, error) {
 	processor, err := MakeTxProcessor(cfg)
 	if err != nil {
@@ -153,6 +155,7 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 		return nil
 	}
 
+	// TODO Bug: why force this?
 	txBytes := state.Data.(*ethtest.StateTestContext).GetTxBytes()
 
 	if len(txBytes) != 0 {
@@ -479,6 +482,8 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, int, tx int, st tx
 		failed:     !receipt.Success,
 	}
 
+	// TODO bug err never used
+	// TODO bug final error never used
 	return newTransactionResult(log, msg, result, finalError, msg.From), nil
 }
 
