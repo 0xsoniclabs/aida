@@ -520,7 +520,7 @@ func (c *cloner) readDataCustom() error {
 }
 
 // OpenCloningDbs prepares aida and target databases
-func OpenCloningDbs(aidaDbPath, targetDbPath, substateEncoding string) (db.SubstateDB, db.SubstateDB, error) {
+func OpenCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.SubstateEncodingSchema) (db.SubstateDB, db.SubstateDB, error) {
 	var err error
 
 	// if source db doesn't exist raise error
@@ -543,7 +543,7 @@ func OpenCloningDbs(aidaDbPath, targetDbPath, substateEncoding string) (db.Subst
 		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
 	}
 
-	err = aidaDb.SetSubstateEncoding(db.SubstateEncodingSchema(substateEncoding))
+	err = aidaDb.SetSubstateEncoding(substateEncoding)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
@@ -555,7 +555,7 @@ func OpenCloningDbs(aidaDbPath, targetDbPath, substateEncoding string) (db.Subst
 	}
 	// open createDbClone
 	cloneDb = db.MakeDefaultSubstateDBFromBaseDB(baseDb)
-	err = cloneDb.SetSubstateEncoding(db.SubstateEncodingSchema(substateEncoding))
+	err = cloneDb.SetSubstateEncoding(substateEncoding)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
