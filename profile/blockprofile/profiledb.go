@@ -17,12 +17,18 @@
 package blockprofile
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
-	"os/exec"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v4/mem"
+
 	// Your main or test packages require this import so the sql package is properly initialized.
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -268,52 +274,70 @@ func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID) error {
 }
 
 func getProcessor() (string, error) {
-	cmd := exec.Command("sh", "-c", `cat /proc/cpuinfo | grep "^model name" | head -n 1 | awk -F': ' '{print $2}'`)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
+	return strings.TrimSpace(cpu.Info().ModelName), nil
 }
 
 func getMemory() (string, error) {
-	cmd := exec.Command("sh", "-c", `free | grep "^Mem:" | awk '{printf("%dGB RAM\n", $2/1024/1024)}'`)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
+	ram := mem.VirtualMemory().Total / 1024 / 1024 / 1024 // GB
+	return fmt.Printf("%f GB", ram), nil
 }
 
 func getDisks() (string, error) {
-	cmd := exec.Command("sh", "-c", `hwinfo --disk | grep Model | awk -F ': \"' '{if (NR > 1) printf(", "); printf("%s", substr($2,1,length($2)-1));}  END {printf("\n")}'`)
-	output, err := cmd.CombinedOutput()
+	partitions, err := disk.Partitions(false)
 	if err != nil {
 		return "", err
 	}
 
-	// check if output contains `hwinfo: not found`
-	if strings.Contains(string(output), "hwinfo: not found") {
-		return "", fmt.Errorf(string(output))
+	strs := make([]string, 0)
+	for _, p := range partitions {
+		usage, err := disk.Usage(p.Mountpoint)
+		if err != nil {
+			continue
+		}
+		s := fmt.Printf("[%s] used: %f GB avail %f GB",
+			usage.Path,
+			usage.Used/1024/1024/1024,  // gb
+			usage.Total/1024/1024/1024, // gb
+		)
+		strs = append(strs, s)
 	}
-
-	return strings.TrimSpace(string(output)), nil
+	return strings.Join(strs, ","), nil
 }
 
+// getOS gets the runtime OS using runtime.GOOS.
+// If it's linux, it reads /etc/os-release for PRETTY_NAME instead
 func getOS() (string, error) {
-	cmd := exec.Command("sh", "-c", `lsb_release -d | awk -F"\t" '{print $2}'`)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
+	switch runtime.GOOS {
+	case "linux":
+		file, err := os.Open("/etc/os-release")
+		if err != nil {
+			return "linux", fmt.Errorf("linux but no /etc/os-release")
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			if strings.HasPrefix(line, "PRETTY_NAME=") {
+				return strings.Trim(line[13:], `"`), nil
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return "", err
+		}
+
+		return "", fmt.Errorf("PRETTY_NAME not found in /etc/os-release")
+
+	default:
+		return strings.TrimSpace(string(output)), nil
 	}
-	return strings.TrimSpace(string(output)), nil
 }
 
+// GetMachine returns the hostname
 func getMachine() (string, error) {
-	cmd := exec.Command("sh", "-c", "echo \"`hostname`(`curl -s api.ipify.org`)\"")
-	output, err := cmd.CombinedOutput()
+	hostname, err := os.Hostname()
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(output)), nil
+	return strings.TrimSpace(string(hostname)), nil
 }
