@@ -19,6 +19,7 @@ package utils
 import (
 	"flag"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"math"
 	"math/big"
 	"os"
@@ -769,6 +770,28 @@ func TestUtilsConfig_ToTitleCase_Success(t *testing.T) {
 		if got != test.want {
 			t.Fatalf("failed to capitalize first letter; got: %s; expected: %s", got, test.want)
 		}
+	}
+}
+
+func TestConfigContext_setVmConfig(t *testing.T) {
+	for chainID, name := range RealChainIDs {
+		t.Run(name, func(t *testing.T) {
+			cfg := &Config{ChainID: chainID}
+			ctx := NewConfigContext(cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			if IsEthereumNetwork(cfg.ChainID) {
+				require.False(t, cfg.VmCfg.ChargeExcessGas)
+				require.False(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.False(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.False(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			} else {
+				require.True(t, cfg.VmCfg.ChargeExcessGas)
+				require.True(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.True(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.True(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			}
+		})
 	}
 }
 
