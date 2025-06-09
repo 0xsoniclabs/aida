@@ -57,7 +57,7 @@ func TestPrepareBlockCtx(t *testing.T) {
 }
 
 func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) {
-	isOperaOrEthereum := func(t *testing.T, p processor, name string) {
+	isAida := func(t *testing.T, p processor, name string) {
 		_, ok := p.(*aidaProcessor)
 		if !ok {
 			t.Fatalf("Expected aidaProcessor from '%s', got %T", name, p)
@@ -70,9 +70,9 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 	}
 
 	tests := map[string]func(*testing.T, processor, string){
-		"":         isOperaOrEthereum,
-		"opera":    isOperaOrEthereum,
-		"ethereum": isOperaOrEthereum,
+		"":         isAida,
+		"opera":    isAida,
+		"ethereum": isAida,
 	}
 
 	for name := range tosca.GetAllRegisteredProcessorFactories() {
