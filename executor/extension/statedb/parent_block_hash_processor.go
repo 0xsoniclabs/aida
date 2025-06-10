@@ -76,6 +76,9 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return fmt.Errorf("cannot get previous block hash: %w", err)
 	}
 
+	if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
+		return fmt.Errorf("cannot begin transaction: %w", err)
+	}
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
@@ -84,5 +87,6 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	if hashError != nil {
 		return fmt.Errorf("hash error while processing parent block hash: %v", err)
 	}
-	return nil
+
+	return ctx.State.EndTransaction()
 }

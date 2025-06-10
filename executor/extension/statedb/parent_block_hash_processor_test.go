@@ -23,8 +23,13 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := common.Hash{123}
 	// Processor is called only once
-	mockProvider.EXPECT().GetStateHash(2).Return(hash, nil)
-	mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any())
+	gomock.InOrder(
+		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
+		// Parent hash must be processed in a separate transaction!
+		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any()),
+		mockState.EXPECT().EndTransaction().Return(nil),
+	)
 
 	hashProcessor := parentBlockHashProcessor{
 		hashProvider: mockProvider,
