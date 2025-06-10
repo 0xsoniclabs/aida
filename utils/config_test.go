@@ -799,7 +799,7 @@ func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *Config
-		require func(t require.TestingT, value bool, msgAndArgs ...interface{})
+		require func(t require.TestingT, value bool, msgAndArgs ...any)
 	}{
 		{
 			name:    "empty-evm-impl",
