@@ -141,6 +141,9 @@ func (c *cloner) readData() error {
 	}
 
 	err := c.cloneCodes()
+	if err != nil {
+		return fmt.Errorf("cannot clone code; %w", err)
+	}
 	firstDeletionBlock := c.cfg.First
 
 	// update c.cfg.First block before loading deletions and substates, because for utils.CloneType those are necessary to be from last updateset onward
@@ -553,7 +556,7 @@ func (c *cloner) cloneCodes() error {
 
 	}
 	c.log.Noticef("Prefix %v done", db.CodeDBPrefix)
-	return nil
+	return iter.Error()
 }
 
 // putCode puts code into the cloneDb and increments the count
