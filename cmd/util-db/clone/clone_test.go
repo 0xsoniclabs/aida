@@ -663,6 +663,34 @@ func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
 	require.NoError(t, err, "failed to clone codes")
 }
 
+func TestOpenCloningDbs_OpensDbsCorrectly(t *testing.T) {
+	tmp := t.TempDir()
+	srcPath := tmp + "/src"
+	dstPath := tmp + "/dst"
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	ss1 := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss1)
+	require.NoError(t, err, "failed to put substate")
+
+	// Close the db to test opening
+	require.NoError(t, srcDb.Close())
+
+	srcDb, dstDb, err := OpenCloningDbs(srcPath, dstPath, "protobuf")
+	require.NoError(t, err, "failed to open cloning dbs")
+
+	// check correct opening of source db
+	srcDbSs, err := srcDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+	require.NoError(t, srcDbSs.Equal(ss1))
+	// Make sure destination db is empty
+	iter := dstDb.NewSubstateIterator(0, 1)
+	require.False(t, iter.Next())
+}
+
 func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Substate {
 	t.Helper()
 	random := types.Hash{1}
@@ -690,6 +718,7 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 			Random:      &random,
 		},
 		Message: &substate.Message{
+			CheckNonce:            true,
 			GasPrice:              big.NewInt(10),
 			To:                    &to,
 			Value:                 big.NewInt(10),
@@ -705,3 +734,30 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 	}
 }
 
+func TestClone_CorrectlyClonesData(t *testing.T) {
+	// prepare the source db
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	md := utils.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(utils.MainnetChainID)
+	require.NoError(t, err, "failed to set chain id")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss)
+
+	targetPath := t.TempDir()
+	targetDb, err := db.NewDefaultSubstateDB(targetPath)
+	require.NoError(t, err, "failed to create target db")
+
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	err = CreatePatchClone(cfg, srcDb, targetDb, 5577, 5578, true)
+	require.NoError(t, err, "failed to clone codes")
+
+	gotSs, err := targetDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+
+	err = ss.Equal(gotSs)
+	require.NoError(t, err)
+}
