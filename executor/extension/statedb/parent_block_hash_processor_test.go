@@ -8,8 +8,11 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	substateCtx "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"math"
@@ -64,4 +67,21 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 		Transaction: 0,
 	})}, &executor.Context{State: mockState})
 	require.NoError(t, err, "PreBlock failed")
+}
+
+func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
+	cfg := utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague")
+	hp := NewParentBlockHashProcessor(cfg)
+	ctrl := gomock.NewController(t)
+	aidaDb := db.NewMockSubstateDB(ctrl)
+
+	stateRoot := types.Hash{1}
+	aidaDb.EXPECT().Get([]byte(utils.StateHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
+
+	err := hp.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{AidaDb: aidaDb})
+	require.NoError(t, err, "PreBlock failed")
+
+	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateHash(10)
+	require.NoError(t, err, "hashProvider.GetStateHash failed")
+	require.Equal(t, stateRoot.Bytes(), hash.Bytes())
 }
