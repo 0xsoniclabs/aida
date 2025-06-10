@@ -149,6 +149,7 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 			Random:      &random,
 		},
 		Message: &substate.Message{
+			CheckNonce:            true,
 			GasPrice:              big.NewInt(10),
 			To:                    &to,
 			Value:                 big.NewInt(10),
@@ -162,4 +163,32 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 		Block:       uint64(1),
 		Transaction: tx,
 	}
+}
+
+func TestClone_CorrectlyClonesData(t *testing.T) {
+	// prepare the source db
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	md := utils.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(utils.MainnetChainID)
+	require.NoError(t, err, "failed to set chain id")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss)
+
+	targetPath := t.TempDir()
+	targetDb, err := db.NewDefaultSubstateDB(targetPath)
+	require.NoError(t, err, "failed to create target db")
+
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	err = CreatePatchClone(cfg, srcDb, targetDb, 5577, 5578, true)
+	require.NoError(t, err, "failed to clone codes")
+
+	gotSs, err := targetDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+
+	err = ss.Equal(gotSs)
+	require.NoError(t, err)
 }
