@@ -17,6 +17,8 @@
 package executor
 
 import (
+	"errors"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
@@ -159,4 +161,19 @@ func TestEthTestProcessor_DoesNotExecuteTransactionWithInvalidTxBytes(t *testing
 			}
 		})
 	}
+}
+
+func TestMessageResult(t *testing.T) {
+	e := errors.New("error")
+	res := executionResult(messageResult{
+		failed:     true,
+		returnData: []byte{0x12},
+		gasUsed:    10,
+		err:        e,
+	})
+
+	require.True(t, res.Failed())
+	require.Equal(t, res.Return(), []byte{0x12})
+	require.Equal(t, res.GetGasUsed(), uint64(10))
+	require.ErrorIs(t, res.GetError(), e)
 }

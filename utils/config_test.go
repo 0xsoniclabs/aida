@@ -795,6 +795,63 @@ func TestConfigContext_setVmConfig(t *testing.T) {
 	}
 }
 
+func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		require func(t require.TestingT, value bool, msgAndArgs ...interface{})
+	}{
+		{
+			name:    "empty-evm-impl",
+			cfg:     &Config{EvmImpl: ""},
+			require: require.True,
+		},
+		{
+			name:    "opera-evm-impl",
+			cfg:     &Config{EvmImpl: "opera"},
+			require: require.True,
+		},
+		{
+			name:    "ethereum-evm-impl",
+			cfg:     &Config{EvmImpl: "ethereum"},
+			require: require.False,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := NewConfigContext(test.cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			test.require(t, test.cfg.VmCfg.ChargeExcessGas)
+			test.require(t, test.cfg.VmCfg.IgnoreGasFeeCap)
+			test.require(t, test.cfg.VmCfg.InsufficientBalanceIsNotAnError)
+			test.require(t, test.cfg.VmCfg.SkipTipPaymentToCoinbase)
+		})
+	}
+
+}
+
+func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
+	chainId := MainnetChainID
+	first := uint64(123)
+	last := uint64(456)
+	fork := "london"
+
+	cfg := NewTestConfig(t, chainId, first, last, true, fork)
+
+	require.Equal(t, chainId, cfg.ChainID, "ChainID not set correctly")
+	require.Equal(t, first, cfg.First, "First block not set correctly")
+	require.Equal(t, last, cfg.Last, "Last block not set correctly")
+	require.True(t, cfg.Validate, "Validate not set correctly")
+	require.True(t, cfg.ValidateTxState, "ValidateTxState not set correctly")
+	require.NotNil(t, cfg.chainCfg, "chainCfg should be set")
+	require.Equal(t, "Critical", cfg.LogLevel, "LogLevel should be Critical")
+	require.True(t, cfg.SkipPriming, "SkipPriming should be true")
+	require.True(t, cfg.VmCfg.NoBaseFee, "VmCfg.NoBaseFee should be true")
+	require.Nil(t, cfg.VmCfg.Tracer, "VmCfg.Tracer should be nil")
+	require.Nil(t, cfg.VmCfg.Interpreter, "VmCfg.Interpreter should be nil")
+}
+
 // createFakeAidaDb creates fake empty aidaDB with metadata for testing purposes
 func createFakeAidaDb(cfg *Config) error {
 	// fake metadata values
