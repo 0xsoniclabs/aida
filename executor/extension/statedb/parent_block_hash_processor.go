@@ -34,6 +34,7 @@ type parentBlockHashProcessor struct {
 
 // iEvmProcessor is an interface that defines the method to process the parent block hash.
 type iEvmProcessor interface {
+	// ProcessParentBlockHash saves prevHash in the blockchain.
 	ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM)
 }
 
