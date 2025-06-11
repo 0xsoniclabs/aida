@@ -100,6 +100,28 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 
 }
 
+func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID: utils.MainnetChainID,
+		EvmImpl: "tosca",
+		VmImpl:  "invalid",
+	}
+	_, err := MakeTxProcessor(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to create interpreter invalid, error interpreter not found: invalid")
+}
+
+func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID: utils.MainnetChainID,
+		EvmImpl: "invalid",
+		VmImpl:  "lfvm",
+	}
+	_, err := MakeTxProcessor(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown EVM implementation: invalid")
+}
+
 func TestEthTestProcessor_DoesNotExecuteTransactionWhenBlobGasCouldExceed(t *testing.T) {
 	p, err := MakeEthTestProcessor(&utils.Config{})
 	if err != nil {

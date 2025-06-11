@@ -816,6 +816,11 @@ func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
 			cfg:     &Config{EvmImpl: "ethereum"},
 			require: require.False,
 		},
+		{
+			name:    "unknown",
+			cfg:     &Config{EvmImpl: "unknown"},
+			require: require.True,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -828,7 +833,14 @@ func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
 			test.require(t, test.cfg.VmCfg.SkipTipPaymentToCoinbase)
 		})
 	}
+}
 
+func TestConfigContext_setVmConfig_InvalidVmImplCausesError(t *testing.T) {
+	cfg := &Config{VmImpl: "invalid"}
+	ctx := NewConfigContext(cfg, nil)
+	err := ctx.setVmConfig()
+	require.Error(t, err, "error must be returned")
+	require.Contains(t, err.Error(), "cannot get interpreter for \"invalid\"")
 }
 
 func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
