@@ -507,7 +507,9 @@ func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
 }
 
 func TestOpenCloningDbs_OpensDbsCorrectly(t *testing.T) {
-	srcPath := t.TempDir()
+	tmp := t.TempDir()
+	srcPath := tmp + "/src"
+	dstPath := tmp + "/dst"
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
 	err = srcDb.SetSubstateEncoding("protobuf")
@@ -517,28 +519,19 @@ func TestOpenCloningDbs_OpensDbsCorrectly(t *testing.T) {
 	err = srcDb.PutSubstate(ss1)
 	require.NoError(t, err, "failed to put substate")
 
-	dstPath := t.TempDir()
-	dstDb, err := db.NewDefaultSubstateDB(dstPath)
-	require.NoError(t, err, "failed to create destination db")
-	err = dstDb.SetSubstateEncoding("protobuf")
-	require.NoError(t, err, "failed to set substate encoding")
-
-	ss2 := createTestSubstate(t, 2, []byte{2}, []byte{2})
-	err = dstDb.PutSubstate(ss2)
-	require.NoError(t, err, "failed to put substate")
-	// Close the dbs to test opening
+	// Close the db to test opening
 	require.NoError(t, srcDb.Close())
-	require.NoError(t, dstDb.Close())
 
-	srcDb, dstDb, err = OpenCloningDbs(srcPath, dstPath, "protobuf")
+	srcDb, dstDb, err := OpenCloningDbs(srcPath, dstPath, "protobuf")
 	require.NoError(t, err, "failed to open cloning dbs")
 
-	gotSubstate1, err := srcDb.GetSubstate(1, 1)
+	// check correct opening of source db
+	srcDbSs, err := srcDb.GetSubstate(1, 1)
 	require.NoError(t, err, "failed to get substate")
-	require.NoError(t, gotSubstate1.Equal(ss1))
-	gotSubstate2, err := dstDb.GetSubstate(1, 2)
-	require.NoError(t, err, "failed to get substate")
-	require.NoError(t, gotSubstate2.Equal(ss2))
+	require.NoError(t, srcDbSs.Equal(ss1))
+	// Make sure destination db is empty
+	iter := dstDb.NewSubstateIterator(0, 1)
+	require.False(t, iter.Next())
 }
 
 func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Substate {
