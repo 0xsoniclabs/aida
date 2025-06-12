@@ -115,6 +115,7 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 		statedb.NewParentBlockHashProcessor(cfg),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 		validator.MakeEthereumDbPreTransactionUpdater(cfg),
+		validator.MakeExceptionUpdater(cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		validator.MakeEthereumDbPostTransactionUpdater(cfg),
 		profiler.MakeOperationProfiler[txcontext.TxContext](cfg),
