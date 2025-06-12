@@ -30,7 +30,7 @@ func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext
 }
 
 type parentBlockHashProcessor struct {
-	hashProvider utils.StateHashProvider
+	hashProvider utils.HashProvider
 	processor    iEvmProcessor
 	cfg          *utils.Config
 	extension.NilExtension[txcontext.TxContext]
@@ -89,7 +89,7 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return nil
 	}
 
-	prevBlockHash, err := p.hashProvider.GetStateHash(state.Block - 1)
+	prevBlockHash, err := p.hashProvider.GetBlockHash(state.Block - 1)
 	if err != nil {
 		return fmt.Errorf("cannot get previous block hash: %w", err)
 	}

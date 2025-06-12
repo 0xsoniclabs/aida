@@ -19,6 +19,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -61,12 +62,12 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 
 	shp := MakeStateHashProvider(database)
 
-	hashZero, err := shp.GetStateHash(0)
+	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashOne, err := shp.GetStateHash(1)
+	hashOne, err := shp.GetStateRootHash(1)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 1: %v", err)
 	}
@@ -108,12 +109,12 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 
 	shp := MakeStateHashProvider(database)
 
-	hashZero, err := shp.GetStateHash(0)
+	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashHundred, err := shp.GetStateHash(100)
+	hashHundred, err := shp.GetStateRootHash(100)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 100: %v", err)
 	}
@@ -134,8 +135,8 @@ func TestStateHash_KeyToUint64(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		{"testZeroConvert", args{[]byte(StateHashPrefix + "0x0")}, 0, false},
-		{"testOneConvert", args{[]byte(StateHashPrefix + "0x1")}, 1, false},
+		{"testZeroConvert", args{[]byte(StateRootHashPrefix + "0x0")}, 0, false},
+		{"testOneConvert", args{[]byte(StateRootHashPrefix + "0x1")}, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -184,7 +185,7 @@ func Test_getClient(t *testing.T) {
 	}
 }
 
-func TestStateHash_GetStateHash(t *testing.T) {
+func TestStateHash_GetStateRootHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -192,7 +193,7 @@ func TestStateHash_GetStateHash(t *testing.T) {
 	mockDb := db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return([]byte("abcdefghijabcdefghijabcdefghij32"), nil)
 	stateHash := MakeStateHashProvider(mockDb)
-	hash, err := stateHash.GetStateHash(1234)
+	hash, err := stateHash.GetStateRootHash(1234)
 	assert.NoError(t, err)
 	assert.Equal(t, "0x6162636465666768696a6162636465666768696a6162636465666768696a3332", hash.String())
 
@@ -200,7 +201,7 @@ func TestStateHash_GetStateHash(t *testing.T) {
 	mockDb = db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return(nil, leveldb.ErrNotFound)
 	stateHash = MakeStateHashProvider(mockDb)
-	hash, err = stateHash.GetStateHash(1234)
+	hash, err = stateHash.GetStateRootHash(1234)
 	assert.Equal(t, leveldb.ErrNotFound, err)
 	assert.Equal(t, common.Hash{}, hash)
 
@@ -208,7 +209,7 @@ func TestStateHash_GetStateHash(t *testing.T) {
 	mockDb = db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return(nil, nil)
 	stateHash = MakeStateHashProvider(mockDb)
-	hash, err = stateHash.GetStateHash(1234)
+	hash, err = stateHash.GetStateRootHash(1234)
 	assert.NoError(t, err)
 	assert.Equal(t, common.Hash{}, hash)
 }
@@ -286,4 +287,79 @@ func TestStateHash_GetLastStateHash(t *testing.T) {
 	output, err := GetLastStateHash(mockDb)
 	assert.Equal(t, uint64(0x0), output)
 	assert.Error(t, err)
+}
+
+func TestStateHashProvider_GetStateRootHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	blk := 10
+	tests := []struct {
+		name   string
+		expect func(mockAidaDb *db.MockBaseDB)
+		want   common.Hash
+	}{
+		{
+			name: "GetStatRootHash_OK",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(StateRootHashPrefix+"0x"+hex)).Return(common.Hash{0x11}.Bytes(), nil)
+			},
+			want: common.Hash{0x11},
+		},
+		{
+			name: "GetStatRootHash_NilHash",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(StateRootHashPrefix+"0x"+hex)).Return(nil, nil)
+			},
+			want: common.Hash{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockAidaDb := db.NewMockBaseDB(ctrl)
+			hp := MakeStateHashProvider(mockAidaDb)
+			test.expect(mockAidaDb)
+			got, err := hp.GetStateRootHash(blk)
+			assert.NoError(t, err)
+			assert.Equal(t, got, test.want)
+		})
+	}
+}
+
+func TestStateHashProvider_GetBlockHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	blk := 10
+	tests := []struct {
+		name   string
+		expect func(mockAidaDb *db.MockBaseDB)
+		want   common.Hash
+	}{
+		{
+			name: "GetBlockHash_OK",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(common.Hash{0x11}.Bytes(), nil)
+			},
+			want: common.Hash{0x11},
+		},
+		{
+			name: "GetBlockHash_NilHash",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(nil, nil)
+			},
+			want: common.Hash{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockAidaDb := db.NewMockBaseDB(ctrl)
+			hp := MakeStateHashProvider(mockAidaDb)
+			test.expect(mockAidaDb)
+			got, err := hp.GetBlockHash(blk)
+			assert.NoError(t, err)
+			assert.Equal(t, got, test.want)
+		})
+	}
 }
