@@ -78,6 +78,7 @@ func run(
 	extensionList := []executor.Extension[txcontext.TxContext]{
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		statedb.MakeArchivePrepper[txcontext.TxContext](),
+		statedb.NewParentBlockHashProcessor(cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 0),
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
 		validator.MakeArchiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),

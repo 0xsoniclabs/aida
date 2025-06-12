@@ -19,6 +19,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/sonic/opera"
 	"math"
 	"math/big"
 	"math/rand"
@@ -363,7 +364,7 @@ type Config struct {
 	// -- cached results --
 	chainCfg           *params.ChainConfig   // cached chain configuration
 	interpreterFactory vm.InterpreterFactory // cached interpreter factory to facilitate reuse in interpreter instances
-
+	VmCfg              vm.Config
 }
 
 type configContext struct {
@@ -389,6 +390,10 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 	if err != nil {
 		t.Fatalf("cannot get chain cfg: %v", err)
 	}
+	vmCfg := opera.DefaultVMConfig
+	vmCfg.NoBaseFee = true
+	vmCfg.Tracer = nil
+	vmCfg.Interpreter = nil
 	return &Config{
 		ChainID:         chainId,
 		First:           first,
@@ -398,6 +403,7 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 		SkipPriming:     true,
 		Validate:        validate,
 		ValidateTxState: validate,
+		VmCfg:           vmCfg,
 	}
 }
 
@@ -420,6 +426,11 @@ func NewConfig(ctx *cli.Context, mode ArgumentMode) (*Config, error) {
 	err = cc.setChainConfig()
 	if err != nil {
 		return nil, fmt.Errorf("cannot set chain id: %w", err)
+	}
+
+	err = cc.setVmConfig()
+	if err != nil {
+		return nil, fmt.Errorf("cannot set vm config: %w", err)
 	}
 
 	// set first Opera block according to chian id
@@ -949,6 +960,33 @@ func (cc *configContext) setChainConfig() (err error) {
 	}
 	cc.cfg.chainCfg, err = getChainConfig(cc.cfg.ChainID, "")
 	return err
+}
+
+func (cc *configContext) setVmConfig() (err error) {
+	if !IsEthereumNetwork(cc.cfg.ChainID) {
+		// SonicMainnetChainID, TestnetChainID, MainnetChainID:
+		cc.cfg.VmCfg = opera.DefaultVMConfig
+		cc.cfg.VmCfg.NoBaseFee = true
+	}
+
+	factory, err := cc.cfg.GetInterpreterFactory()
+	if err != nil {
+		return err
+	}
+	cc.cfg.VmCfg.Interpreter = factory
+	cc.cfg.VmCfg.Tracer = nil
+
+	switch strings.ToLower(cc.cfg.EvmImpl) {
+	case "ethereum":
+		// for the ethereum mode, Fantom specific modifications are disabled
+		cc.cfg.VmCfg.ChargeExcessGas = false
+		cc.cfg.VmCfg.IgnoreGasFeeCap = false
+		cc.cfg.VmCfg.InsufficientBalanceIsNotAnError = false
+		cc.cfg.VmCfg.SkipTipPaymentToCoinbase = false
+	case "", "opera":
+	default:
+	}
+	return nil
 }
 
 // ToTitleCase adjusts fork names to title case.
