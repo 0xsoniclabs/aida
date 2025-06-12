@@ -104,6 +104,12 @@ var AllowedChainIDs = ChainIDs{
 	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
 }
+var EthereumChainIDs = ChainIDs{
+	EthereumChainID: "ethereum",
+	HoleskyChainID:  "holesky",
+	HoodiChainID:    "hoodi",
+	SepoliaChainID:  "sepolia",
+}
 
 const (
 	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository-public/sonic/aida-patches"
