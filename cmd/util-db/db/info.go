@@ -331,7 +331,7 @@ func printStateHash(ctx *cli.Context) error {
 
 	hexStr := hexutil.EncodeUint64(blockNum)
 
-	prefix := []byte(utils.StateHashPrefix + hexStr)
+	prefix := []byte(utils.StateRootHashPrefix + hexStr)
 
 	bytes, err := aidaDb.Get(prefix)
 	if err != nil {
