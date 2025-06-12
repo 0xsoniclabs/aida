@@ -51,7 +51,7 @@ type stateHashValidator[T any] struct {
 	log                     logger.Logger
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
-	hashProvider            utils.StateHashProvider
+	hashProvider            utils.HashProvider
 }
 
 func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
@@ -160,7 +160,7 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 }
 
 func (e *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, error) {
-	want, err := e.hashProvider.GetStateHash(blockNumber)
+	want, err := e.hashProvider.GetStateRootHash(blockNumber)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return common.Hash{}, fmt.Errorf("state hash for block %v is not present in the db", blockNumber)
