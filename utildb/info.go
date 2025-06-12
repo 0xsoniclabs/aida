@@ -141,7 +141,7 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 
 	hashProvider := utils.MakeStateHashProvider(database)
 	for i := cfg.First; i <= cfg.Last; i++ {
-		_, err := hashProvider.GetStateHash(int(i))
+		_, err := hashProvider.GetStateRootHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				continue

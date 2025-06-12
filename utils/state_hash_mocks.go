@@ -16,7 +16,7 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockStateHashProvider is a mock of StateHashProvider interface.
+// MockStateHashProvider is a mock of HashProvider interface.
 type MockStateHashProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockStateHashProviderMockRecorder
@@ -40,9 +40,9 @@ func (m *MockStateHashProvider) EXPECT() *MockStateHashProviderMockRecorder {
 }
 
 // GetStateHash mocks base method.
-func (m *MockStateHashProvider) GetStateHash(blockNumber int) (common.Hash, error) {
+func (m *MockStateHashProvider) GetStateRootHash(blockNumber int) (common.Hash, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStateHash", blockNumber)
+	ret := m.ctrl.Call(m, "GetStateRootHash", blockNumber)
 	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -51,5 +51,5 @@ func (m *MockStateHashProvider) GetStateHash(blockNumber int) (common.Hash, erro
 // GetStateHash indicates an expected call of GetStateHash.
 func (mr *MockStateHashProviderMockRecorder) GetStateHash(blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateHash", reflect.TypeOf((*MockStateHashProvider)(nil).GetStateHash), blockNumber)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateRootHash", reflect.TypeOf((*MockStateHashProvider)(nil).GetStateRootHash), blockNumber)
 }

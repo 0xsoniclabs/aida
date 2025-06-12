@@ -352,7 +352,7 @@ func (c *cloner) readStateHashes() error {
 	var errCounter uint64
 
 	for i := c.cfg.First; i <= c.cfg.Last; i++ {
-		key := []byte(utils.StateHashPrefix + hexutil.EncodeUint64(i))
+		key := []byte(utils.StateRootHashPrefix + hexutil.EncodeUint64(i))
 		value, err := c.aidaDb.Get(key)
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {

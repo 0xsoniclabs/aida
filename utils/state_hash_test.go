@@ -51,12 +51,12 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 
 	shp := MakeStateHashProvider(database)
 
-	hashZero, err := shp.GetStateHash(0)
+	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashOne, err := shp.GetStateHash(1)
+	hashOne, err := shp.GetStateRootHash(1)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 1: %v", err)
 	}
@@ -93,12 +93,12 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 
 	shp := MakeStateHashProvider(database)
 
-	hashZero, err := shp.GetStateHash(0)
+	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashHundred, err := shp.GetStateHash(100)
+	hashHundred, err := shp.GetStateRootHash(100)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 100: %v", err)
 	}
@@ -119,8 +119,8 @@ func TestStateHash_KeyToUint64(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		{"testZeroConvert", args{[]byte(StateHashPrefix + "0x0")}, 0, false},
-		{"testOneConvert", args{[]byte(StateHashPrefix + "0x1")}, 1, false},
+		{"testZeroConvert", args{[]byte(StateRootHashPrefix + "0x0")}, 0, false},
+		{"testOneConvert", args{[]byte(StateRootHashPrefix + "0x1")}, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
