@@ -53,16 +53,16 @@ type stateHashProvider struct {
 
 func (p *stateHashProvider) GetBlockHash(number int) (common.Hash, error) {
 	hex := strconv.FormatUint(uint64(number), 16)
-	blockhash, err := p.db.Get([]byte(BlockHashPrefix + "0x" + hex))
+	blockHash, err := p.db.Get([]byte(BlockHashPrefix + "0x" + hex))
 	if err != nil {
 		return common.Hash{}, err
 	}
 
-	if blockhash == nil {
+	if blockHash == nil {
 		return common.Hash{}, nil
 	}
 
-	return common.Hash(blockhash), nil
+	return common.Hash(blockHash), nil
 }
 
 func (p *stateHashProvider) GetStateRootHash(number int) (common.Hash, error) {

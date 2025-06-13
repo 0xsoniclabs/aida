@@ -76,8 +76,6 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return fmt.Errorf("cannot get previous block hash: %w", err)
 	}
 
-	fmt.Printf("blk %d hash: %s\n", state.Block-1, prevBlockHash)
-
 	if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
 		return fmt.Errorf("cannot begin transaction: %w", err)
 	}
