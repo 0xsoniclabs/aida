@@ -277,8 +277,14 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 	// changed state is considered committed state. Without this, refunds for
 	// state modifications are off while running the main transaction.
 	if stateModified {
-		db.EndTransaction()
-		db.BeginTransaction(99_999_999) // the transaction number is ignored
+		err := db.EndTransaction()
+		if err != nil {
+			return fmt.Errorf("cannot end transaction: %w", err)
+		}
+		err = db.BeginTransaction(99_999_999) // the transaction number is ignored
+		if err != nil {
+			return fmt.Errorf("cannot end transaction: %w", err)
+		}
 	}
 
 	return nil

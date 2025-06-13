@@ -21,13 +21,13 @@ import (
 
 func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockProvider := utils.NewMockStateHashProvider(ctrl)
+	mockProvider := utils.NewMockHashProvider(ctrl)
 	mockState := state.NewMockStateDB(ctrl)
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := common.Hash{123}
 	// Processor is called only once
 	gomock.InOrder(
-		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
+		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
 		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any()),

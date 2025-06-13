@@ -16,7 +16,7 @@
 
 package utils
 
-//go:generate mockgen -source state_hash.go -destination state_hash_mocks.go -package utils
+//go:generate mockgen -source hash_provider.go -destination hash_provider_mocks.go -package utils
 
 import (
 	"bytes"

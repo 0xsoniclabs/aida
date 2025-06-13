@@ -18,6 +18,10 @@ package utils
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"strconv"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -165,6 +169,81 @@ func Test_getClient(t *testing.T) {
 			if tt.want != nil && got == nil {
 				t.Errorf("getClient() got nil, want non-nil")
 			}
+		})
+	}
+}
+
+func TestStateHashProvider_GetStateRootHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	blk := 10
+	tests := []struct {
+		name   string
+		expect func(mockAidaDb *db.MockBaseDB)
+		want   common.Hash
+	}{
+		{
+			name: "GetStatRootHash_OK",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(StateRootHashPrefix+"0x"+hex)).Return(common.Hash{0x11}.Bytes(), nil)
+			},
+			want: common.Hash{0x11},
+		},
+		{
+			name: "GetStatRootHash_NilHash",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(StateRootHashPrefix+"0x"+hex)).Return(nil, nil)
+			},
+			want: common.Hash{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockAidaDb := db.NewMockBaseDB(ctrl)
+			hp := MakeStateHashProvider(mockAidaDb)
+			test.expect(mockAidaDb)
+			got, err := hp.GetStateRootHash(blk)
+			require.NoError(t, err)
+			require.Equal(t, got, test.want)
+		})
+	}
+}
+
+func TestStateHashProvider_GetBlockHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	blk := 10
+	tests := []struct {
+		name   string
+		expect func(mockAidaDb *db.MockBaseDB)
+		want   common.Hash
+	}{
+		{
+			name: "GetBlockHash_OK",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(common.Hash{0x11}.Bytes(), nil)
+			},
+			want: common.Hash{0x11},
+		},
+		{
+			name: "GetBlockHash_NilHash",
+			expect: func(mockAidaDb *db.MockBaseDB) {
+				hex := strconv.FormatUint(uint64(blk), 16)
+				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(nil, nil)
+			},
+			want: common.Hash{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockAidaDb := db.NewMockBaseDB(ctrl)
+			hp := MakeStateHashProvider(mockAidaDb)
+			test.expect(mockAidaDb)
+			got, err := hp.GetBlockHash(blk)
+			require.NoError(t, err)
+			require.Equal(t, got, test.want)
 		})
 	}
 }
