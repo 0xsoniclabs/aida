@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/0xsoniclabs/carmen/go v0.0.0-20250318153505-712d1a76e929
+	github.com/0xsoniclabs/carmen/go v0.0.0-20250530111616-fabde4233b62
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
 	github.com/0xsoniclabs/substate v0.0.0-20250610093530-054cacb3b407
 	github.com/0xsoniclabs/tosca v0.0.0-20250414093812-91b42e73396f
@@ -138,7 +138,7 @@ replace github.com/0xsoniclabs/tosca => ./tosca
 
 replace github.com/ethereum/evmc/v11 => ./tosca/third_party/evmc
 
-replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20250403075908-a6b1c7063681
+replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20250610102820-1c3a8f11446c
 
 replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundation/lachesis-base-sonic v0.0.0-20250212122819-abaef8bb9abb
 
