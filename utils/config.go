@@ -110,6 +110,7 @@ var EthereumChainIDs = ChainIDs{
 	HoleskyChainID:  "holesky",
 	HoodiChainID:    "hoodi",
 	SepoliaChainID:  "sepolia",
+	EthTestsChainID: "eth-tests",
 }
 
 const (
@@ -1009,5 +1010,6 @@ func ToTitleCase(fork string) string {
 // IsEthereumNetwork checks if the chainID is an Ethereum network - mainnet, holesky, hoodi or sepolia.
 // Special conditions for miner rewards and validation are applied.
 func IsEthereumNetwork(chainID ChainID) bool {
-	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == HoodiChainID || chainID == SepoliaChainID
+	_, ok := EthereumChainIDs[chainID]
+	return ok
 }
