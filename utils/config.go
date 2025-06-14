@@ -19,7 +19,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/sonic/opera"
 	"math"
 	"math/big"
 	"math/rand"
@@ -28,6 +27,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/0xsoniclabs/sonic/opera"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
@@ -687,9 +691,10 @@ func splitKeywordOffset(arg string, symbol string) (string, uint64, bool) {
 // offsetBlockNum adds/subtracts the offset to/from block number
 func offsetBlockNum(blkNum uint64, symbol string, offset uint64) uint64 {
 	res := uint64(0)
-	if symbol == "+" {
+	switch symbol {
+	case "+":
 		res = blkNum + offset
-	} else if symbol == "-" {
+	case "-":
 		res = blkNum - offset
 	}
 
@@ -999,8 +1004,8 @@ func (cc *configContext) setVmConfig() (err error) {
 // If the input string contains word glacier anywhere in the string, the word is replaced by "Glacier".
 func ToTitleCase(fork string) string {
 	// Adjust the case when the fork name is glacier
-	fork = strings.Replace(strings.ToLower(fork), "glacier", "Glacier", -1)
-	fork = strings.Title(fork)
+	fork = strings.ReplaceAll(strings.ToLower(fork), "glacier", "Glacier")
+	fork = cases.Title(language.Und, cases.NoLower).String(fork)
 	return fork
 }
 

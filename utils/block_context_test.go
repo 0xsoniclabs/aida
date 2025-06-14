@@ -1,11 +1,12 @@
 package utils
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
-	"math/big"
-	"testing"
 )
 
 func TestPrepareBlockCtx(t *testing.T) {

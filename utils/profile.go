@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"runtime/pprof"
 
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/tosca/go/tosca"
@@ -75,8 +77,14 @@ func MemoryBreakdown(db state.StateDB, cfg *Config, log logger.Logger) {
 // PrintEvmStatistics prints EVM implementation specific statical information
 // to the console. Does nothing, if such information is not offered.
 func PrintEvmStatistics(cfg *Config) {
-	pvm, ok := tosca.GetInterpreter(cfg.VmImpl).(tosca.ProfilingInterpreter)
+	inter, err := tosca.NewInterpreter(cfg.VmImpl)
+	if err != nil {
+		log.Warn("Failed to create interpreter: %v", err)
+		return
+	}
+	pvm, ok := inter.(tosca.ProfilingInterpreter)
 	if pvm != nil && ok {
 		pvm.DumpProfile()
+		return
 	}
 }

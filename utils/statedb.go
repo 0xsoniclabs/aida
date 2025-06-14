@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -255,14 +256,16 @@ func makeStateDBVariant(
 
 // DeleteDestroyedAccountsFromWorldState removes previously suicided accounts from
 // the world state.
-func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config, target uint64) error {
+func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config, target uint64) (err error) {
 	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
 
 	src, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func(src *db.DestroyedAccountDB) {
+		err = errors.Join(err, src.Close())
+	}(src)
 	list, err := src.GetAccountsDestroyedInRange(0, target)
 	if err != nil {
 		return err
