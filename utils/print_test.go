@@ -186,7 +186,6 @@ func TestPrinterToDb_Print(t *testing.T) {
 	mockDb.ExpectBegin()
 	mockDb.ExpectPrepare(p.insert).WillBeClosed()
 	mockDb.ExpectCommit()
-
 	err = p.Print()
 	assert.NoError(t, err)
 
@@ -206,6 +205,22 @@ func TestPrinterToDb_Print(t *testing.T) {
 	mockDb.ExpectBegin()
 	mockDb.ExpectPrepare("").WillBeClosed()
 	mockDb.ExpectCommit().WillReturnError(mockErr)
+	err = p.Print()
+	assert.Error(t, err)
+
+	// case Exec error
+	p = &PrinterToDb{
+		db:     db,
+		insert: "",
+		f: func() [][]any {
+			return [][]any{
+				{"Hello"},
+			}
+		},
+	}
+	mockDb.ExpectBegin()
+	mockDb.ExpectPrepare(p.insert)
+	mockDb.ExpectRollback()
 	err = p.Print()
 	assert.Error(t, err)
 

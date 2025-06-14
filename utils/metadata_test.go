@@ -1158,3 +1158,16 @@ func TestHasStateHashPatch(t *testing.T) {
 	})
 
 }
+
+func TestProcessMergeMetadata(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cfg := &Config{}
+	mockAidaDb := db.NewMockBaseDB(ctrl)
+	mockSourceDb := db.NewMockBaseDB(ctrl)
+	mockSourceDb.EXPECT().Get(gomock.Any()).Return([]byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}, nil).AnyTimes()
+	out, err := ProcessMergeMetadata(cfg, mockAidaDb, []db.BaseDB{mockSourceDb}, []string{})
+	assert.Error(t, err)
+	assert.Nil(t, out)
+}

@@ -170,10 +170,7 @@ func (p *PrinterToDb) Print() error {
 }
 
 func (p *PrinterToDb) Close() {
-	err := p.db.Close()
-	if err != nil {
-		panic(err)
-	}
+	_ = p.db.Close()
 }
 
 func NewPrinterToSqlite3(conn string, create string, insert string, f func() [][]any) (*PrinterToDb, error) {
