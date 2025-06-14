@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
+
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
@@ -296,9 +298,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	md := NewAidaDbMetadata(mockAidaDb, "ERROR")
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
-	dbHash, err := md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err := md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x45, 0xa4, 0x3a}, dbHash)
 
 	// Case 2: Last block is Zero
 	cfg = &Config{
@@ -310,9 +311,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockAidaDb, "ERROR")
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(0), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(0), nil).AnyTimes()
-	dbHash, err = md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err = md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.Error(t, err)
-	assert.Nil(t, dbHash)
 
 	// Case 3: Block not aligned
 	cfg = &Config{
@@ -324,9 +324,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockAidaDb, "ERROR")
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(741852), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(123456), nil).AnyTimes()
-	dbHash, err = md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err = md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.Error(t, err)
-	assert.Nil(t, dbHash)
 
 	// Case 4: ChainID mismatch
 	cfg = &Config{
@@ -339,9 +338,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(123456), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
-	dbHash, err = md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err = md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.Error(t, err)
-	assert.Nil(t, dbHash)
 
 	// Case 5
 	cfg = &Config{
@@ -355,9 +353,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564025), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
-	dbHash, err = md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err = md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x45, 0xa4, 0x3a}, dbHash)
 
 	// Case 6
 	cfg = &Config{
@@ -370,9 +367,8 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	mockAidaDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(bigendian.Uint64ToBytes(0), nil).AnyTimes()
 	mockPatchDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(4564026), nil).AnyTimes()
-	dbHash, err = md.CheckUpdateMetadata(cfg, mockPatchDb)
+	err = md.CheckUpdateMetadata(cfg, mockPatchDb)
 	assert.NoError(t, err)
-	assert.Equal(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x45, 0xa4, 0x3a}, dbHash)
 }
 
 func TestAidaDbMetadata_SetFreshMetadata(t *testing.T) {
@@ -1136,4 +1132,29 @@ func TestAidaDbMetadata_GetDbType(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(TypePrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetDbType()
 	assert.Equal(t, AidaDbType(0), data)
+}
+
+func TestHasStateHashPatch(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/test.db"
+	t.Run("case not exist", func(t *testing.T) {
+		v, err := HasStateHashPatch(path)
+		assert.Nil(t, err)
+		assert.False(t, v)
+	})
+
+	t.Run("case exist", func(t *testing.T) {
+		eDb, err := geth_leveldb.New(path, 1024, 100, "profiling", false)
+		if err != nil {
+			t.Fatalf("failed to open leveldb: %v", err)
+		}
+		err = eDb.Close()
+		if err != nil {
+			t.Fatalf("failed to close leveldb: %v", err)
+		}
+		v, err := HasStateHashPatch(path)
+		assert.Nil(t, err)
+		assert.False(t, v)
+	})
+
 }

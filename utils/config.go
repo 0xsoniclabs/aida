@@ -19,7 +19,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/sonic/opera"
 	"math"
 	"math/big"
 	"math/rand"
@@ -28,6 +27,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/0xsoniclabs/sonic/opera"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"

@@ -19,13 +19,14 @@ package utils
 import (
 	"flag"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"math"
 	"math/big"
 	"os"
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/stretchr/testify/assert"
