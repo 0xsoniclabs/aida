@@ -40,10 +40,7 @@ type Printers struct {
 
 func (ps *Printers) Print() {
 	for _, p := range ps.printers {
-		err := p.Print()
-		if err != nil {
-			panic(err)
-		}
+		_ = p.Print()
 	}
 }
 

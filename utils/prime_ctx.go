@@ -237,11 +237,11 @@ func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substa
 	db.BeginSyncPeriod(0)
 	err := db.BeginBlock(pc.block)
 	if err != nil {
-		panic(fmt.Errorf("failed to begin block: %w", err))
+		pc.log.Errorf("failed to begin block: %v", err)
 	}
 	err = db.BeginTransaction(0)
 	if err != nil {
-		panic(fmt.Errorf("failed to begin transaction: %w", err))
+		pc.log.Errorf("failed to begin transaction: %v", err)
 	}
 	for _, addr := range accounts {
 		a := common.Address(addr)
@@ -254,11 +254,11 @@ func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substa
 	}
 	err = db.EndTransaction()
 	if err != nil {
-		panic(fmt.Errorf("failed to end transaction: %w", err))
+		pc.log.Errorf("failed to end transaction: %v", err)
 	}
 	err = db.EndBlock()
 	if err != nil {
-		panic(fmt.Errorf("failed to end block: %w", err))
+		pc.log.Errorf("failed to end block: %v", err)
 	}
 	db.EndSyncPeriod()
 	pc.block++
