@@ -40,7 +40,7 @@ func TestAdd(t *testing.T) {
 
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	defer os.Remove(dbFile)
@@ -75,7 +75,7 @@ func TestFlush(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 	defer os.Remove(dbFile)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	err = db.Add(ProfileData{})
 	require.NoError(err)
@@ -85,7 +85,7 @@ func TestFlush(t *testing.T) {
 	db.Close()
 
 	// db has 2 records
-	db, err = NewProfileDB(dbFile)
+	db, err = NewProfileDB(dbFile, 0)
 	require.NoError(err)
 
 	pd := ProfileData{
@@ -133,7 +133,7 @@ func TestFlush(t *testing.T) {
 	db.Close()
 
 	// trigger Flush method inside Add
-	db, err = NewProfileDB(dbFile)
+	db, err = NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 
@@ -182,7 +182,7 @@ func TestDeleteBlockRangeOverlapOneTx(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 	defer os.Remove(dbFile)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 
 	startBlock, endBlock := uint64(500), uint64(2500)
@@ -212,7 +212,7 @@ func TestDeleteBlockRangeOverlapOneTx(t *testing.T) {
 	}
 	db.Close()
 
-	db, err = NewProfileDB(dbFile)
+	db, err = NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	for i := startBlock; i <= endBlock; i++ {
@@ -247,7 +247,7 @@ func TestDeleteBlockRangeOverlapMultipleTx(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 	defer os.Remove(dbFile)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 
 	startBlock, endBlock := uint64(500), uint64(2500)
@@ -279,7 +279,7 @@ func TestDeleteBlockRangeOverlapMultipleTx(t *testing.T) {
 	}
 	db.Close()
 
-	db, err = NewProfileDB(dbFile)
+	db, err = NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	for i := startBlock; i <= endBlock; i++ {
@@ -314,7 +314,7 @@ func TestDeleteBlockRangeNoOverlap(t *testing.T) {
 
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	defer os.Remove(dbFile)
@@ -352,7 +352,7 @@ func BenchmarkAdd(b *testing.B) {
 	b.Logf("db file: %s", dbFile)
 	defer os.Remove(dbFile)
 
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	ProfileData := ProfileData{
 		curBlock:    5637800,
@@ -374,7 +374,7 @@ func BenchmarkAdd(b *testing.B) {
 
 func ExampleDB() {
 	dbFile := "/tmp/db-test" + time.Now().Format(time.RFC3339)
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	if err != nil {
 		fmt.Println("ERROR: create -", err)
 		return
@@ -412,7 +412,7 @@ func TestFlushProfileData(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 
-	db, err := NewProfileDB(dbFile)
+	db, err := NewProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	defer os.Remove(dbFile)
