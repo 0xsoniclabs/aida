@@ -19,6 +19,7 @@ package utils
 import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
@@ -106,7 +107,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		// TODO re-enable equality check once supported in Carmen
 		StateValidationMode:    SubsetCheck,
 		SubstateDb:             getFlagValue(ctx, AidaDbFlag).(string),
-		SubstateEncoding:       getFlagValue(ctx, SubstateEncodingFlag).(string),
+		SubstateEncoding:       db.SubstateEncodingSchema(getFlagValue(ctx, SubstateEncodingFlag).(string)),
 		SyncPeriodLength:       getFlagValue(ctx, SyncPeriodLengthFlag).(uint64),
 		TargetDb:               getFlagValue(ctx, TargetDbFlag).(string),
 		TargetEpoch:            getFlagValue(ctx, TargetEpochFlag).(uint64),

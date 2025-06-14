@@ -19,6 +19,7 @@ package utils
 import (
 	"flag"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"math"
 	"math/big"
 	"os"
@@ -804,6 +805,97 @@ func TestUtilsConfig_ToTitleCase_Success(t *testing.T) {
 			t.Fatalf("failed to capitalize first letter; got: %s; expected: %s", got, test.want)
 		}
 	}
+}
+
+func TestConfigContext_setVmConfig(t *testing.T) {
+	for chainID, name := range RealChainIDs {
+		t.Run(name, func(t *testing.T) {
+			cfg := &Config{ChainID: chainID}
+			ctx := NewConfigContext(cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			if IsEthereumNetwork(cfg.ChainID) {
+				require.False(t, cfg.VmCfg.ChargeExcessGas)
+				require.False(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.False(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.False(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			} else {
+				require.True(t, cfg.VmCfg.ChargeExcessGas)
+				require.True(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.True(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.True(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			}
+		})
+	}
+}
+
+func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		require func(t require.TestingT, value bool, msgAndArgs ...any)
+	}{
+		{
+			name:    "empty-evm-impl",
+			cfg:     &Config{EvmImpl: ""},
+			require: require.True,
+		},
+		{
+			name:    "opera-evm-impl",
+			cfg:     &Config{EvmImpl: "opera"},
+			require: require.True,
+		},
+		{
+			name:    "ethereum-evm-impl",
+			cfg:     &Config{EvmImpl: "ethereum"},
+			require: require.False,
+		},
+		{
+			name:    "unknown",
+			cfg:     &Config{EvmImpl: "unknown"},
+			require: require.True,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := NewConfigContext(test.cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			test.require(t, test.cfg.VmCfg.ChargeExcessGas)
+			test.require(t, test.cfg.VmCfg.IgnoreGasFeeCap)
+			test.require(t, test.cfg.VmCfg.InsufficientBalanceIsNotAnError)
+			test.require(t, test.cfg.VmCfg.SkipTipPaymentToCoinbase)
+		})
+	}
+}
+
+func TestConfigContext_setVmConfig_InvalidVmImplCausesError(t *testing.T) {
+	cfg := &Config{VmImpl: "invalid"}
+	ctx := NewConfigContext(cfg, nil)
+	err := ctx.setVmConfig()
+	require.Error(t, err, "error must be returned")
+	require.Contains(t, err.Error(), "cannot get interpreter for \"invalid\"")
+}
+
+func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
+	chainId := MainnetChainID
+	first := uint64(123)
+	last := uint64(456)
+	fork := "london"
+
+	cfg := NewTestConfig(t, chainId, first, last, true, fork)
+
+	require.Equal(t, chainId, cfg.ChainID, "ChainID not set correctly")
+	require.Equal(t, first, cfg.First, "First block not set correctly")
+	require.Equal(t, last, cfg.Last, "Last block not set correctly")
+	require.True(t, cfg.Validate, "Validate not set correctly")
+	require.True(t, cfg.ValidateTxState, "ValidateTxState not set correctly")
+	require.NotNil(t, cfg.chainCfg, "chainCfg should be set")
+	require.Equal(t, "Critical", cfg.LogLevel, "LogLevel should be Critical")
+	require.True(t, cfg.SkipPriming, "SkipPriming should be true")
+	require.True(t, cfg.VmCfg.NoBaseFee, "VmCfg.NoBaseFee should be true")
+	require.Nil(t, cfg.VmCfg.Tracer, "VmCfg.Tracer should be nil")
+	require.Nil(t, cfg.VmCfg.Interpreter, "VmCfg.Interpreter should be nil")
 }
 
 // createFakeAidaDb creates fake empty aidaDB with metadata for testing purposes

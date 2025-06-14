@@ -7,8 +7,8 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250318153505-712d1a76e929
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
-	github.com/0xsoniclabs/substate v0.0.0-20250525122120-1e94fe6c5a85
-	github.com/0xsoniclabs/tosca v0.0.0-20250403113434-e05672621553
+	github.com/0xsoniclabs/substate v0.0.0-20250610093530-054cacb3b407
+	github.com/0xsoniclabs/tosca v0.0.0-20250414093812-91b42e73396f
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
@@ -118,9 +118,9 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -20,6 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -51,6 +56,7 @@ func TestStateDbPrimerExtension_PrimingExistingStateDbMissingDbInfo(t *testing.T
 
 	cfg := &utils.Config{}
 	cfg.IsExistingStateDb = true
+	cfg.First = 2
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
@@ -108,16 +114,24 @@ func TestStateDbPrimerExtension_AttemptToPrimeBlockZeroDoesNotFail(t *testing.T)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
+	tmpStateDb := t.TempDir()
+
 	cfg := &utils.Config{}
 	cfg.SkipPriming = false
-	cfg.StateDbSrc = ""
-	cfg.First = 0
+	cfg.StateDbSrc = tmpStateDb
+	cfg.IsExistingStateDb = true
+	cfg.First = 2
+
+	err := utils.WriteStateDbInfo(tmpStateDb, cfg, 1, common.Hash{}, false)
+	if err != nil {
+		t.Fatalf("cannot write state db info: %v", err)
+	}
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
-	log.EXPECT().Debugf("skipping priming; first priming block %v; first block %v", ^uint64(0), uint64(0))
+	log.EXPECT().Debugf("skipping priming; first priming block %v; first block %v", uint64(1), uint64(2))
 
-	err := ext.PreRun(executor.State[any]{}, &executor.Context{})
+	err = ext.PreRun(executor.State[any]{}, &executor.Context{})
 	if err != nil {
 		t.Errorf("priming should not happen hence should not fail")
 	}
@@ -405,6 +419,65 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 					}
 				})
 			})
+		})
+	}
+}
+
+func TestPrimer_EthereumGenesisPriming(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	addr := common.Address{0x1}
+	for chainID, name := range utils.AllowedChainIDs {
+
+		t.Run(name, func(t *testing.T) {
+			// setup
+			cfg := utils.NewTestConfig(t, chainID, utils.KeywordBlocks[chainID]["first"], 100, false, "Prague")
+			cfg.SkipPriming = false
+			log := logger.NewMockLogger(ctrl)
+			stateDb := state.NewMockStateDB(ctrl)
+			bulk := state.NewMockBulkLoad(ctrl)
+			aidaDb, err := db.NewDefaultUpdateDB(t.TempDir())
+			require.NoError(t, err, "cannot create updatedb")
+			aidaDb.PutUpdateSet(&updateset.UpdateSet{
+				WorldState: map[types.Address]*substate.Account{
+					types.Address(addr): {
+						Nonce:   12,
+						Balance: uint256.NewInt(11),
+						Storage: map[types.Hash]types.Hash{{0x2}: {0x3}},
+						Code:    []byte{0x3},
+					},
+				},
+				Block:           0,
+				DeletedAccounts: nil,
+			}, nil)
+
+			// Genesis priming should only be triggered by ethereum data sets
+			if _, isEthChainID := utils.EthereumChainIDs[chainID]; isEthChainID {
+				gomock.InOrder(
+					log.EXPECT().Noticef("Priming ethereum genesis..."),
+					log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 1, 1),
+					stateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
+					stateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil),
+					stateDb.EXPECT().Exist(addr).Return(false),
+					stateDb.EXPECT().EndTransaction(),
+					stateDb.EXPECT().EndBlock(),
+					stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(bulk, nil),
+					bulk.EXPECT().CreateAccount(addr),
+					bulk.EXPECT().SetBalance(addr, uint256.NewInt(11)),
+					bulk.EXPECT().SetNonce(addr, uint64(12)),
+					bulk.EXPECT().SetCode(addr, []byte{0x3}),
+					bulk.EXPECT().SetState(addr, common.Hash{0x2}, common.Hash{0x3}),
+					bulk.EXPECT().Close().Return(nil),
+					log.EXPECT().Debugf("\t\tPriming completed ..."),
+				)
+			}
+
+			primer := makeStateDbPrimer[any](cfg, log)
+			err = primer.PreRun(executor.State[any]{}, &executor.Context{
+				State:  stateDb,
+				AidaDb: aidaDb,
+			})
+			require.NoError(t, err, "pre-run failed")
 		})
 	}
 }
