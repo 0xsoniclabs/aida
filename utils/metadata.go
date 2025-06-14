@@ -1034,10 +1034,7 @@ func DownloadPatchesJson() (data []PatchJson, err error) {
 		return nil, fmt.Errorf("error making GET request for %s: %v", patchesUrl, err)
 	}
 	defer func(Body io.ReadCloser) {
-		e := Body.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, Body.Close())
 	}(response.Body)
 
 	// Read the response body

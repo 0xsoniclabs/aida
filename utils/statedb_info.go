@@ -59,20 +59,14 @@ func copyFile(src, dst string) (err error) {
 		return err
 	}
 	defer func(srcfd *os.File) {
-		e := srcfd.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, srcfd.Close())
 	}(srcfd)
 
 	if dstfd, err = os.Create(dst); err != nil {
 		return err
 	}
 	defer func(dstfd *os.File) {
-		e := dstfd.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, dstfd.Close())
 	}(dstfd)
 
 	if _, err = io.Copy(dstfd, srcfd); err != nil {
@@ -94,11 +88,7 @@ func CopyDir(src string, dst string) error {
 		return err
 	}
 	if fds, err = os.ReadDir(src); err != nil {
-		e := os.RemoveAll(dst)
-		if e != nil {
-			err = errors.Join(err, e)
-		}
-		return err
+		return errors.Join(err, os.RemoveAll(dst))
 	}
 	for _, fd := range fds {
 		srcfp := path.Join(src, fd.Name())
@@ -106,19 +96,11 @@ func CopyDir(src string, dst string) error {
 
 		if fd.IsDir() {
 			if err = CopyDir(srcfp, dstfp); err != nil {
-				e := os.RemoveAll(dst)
-				if e != nil {
-					err = errors.Join(err, e)
-				}
-				return err
+				return errors.Join(err, os.RemoveAll(dst))
 			}
 		} else {
 			if err = copyFile(srcfp, dstfp); err != nil {
-				e := os.Remove(dst)
-				if e != nil {
-					err = errors.Join(err, e)
-				}
-				return err
+				return errors.Join(err, os.Remove(dst))
 			}
 		}
 	}

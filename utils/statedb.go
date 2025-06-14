@@ -264,10 +264,7 @@ func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config,
 		return err
 	}
 	defer func(src *db.DestroyedAccountDB) {
-		e := src.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, src.Close())
 	}(src)
 	list, err := src.GetAccountsDestroyedInRange(0, target)
 	if err != nil {

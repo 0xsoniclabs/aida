@@ -83,10 +83,7 @@ func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (ws substate.Wor
 		return nil, err
 	}
 	defer func(udb db.UpdateDB) {
-		e := udb.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, udb.Close())
 	}(udb)
 	updateIter := udb.NewUpdateSetIterator(block, target)
 	for updateIter.Next() {

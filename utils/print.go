@@ -114,10 +114,7 @@ func (p *PrinterToFile) Print() (err error) {
 	}
 
 	defer func(file *os.File) {
-		e := file.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, file.Close())
 	}(file)
 	_, err = file.WriteString(p.f())
 	if err != nil {
@@ -165,19 +162,12 @@ func (p *PrinterToDb) Print() error {
 	for _, value := range values {
 		_, err = tx.Stmt(stmt).Exec(value...)
 		if err != nil {
-			e := tx.Rollback()
-			if e != nil {
-				err = errors.Join(err, e)
-			}
-			return err
+			return errors.Join(err, tx.Rollback())
 		}
 	}
 
 	defer func(stmt *sql.Stmt) {
-		e := stmt.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(err, stmt.Close())
 	}(stmt) // Stmt to be open/close each time a transaction happens
 	return tx.Commit()
 }
