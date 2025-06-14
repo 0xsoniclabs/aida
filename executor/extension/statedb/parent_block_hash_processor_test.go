@@ -13,6 +13,7 @@ import (
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"math"
@@ -30,7 +31,9 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockState.EXPECT().AddAddressToAccessList(params.HistoryStorageAddress),
 		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any()),
+		mockState.EXPECT().Finalise(true),
 		mockState.EXPECT().EndTransaction().Return(nil),
 	)
 

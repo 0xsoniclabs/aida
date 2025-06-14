@@ -4,6 +4,8 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -42,10 +44,20 @@ type iEvmProcessor interface {
 type evmProcessor struct{}
 
 func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM) {
-	evmcore.ProcessParentBlockHash(
-		prevHash,
-		evm,
-	)
+	msg := &core.Message{
+		From:      params.SystemAddress,
+		GasLimit:  30_000_000,
+		GasPrice:  common.Big0,
+		GasFeeCap: common.Big0,
+		GasTipCap: common.Big0,
+		To:        &params.HistoryStorageAddress,
+		Data:      prevHash.Bytes(),
+	}
+
+	txContext := evmcore.NewEVMTxContext(msg)
+	evm.SetTxContext(txContext)
+
+	_, _, _ = evm.Call(msg.From, *msg.To, msg.Data, 30_000_000, common.U2560)
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
@@ -82,11 +94,12 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
+	ctx.State.AddAddressToAccessList(params.HistoryStorageAddress)
 	p.processor.ProcessParentBlockHash(prevBlockHash, evm)
 
 	if hashError != nil {
 		return fmt.Errorf("hash error while processing parent block hash: %v", err)
 	}
-
+	ctx.State.Finalise(true)
 	return ctx.State.EndTransaction()
 }
