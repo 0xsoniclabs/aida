@@ -178,28 +178,22 @@ func (e *exceptionUpdater) fixExceptionAt(db state.StateDB, scope exceptionScope
 
 // loadAllocFromException retrieves the allocation from the exception data based on the scope and transaction index
 func (e *exceptionUpdater) loadAllocFromException(scope exceptionScope, tx int) (substate.WorldState, error) {
-	var alloc substate.WorldState
-	switch {
-	case scope == preBlock:
-		alloc = *e.currentBlockException.Data.PreBlock
-	case scope == postBlock:
-		alloc = *e.currentBlockException.Data.PostBlock
-	case scope == preTransaction:
+	switch scope {
+	case preBlock:
+		return *e.currentBlockException.Data.PreBlock, nil
+	case postBlock:
+		return *e.currentBlockException.Data.PostBlock, nil
+	case preTransaction:
 		if _, ok := e.currentBlockException.Data.Transactions[tx]; !ok {
 			return nil, nil
 		}
-		alloc = *e.currentBlockException.Data.Transactions[tx].PreTransaction
-	case scope == postTransaction:
+		return *e.currentBlockException.Data.Transactions[tx].PreTransaction, nil
+	case postTransaction:
 		if _, ok := e.currentBlockException.Data.Transactions[tx]; !ok {
 			return nil, nil
 		}
-		alloc = *e.currentBlockException.Data.Transactions[tx].PostTransaction
+		return *e.currentBlockException.Data.Transactions[tx].PostTransaction, nil
 	default:
 		return nil, fmt.Errorf("unknown exception scope: %v", scope)
 	}
-	if alloc == nil {
-		return nil, fmt.Errorf("no allocation found for exception scope %v and transaction %d in block %d", scope, tx, e.lastFixedBlock)
-	}
-
-	return alloc, nil
 }
