@@ -63,6 +63,11 @@ type exceptionUpdater struct {
 }
 
 func (e *exceptionUpdater) PreTransaction(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+	if ctx.AidaDb == nil {
+		// AidaDb is not set, only occurs during tests
+		return nil
+	}
+
 	// Sonic: fixing exceptions caused by skipped transactions during the block
 	if e.currentBlockException != nil {
 		err := e.fixExceptionAt(ctx.State, preTransaction, state.Block, state.Transaction, false)
@@ -74,14 +79,24 @@ func (e *exceptionUpdater) PreTransaction(state executor.State[txcontext.TxConte
 }
 
 func (e *exceptionUpdater) PreRun(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+	if ctx.AidaDb == nil {
+		e.log.Warning("Exception updater was not enabled, because AidaDb was not initialized.")
+		// AidaDb is not set, only occurs during tests
+		return nil
+	}
+
 	e.log.Warning("Exception updater is enabled.")
 
 	e.db = db.MakeDefaultExceptionDBFromBaseDB(ctx.AidaDb)
-
 	return nil
 }
 
 func (e *exceptionUpdater) PreBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+	if ctx.AidaDb == nil {
+		// AidaDb is not set, only occurs during tests
+		return nil
+	}
+
 	if e.lastFixedBlock == 0 {
 		// initialization of lastFixedBlock
 		e.lastFixedBlock = state.Block
@@ -118,10 +133,15 @@ func (e *exceptionUpdater) PreBlock(state executor.State[txcontext.TxContext], c
 }
 
 func (e *exceptionUpdater) PostBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	// Sonic: search for skippedTx at the end of the block
+	if ctx.AidaDb == nil {
+		// AidaDb is not set, only occurs during tests
+		return nil
+	}
+
+	// Sonic: exceptions in PostBlock are skippedTx at the end of the block
 	// if block has trailing skipped transactions causing exception this has to be fixed
 
-	// Ethereum: search for pseudoTx containing miner rewards, withdrawals, etc.
+	// Ethereum: exceptions in PostBlock are pseudoTx containing miner rewards, withdrawals, etc.
 	if e.currentBlockException != nil {
 		err := e.fixExceptionAt(ctx.State, postBlock, state.Block, 0, true)
 		if err != nil {
