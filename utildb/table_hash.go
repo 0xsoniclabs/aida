@@ -232,7 +232,7 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 			default:
 			}
 
-			h, err := provider.GetStateHash(int(i))
+			h, err := provider.GetStateRootHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue
