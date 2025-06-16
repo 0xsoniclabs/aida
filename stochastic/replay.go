@@ -417,14 +417,19 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			// TODO: consider a more realistic distribution
 			// rather than the uniform distribution.
 			snapshotIdx := snapshotNum - int(exponential.DiscreteSample(rg, ss.snapshotLambda, int64(snapshotNum))) - 1
+			if snapshotIdx < 0 {
+				snapshotIdx = 0
+			} else if snapshotIdx >= snapshotNum {
+				snapshotIdx = snapshotNum - 1
+			}
 			snapshot := ss.snapshot[snapshotIdx]
 			if ss.traceDebug {
 				ss.log.Infof(" id: %v", snapshot)
 			}
-			db.RevertToSnapshot(snapshot)
+			ss.snapshot = ss.snapshot[:snapshotIdx+1]
 
 			// update active snapshots and perform a rollback in balance log
-			ss.snapshot = ss.snapshot[0:snapshotIdx]
+			db.RevertToSnapshot(snapshot)
 		}
 
 	case SetCodeID:
