@@ -3,9 +3,8 @@ package utils
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/rlp"
-
-	db "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	trlp "github.com/0xsoniclabs/substate/types/rlp"

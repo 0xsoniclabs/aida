@@ -22,11 +22,10 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 func StartCPUProfile(cfg *Config) error {

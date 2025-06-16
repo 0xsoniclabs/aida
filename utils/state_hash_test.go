@@ -21,14 +21,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"go.uber.org/mock/gomock"
-
-	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/substate/db"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // TestStateHash_ZeroHasSameStateHashAsOne tests that the state hash of block 0 is the same as the state hash of block 1

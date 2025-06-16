@@ -26,14 +26,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 

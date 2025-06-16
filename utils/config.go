@@ -28,23 +28,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0xsoniclabs/sonic/opera"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/0xsoniclabs/substate/db"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/tests"
-	"github.com/urfave/cli/v2"
-
 	"github.com/0xsoniclabs/tosca/go/geth_adapter"
 	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmone"
 	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmzero"
 	"github.com/0xsoniclabs/tosca/go/interpreter/lfvm"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/tests"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func init() {

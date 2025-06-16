@@ -20,11 +20,10 @@ import (
 	"errors"
 	"testing"
 
-	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
-
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"go.uber.org/mock/gomock"
