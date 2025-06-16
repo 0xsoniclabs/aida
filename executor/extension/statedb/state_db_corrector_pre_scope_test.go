@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -38,8 +39,6 @@ var testExceptionTx = &substate.Exception{
 				PostTransaction: &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(1000)}},
 			},
 		},
-		PreBlock:  &substate.WorldState{},
-		PostBlock: &substate.WorldState{},
 	},
 }
 
@@ -51,8 +50,6 @@ var testExceptionPreTx = &substate.Exception{
 				PreTransaction: &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
 			},
 		},
-		PreBlock:  &substate.WorldState{},
-		PostBlock: &substate.WorldState{},
 	},
 }
 
@@ -155,8 +152,8 @@ func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
 		{"RunPostBlockScopeReturnsEmpty", testExceptionTx, postBlock, false, false},
 		{"RunPreTransactionScopeReturnsValid", testExceptionTx, preTransaction, true, false},
 		{"RunPostTransactionScopeReturnsValid", testExceptionTx, postTransaction, true, false},
-		{"RunPreTransactionScopeReturnsEmpty", testExceptionBlock, preTransaction, true, false},
-		{"RunPostTransactionScopeReturnsEmpty", testExceptionPreTx, postTransaction, true, false},
+		{"RunPreTransactionScopeReturnsEmpty", testExceptionBlock, preTransaction, false, false},
+		{"RunPostTransactionScopeReturnsEmpty", testExceptionPreTx, postTransaction, false, false},
 		{"RunWrongScopeError", testExceptionBlock, correctorScope(100), false, true},
 	}
 
@@ -165,24 +162,15 @@ func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
 			corrector.currentException = test.exc
 			ws, err := corrector.loadStateFromException(test.scope, 1)
 			if test.wantError {
-				if err == nil {
-					t.Fatal("expected an error, got nil")
-				}
+				assert.NotNil(t, err, "expected an error, got nil")
 			} else {
-				if err != nil {
-					t.Fatalf("expected no error, got %v", err)
-				}
+				assert.Nilf(t, err, "expect no error, got %v", err)
 			}
 			if test.wantState {
-				if ws == nil {
-					t.Fatal("expected world state to be not nil")
-				}
+				assert.NotNil(t, ws, "expected exception state to contain data")
 			} else {
-				if (ws != &substate.WorldState{}) {
-					t.Fatalf("expected world state to be nil, got %v", ws)
-				}
+				assert.Nilf(t, ws, "expected exception state to be not nil, got %v", ws)
 			}
 		})
 	}
-	// Add more assertions based on the expected behavior of loadStateFromException
 }
