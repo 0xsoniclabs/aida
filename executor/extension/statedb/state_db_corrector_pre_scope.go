@@ -62,13 +62,13 @@ type stateDbCorrector struct {
 	log              logger.Logger       // logger for the updater
 	db               db.ExceptionDB      // contains a list of database exceptions
 	currentException *substate.Exception // current exception for the block being processed
-	lastFixedBlock   int                 // last fixed block, used to track the progress of the updater
+	nextBlock        int                 // last fixed block, used to track the progress of the updater
 }
 
 func (e *stateDbCorrector) PreRun(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	if ctx.AidaDb == nil {
 		// AidaDb is not set, only occurs during tests
-		return fmt.Errorf("Unable to use StateDB Corrector Extension; aida-db is not set in the context")
+		return nil
 	}
 	// Initialize the last fixed block to 0, meaning no blocks have been fixed yet.
 	e.db = db.MakeDefaultExceptionDBFromBaseDB(ctx.AidaDb)
@@ -81,33 +81,23 @@ func (e *stateDbCorrector) PreBlock(state executor.State[txcontext.TxContext], c
 		return nil
 	}
 
-	if e.lastFixedBlock == 0 {
-		// initialization of lastFixedBlock
-		e.lastFixedBlock = state.Block
+	// initialization of lastFixedBlock
+	if e.nextBlock == 0 {
+		e.nextBlock = state.Block
 	}
 
 	// searching for all blocks that didn't have transactions, if there were any exceptions then fix everything
-	for ; e.lastFixedBlock < state.Block; e.lastFixedBlock++ {
-		err := e.loadCurrentException(e.lastFixedBlock)
+	for ; e.nextBlock <= state.Block; e.nextBlock++ {
+		err := e.loadCurrentException(e.nextBlock)
 		if err != nil {
-			return fmt.Errorf("failed to load exception for pre block %d: %w", e.lastFixedBlock, err)
+			return fmt.Errorf("failed to load exception for pre block %d: %w", e.nextBlock, err)
 		}
 		if e.currentException != nil {
-			err = e.fixExceptionAt(ctx.State, preBlock, e.lastFixedBlock, utils.PseudoTx)
+			err = e.fixExceptionAt(ctx.State, preBlock, e.nextBlock, utils.PseudoTx)
 			if err != nil {
-				return fmt.Errorf("failed to fix exception at pre block %d, %w", e.lastFixedBlock, err)
+				return fmt.Errorf("failed to fix exception at pre block %d, %w", e.nextBlock, err)
 			}
 		}
-	}
-
-	if e.lastFixedBlock != state.Block {
-		return fmt.Errorf("internal error: last fixed block %d does not match state block %d", e.lastFixedBlock, state.Block)
-	}
-
-	// load exception for the current block
-	err := e.loadCurrentException(state.Block)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -132,13 +122,12 @@ func (e *stateDbCorrector) PostBlock(state executor.State[txcontext.TxContext], 
 	if ctx.AidaDb == nil || e.currentException == nil {
 		return nil
 	}
-	err := e.fixExceptionAt(ctx.State, postBlock, state.Block, utils.PseudoTx+1)
+	err := e.fixExceptionAt(ctx.State, postBlock, state.Block, utils.PseudoTx)
 	if err != nil {
 		return fmt.Errorf("failed to fix exception at post block %d; %w", state.Block, err)
 	}
 
 	e.currentException = nil // reset current exception after processing the block
-	e.lastFixedBlock++
 
 	return nil
 }
@@ -161,6 +150,9 @@ func (e *stateDbCorrector) loadCurrentException(block int) error {
 
 // fixExceptionAt applies the exception fix for the given transaction index
 func (e *stateDbCorrector) fixExceptionAt(db state.StateDB, scope correctorScope, block int, tx int) error {
+	if e.currentException == nil {
+		return nil // no exception to fix
+	}
 	if e.currentException.Block != uint64(block) {
 		return fmt.Errorf("current exception block %d does not match state block %d", e.currentException.Block, block)
 	}
@@ -169,7 +161,7 @@ func (e *stateDbCorrector) fixExceptionAt(db state.StateDB, scope correctorScope
 	if err != nil {
 		return fmt.Errorf("failed to load state from exception at block %d, tx %d; %w", block, tx, err)
 	}
-	if ws == nil || len(ws) == 0 {
+	if ws == nil {
 		return nil
 	}
 
@@ -182,7 +174,7 @@ func (e *stateDbCorrector) fixExceptionAt(db state.StateDB, scope correctorScope
 	}
 
 	// Perform the overwrite of state db with the world state from the exception.
-	err = utils.OverwriteWorldState(e.cfg, substatecontext.NewWorldState(ws), db)
+	err = utils.OverwriteStateDB(e.cfg, substatecontext.NewWorldState(ws), db)
 	if err != nil {
 		return fmt.Errorf("failed to overwrite world state at block %d, tx %d; %w", block, tx, err)
 	}
@@ -210,18 +202,16 @@ func (e *stateDbCorrector) loadStateFromException(scope correctorScope, tx int) 
 			return *e.currentException.Data.PostBlock, nil
 		}
 	case preTransaction:
-		if _, ok := e.currentException.Data.Transactions[tx]; !ok {
-			return nil, nil
-		}
-		if e.currentException.Data.Transactions[tx].PreTransaction != nil {
-			return *e.currentException.Data.Transactions[tx].PreTransaction, nil
+		if _, ok := e.currentException.Data.Transactions[tx]; ok {
+			if e.currentException.Data.Transactions[tx].PreTransaction != nil {
+				return *e.currentException.Data.Transactions[tx].PreTransaction, nil
+			}
 		}
 	case postTransaction:
-		if _, ok := e.currentException.Data.Transactions[tx]; !ok {
-			return nil, nil
-		}
-		if e.currentException.Data.Transactions[tx].PostTransaction != nil {
-			return *e.currentException.Data.Transactions[tx].PostTransaction, nil
+		if _, ok := e.currentException.Data.Transactions[tx]; ok {
+			if e.currentException.Data.Transactions[tx].PostTransaction != nil {
+				return *e.currentException.Data.Transactions[tx].PostTransaction, nil
+			}
 		}
 	default:
 		return nil, fmt.Errorf("unknown exception scope: %v", scope)
