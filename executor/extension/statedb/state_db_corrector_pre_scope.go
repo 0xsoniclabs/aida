@@ -84,9 +84,6 @@ func (e *stateDbCorrector) PreBlock(state executor.State[txcontext.TxContext], c
 	if e.lastFixedBlock == 0 {
 		// initialization of lastFixedBlock
 		e.lastFixedBlock = state.Block
-	} else {
-		// incrementing lastFixedBlock to the current block
-		e.lastFixedBlock++
 	}
 
 	// searching for all blocks that didn't have transactions, if there were any exceptions then fix everything
@@ -141,6 +138,8 @@ func (e *stateDbCorrector) PostBlock(state executor.State[txcontext.TxContext], 
 	}
 
 	e.currentException = nil // reset current exception after processing the block
+	e.lastFixedBlock++
+
 	return nil
 }
 
