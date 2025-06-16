@@ -19,11 +19,15 @@ package statedb
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/0xsoniclabs/substate/db"
+	substatedb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -63,81 +67,46 @@ var testExceptionBlock = &substate.Exception{
 	},
 }
 
-// Tests the loadCurrentException method when the exception is not empty.
-func TestStateDbCorrector_LoadCurrentExceptionNotEmpty(t *testing.T) {
+func TestStateDbCorrector_LoadCurrentException(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	cfg := &utils.Config{
-		First: 1001,
+	corrector := &stateDbCorrector{}
+
+	testcases := []struct {
+		name          string
+		block         int
+		wantException bool
+	}{
+		{"BlockHasException", 1001, true},
+		{"BlockHasNoException", 1002, false},
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "TestStateDbCorrector")
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			edb := substatedb.NewMockExceptionDB(ctrl)
+			if test.wantException {
+				edb.EXPECT().GetException(uint64(test.block)).Return(testExceptionBlock, nil).Times(1)
+			} else {
+				edb.EXPECT().GetException(uint64(test.block)).Return(nil, nil).Times(1)
+			}
+			corrector.db = edb
 
-	mockDB := db.NewMockExceptionDB(ctrl)
-	mockDB.EXPECT().GetException(cfg.First).Return(testExceptionBlock, nil).Times(1)
-
-	corrector := &stateDbCorrector{
-		cfg:              cfg,
-		log:              log,
-		db:               mockDB,
-		currentException: nil,
-	}
-
-	err := corrector.loadCurrentException(int(cfg.First))
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if corrector.currentException == nil {
-		t.Fatal("expected currentException to be set")
+			err := corrector.loadCurrentException(test.block)
+			assert.NoError(t, err)
+			if test.wantException {
+				assert.NotNil(t, corrector.currentException, "expected currentException to be set")
+				assert.Equal(t, test.block, int(corrector.currentException.Block), "expected currentException block to match")
+				assert.NotNil(t, corrector.currentException.Data.PreBlock, "expected PreBlock to contain delta state")
+				assert.NotNil(t, corrector.currentException.Data.PostBlock, "expected PostBlock to contain delta state")
+			} else {
+				assert.Nilf(t, corrector.currentException, "expected currentException to be nil, got %v", corrector.currentException)
+			}
+		})
 	}
 }
 
-// Tests the loadCurrentException method when the exception is empty.
-func TestStateDbCorrector_LoadCurrentExceptionEmpty(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	cfg := &utils.Config{
-		First: 1001,
-	}
-
-	log := logger.NewLogger(cfg.LogLevel, "TestStateDbCorrector")
-
-	mockDB := db.NewMockExceptionDB(ctrl)
-	mockDB.EXPECT().GetException(cfg.First).Return(nil, nil).Times(1)
-
-	corrector := &stateDbCorrector{
-		cfg:              cfg,
-		log:              log,
-		db:               mockDB,
-		currentException: nil,
-	}
-	err := corrector.loadCurrentException(int(cfg.First))
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if corrector.currentException != nil {
-		t.Fatal("expected currentException to be nil")
-	}
-}
-
-// Write a test for loadStateFromException
 func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	cfg := &utils.Config{
-		First: 1001,
-	}
-
-	log := logger.NewLogger(cfg.LogLevel, "TestStateDbCorrector")
-	mockDB := db.NewMockExceptionDB(ctrl)
-
-	corrector := &stateDbCorrector{
-		cfg: cfg,
-		log: log,
-		db:  mockDB,
-	}
+	corrector := &stateDbCorrector{}
 
 	testcases := []struct {
 		name      string
@@ -146,14 +115,14 @@ func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
 		wantState bool
 		wantError bool
 	}{
-		{"RunPreBlockScopeReturnsValid", testExceptionBlock, preBlock, true, false},
-		{"RunPostBlockScopeReturnsValid", testExceptionBlock, preBlock, true, false},
-		{"RunPreBlockScopeReturnsEmpty", testExceptionTx, preBlock, false, false},
-		{"RunPostBlockScopeReturnsEmpty", testExceptionTx, postBlock, false, false},
-		{"RunPreTransactionScopeReturnsValid", testExceptionTx, preTransaction, true, false},
-		{"RunPostTransactionScopeReturnsValid", testExceptionTx, postTransaction, true, false},
-		{"RunPreTransactionScopeReturnsEmpty", testExceptionBlock, preTransaction, false, false},
-		{"RunPostTransactionScopeReturnsEmpty", testExceptionPreTx, postTransaction, false, false},
+		{"RunPreBlockScopeReturnValid", testExceptionBlock, preBlock, true, false},
+		{"RunPostBlockScopeReturnValid", testExceptionBlock, preBlock, true, false},
+		{"RunPreBlockScopeReturnEmpty", testExceptionTx, preBlock, false, false},
+		{"RunPostBlockScopeReturnEmpty", testExceptionTx, postBlock, false, false},
+		{"RunPreTransactionScopeReturnValid", testExceptionTx, preTransaction, true, false},
+		{"RunPostTransactionScopeReturnValid", testExceptionTx, postTransaction, true, false},
+		{"RunPreTransactionScopeReturnEmpty", testExceptionBlock, preTransaction, false, false},
+		{"RunPostTransactionScopeReturnEmpty", testExceptionPreTx, postTransaction, false, false},
 		{"RunWrongScopeError", testExceptionBlock, correctorScope(100), false, true},
 	}
 
@@ -162,9 +131,9 @@ func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
 			corrector.currentException = test.exc
 			ws, err := corrector.loadStateFromException(test.scope, 1)
 			if test.wantError {
-				assert.NotNil(t, err, "expected an error, got nil")
+				assert.Error(t, err)
 			} else {
-				assert.Nilf(t, err, "expect no error, got %v", err)
+				assert.NoError(t, err)
 			}
 			if test.wantState {
 				assert.NotNil(t, ws, "expected exception state to contain data")
@@ -173,4 +142,229 @@ func TestStateDbCorrector_LoadStateFromExceptionBlockScopes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStateDbCorrector_FixExceptionAt(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+
+	testcases := []struct {
+		name         string
+		scope        correctorScope
+		block        int
+		exception    *substate.Exception
+		wantError    bool
+		wantDbUpdate bool
+	}{
+		{"NoException", preBlock, 1001, nil, false, false},
+		{"RunFixWrongBlock", preBlock, 1002, testExceptionBlock, true, false}, // Expect block 1001
+		{"RunFixWrongScope", correctorScope(100), 1001, testExceptionBlock, true, false},
+		{"RunFixScopeButHasNoFix", preTransaction, 1001, testExceptionBlock, false, false},
+		{"RunFixTxScopeSuccessful", preTransaction, 1001, testExceptionTx, false, true},
+		{"RunFixBlockScopeSuccessful", preBlock, 1001, testExceptionBlock, false, true},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			tx := 1 // Assume transaction index 1 for block scope
+			if test.wantDbUpdate {
+				if test.scope == preBlock || test.scope == postBlock {
+					db.EXPECT().BeginTransaction(uint32(tx)).Return(nil).Times(1)
+					db.EXPECT().EndTransaction().Return(nil).Times(1)
+				}
+				gomock.InOrder(
+					db.EXPECT().Exist(common.Address{0x01}).Times(1),
+					db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
+					db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),
+					db.EXPECT().SubBalance(common.Address{0x01}, uint256.NewInt(100), tracing.BalanceChangeUnspecified).Times(1),
+					db.EXPECT().AddBalance(common.Address{0x01}, uint256.NewInt(500), tracing.BalanceChangeUnspecified).Times(1),
+					db.EXPECT().GetNonce(common.Address{0x01}).Return(uint64(2)).Times(1),
+					db.EXPECT().SetNonce(common.Address{0x01}, uint64(1), tracing.NonceChangeUnspecified).Times(1),
+					db.EXPECT().GetCode(common.Address{0x01}).Return([]byte{}).Times(1),
+				)
+			}
+
+			corrector := &stateDbCorrector{
+				cfg:              &utils.Config{},
+				currentException: test.exception,
+			}
+			err := corrector.fixExceptionAt(db, test.scope, test.block, tx)
+			if test.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestStateDbCorrector_PreRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var err error
+	ctx := &executor.Context{}
+
+	testcases := []struct {
+		name       string
+		withAidaDb bool
+	}{
+		{"RunWithAidaDB", true},
+		{"RunWihtoutAidaDB", false}, // test do not fail if aida-db is not set
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			ext := MakeStateDbCorrector(&utils.Config{})
+			if test.withAidaDb {
+				// Init directory for aida-db
+				aidaDbDir := t.TempDir() + "aida-db"
+				ctx.AidaDb, err = substatedb.NewDefaultBaseDB(aidaDbDir)
+				assert.NoError(t, err, "failed to create aida-db")
+			}
+			err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestStateDbCorrector_PreBlockProcessesLastFixBlockInitialize(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+	edb := substatedb.NewMockExceptionDB(ctrl)
+
+	// Initialize aida-db directory
+	aidaDbDir := t.TempDir() + "aida-db"
+	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	assert.NoError(t, err)
+
+	corrector := &stateDbCorrector{
+		db:        edb,
+		nextBlock: 0, // uninitialized lastFixedBlock
+	}
+
+	edb.EXPECT().GetException(uint64(3)).Return(nil, nil).Times(1)
+
+	targetBlock := 3
+	ctx := &executor.Context{AidaDb: aidaDb, State: db}
+	state := executor.State[txcontext.TxContext]{Block: targetBlock}
+	err = corrector.PreBlock(state, ctx)
+	assert.NoError(t, err)
+	assert.Equal(
+		t,
+		targetBlock+1,
+		corrector.nextBlock,
+		"expected nextBlock to be the block after, expected %d, got %d", targetBlock+1, corrector.nextBlock,
+	)
+}
+
+func TestStateDbCorrector_PreBlockProcessesAllPreviousExceptions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+	edb := substatedb.NewMockExceptionDB(ctrl)
+	targetBlock := 1001
+
+	// Initialize aida-db directory
+	aidaDbDir := t.TempDir() + "aida-db"
+	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	assert.NoError(t, err)
+
+	corrector := &stateDbCorrector{
+		db:        edb,
+		nextBlock: 1000, // Assume nextBlock is 1000, meaning we need to process block 1000 and 1001 (target)
+	}
+
+	edb.EXPECT().GetException(uint64(1000)).Return(nil, nil).Times(1)
+	edb.EXPECT().GetException(uint64(1001)).Return(testExceptionBlock, nil).Times(1)
+
+	gomock.InOrder(
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil).Times(1),
+		db.EXPECT().Exist(common.Address{0x01}).Times(1),
+		db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
+		db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),
+		db.EXPECT().SubBalance(common.Address{0x01}, uint256.NewInt(100), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().AddBalance(common.Address{0x01}, uint256.NewInt(500), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().GetNonce(common.Address{0x01}).Return(uint64(2)).Times(1),
+		db.EXPECT().SetNonce(common.Address{0x01}, uint64(1), tracing.NonceChangeUnspecified).Times(1),
+		db.EXPECT().GetCode(common.Address{0x01}).Return([]byte{}).Times(1),
+		db.EXPECT().EndTransaction().Return(nil).Times(1),
+	)
+
+	ctx := &executor.Context{AidaDb: aidaDb, State: db}
+	state := executor.State[txcontext.TxContext]{Block: targetBlock}
+	err = corrector.PreBlock(state, ctx)
+	assert.NotNil(t, corrector.currentException, "expected currentException to be set")
+	assert.Equal(t, corrector.currentException.Block, uint64(targetBlock), "expected currentException block to match")
+	assert.Equal(
+		t,
+		targetBlock+1,
+		corrector.nextBlock,
+		"expected nextBlock to be the block after, expected %d, got %d", targetBlock+1, corrector.nextBlock,
+	)
+}
+
+func TestStateDbCorrector_PreTransactionProcessesException(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+
+	// Initialize aida-db directory
+	aidaDbDir := t.TempDir() + "aida-db"
+	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	assert.NoError(t, err)
+
+	corrector := &stateDbCorrector{
+		currentException: testExceptionTx,
+	}
+
+	gomock.InOrder(
+		db.EXPECT().Exist(common.Address{0x01}).Times(1),
+		db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
+		db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),
+		db.EXPECT().SubBalance(common.Address{0x01}, uint256.NewInt(100), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().AddBalance(common.Address{0x01}, uint256.NewInt(500), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().GetNonce(common.Address{0x01}).Return(uint64(1)).Times(1),
+		db.EXPECT().GetCode(common.Address{0x01}).Return([]byte{}).Times(1),
+	)
+
+	ctx := &executor.Context{AidaDb: aidaDb, State: db}
+	state := executor.State[txcontext.TxContext]{Block: 1001, Transaction: 1}
+	err = corrector.PreTransaction(state, ctx)
+	assert.NoError(t, err)
+}
+
+func TestStateDbCorrector_PostBlockProcessesException(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+
+	// Initialize aida-db directory
+	aidaDbDir := t.TempDir() + "aida-db"
+	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	assert.NoError(t, err)
+
+	corrector := &stateDbCorrector{
+		currentException: testExceptionBlock,
+	}
+
+	gomock.InOrder(
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil).Times(1),
+		db.EXPECT().Exist(common.Address{0x01}).Times(1),
+		db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
+		db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),
+		db.EXPECT().SubBalance(common.Address{0x01}, uint256.NewInt(100), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().AddBalance(common.Address{0x01}, uint256.NewInt(500), tracing.BalanceChangeUnspecified).Times(1),
+		db.EXPECT().GetNonce(common.Address{0x01}).Return(uint64(1)).Times(1),
+		db.EXPECT().GetCode(common.Address{0x01}).Return([]byte{}).Times(1),
+		db.EXPECT().EndTransaction().Return(nil).Times(1),
+	)
+
+	ctx := &executor.Context{AidaDb: aidaDb, State: db}
+	state := executor.State[txcontext.TxContext]{Block: 1001}
+	err = corrector.PostBlock(state, ctx)
+	assert.NoError(t, err)
+	assert.Nil(t, corrector.currentException, "expected currentException to be reset after processing the block")
 }
