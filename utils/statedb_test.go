@@ -400,7 +400,7 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 			Nonce:   1,
 			Balance: uint256.NewInt(1000),
 			Code:    []byte{0x60, 0x60},
-			Storage: map[types.Hash]types.Hash{types.Hash{0x01}: types.Hash{0x02}},
+			Storage: map[types.Hash]types.Hash{{0x01}: {0x02}},
 		},
 	}
 
