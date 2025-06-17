@@ -1,11 +1,12 @@
 package utils
 
 import (
+	"math/big"
+
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"math/big"
 )
 
 // PrepareBlockCtx creates a block context for evm call from given BlockEnvironment.

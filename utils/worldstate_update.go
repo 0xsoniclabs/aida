@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
@@ -73,15 +74,17 @@ func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB)
 
 // GenerateWorldStateFromUpdateDB generates an initial world-state
 // from pre-computed update-set
-func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (substate.WorldState, error) {
-	ws := make(substate.WorldState)
+func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (ws substate.WorldState, err error) {
+	ws = make(substate.WorldState)
 	block := uint64(0)
 	// load pre-computed update-set from update-set db
 	udb, err := db.NewDefaultUpdateDB(cfg.AidaDb)
 	if err != nil {
 		return nil, err
 	}
-	defer udb.Close()
+	defer func(udb db.UpdateDB) {
+		err = errors.Join(err, udb.Close())
+	}(udb)
 	updateIter := udb.NewUpdateSetIterator(block, target)
 	for updateIter.Next() {
 		blk := updateIter.Value()

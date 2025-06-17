@@ -32,7 +32,7 @@ const (
 	RPCTestnet      = "https://rpc.blaze.soniclabs.com"
 )
 
-var RPCUnsupported = fmt.Errorf("chain-id is not supported")
+var ErrRPCUnsupported = fmt.Errorf("chain-id is not supported")
 
 type JsonRPCRequest struct {
 	Method  string        `json:"method"`
@@ -74,21 +74,21 @@ func SendRpcRequest(payload JsonRPCRequest, chainId ChainID) (map[string]interfa
 }
 
 func GetProvider(chainId ChainID) (string, error) {
-	switch {
-	case chainId == SonicMainnetChainID:
+	switch chainId {
+	case SonicMainnetChainID:
 		return RPCSonicMainnet, nil
-	case chainId == MainnetChainID:
+	case MainnetChainID:
 		return RPCOperaMainnet, nil
-	case chainId == TestnetChainID:
+	case TestnetChainID:
 		return RPCTestnet, nil
-	case chainId == EthereumChainID:
-		return "", RPCUnsupported
-	case chainId == HoleskyChainID:
-		return "", RPCUnsupported
-	case chainId == HoodiChainID:
-		return "", RPCUnsupported
-	case chainId == SepoliaChainID:
-		return "", RPCUnsupported
+	case EthereumChainID:
+		return "", ErrRPCUnsupported
+	case HoleskyChainID:
+		return "", ErrRPCUnsupported
+	case HoodiChainID:
+		return "", ErrRPCUnsupported
+	case SepoliaChainID:
+		return "", ErrRPCUnsupported
 	default:
 		return "", fmt.Errorf("unknown chain-id %v", chainId)
 	}
