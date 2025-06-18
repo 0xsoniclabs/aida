@@ -40,7 +40,6 @@ type VmStateDB interface {
 	CreateContract(common.Address)
 	Exist(common.Address) bool
 	Empty(common.Address) bool
-
 	SelfDestruct(common.Address) uint256.Int
 	SelfDestruct6780(common.Address) (uint256.Int, bool)
 	HasSelfDestructed(common.Address) bool
@@ -77,10 +76,10 @@ type VmStateDB interface {
 
 	// Access list
 	Prepare(params.Rules, common.Address, common.Address, *common.Address, []common.Address, types.AccessList)
-	AddressInAccessList(addr common.Address) bool
-	SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool)
-	AddAddressToAccessList(addr common.Address)
-	AddSlotToAccessList(addr common.Address, slot common.Hash)
+	AddressInAccessList(common.Address) bool
+	SlotInAccessList(common.Address, common.Hash) (addressOk bool, slotOk bool)
+	AddAddressToAccessList(common.Address)
+	AddSlotToAccessList(common.Address, common.Hash)
 
 	// Logging
 	AddLog(*types.Log)
