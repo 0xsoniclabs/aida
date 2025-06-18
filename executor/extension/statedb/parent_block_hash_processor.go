@@ -4,12 +4,14 @@ package statedb
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/evmcore"
@@ -37,13 +39,13 @@ type parentBlockHashProcessor struct {
 // iEvmProcessor is an interface that defines the method to process the parent block hash.
 type iEvmProcessor interface {
 	// ProcessParentBlockHash saves prevHash in the blockchain.
-	ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM)
+	ProcessParentBlockHash(common.Hash, *vm.EVM, state.StateDB)
 }
 
 // evmProcessor is a wrapper around evmcore.ProcessParentBlockHash.
 type evmProcessor struct{}
 
-func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM) {
+func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, state state.StateDB) {
 	msg := &core.Message{
 		From:      params.SystemAddress,
 		GasLimit:  30_000_000,
@@ -54,10 +56,14 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM) 
 		Data:      prevHash.Bytes(),
 	}
 
+	state.AddAddressToAccessList(params.HistoryStorageAddress)
 	txContext := evmcore.NewEVMTxContext(msg)
-	evm.SetTxContext(txContext)
-
-	_, _, _ = evm.Call(msg.From, *msg.To, msg.Data, 30_000_000, common.U2560)
+	if evm != nil {
+		evm.SetTxContext(txContext)
+		_, _, _ = evm.Call(msg.From, *msg.To, msg.Data, 30_000_000, common.U2560)
+	}
+	state.Finalise(true)
+	state.EndTransaction()
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
@@ -94,12 +100,9 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
-	ctx.State.AddAddressToAccessList(params.HistoryStorageAddress)
-	p.processor.ProcessParentBlockHash(prevBlockHash, evm)
-
+	p.processor.ProcessParentBlockHash(prevBlockHash, evm, ctx.State)
 	if hashError != nil {
 		return fmt.Errorf("hash error while processing parent block hash: %v", err)
 	}
-	ctx.State.Finalise(true)
-	return ctx.State.EndTransaction()
+	return nil
 }
