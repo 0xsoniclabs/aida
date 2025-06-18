@@ -174,10 +174,7 @@ func (e *stateDbCorrector) fixExceptionAt(db state.StateDB, scope correctorScope
 	}
 
 	// Perform the overwrite of state db with the world state from the exception.
-	err = utils.OverwriteStateDB(e.cfg, substatecontext.NewWorldState(ws), db)
-	if err != nil {
-		return fmt.Errorf("failed to overwrite world state at block %d, tx %d; %w", block, tx, err)
-	}
+	utils.OverwriteStateDB(e.cfg, substatecontext.NewWorldState(ws), db)
 
 	// In Block scope, we need to end the transaction after overwriting the world state.
 	if scope == preBlock || scope == postBlock {
