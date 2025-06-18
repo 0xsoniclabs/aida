@@ -34,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -421,6 +420,5 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 		db.EXPECT().SetState(common.Address{0x01}, common.Hash{0x01}, common.Hash{0x02}).Times(1),
 	)
 	// Call the method to test
-	err := OverwriteStateDB(cfg, patch, db)
-	assert.NoError(t, err)
+	OverwriteStateDB(cfg, patch, db)
 }

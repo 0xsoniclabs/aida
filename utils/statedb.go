@@ -322,7 +322,7 @@ func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target u
 }
 
 // OverwriteStateDB overwrites the StateDb with the expected state.
-func OverwriteStateDB(cfg *Config, patch txcontext.WorldState, db state.VmStateDB) error {
+func OverwriteStateDB(cfg *Config, patch txcontext.WorldState, db state.VmStateDB) {
 	patch.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
 		if !db.Exist(addr) {
 			db.CreateAccount(addr)
@@ -348,6 +348,4 @@ func OverwriteStateDB(cfg *Config, patch txcontext.WorldState, db state.VmStateD
 		})
 
 	})
-
-	return nil
 }
