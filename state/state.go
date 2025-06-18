@@ -35,7 +35,7 @@ import (
 // VmStateDB is the basic StateDB interface required by the EVM and related
 // transaction processing components for interacting with the StateDB.
 type VmStateDB interface {
-	// Account management.
+	// Account management
 	CreateAccount(common.Address)
 	CreateContract(common.Address)
 	Exist(common.Address) bool
@@ -54,16 +54,17 @@ type VmStateDB interface {
 	GetNonce(common.Address) uint64
 	SetNonce(common.Address, uint64, tracing.NonceChangeReason)
 
-	// State
+	// Storage
 	GetCommittedState(common.Address, common.Hash) common.Hash
 	GetState(common.Address, common.Hash) common.Hash
 	SetState(common.Address, common.Hash, common.Hash) common.Hash
-	GetStorageRoot(addr common.Address) common.Hash
+	GetStorageRoot(common.Address) common.Hash
 
+	// Transient Storage
 	SetTransientState(common.Address, common.Hash, common.Hash)
 	GetTransientState(common.Address, common.Hash) common.Hash
 
-	// Code handling.
+	// Code handling
 	GetCodeHash(common.Address) common.Hash
 	GetCode(common.Address) []byte
 	SetCode(common.Address, []byte) []byte
@@ -88,7 +89,7 @@ type VmStateDB interface {
 	// PointCache returns the point cache used in computations
 	PointCache() *utils.PointCache
 
-	// Witness retrieves the current state witness.
+	// Witness retrieves the current state witness
 	Witness() *stateless.Witness
 
 	// SetTxContext is geth utility function which set transaction index and transaction hash.
@@ -101,9 +102,11 @@ type VmStateDB interface {
 	//  - blocks .. groups of transactions, at boundaries effects become visible (and final) to API servers
 	//  - sync-periods .. groups of blocks, at boundaries state becomes synchronizable between nodes
 
+	// Snapshots handling
 	Snapshot() int
 	RevertToSnapshot(int)
 
+	// Transaction scoping
 	BeginTransaction(uint32) error
 	EndTransaction() error
 
@@ -152,9 +155,11 @@ type NonCommittableStateDB interface {
 type StateDB interface {
 	VmStateDB
 
+	// Block scoping
 	BeginBlock(uint64) error
 	EndBlock() error
 
+	// Sync period scoping
 	BeginSyncPeriod(uint64)
 	EndSyncPeriod()
 
