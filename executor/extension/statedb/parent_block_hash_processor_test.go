@@ -1,6 +1,9 @@
 package statedb
 
 import (
+	"math"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb/mocks"
@@ -13,10 +16,9 @@ import (
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"math"
-	"testing"
 )
 
 func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
@@ -30,8 +32,7 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
-		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any()),
-		mockState.EXPECT().EndTransaction().Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any(), gomock.Any()),
 	)
 
 	hashProcessor := parentBlockHashProcessor{
@@ -84,4 +85,18 @@ func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateHash(10)
 	require.NoError(t, err, "hashProvider.GetStateHash failed")
 	require.Equal(t, stateRoot.Bytes(), hash.Bytes())
+}
+
+func TestParentBlockHashProcessor_ProcessParentBlockHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	evmp := evmProcessor{}
+	mockState := state.NewMockStateDB(ctrl)
+
+	hash := common.Hash{123}
+	gomock.InOrder(
+		mockState.EXPECT().AddAddressToAccessList(params.HistoryStorageAddress),
+		mockState.EXPECT().Finalise(true),
+		mockState.EXPECT().EndTransaction().Return(nil),
+	)
+	evmp.ProcessParentBlockHash(hash, nil, mockState)
 }

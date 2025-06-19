@@ -12,6 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	state "github.com/0xsoniclabs/aida/state"
 	common "github.com/ethereum/go-ethereum/common"
 	vm "github.com/ethereum/go-ethereum/core/vm"
 	gomock "go.uber.org/mock/gomock"
@@ -42,13 +43,13 @@ func (m *MockiEvmProcessor) EXPECT() *MockiEvmProcessorMockRecorder {
 }
 
 // ProcessParentBlockHash mocks base method.
-func (m *MockiEvmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM) {
+func (m *MockiEvmProcessor) ProcessParentBlockHash(arg0 common.Hash, arg1 *vm.EVM, arg2 state.StateDB) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ProcessParentBlockHash", prevHash, evm)
+	m.ctrl.Call(m, "ProcessParentBlockHash", arg0, arg1, arg2)
 }
 
 // ProcessParentBlockHash indicates an expected call of ProcessParentBlockHash.
-func (mr *MockiEvmProcessorMockRecorder) ProcessParentBlockHash(prevHash, evm any) *gomock.Call {
+func (mr *MockiEvmProcessorMockRecorder) ProcessParentBlockHash(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessParentBlockHash", reflect.TypeOf((*MockiEvmProcessor)(nil).ProcessParentBlockHash), prevHash, evm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessParentBlockHash", reflect.TypeOf((*MockiEvmProcessor)(nil).ProcessParentBlockHash), arg0, arg1, arg2)
 }
