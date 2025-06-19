@@ -113,7 +113,7 @@ func testEthereumSystemContractStorageException(t *testing.T, address common.Add
 		db.EXPECT().GetState(address, common.HexToHash("0x1")),
 		db.EXPECT().SetState(address, common.HexToHash("0x1"), common.HexToHash("0x2")),
 		db.EXPECT().EndTransaction().Return(nil),
-		db.EXPECT().BeginTransaction(uint32(99_999_999)),
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
 	)
 
 	ext := makeEthereumDbPreTransactionUpdater(cfg, log)

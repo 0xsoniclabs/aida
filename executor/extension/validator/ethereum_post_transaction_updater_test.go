@@ -117,7 +117,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().GetState(common.HexToAddress("0x1"), common.HexToHash("0x1")),
 		db.EXPECT().SetState(common.HexToAddress("0x1"), common.HexToHash("0x1"), common.HexToHash("0x2")),
 		db.EXPECT().EndTransaction().Return(nil),
-		db.EXPECT().BeginTransaction(uint32(99_999_999)),
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
 	)
 
 	gomock.InOrder(

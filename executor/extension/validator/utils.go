@@ -281,7 +281,7 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 		if err != nil {
 			return fmt.Errorf("cannot end transaction: %w", err)
 		}
-		err = db.BeginTransaction(99_999_999) // the transaction number is ignored
+		err = db.BeginTransaction(utils.PseudoTx) // the transaction number is ignored
 		if err != nil {
 			return fmt.Errorf("cannot end transaction: %w", err)
 		}
