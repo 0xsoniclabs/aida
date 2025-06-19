@@ -391,7 +391,6 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	db := state.NewMockVmStateDB(ctrl)
-	cfg := &Config{}
 
 	// Define the world state to overwrite
 	ws := substate.WorldState{
@@ -420,5 +419,5 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 		db.EXPECT().SetState(common.Address{0x01}, common.Hash{0x01}, common.Hash{0x02}).Times(1),
 	)
 	// Call the method to test
-	OverwriteStateDB(cfg, patch, db)
+	OverwriteStateDB(patch, db)
 }
