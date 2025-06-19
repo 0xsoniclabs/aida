@@ -60,15 +60,15 @@ type HashProvider interface {
 	GetBlockHash(blockNumber int) (common.Hash, error)
 }
 
-func MakeStateHashProvider(db db.BaseDB) HashProvider {
-	return &stateHashProvider{db}
+func MakeHashProvider(db db.BaseDB) HashProvider {
+	return &hashProvider{db}
 }
 
-type stateHashProvider struct {
+type hashProvider struct {
 	db db.BaseDB
 }
 
-func (p *stateHashProvider) GetBlockHash(number int) (common.Hash, error) {
+func (p *hashProvider) GetBlockHash(number int) (common.Hash, error) {
 	hex := strconv.FormatUint(uint64(number), 16)
 	blockHash, err := p.db.Get([]byte(BlockHashPrefix + "0x" + hex))
 	if err != nil {
@@ -82,7 +82,7 @@ func (p *stateHashProvider) GetBlockHash(number int) (common.Hash, error) {
 	return common.Hash(blockHash), nil
 }
 
-func (p *stateHashProvider) GetStateRootHash(number int) (common.Hash, error) {
+func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 	hex := strconv.FormatUint(uint64(number), 16)
 	stateRoot, err := p.db.Get([]byte(StateRootHashPrefix + "0x" + hex))
 	if err != nil {

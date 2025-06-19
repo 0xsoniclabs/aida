@@ -139,7 +139,7 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
-	hashProvider := utils.MakeStateHashProvider(database)
+	hashProvider := utils.MakeHashProvider(database)
 	for i := cfg.First; i <= cfg.Last; i++ {
 		_, err := hashProvider.GetStateRootHash(int(i))
 		if err != nil {

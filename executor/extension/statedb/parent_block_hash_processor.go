@@ -67,7 +67,7 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	p.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	p.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
 	return nil
 }
 
