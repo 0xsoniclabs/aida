@@ -18,6 +18,7 @@ type Transaction struct {
 }
 
 var usableForks = map[string]struct{}{
+	"Prague":       {},
 	"Cancun":       {},
 	"Shanghai":     {},
 	"Paris":        {},
@@ -30,7 +31,6 @@ var usableForks = map[string]struct{}{
 	"Istanbul":     {},
 	"MuirGlacier":  {},
 	"TestNetwork":  {},
-	//"Prague":       {}, TODO: enable once geth is updated to Prague
 }
 
 // NewTestCaseSplitter opens all JSON tests within path
