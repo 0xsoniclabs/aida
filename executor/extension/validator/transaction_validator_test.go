@@ -889,7 +889,7 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 				t.Fatalf("failed to throw errors while validating state DB: %v", err)
 			}
 			// Overwrite the WorldState
-			utils.OverwriteStateDB(cfg, ws, sDB)
+			utils.OverwriteStateDB(ws, sDB)
 
 			// Check that world state was updated correctly
 			err = doSubsetValidation(ws, sDB)
