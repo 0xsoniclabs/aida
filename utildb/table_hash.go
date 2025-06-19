@@ -291,7 +291,8 @@ func GetExceptionDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 				break
 			}
 
-			value := iter.Value()
+			// make copy of value before sending to channel
+			value := bytes.Clone(iter.Value())
 			select {
 			case err = <-errChan:
 				errChan <- err
