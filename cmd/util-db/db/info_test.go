@@ -348,15 +348,18 @@ func TestPrintRange_IntegrationTest(t *testing.T) {
 	state := substate.Substate{
 		Block:       10,
 		Transaction: 7,
-		Env:         &substate.Env{},
+		Env:         &substate.Env{Difficulty: big.NewInt(1), GasLimit: uint64(15), Number: 11},
 		Message: &substate.Message{
-			Value: big.NewInt(12),
+			Value:    big.NewInt(12),
+			GasPrice: big.NewInt(14),
 		},
 		InputSubstate:  substate.WorldState{},
 		OutputSubstate: substate.WorldState{},
 		Result:         &substate.Result{},
 	}
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	err = sdb.SetSubstateEncoding("pb")
+	assert.NoError(t, err)
 	err = sdb.PutSubstate(&state)
 	assert.NoError(t, err)
 
