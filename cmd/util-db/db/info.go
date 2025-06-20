@@ -45,24 +45,26 @@ var InfoCommand = cli.Command{
 }
 
 var cmdCount = cli.Command{
-	Action:    printCount,
+	Action:    printCountRun,
 	Name:      "count",
 	Usage:     "Count records in AidaDb.",
 	ArgsUsage: "<firstBlockNum>, <lastBlockNum>",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
 
 var cmdRange = cli.Command{
-	Action: printRange,
+	Action: printRangeRun,
 	Name:   "range",
 	Usage:  "Prints range of all types in AidaDb",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -89,19 +91,25 @@ var cmdPrintStateHash = cli.Command{
 	},
 }
 
-// printCount prints count of given db component in given AidaDb
-func printCount(ctx *cli.Context) error {
+// printCountRun prints count of given db component in given AidaDb
+func printCountRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
 
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
+
+	return printCount(cfg, log)
+}
+
+// printCount prints count of given db component in given AidaDb
+func printCount(cfg *utils.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
 	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
 
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
@@ -109,11 +117,20 @@ func printCount(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func() {
+		err = base.Close()
+		if err != nil {
+			log.Warningf("Error closing base db: %v", err)
+		}
+	}()
 
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
+		}
 		count := utildb.GetSubstateCount(cfg, sdb)
 		log.Noticef("Found %v substates", count)
 	}
@@ -151,25 +168,33 @@ func printCount(ctx *cli.Context) error {
 	return nil
 }
 
-// printRange prints range of given db component in given AidaDb
-func printRange(ctx *cli.Context) error {
+// printRangeRun prints range of given db component in given AidaDb
+func printRangeRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
 
+	return printRange(cfg, log)
+}
+
+// printRange prints range of given db component in given AidaDb
+func printRange(cfg *utils.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
 	}
-
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
 
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
 
 		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
@@ -190,8 +215,9 @@ func printRange(ctx *cli.Context) error {
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %v", err)
+		} else {
+			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
-		log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		udb.Close()
 	}
 
