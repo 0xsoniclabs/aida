@@ -33,7 +33,7 @@ var AutoGenCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.ChainIDFlag,
-		&utils.OperaDbFlag,
+		&utils.ClientDbFlag,
 		&utils.GenesisFlag,
 		&utils.DbTmpFlag,
 		&utils.OperaBinaryFlag,
