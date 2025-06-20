@@ -807,7 +807,7 @@ func TestUtilsConfig_ToTitleCase_Success(t *testing.T) {
 }
 
 func TestConfigContext_setVmConfig(t *testing.T) {
-	for chainID, name := range RealChainIDs {
+	for chainID, name := range AllowedChainIDs {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{ChainID: chainID}
 			ctx := NewConfigContext(cfg, nil)
