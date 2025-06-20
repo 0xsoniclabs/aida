@@ -246,7 +246,7 @@ func startOperaIpc(cfg *utils.Config, stopChan chan struct{}) chan error {
 	errChan := make(chan error, 1)
 
 	log := logger.NewLogger(cfg.LogLevel, "Autogen-ipc")
-	log.Noticef("Starting opera ipc %v", cfg.OperaDb)
+	log.Noticef("Starting opera ipc %v", cfg.ClientDb)
 
 	resChan := make(chan string, 100)
 	go func() {
@@ -258,12 +258,12 @@ func startOperaIpc(cfg *utils.Config, stopChan chan struct{}) chan error {
 			if !os.IsNotExist(err) && err != nil {
 				log.Errorf("failed to remove ipc file %s; %v", name, err)
 			}
-		}(cfg.OperaDb + "/opera.ipc")
+		}(cfg.ClientDb + "/opera.ipc")
 
-		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.OperaDb, "--maxpeers=0")
+		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.ClientDb, "--maxpeers=0")
 		err := runCommand(cmd, resChan, stopChan, log)
 		if err != nil {
-			errChan <- fmt.Errorf("unable run ipc opera --datadir %v; binary %v; %v", cfg.OperaDb, getOperaBinary(cfg), err)
+			errChan <- fmt.Errorf("unable run ipc opera --datadir %v; binary %v; %v", cfg.ClientDb, getOperaBinary(cfg), err)
 		}
 	}()
 
@@ -329,16 +329,16 @@ func startOperaRecording(cfg *utils.Config, syncUntilEpoch uint64) chan error {
 	// todo check if path to aidaDb exists otherwise create the dir
 
 	log := logger.NewLogger(cfg.LogLevel, "autogen-recording")
-	log.Noticef("Starting opera recording %v", cfg.OperaDb)
+	log.Noticef("Starting opera recording %v", cfg.ClientDb)
 
 	go func() {
 		defer close(errChan)
 
 		// syncUntilEpoch +1 because command is off by one
-		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.OperaDb, "--recording", "--substate-db", cfg.SubstateDb, "--exitwhensynced.epoch", strconv.FormatUint(syncUntilEpoch+1, 10))
+		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.ClientDb, "--recording", "--substate-db", cfg.SubstateDb, "--exitwhensynced.epoch", strconv.FormatUint(syncUntilEpoch+1, 10))
 		err := runCommand(cmd, nil, nil, log)
 		if err != nil {
-			errChan <- fmt.Errorf("unable to record opera substates %v; binary %v ; %v", cfg.OperaDb, getOperaBinary(cfg), err)
+			errChan <- fmt.Errorf("unable to record opera substates %v; binary %v ; %v", cfg.ClientDb, getOperaBinary(cfg), err)
 		}
 	}()
 	return errChan

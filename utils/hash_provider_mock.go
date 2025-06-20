@@ -22,7 +22,6 @@ import (
 type MockIRpcClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockIRpcClientMockRecorder
-	isgomock struct{}
 }
 
 // MockIRpcClientMockRecorder is the mock recorder for MockIRpcClient.
@@ -258,7 +257,6 @@ func (mr *MockIRpcClientMockRecorder) SupportsSubscriptions() *gomock.Call {
 type MockHashProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockHashProviderMockRecorder
-	isgomock struct{}
 }
 
 // MockHashProviderMockRecorder is the mock recorder for MockHashProvider.

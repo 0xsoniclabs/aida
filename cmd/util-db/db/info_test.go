@@ -117,6 +117,7 @@ func TestPrintCount_LoggingEmpty(t *testing.T) {
 				{"Noticef", "Found %v updates", []interface{}{uint64(0)}},
 				{"Noticef", "Found %v deleted accounts", []interface{}{0}},
 				{"Noticef", "Found %v state-hashes", []interface{}{uint64(0)}},
+				{"Noticef", "Found %v block-hashes", []interface{}{uint64(0)}},
 			},
 		},
 		{
@@ -173,6 +174,20 @@ func TestPrintCount_LoggingEmpty(t *testing.T) {
 			}{
 				{"Noticef", "Inspecting database between blocks %v-%v", []interface{}{uint64(3), uint64(4)}},
 				{"Noticef", "Found %v state-hashes", []interface{}{uint64(0)}},
+			},
+		},
+		{
+			name:        "AllComponents_EmptyDbBlockHash",
+			first:       3,
+			last:        4,
+			dbComponent: "block-hash",
+			expectedLogs: []struct {
+				method string
+				format string
+				args   []interface{}
+			}{
+				{"Noticef", "Inspecting database between blocks %v-%v", []interface{}{uint64(3), uint64(4)}},
+				{"Noticef", "Found %v block-hashes", []interface{}{uint64(0)}},
 			},
 		},
 	}
@@ -242,6 +257,7 @@ func TestPrintRange_LoggingEmpty(t *testing.T) {
 				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
 			},
 		},
 		{

@@ -327,7 +327,7 @@ var (
 		Usage: "Depth of snapshot history",
 		Value: 100,
 	}
-	OperaDbFlag = cli.PathFlag{
+	ClientDbFlag = cli.PathFlag{
 		Name:    "db",
 		Aliases: []string{"datadir"},
 		Usage:   "Path to the opera database",

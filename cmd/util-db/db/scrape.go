@@ -33,7 +33,7 @@ var ScrapeCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.TargetDbFlag,
 		&utils.ChainIDFlag,
-		&utils.OperaDbFlag,
+		&utils.ClientDbFlag,
 		&logger.LogLevelFlag,
 	},
 }
@@ -54,7 +54,7 @@ func scrapePrepare(ctx *cli.Context) error {
 	}
 	defer database.Close()
 
-	err = utils.StateHashScraper(ctx.Context, cfg.ChainID, cfg.OperaDb, database, cfg.First, cfg.Last, log)
+	err = utils.StateAndBlockHashScraper(ctx.Context, cfg.ChainID, cfg.ClientDb, database, cfg.First, cfg.Last, log)
 	if err != nil {
 		return err
 	}
