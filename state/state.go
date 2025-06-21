@@ -40,7 +40,6 @@ type VmStateDB interface {
 	CreateContract(common.Address)
 	Exist(common.Address) bool
 	Empty(common.Address) bool
-
 	SelfDestruct(common.Address) uint256.Int
 	SelfDestruct6780(common.Address) (uint256.Int, bool)
 	HasSelfDestructed(common.Address) bool
@@ -77,10 +76,10 @@ type VmStateDB interface {
 
 	// Access list
 	Prepare(params.Rules, common.Address, common.Address, *common.Address, []common.Address, types.AccessList)
-	AddressInAccessList(addr common.Address) bool
-	SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool)
-	AddAddressToAccessList(addr common.Address)
-	AddSlotToAccessList(addr common.Address, slot common.Hash)
+	AddressInAccessList(common.Address) bool
+	SlotInAccessList(common.Address, common.Hash) (bool, bool)
+	AddAddressToAccessList(common.Address)
+	AddSlotToAccessList(common.Address, common.Hash)
 
 	// Logging
 	AddLog(*types.Log)
@@ -190,7 +189,7 @@ type StateDB interface {
 
 	// GetArchiveBlockHeight provides the block height available in the archive.
 	// An error is returned if the archive is not enabled or a lookup issue occurred.
-	GetArchiveBlockHeight() (height uint64, empty bool, err error)
+	GetArchiveBlockHeight() (uint64, bool, error)
 
 	// Requests a description of the current memory usage of this State DB. Implementations
 	// not supporting this may return nil.
@@ -210,7 +209,7 @@ type StateDB interface {
 
 	// Used to initiate the state DB for the next transaction.
 	// This is mainly for development purposes to support in-memory DB implementations.
-	PrepareSubstate(substate txcontext.WorldState, block uint64)
+	PrepareSubstate(txcontext.WorldState, uint64)
 
 	// Used to retrieve the shadow DB (if there is one) for testing purposes so that
 	// the shadow DB can be used to query state directly. If there is no shadow DB,
