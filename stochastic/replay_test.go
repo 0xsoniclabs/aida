@@ -22,6 +22,10 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/stochastic/generator"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -203,4 +207,30 @@ func TestInitialState(t *testing.T) {
 	if find([]string{}, "") != -1 {
 		t.Fatalf("Should not find first state")
 	}
+}
+
+func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := state.NewMockStateDB(ctrl)
+	defer ctrl.Finish()
+
+	// create random generator with fixed seed value
+	rg := rand.New(rand.NewSource(999))
+	qpdf := make([]float64, 2)
+	ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+	contracts := generator.NewIndirectAccess(ra)
+	keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+	values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+	snapshotLambda := 0.1
+
+	gomock.InOrder(
+		db.EXPECT().RevertToSnapshot(gomock.Any()).Times(1),
+	)
+
+	ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, nil)
+	ss.snapshot = []int{1, 2, 3, 4, 5}
+	snapshotSize := len(ss.snapshot)
+	ss.execute(RevertToSnapshotID, 1, 1, 1)
+	assert.GreaterOrEqual(t, len(ss.snapshot), 1)         // must have at lest one snapshot
+	assert.LessOrEqual(t, len(ss.snapshot), snapshotSize) // must not have more than 5 snapshots
 }
