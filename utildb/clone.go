@@ -19,6 +19,7 @@ package utildb
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/substate/types"
 	"os"
 	"time"
 
@@ -36,7 +37,7 @@ const cloneWriteChanSize = 1
 type cloner struct {
 	cfg             *utils.Config
 	log             logger.Logger
-	aidaDb, cloneDb db.BaseDB
+	aidaDb, cloneDb db.SubstateDB
 	cloneComponent  dbcomponent.DbComponent
 	count           uint64
 	typ             utils.AidaDbType
@@ -52,7 +53,7 @@ type rawEntry struct {
 }
 
 // CreatePatchClone creates aida-db patch
-func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
+func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.SubstateDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
 	var isFirstGenerationFromGenesis = false
 
 	var cloneType = utils.PatchType
@@ -86,7 +87,7 @@ func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch,
 }
 
 // clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func Clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
+func Clone(cfg *utils.Config, aidaDb, cloneDb db.SubstateDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb Clone")
 
@@ -172,8 +173,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 		return c.readDataCustom()
 	}
 
-	c.read([]byte(db.CodeDBPrefix), 0, nil)
-
+	err := c.cloneCodes()
 	firstDeletionBlock := c.cfg.First
 
 	// update c.cfg.First block before loading deletions and substates, because for utils.CloneType those are necessary to be from last updateset onward
@@ -191,7 +191,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 		firstDeletionBlock = 0
 	}
 
-	err := c.readDeletions(firstDeletionBlock)
+	err = c.readDeletions(firstDeletionBlock)
 	if err != nil {
 		return fmt.Errorf("cannot read deletions; %v", err)
 	}
@@ -479,7 +479,7 @@ func (c *cloner) readDataCustom() error {
 }
 
 // OpenCloningDbs prepares aida and target databases
-func OpenCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, error) {
+func OpenCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.SubstateEncodingSchema) (db.SubstateDB, db.SubstateDB, error) {
 	var err error
 
 	// if source db doesn't exist raise error
@@ -494,19 +494,81 @@ func OpenCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 		return nil, nil, fmt.Errorf("specified target-db %v already exists\n", targetDbPath)
 	}
 
-	var aidaDb, cloneDb db.BaseDB
+	var aidaDb, cloneDb db.SubstateDB
 
 	// open db
-	aidaDb, err = db.NewReadOnlyBaseDB(aidaDbPath)
+	aidaDb, err = db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
 	}
 
-	// open createDbClone
-	cloneDb, err = db.NewDefaultBaseDB(targetDbPath)
+	err = aidaDb.SetSubstateEncoding(substateEncoding)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
+	}
+
+	baseDb, err := db.NewDefaultBaseDB(targetDbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("targetDb %v; %v", targetDbPath, err)
+
+	}
+	// open createDbClone
+	cloneDb = db.MakeDefaultSubstateDBFromBaseDB(baseDb)
+	err = cloneDb.SetSubstateEncoding(substateEncoding)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
 
 	return aidaDb, cloneDb, nil
+}
+
+// cloneCodes clones only codes touched by substates within the given block range
+func (c *cloner) cloneCodes() error {
+	c.log.Noticef("Copying data with prefix %v", db.CodeDBPrefix)
+
+	iter := c.aidaDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
+	defer iter.Release()
+
+	savedCodes := make(map[types.Hash]struct{})
+	for iter.Next() {
+		ss := iter.Value()
+		if ss.Block > c.cfg.Last {
+			return nil
+		}
+
+		for _, acc := range ss.InputSubstate {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[acc.CodeHash()] = struct{}{}
+			}
+		}
+
+		for _, acc := range ss.OutputSubstate {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[acc.CodeHash()] = struct{}{}
+			}
+		}
+
+	}
+	c.log.Noticef("Prefix %v done", db.CodeDBPrefix)
+	return nil
+}
+
+// putCode puts code into the cloneDb and increments the count
+func (c *cloner) putCode(code []byte) error {
+	// skip empty codes
+	if code == nil || len(code) == 0 {
+		return nil
+	}
+	c.count++
+	err := c.cloneDb.PutCode(code)
+	if err != nil {
+		return err
+	}
+	return nil
 }

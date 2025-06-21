@@ -48,6 +48,7 @@ var ClonePatch = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Creates patch of aida-db for desired block range
@@ -66,6 +67,7 @@ var CloneDb = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Creates clone db is used to create subset of aida-db to have more compact database, but still fully usable for desired block range.
@@ -85,6 +87,7 @@ var CloneCustom = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Clone custom is a specialized clone tool which copies specific components in aida-db from 
@@ -115,7 +118,7 @@ func clonePatch(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
@@ -138,7 +141,7 @@ func createDbClone(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func createCustomClone(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := utildb.OpenCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
