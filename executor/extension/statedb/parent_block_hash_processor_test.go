@@ -23,13 +23,13 @@ import (
 
 func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockProvider := utils.NewMockStateHashProvider(ctrl)
+	mockProvider := utils.NewMockHashProvider(ctrl)
 	mockState := state.NewMockStateDB(ctrl)
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := common.Hash{123}
 	// Processor is called only once
 	gomock.InOrder(
-		mockProvider.EXPECT().GetStateHash(2).Return(hash, nil),
+		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
 		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any(), gomock.Any()),
@@ -60,7 +60,7 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	})}, &executor.Context{State: mockState})
 	require.NoError(t, err, "PreBlock failed")
 
-	// Third call calls the StateHashProvider with block-1
+	// Third call calls the HashProvider with block-1
 	err = hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
 		Env:         &substate.Env{Timestamp: math.MaxUint64},
 		Result:      nil,
@@ -77,13 +77,13 @@ func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	aidaDb := db.NewMockSubstateDB(ctrl)
 
 	stateRoot := types.Hash{1}
-	aidaDb.EXPECT().Get([]byte(utils.StateHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
+	aidaDb.EXPECT().Get([]byte(utils.StateRootHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
 
 	err := hp.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{AidaDb: aidaDb})
 	require.NoError(t, err, "PreBlock failed")
 
-	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateHash(10)
-	require.NoError(t, err, "hashProvider.GetStateHash failed")
+	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateRootHash(10)
+	require.NoError(t, err, "hashProvider.GetStateRootHash failed")
 	require.Equal(t, stateRoot.Bytes(), hash.Bytes())
 }
 

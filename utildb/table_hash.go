@@ -227,7 +227,7 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := utils.MakeStateHashProvider(base)
+		provider := utils.MakeHashProvider(base)
 
 		var i = cfg.First
 		for ; i <= cfg.Last; i++ {
@@ -237,7 +237,7 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 			default:
 			}
 
-			h, err := provider.GetStateHash(int(i))
+			h, err := provider.GetStateRootHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue
