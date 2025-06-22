@@ -21,6 +21,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strconv"
@@ -69,8 +70,7 @@ type hashProvider struct {
 }
 
 func (p *hashProvider) GetBlockHash(number int) (common.Hash, error) {
-	hex := strconv.FormatUint(uint64(number), 16)
-	blockHash, err := p.db.Get([]byte(BlockHashPrefix + "0x" + hex))
+	blockHash, err := p.db.Get(BlockHashDBKey(uint64(number)))
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -241,4 +241,11 @@ func GetLastStateHash(db db.BaseDB) (uint64, error) {
 	// TODO MATEJ will be fixed in future commit
 	//return GetLastKey(db, StateRootHashPrefix)
 	return 0, fmt.Errorf("not implemented")
+}
+
+func BlockHashDBKey(block uint64) []byte {
+	prefix := []byte(BlockHashPrefix)
+	blockByte := make([]byte, 8)
+	binary.BigEndian.PutUint64(blockByte[0:8], block)
+	return append(prefix, blockByte...)
 }

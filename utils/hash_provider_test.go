@@ -339,8 +339,7 @@ func TestStateHashProvider_GetBlockHash(t *testing.T) {
 		{
 			name: "GetBlockHash_OK",
 			expect: func(mockAidaDb *db.MockBaseDB) {
-				hex := strconv.FormatUint(uint64(blk), 16)
-				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(common.Hash{0x11}.Bytes(), nil)
+				mockAidaDb.EXPECT().Get(BlockHashDBKey(uint64(blk))).Return(common.Hash{0x11}.Bytes(), nil)
 			},
 			wantHash:  common.Hash{0x11},
 			wantError: false,
@@ -348,8 +347,7 @@ func TestStateHashProvider_GetBlockHash(t *testing.T) {
 		{
 			name: "GetBlockHash_NilHash",
 			expect: func(mockAidaDb *db.MockBaseDB) {
-				hex := strconv.FormatUint(uint64(blk), 16)
-				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(nil, nil)
+				mockAidaDb.EXPECT().Get(BlockHashDBKey(uint64(blk))).Return(nil, nil)
 			},
 			wantHash:  common.Hash{},
 			wantError: false,
@@ -357,8 +355,7 @@ func TestStateHashProvider_GetBlockHash(t *testing.T) {
 		{
 			name: "GetBlockHash_DBError",
 			expect: func(mockAidaDb *db.MockBaseDB) {
-				hex := strconv.FormatUint(uint64(blk), 16)
-				mockAidaDb.EXPECT().Get([]byte(BlockHashPrefix+"0x"+hex)).Return(nil, errors.New("db error"))
+				mockAidaDb.EXPECT().Get(BlockHashDBKey(uint64(blk))).Return(nil, errors.New("db error"))
 			},
 			wantHash:  common.Hash{},
 			wantError: true,
