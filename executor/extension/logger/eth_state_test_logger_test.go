@@ -3,6 +3,8 @@ package logger
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/utils"
+
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
@@ -49,4 +51,16 @@ func TestEthStateTestLogger_PostRunLogsOverall(t *testing.T) {
 		t.Fatalf("post-run failed: %v", err)
 	}
 
+}
+
+func TestMakeEthStateTestLogger(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestLogger(cfg, 0)
+
+	if _, ok := ext.(*ethStateTestLogger); !ok {
+		t.Fatal("unexpected extension type")
+	}
+	if ext.(*ethStateTestLogger).reportFrequency != defaultReportFrequency {
+		t.Fatal("default report frequency is not set")
+	}
 }

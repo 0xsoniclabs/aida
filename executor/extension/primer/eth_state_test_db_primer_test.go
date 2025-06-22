@@ -19,6 +19,8 @@ package primer
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
@@ -96,4 +98,12 @@ func Test_EthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *test
 	if err != nil {
 		t.Fatalf("unexpected err; %v", err)
 	}
+}
+
+func TestMakeEthStateTestDbPrimer(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestDbPrimer(cfg)
+
+	_, ok := ext.(*ethStateTestDbPrimer)
+	assert.True(t, ok)
 }

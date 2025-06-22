@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/executor/extension"
+
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
@@ -117,5 +119,20 @@ func TestEthStateTestValidator_PostBlockChecksError(t *testing.T) {
 				t.Errorf("unexpected error;\ngot: %v\nwant: %v", err, test.wantError)
 			}
 		})
+	}
+}
+
+func TestMakeEthStateTestErrorValidator(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.Validate = true
+	ext := MakeEthStateTestErrorValidator(cfg)
+	if _, ok := ext.(executor.Extension[txcontext.TxContext]); !ok {
+		t.Fatal("unexpected extension initialization")
+	}
+
+	cfg.Validate = false
+	ext = MakeEthStateTestErrorValidator(cfg)
+	if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
+		t.Fatal("unexpected extension initialization")
 	}
 }

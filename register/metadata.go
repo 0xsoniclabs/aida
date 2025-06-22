@@ -57,7 +57,7 @@ const (
 
 type RunMetadata struct {
 	Meta map[string]string
-	ps   *utils.Printers
+	Ps   *utils.Printers
 }
 
 type FetchInfo func() (map[string]string, error)
@@ -73,7 +73,7 @@ func MakeRunMetadata(connection string, id *RunIdentity, fetchEnv FetchInfo) (*R
 func makeRunMetadata(connection string, fetchCfg FetchInfo, fetchEnv FetchInfo) (*RunMetadata, error) {
 	rm := &RunMetadata{
 		Meta: make(map[string]string),
-		ps:   utils.NewPrinters(),
+		Ps:   utils.NewPrinters(),
 	}
 
 	var warnings error
@@ -99,17 +99,17 @@ func makeRunMetadata(connection string, fetchCfg FetchInfo, fetchEnv FetchInfo) 
 	if err != nil {
 		return nil, err
 	}
-	rm.ps.AddPrinter(p2db)
+	rm.Ps.AddPrinter(p2db)
 
 	return rm, warnings
 }
 
 func (rm *RunMetadata) Print() {
-	rm.ps.Print()
+	rm.Ps.Print()
 }
 
 func (rm *RunMetadata) Close() {
-	rm.ps.Close()
+	rm.Ps.Close()
 }
 
 // fetchEnvInfo fetches environment info by executing a number of linux commands.
