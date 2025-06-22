@@ -61,9 +61,10 @@ type archiveInquirer struct {
 	extension.NilExtension[txcontext.TxContext]
 	*executor.ArchiveDbTxProcessor
 
-	cfg   *utils.Config
-	log   logger.Logger
-	state state.StateDB
+	cfg            *utils.Config
+	log            logger.Logger
+	state          state.StateDB
+	tickerDuration *time.Duration
 
 	// Buffer for historic queries to sample from
 	history      *circularBuffer[historicTransaction]
@@ -240,7 +241,11 @@ func (i *archiveInquirer) runProgressReport() {
 	lastDuration := uint64(0)
 
 	start := time.Now()
-	ticker := time.NewTicker(15 * time.Second)
+	duration := 15 * time.Second
+	if i.tickerDuration != nil {
+		duration = *i.tickerDuration
+	}
+	ticker := time.NewTicker(duration)
 	for {
 		select {
 		case now := <-ticker.C:

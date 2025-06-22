@@ -3,6 +3,8 @@ package validator
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -162,4 +164,26 @@ func getEthereumExceptionBlock() int {
 		return key
 	}
 	return -1
+}
+
+func TestEthereumDbPostTransactionUpdater_PreRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	cfg := &utils.Config{}
+	st := executor.State[txcontext.TxContext]{}
+	ctx := new(executor.Context)
+	log.EXPECT().Warning(gomock.Any())
+	ext := &ethereumDbPostTransactionUpdater{
+		cfg: cfg,
+		log: log,
+	}
+	err := ext.PreRun(st, ctx)
+	assert.NoError(t, err)
+}
+
+func TestMakeEthereumDbPostTransactionUpdater(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.ChainID = utils.PseudoTx
+	ext := MakeEthereumDbPostTransactionUpdater(cfg)
+	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }
