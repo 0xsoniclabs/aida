@@ -150,10 +150,7 @@ func (ps *Stats) writeCsv(builder strings.Builder) error {
 		return fmt.Errorf("unable to print profiling; %v", err)
 	}
 	defer func(file *os.File) {
-		e := file.Close()
-		if e != nil {
-			err = errors.Join(err, e)
-		}
+		err = errors.Join(file.Close(), err)
 	}(file)
 	_, err = file.WriteString(builder.String())
 	if err != nil {
