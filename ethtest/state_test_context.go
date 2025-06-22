@@ -51,21 +51,13 @@ func newStateTestTxContext(
 	}
 }
 
-func NewMockStateTestContext(msg *core.Message, env txcontext.BlockEnvironment, txBytes hexutil.Bytes) *StateTestContext {
-	return &StateTestContext{
-		env:     env,
-		msg:     msg,
-		txBytes: txBytes,
-	}
-}
-
 type StateTestContext struct {
 	txcontext.NilTxContext
 	path          string // path to file from which is the test
 	testLabel     string // the test label within one JSON file (key to the JSON)
 	fork          string // which fork is the test running
 	postNumber    int    // the post number within one 'fork' within one JSON file
-	env           txcontext.BlockEnvironment
+	env           *stBlockEnvironment
 	inputState    types.GenesisAlloc
 	msg           *core.Message
 	rootHash      common.Hash // expected root hash
