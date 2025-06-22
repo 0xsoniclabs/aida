@@ -16,7 +16,7 @@
 
 package executor
 
-//go:generate mockgen -source executor.go -destination executor_mocks.go -package executor
+//go:generate mockgen -source executor.go -destination executor_mock.go -package executor
 
 import (
 	"errors"
@@ -309,7 +309,7 @@ func runBlock[T any](
 	for {
 		select {
 		case blockTransactions := <-blocks:
-			if blockTransactions == nil || len(blockTransactions) == 0 {
+			if len(blockTransactions) == 0 {
 				return // reached an end without abort
 			}
 

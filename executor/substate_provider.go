@@ -60,9 +60,11 @@ func (s substateProvider) Run(from int, to int, consumer Consumer[txcontext.TxCo
 	for iter.Next() {
 		tx := iter.Value()
 		if tx.Block >= uint64(to) {
+			// TODO bug not release
 			return nil
 		}
 		if err := consumer(TransactionInfo[txcontext.TxContext]{int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)}); err != nil {
+			// TODO bug not release
 			return err
 		}
 	}

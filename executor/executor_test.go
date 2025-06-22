@@ -23,6 +23,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/substate/substate"
@@ -39,8 +41,10 @@ func TestProcessor_ProcessorGetsCalledForEachTransaction_TransactionLevelParalle
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 0, nil})
-				consume(TransactionInfo[any]{i, 1, nil})
+				err := consume(TransactionInfo[any]{i, 0, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 1, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -68,8 +72,10 @@ func TestProcessor_ProcessorGetsCalledForEachTransaction_BlockLevelParallelism(t
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 0, nil})
-				consume(TransactionInfo[any]{i, 1, nil})
+				err := consume(TransactionInfo[any]{i, 0, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 1, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -154,8 +160,10 @@ func TestProcessor_ExtensionsGetSignaledAboutEvents_TransactionLevelParallelism(
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -197,8 +205,10 @@ func TestProcessor_ExtensionsGetSignaledAboutEvents_BlockLevelParallelism(t *tes
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -346,8 +356,10 @@ func TestProcessor_MultipleExtensionsGetSignaledInOrder_TransactionLevelParallel
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -390,8 +402,10 @@ func TestProcessor_MultipleExtensionsGetSignaledInOrder_BlockLevelParallelism(t 
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -571,8 +585,10 @@ func TestProcessor_StateDbIsPropagatedToTheProcessorAndAllExtensions_Transaction
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -611,8 +627,10 @@ func TestProcessor_StateDbIsPropagatedToTheProcessorAndAllExtensions_BlockLevelP
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -656,7 +674,8 @@ func TestProcessor_StateDbCanBeModifiedByExtensionsAndProcessorInSequentialRun_T
 	substate.EXPECT().
 		Run(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
-			consume(TransactionInfo[any]{from, 7, nil})
+			err := consume(TransactionInfo[any]{from, 7, nil})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -703,7 +722,8 @@ func TestProcessor_StateDbCanBeModifiedByExtensionsAndProcessorInSequentialRun_B
 	substate.EXPECT().
 		Run(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
-			consume(TransactionInfo[any]{from, 7, nil})
+			err := consume(TransactionInfo[any]{from, 7, nil})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -745,8 +765,10 @@ func TestProcessor_TransactionsAreProcessedWithMultipleWorkersIfRequested_Transa
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -780,8 +802,10 @@ func TestProcessor_TransactionsAreProcessedWithMultipleWorkersIfRequested_BlockL
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i + 1, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i + 1, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -816,8 +840,10 @@ func TestProcessor_SignalsAreDeliveredInConcurrentExecution_TransactionLevelPara
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -883,8 +909,10 @@ func TestProcessor_SignalsAreDeliveredInConcurrentExecution_BlockLevelParallelis
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
 			for i := from; i < to; i++ {
-				consume(TransactionInfo[any]{i, 7, nil})
-				consume(TransactionInfo[any]{i, 9, nil})
+				err := consume(TransactionInfo[any]{i, 7, nil})
+				assert.NoError(t, err)
+				err = consume(TransactionInfo[any]{i, 9, nil})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -1169,8 +1197,10 @@ func TestProcessor_SubstateIsPropagatedToTheProcessorAndAllExtensions_Transactio
 	provider.EXPECT().
 		Run(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[*substate.Substate]) error {
-			consume(TransactionInfo[*substate.Substate]{from, 7, substateA})
-			consume(TransactionInfo[*substate.Substate]{from, 8, substateB})
+			err := consume(TransactionInfo[*substate.Substate]{from, 7, substateA})
+			assert.NoError(t, err)
+			err = consume(TransactionInfo[*substate.Substate]{from, 8, substateB})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -1216,8 +1246,10 @@ func TestProcessor_SubstateIsPropagatedToTheProcessorAndAllExtensions_BlockLevel
 	provider.EXPECT().
 		Run(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[*substate.Substate]) error {
-			consume(TransactionInfo[*substate.Substate]{from, 7, substateA})
-			consume(TransactionInfo[*substate.Substate]{from, 8, substateB})
+			err := consume(TransactionInfo[*substate.Substate]{from, 7, substateA})
+			assert.NoError(t, err)
+			err = consume(TransactionInfo[*substate.Substate]{from, 8, substateB})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -1276,12 +1308,13 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_TransactionLevelParalle
 		panic(stop)
 	})
 
-	newExecutor[any](provider, log).Run(
+	err := newExecutor[any](provider, log).Run(
 		Params{From: 10, To: 11, NumWorkers: 2, ParallelismGranularity: TransactionLevel},
 		processor,
 		[]Extension[any]{extension},
 		nil,
 	)
+	assert.NoError(t, err)
 }
 
 func TestProcessor_APanicInAnExecutorSkipsPostRunActions_BlockLevelParallelism(t *testing.T) {
@@ -1314,12 +1347,13 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_BlockLevelParallelism(t
 		panic(stop)
 	})
 
-	newExecutor[any](provider, log).Run(
+	err := newExecutor[any](provider, log).Run(
 		Params{From: 10, To: 11, NumWorkers: 2, ParallelismGranularity: BlockLevel},
 		processor,
 		[]Extension[any]{extension},
 		nil,
 	)
+	assert.NoError(t, err)
 }
 
 func TestProcessor_SingleBlockRun_BlockLevelParallelism(t *testing.T) {
@@ -1339,7 +1373,8 @@ func TestProcessor_SingleBlockRun_BlockLevelParallelism(t *testing.T) {
 	substate.EXPECT().
 		Run(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
-			consume(TransactionInfo[any]{from, 7, nil})
+			err := consume(TransactionInfo[any]{from, 7, nil})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -1381,10 +1416,14 @@ func TestProcessor_MultipleBlocksRun_BlockLevelParallelism(t *testing.T) {
 		Run(10, 12, gomock.Any()).
 		DoAndReturn(func(from int, to int, consume Consumer[any]) error {
 			// We simulate two transactions per block.
-			consume(TransactionInfo[any]{10, 7, nil})
-			consume(TransactionInfo[any]{10, 9, nil})
-			consume(TransactionInfo[any]{11, 8, nil})
-			consume(TransactionInfo[any]{11, 10, nil})
+			err := consume(TransactionInfo[any]{10, 7, nil})
+			assert.NoError(t, err)
+			err = consume(TransactionInfo[any]{10, 9, nil})
+			assert.NoError(t, err)
+			err = consume(TransactionInfo[any]{11, 8, nil})
+			assert.NoError(t, err)
+			err = consume(TransactionInfo[any]{11, 10, nil})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -1842,5 +1881,6 @@ func TestExecutor_RecoverPanicStack(t *testing.T) {
 		}
 	}()
 
-	signalPreRun(State[any]{}, nil, []Extension[any]{extension})
+	err := signalPreRun(State[any]{}, nil, []Extension[any]{extension})
+	assert.NoError(t, err)
 }
