@@ -54,10 +54,6 @@ func NewPrinters() *Printers {
 	return &Printers{[]Printer{}}
 }
 
-func NewCustomPrinters(printers []Printer) *Printers {
-	return &Printers{printers}
-}
-
 func (ps *Printers) AddPrinter(p Printer) *Printers {
 	ps.printers = append(ps.printers, p)
 	return ps
