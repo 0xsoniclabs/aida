@@ -19,9 +19,67 @@ package extension
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"errors"
+
 	"github.com/0xsoniclabs/aida/executor"
 )
 
 func TestNilExtensionIsExtension(t *testing.T) {
 	var _ executor.Extension[any] = NilExtension[any]{}
+}
+
+func TestNilExtension_PreRun(t *testing.T) {
+	ext := NilExtension[string]{}
+	state := executor.State[string]{Data: "test"}
+	ctx := &executor.Context{}
+	err := ext.PreRun(state, ctx)
+	assert.NoError(t, err)
+}
+
+func TestNilExtension_PostRun(t *testing.T) {
+	ext := NilExtension[int]{}
+	state := executor.State[int]{Data: 123}
+	ctx := &executor.Context{}
+	originalErr := errors.New("some error")
+
+	err := ext.PostRun(state, ctx, nil)
+	assert.NoError(t, err)
+
+	errWithOriginal := ext.PostRun(state, ctx, originalErr)
+	assert.NoError(t, errWithOriginal, "PostRun should return nil even if an error is passed in")
+}
+
+func TestNilExtension_PreBlock(t *testing.T) {
+	ext := NilExtension[any]{}
+	state := executor.State[any]{}
+	ctx := &executor.Context{}
+	err := ext.PreBlock(state, ctx)
+	assert.NoError(t, err)
+}
+
+func TestNilExtension_PostBlock(t *testing.T) {
+	ext := NilExtension[float64]{}
+	state := executor.State[float64]{Data: 1.23}
+	ctx := &executor.Context{}
+	err := ext.PostBlock(state, ctx)
+	assert.NoError(t, err)
+}
+
+func TestNilExtension_PreTransaction(t *testing.T) {
+	ext := NilExtension[bool]{}
+	state := executor.State[bool]{Data: true}
+	ctx := &executor.Context{}
+	err := ext.PreTransaction(state, ctx)
+	assert.NoError(t, err)
+}
+
+func TestNilExtension_PostTransaction(t *testing.T) {
+	ext := NilExtension[*string]{}
+	val := "test"
+	state := executor.State[*string]{Data: &val}
+	ctx := &executor.Context{}
+	err := ext.PostTransaction(state, ctx)
+	assert.NoError(t, err)
 }

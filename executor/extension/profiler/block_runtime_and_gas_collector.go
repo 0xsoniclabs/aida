@@ -42,8 +42,8 @@ type BlockRuntimeAndGasCollector struct {
 	extension.NilExtension[txcontext.TxContext]
 	log        logger.Logger
 	cfg        *utils.Config
-	profileDb  *blockprofile.ProfileDB
-	ctx        *blockprofile.Context
+	profileDb  blockprofile.IProfileDB
+	ctx        blockprofile.IContext
 	blockTimer time.Time
 	txTimer    time.Time
 }

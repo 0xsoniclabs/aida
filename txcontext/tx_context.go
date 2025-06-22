@@ -23,6 +23,8 @@ import (
 
 // TxContext implements all three interfaces necessary for
 // Input/Output validation and Transaction execution
+//
+//go:generate mockgen -source tx_context.go -destination tx_context_mock.go -package txcontext
 type TxContext interface {
 	InputState
 	Transaction
