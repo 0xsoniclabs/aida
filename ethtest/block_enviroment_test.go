@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
@@ -195,4 +197,43 @@ func TestStBlockEnvironment_CorrectBlockNumberIsReturned(t *testing.T) {
 	if got, want := env.GetNumber(), blkNumber; got != want {
 		t.Errorf("unexpected block number, got: %v, want: %v", got, want)
 	}
+}
+
+func TestStBlockEnvironment_GetTimestamp(t *testing.T) {
+	env := &stBlockEnvironment{
+		Timestamp: newBigInt(1234),
+	}
+
+	ts := env.GetTimestamp()
+	assert.Equal(t, uint64(1234), ts)
+}
+
+func TestStBlockEnvironment_GetCoinbase(t *testing.T) {
+	env := &stBlockEnvironment{
+		Coinbase: common.HexToAddress("0x1234"),
+	}
+
+	output := env.GetCoinbase()
+	assert.Equal(t, common.HexToAddress("0x1234"), output)
+}
+
+func TestStBlockEnvironment_GetRandom(t *testing.T) {
+	env := &stBlockEnvironment{
+		Random: newBigInt(1234),
+		chainCfg: &params.ChainConfig{
+			LondonBlock: big.NewInt(0),
+		},
+	}
+	expected := common.HexToHash("0x04d2")
+	h := env.GetRandom()
+	assert.Equal(t, &expected, h)
+}
+
+func TestStBlockEnvironment_GetFork(t *testing.T) {
+	env := &stBlockEnvironment{
+		fork: "Berlin",
+	}
+
+	h := env.GetFork()
+	assert.Equal(t, "Berlin", h)
 }

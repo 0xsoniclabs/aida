@@ -56,11 +56,11 @@ func CreateTestTransaction(t *testing.T) txcontext.TxContext {
 			fork:       "Cancun",
 		},
 		inputState: types.GenesisAlloc{
-			common.HexToAddress("0x1"): core.GenesisAccount{
+			common.HexToAddress("0x1"): types.Account{
 				Balance: big.NewInt(1000),
 				Nonce:   1,
 			},
-			common.HexToAddress("0x2"): core.GenesisAccount{
+			common.HexToAddress("0x2"): types.Account{
 				Balance: big.NewInt(2000),
 				Nonce:   2,
 			},
