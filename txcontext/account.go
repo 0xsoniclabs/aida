@@ -28,6 +28,8 @@ import (
 )
 
 // Account represents an interface for interacting with an Ethereum-like account.
+//
+//go:generate mockgen -source account.go -destination account_mock.go -package txcontext
 type Account interface {
 	// GetNonce returns the current nonce of the account.
 	GetNonce() uint64
