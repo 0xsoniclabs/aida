@@ -99,7 +99,6 @@ func (s *stBlockEnvironment) GetBlockHash(blockNum uint64) (common.Hash, error) 
 func (s *stBlockEnvironment) GetBaseFee() *big.Int {
 	var baseFee *big.Int
 	if s.chainCfg.IsLondon(new(big.Int)) {
-		baseFee = s.BaseFee.Convert()
 		if s.BaseFee == nil {
 			// Retesteth uses `0x10` for genesis baseFee. Therefore, it defaults to
 			// parent - 2 : 0xa as the basefee for 'this' context.
