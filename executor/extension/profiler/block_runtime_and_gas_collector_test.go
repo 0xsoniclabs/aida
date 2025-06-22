@@ -20,6 +20,11 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/0xsoniclabs/aida/profile/blockprofile"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
@@ -54,4 +59,102 @@ func TestBlockProfilerExtension_ProfileDbIsCreated(t *testing.T) {
 		}
 		t.Fatalf("unexpected error; %v", err)
 	}
+}
+
+func TestBlockRuntimeAndGasCollector_PreTransaction(t *testing.T) {
+	b := &BlockRuntimeAndGasCollector{}
+	s := executor.State[txcontext.TxContext]{}
+	err := b.PreTransaction(s, nil)
+	assert.Nil(t, err)
+	assert.InDelta(t, time.Now().Second(), b.txTimer.Second(), 5)
+}
+
+func TestBlockRuntimeAndGasCollector_PostTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
+	mockContext := blockprofile.NewMockIContext(ctrl)
+	b := &BlockRuntimeAndGasCollector{
+		profileDb: mockProfileDB,
+		ctx:       mockContext,
+	}
+	s := executor.State[txcontext.TxContext]{}
+	mockContext.EXPECT().RecordTransaction(gomock.Any(), gomock.Any()).Return(nil)
+	err := b.PostTransaction(s, nil)
+	assert.Nil(t, err)
+	assert.InDelta(t, time.Now().Second(), b.txTimer.Second(), 60)
+}
+
+func TestBlockRuntimeAndGasCollector_PreBlock(t *testing.T) {
+	b := &BlockRuntimeAndGasCollector{}
+	s := executor.State[txcontext.TxContext]{}
+	err := b.PreBlock(s, nil)
+	assert.Nil(t, err)
+	assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 5)
+}
+
+func TestBlockRuntimeAndGasCollector_PostBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("case success", func(t *testing.T) {
+		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
+		mockContext := blockprofile.NewMockIContext(ctrl)
+		b := &BlockRuntimeAndGasCollector{
+			profileDb: mockProfileDB,
+			ctx:       mockContext,
+		}
+		mockContext.EXPECT().GetProfileData(gomock.Any(), gomock.Any()).Return(&blockprofile.ProfileData{}, nil)
+		mockProfileDB.EXPECT().Add(gomock.Any()).Return(nil)
+		s := executor.State[txcontext.TxContext]{}
+		err := b.PostBlock(s, nil)
+		assert.Nil(t, err)
+		assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 60)
+	})
+	t.Run("case error", func(t *testing.T) {
+		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
+		mockContext := blockprofile.NewMockIContext(ctrl)
+		b := &BlockRuntimeAndGasCollector{
+			profileDb: mockProfileDB,
+			ctx:       mockContext,
+		}
+		mockError := errors.New("mock error")
+		mockContext.EXPECT().GetProfileData(gomock.Any(), gomock.Any()).Return(nil, mockError)
+		s := executor.State[txcontext.TxContext]{}
+		err := b.PostBlock(s, nil)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockError.Error())
+		assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 60)
+	})
+	t.Run("case error 2", func(t *testing.T) {
+		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
+		mockContext := blockprofile.NewMockIContext(ctrl)
+		b := &BlockRuntimeAndGasCollector{
+			profileDb: mockProfileDB,
+			ctx:       mockContext,
+		}
+		mockError := errors.New("mock error")
+		mockContext.EXPECT().GetProfileData(gomock.Any(), gomock.Any()).Return(&blockprofile.ProfileData{}, nil)
+		mockProfileDB.EXPECT().Add(gomock.Any()).Return(mockError)
+		s := executor.State[txcontext.TxContext]{}
+		err := b.PostBlock(s, nil)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockError.Error())
+		assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 60)
+	})
+}
+
+func TestBlockRuntimeAndGasCollector_PostRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
+	mockContext := blockprofile.NewMockIContext(ctrl)
+	b := &BlockRuntimeAndGasCollector{
+		profileDb: mockProfileDB,
+		ctx:       mockContext,
+	}
+	mockProfileDB.EXPECT().Close().Return(nil)
+	s := executor.State[txcontext.TxContext]{}
+	err := b.PostRun(s, nil, nil)
+	assert.Nil(t, err)
 }
