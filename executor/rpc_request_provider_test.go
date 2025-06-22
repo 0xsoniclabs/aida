@@ -264,12 +264,6 @@ func TestOpenRpcRecording(t *testing.T) {
 	t.Run("Success_SingleFile", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp(baseDir, "singlefile*.rpc")
 		require.NoError(t, err)
-		defer func(tmpFile *os.File) {
-			e := tmpFile.Close()
-			if e != nil {
-				t.Fatal(e)
-			}
-		}(tmpFile)
 		_, err = tmpFile.WriteString("dummy rpc content")
 		require.NoError(t, err)
 		err = tmpFile.Close()

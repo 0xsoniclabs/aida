@@ -18,12 +18,13 @@ package executor
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"fmt"
 	"math/big"
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/logger"
@@ -34,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -1789,11 +1789,9 @@ func TestAidaProcessor_processRegularTx(t *testing.T) {
 		ChainID:  utils.MainnetChainID,
 	}
 
-	vmCfg := vm.Config{}
 	processor := &aidaProcessor{
-		vmCfg: vmCfg,
-		cfg:   cfg,
-		log:   logger.NewLogger("info", "test"),
+		cfg: cfg,
+		log: logger.NewLogger("info", "test"),
 	}
 
 	t.Run("successful_transaction", func(t *testing.T) {

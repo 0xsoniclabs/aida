@@ -20,19 +20,16 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/types/rlp"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+
+	"github.com/0xsoniclabs/substate/types/rlp"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 

@@ -121,6 +121,6 @@ install-dev-tools:
 #	@golangci-lint run --timeout 5m0s
 
 check:
-	@goimports -w ./utils
-	@gofmt -s -d -w ./utils
-	@golangci-lint run -c .golangci.yml ./utils
+	@goimports -w ./executor
+	@gofmt -s -d -w ./executor
+	@golangci-lint run -c .golangci.yml ./executor
