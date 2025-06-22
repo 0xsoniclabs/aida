@@ -102,6 +102,34 @@ func TestStats_PrintProfiling(t *testing.T) {
 
 }
 
+func TestStats_PrintProfiling_WriteToFile(t *testing.T) {
+	tempDir := os.TempDir()
+	ps := NewStats(tempDir + "/test_print.csv")
+
+	// Prepare stats
+	ps.hasHeader = false
+	ps.writeToFile = true
+	ps.Profile(1, 100*time.Millisecond)
+	ps.opMinDuration[1] = 300 * time.Millisecond
+	ps.Profile(1, 200*time.Millisecond)
+	ps.Profile(2, 150*time.Millisecond)
+	ps.FillLabels(map[byte]string{
+		1: "Op1",
+		2: "Op2",
+	})
+
+	err := ps.PrintProfiling(10, 20)
+	assert.NoError(t, err)
+
+	// Read the output file to string
+	raw, err := os.ReadFile(tempDir + "/test_print.csv")
+	assert.NoError(t, err)
+	output := string(raw)
+
+	assert.Contains(t, output, "Op1")
+	assert.Contains(t, output, "Op2")
+}
+
 func TestStats_writeCsv(t *testing.T) {
 	tempDir := os.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
