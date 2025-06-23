@@ -408,6 +408,9 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case GetStorageRootID:
 		db.GetStorageRoot(addr)
 
+	case GetTransientStateID:
+		db.GetState(addr, key)
+
 	case HasSelfDestructedID:
 		db.HasSelfDestructed(addr)
 
@@ -425,6 +428,18 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 
 			// update active snapshots and perform a rollback in balance log
 			ss.snapshot = ss.snapshot[0:snapshotIdx]
+		}
+
+	case SelfDestructID:
+		db.SelfDestruct(addr)
+		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
+			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
+		}
+
+	case SelfDestruct6780ID:
+		db.SelfDestruct6780(addr)
+		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
+			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
 		}
 
 	case SetCodeID:
@@ -445,6 +460,9 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 
 	case SetStateID:
 		db.SetState(addr, key, value)
+
+	case SetTransientStateID:
+		db.SetTransientState(addr, key, value)
 
 	case SnapshotID:
 		id := db.Snapshot()
@@ -470,21 +488,8 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			}
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
-
-	case SelfDestructID:
-		db.SelfDestruct(addr)
-		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
-			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
-		}
-
-	case SelfDestruct6780ID:
-		db.SelfDestruct6780(addr)
-		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
-			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
-		}
-
 	default:
-		ss.log.Fatal("invalid operation")
+		ss.log.Fatal("invalid operation "+opText[op])
 	}
 }
 
