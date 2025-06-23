@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250530111616-fabde4233b62
 	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
-	github.com/0xsoniclabs/substate v0.0.0-20250617171356-265002ece2bf
+	github.com/0xsoniclabs/substate v0.0.0-20250623051532-878ecb79b20d
 	github.com/0xsoniclabs/tosca v0.0.0-20250414093812-91b42e73396f
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
