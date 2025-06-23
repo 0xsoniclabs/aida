@@ -134,7 +134,8 @@ func (v *stateDbValidator) runPreTxValidation(tool string, db state.VmStateDB, s
 	}
 
 	if v.cfg.OverwritePreWorldState {
-		return overwriteWorldState(v.cfg, state.Data.GetInputState(), db)
+		utils.OverwriteStateDB(state.Data.GetInputState(), db)
+		return nil
 	}
 	err := validateWorldState(v.cfg, db, state.Data.GetInputState(), v.log)
 	if err == nil {
