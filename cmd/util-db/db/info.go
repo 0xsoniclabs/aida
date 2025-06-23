@@ -241,7 +241,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		ddb, err := db.NewDefaultDestroyedAccountDB(cfg.AidaDb)
+		ddb, err := db.NewReadOnlyDestroyedAccountDB(cfg.AidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot open destroyed account db; %w", err)
 		}
@@ -251,7 +251,10 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		} else {
 			log.Infof("Deleted block range: %v - %v", first, last)
 		}
-		ddb.Close()
+		err = ddb.Close()
+		if err != nil {
+			log.Warningf("Error closing destroyed account db: %v", err)
+		}
 	}
 
 	// print state hash range
@@ -262,7 +265,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		}
 		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(bdb, log)
 		if err != nil {
-			log.Warningf("cannot find state hash range; %v", err)
+			log.Warningf("cannot find state hash range; %s", err.Error())
 		} else {
 			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
 		}
@@ -363,11 +366,17 @@ func printHash(ctx *cli.Context, hashType string) error {
 		return fmt.Errorf("%s command requires exactly 1 argument", hashType)
 	}
 	blockNumStr := ctx.Args().Slice()[0]
-	blockNum, err := strconv.ParseInt(blockNumStr, 10, 64)
+	blockNumInt32, err := strconv.ParseInt(blockNumStr, 10, 32)
 	if err != nil {
 		return fmt.Errorf("cannot parse block number %s; %v", blockNumStr, err)
 	}
+	blockNum := int(blockNumInt32)
 
+	return printHashForBlock(cfg, log, blockNum, hashType)
+}
+
+// printHashForBlock prints state or block hash for given block number in AidaDb
+func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashType string) error {
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err
@@ -382,13 +391,13 @@ func printHash(ctx *cli.Context, hashType string) error {
 	provider := utils.MakeHashProvider(base)
 	switch hashType {
 	case "state-hash":
-		bytes, err := provider.GetStateRootHash(int(blockNum))
+		bytes, err := provider.GetStateRootHash(blockNum)
 		if err != nil {
 			return fmt.Errorf("cannot get state hash for block %v; %v", blockNum, err)
 		}
 		log.Noticef("State hash for block %v is %v", blockNum, bytes)
 	case "block-hash":
-		bytesHash, err := provider.GetBlockHash(int(blockNum))
+		bytesHash, err := provider.GetBlockHash(blockNum)
 		if err != nil {
 			return fmt.Errorf("cannot get block hash for block %v; %v", blockNum, err)
 		}

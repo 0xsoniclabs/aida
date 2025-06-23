@@ -271,10 +271,40 @@ func startOperaIpc(cfg *utils.Config, stopChan chan struct{}) chan error {
 	errChanParser := make(chan error, 1)
 
 	// wait for ipc to start
-	waitDuration := 5 * time.Minute
+	waitDuration := 10 * time.Second
 	timer := time.NewTimer(waitDuration)
 
-ipcLoadingProcessWait:
+	err := ipcLoadingProcessWait(resChan, errChan, timer, waitDuration, log)
+	if err != nil {
+		errChanParser <- err
+		close(errChanParser)
+		return errChanParser
+	}
+
+	go errorRelayer(resChan, errChan, errChanParser)
+
+	return errChanParser
+}
+
+// errorRelayer non-blocking error relaying while reading from resChan to prevent deadlock
+func errorRelayer(resChan chan string, errChan chan error, errChanParser chan error) {
+	defer close(errChanParser)
+	for {
+		select {
+		// since resChan was used the output still needs to be read to prevent deadlock by chan being full
+		case <-resChan:
+		case err, ok := <-errChan:
+			if ok {
+				// error happened, the opera failed after ipc initialization
+				errChanParser <- fmt.Errorf("opera error after ipc initialization; %v", err)
+			}
+			return
+		}
+	}
+}
+
+// ipcLoadingProcessWait waits for opera ipc to start and returns error if it didn't start in given time
+func ipcLoadingProcessWait(resChan chan string, errChan chan error, timer *time.Timer, waitDuration time.Duration, log logger.Logger) error {
 	for {
 		select {
 		// since resChan was used the output still needs to be read to prevent deadlock by chan being full
@@ -283,44 +313,22 @@ ipcLoadingProcessWait:
 				// waiting for opera message in output which indicates that ipc is ready for usage
 				if strings.Contains(res, "IPC endpoint opened") {
 					log.Noticef(res)
-					break ipcLoadingProcessWait
+					return nil
 				}
 			}
 		case err, ok := <-errChan:
 			if ok {
+				// errChan closed, this means that stopChan signal was called to terminate opera ipc,
+				// which otherwise without an error never stops on its own
+
 				// error happened, the opera ipc didn't start properly
-				errChanParser <- fmt.Errorf("opera error during ipc initialization; %v", err)
+				return fmt.Errorf("opera error during ipc initialization; %v", err)
 			}
-			// errChan closed, this means that stopChan signal was called to terminate opera ipc,
-			// which otherwise without an error never stops on its own
-			close(errChanParser)
-			return errChanParser
 		case <-timer.C:
 			// if ipc didn't start in given time produce an error
-			errChanParser <- fmt.Errorf("timeout waiting for opera ipc to start after %s", waitDuration.String())
-			close(errChanParser)
-			return errChanParser
+			return fmt.Errorf("timeout waiting for opera ipc to start after %s", waitDuration.String())
 		}
 	}
-
-	// non-blocking error relaying while reading from resChan to prevent deadlock
-	go func() {
-		defer close(errChanParser)
-		for {
-			select {
-			// since resChan was used the output still needs to be read to prevent deadlock by chan being full
-			case <-resChan:
-			case err, ok := <-errChan:
-				if ok {
-					// error happened, the opera failed after ipc initialization
-					errChanParser <- fmt.Errorf("opera error after ipc initialization; %v", err)
-				}
-				return
-			}
-		}
-	}()
-
-	return errChanParser
 }
 
 // startOperaRecording records substates
