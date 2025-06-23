@@ -296,6 +296,108 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestTableHash_InvalidKeys(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(t *testing.T, dbInst db.BaseDB)
+		dbComponent dbcomponent.DbComponent
+		logMsg      string
+		errWant     string
+	}{
+		{
+			name: "InvalidStateHashKey",
+			setup: func(t *testing.T, dbInst db.BaseDB) {
+				// must be bigger than 32 bytes
+				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
+				err := dbInst.Put([]byte(utils.StateRootHashPrefix+"0x1"), []byte(junkValue))
+				assert.NoError(t, err)
+			},
+			dbComponent: dbcomponent.StateHash,
+			logMsg:      "Generating State-Hashes hash...",
+			errWant:     "invalid state root length for block 1: expected 32 bytes, got 106 bytes",
+		},
+		{
+			name: "InvalidDeleteKey",
+			setup: func(t *testing.T, dbInst db.BaseDB) {
+				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
+				err := dbInst.Put(db.EncodeDestroyedAccountKey(1, 0), []byte(junkValue))
+				assert.NoError(t, err)
+			},
+			dbComponent: dbcomponent.Delete,
+			logMsg:      "Generating Deletion hash...",
+			errWant:     "rlp: expected input list for db.SuicidedAccountLists",
+		},
+		{
+			name: "InvalidBlockHashKey",
+			setup: func(t *testing.T, dbInst db.BaseDB) {
+				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
+				err := dbInst.Put(utils.BlockHashDBKey(1), []byte(junkValue))
+				assert.NoError(t, err)
+			},
+			dbComponent: dbcomponent.BlockHash,
+			logMsg:      "Generating Block-Hashes hash...",
+			errWant:     "invalid block hash length for block 1: expected 32 bytes, got 106 bytes",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir() + "/aidaDb"
+			database, err := db.NewDefaultBaseDB(tmpDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer database.Close()
+
+			tc.setup(t, database)
+
+			ctrl := gomock.NewController(t)
+			log := logger.NewMockLogger(ctrl)
+
+			cfg := &utils.Config{
+				First:       1,
+				Last:        1,
+				DbComponent: string(tc.dbComponent),
+			}
+
+			gomock.InOrder(
+				log.EXPECT().Info(tc.logMsg),
+			)
+
+			err = TableHash(cfg, database, log)
+			if err == nil {
+				t.Fatalf("expected an error: %v, but got nil", tc.errWant)
+			}
+			assert.Equal(t, tc.errWant, err.Error(), "error message mismatch")
+		})
+	}
+}
+
+func TestTableHash_InvalidDbComponent(t *testing.T) {
+	tmpDir := t.TempDir() + "/aidaDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer database.Close()
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	// Create a config with an invalid db component
+	cfg := &utils.Config{
+		DbComponent: "invalid_component",
+	}
+
+	errWant := "invalid db component: invalid_component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")"
+	err = TableHash(cfg, database, log)
+	if err == nil {
+		t.Fatalf("expected an error: %v, but got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error())
+}
+
 func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 	// Seed the random number generator
 	rand.NewSource(time.Now().UnixNano())
@@ -383,4 +485,47 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 	}
 
 	return numSubstates, numDestroyedAccounts, numUpdates, numStateHashes, numBlockHashes
+}
+
+func TestGetHashesHash_Ticker(t *testing.T) {
+	tests := []struct {
+		name        string
+		getHashFunc func(cfg *utils.Config, db db.BaseDB, log logger.Logger) ([]byte, uint64, error)
+		logMsg      string
+	}{
+		{
+			name:        "StateRootHashes",
+			getHashFunc: GetStateRootHashesHash,
+			logMsg:      "State-Hashes hash progress: %v/%v",
+		},
+		{
+			name:        "BlockHashes",
+			getHashFunc: GetBlockHashesHash,
+			logMsg:      "Block-Hashes hash progress: %v/%v",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			log := logger.NewMockLogger(ctrl)
+			aidaDb := db.NewMockBaseDB(ctrl)
+
+			cfg := &utils.Config{
+				First: 0,
+				Last:  1,
+			}
+
+			aidaDb.EXPECT().Get(gomock.Any()).DoAndReturn(func(key []byte) ([]byte, error) {
+				time.Sleep(60 * time.Second) // Simulate a delay
+				return []byte("12345678123456781234567812345678"), nil
+			})
+			aidaDb.EXPECT().Get(gomock.Any()).Return([]byte("12345678123456781234567812345678"), nil)
+			log.EXPECT().Infof(tc.logMsg, uint64(1), uint64(1))
+
+			_, count, err := tc.getHashFunc(cfg, aidaDb, log)
+			assert.NoError(t, err)
+			assert.Equal(t, uint64(2), count, "Expected count to be 2")
+		})
+	}
 }

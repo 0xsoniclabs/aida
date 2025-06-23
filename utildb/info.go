@@ -93,7 +93,6 @@ func FindBlockRangeOfBlockHashes(db db.BaseDB, log logger.Logger) (uint64, uint6
 
 // GetSubstateCount in given AidaDb
 func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
-
 	var count uint64
 
 	iter := sdb.NewSubstateIterator(int(cfg.First), 10)

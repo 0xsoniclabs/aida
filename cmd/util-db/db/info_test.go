@@ -2,6 +2,8 @@ package db
 
 import (
 	"math/big"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -86,6 +88,31 @@ func TestPrintCount(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPrintCount_OnlyCalculateGivenRange(t *testing.T) {
+	aidaDbPath := generateTestAidaDb(t)
+
+	cfg := &utils.Config{
+		AidaDb:      aidaDbPath,
+		DbComponent: "all",
+		LogLevel:    "info",
+		First:       10,
+		Last:        11,
+	}
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(10), uint64(11))
+	log.EXPECT().Noticef("Found %v substates", uint64(1))
+	log.EXPECT().Noticef("Found %v updates", uint64(0))
+	log.EXPECT().Noticef("Found %v deleted accounts", 1)
+	log.EXPECT().Noticef("Found %v state-hashes", uint64(1))
+	log.EXPECT().Noticef("Found %v block-hashes", uint64(0))
+
+	err := printCount(cfg, log)
+	assert.NoError(t, err)
 }
 
 func TestPrintCount_LoggingEmpty(t *testing.T) {
@@ -234,6 +261,110 @@ func TestPrintCount_LoggingEmpty(t *testing.T) {
 	}
 }
 
+func TestPrintRange(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *utils.Config
+		wantErr string
+	}{
+		{
+			name: "All",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "/emptydb",
+				DbComponent: "all",
+			},
+			wantErr: "",
+		},
+		{
+			name: "NonExistentDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "all",
+			},
+			wantErr: "cannot open aida-db; cannot open leveldb; stat %s: no such file or directory",
+		}, {
+			name: "NonExistentDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "all",
+			},
+			wantErr: "cannot open aida-db; cannot open leveldb; stat %s: no such file or directory",
+		},
+		{
+			name: "NonExistentUpdateDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "update",
+			},
+			wantErr: "cannot open update db",
+		},
+		{
+			name: "NonExistentDeleteDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "delete",
+			},
+			wantErr: "cannot open destroyed account db; error opening deletion-db %s: cannot open leveldb; stat %s: no such file or directory",
+		},
+		{
+			name: "NonExistentStateHashDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "state-hash",
+			},
+			wantErr: "cannot open leveldb; stat %s: no such file or directory",
+		},
+		{
+			name: "NonExistentBlockHashDb",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "non-existent-db",
+				DbComponent: "block-hash",
+			},
+			wantErr: "cannot open leveldb; stat %s: no such file or directory",
+		},
+		{
+			name: "InvalidEncoding",
+			cfg: &utils.Config{
+				AidaDb:           t.TempDir() + "/emptydb1",
+				SubstateEncoding: "errorEncoding",
+				DbComponent:      "substate",
+			},
+			wantErr: "cannot set substate encoding; failed to set decoder; encoding not supported: errorEncoding",
+		},
+		{
+			name: "InvalidDbComponent",
+			cfg: &utils.Config{
+				AidaDb:      t.TempDir() + "/emptydb2",
+				DbComponent: "not-a-component",
+			},
+			wantErr: "invalid db component: not-a-component",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create empty DB if needed
+			if !strings.Contains(tc.cfg.AidaDb, "non-existent-db") {
+				testDb, err := db.NewDefaultBaseDB(tc.cfg.AidaDb)
+				assert.NoError(t, err)
+				err = testDb.Close()
+				assert.NoError(t, err)
+			}
+			err := printRange(tc.cfg, logger.NewLogger("Warning", "TestPrintRange_Errors"))
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				if err != nil {
+					// some expected errors need to have the path replaced
+					tc.wantErr = strings.ReplaceAll(tc.wantErr, "%s", tc.cfg.AidaDb)
+					assert.Contains(t, err.Error(), tc.wantErr)
+				}
+			}
+		})
+	}
+}
+
 func TestPrintRange_LoggingEmpty(t *testing.T) {
 	type testCase struct {
 		name         string
@@ -256,7 +387,7 @@ func TestPrintRange_LoggingEmpty(t *testing.T) {
 				{"Warning", "No substate found", []interface{}{}},
 				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
 			},
 		},
@@ -301,7 +432,7 @@ func TestPrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
 			},
 		},
 	}
@@ -349,7 +480,259 @@ func TestPrintRange_LoggingEmpty(t *testing.T) {
 	}
 }
 
+func TestPrintRange_Success(t *testing.T) {
+	aidaDbPath := generateTestAidaDb(t)
+
+	// mock logger
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	log.EXPECT().Infof("Substate block range: %v - %v", uint64(11), uint64(11))
+	log.EXPECT().Infof("Updateset block range: %v - %v", uint64(12), uint64(12))
+	log.EXPECT().Infof("Deleted block range: %v - %v", uint64(1), uint64(10))
+	log.EXPECT().Warningf("cannot find state hash range; %s", "cannot get first state hash; not implemented")
+	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
+
+	cfg := &utils.Config{
+		AidaDb:      aidaDbPath,
+		DbComponent: "all",
+	}
+
+	err := printRange(cfg, log)
+	if err != nil {
+		t.Fatalf("printRange failed: %v", err)
+	}
+}
+
 func TestPrintRange_IntegrationTest(t *testing.T) {
+	aidaDbPath := generateTestAidaDb(t)
+	args := []string{
+		"info", "range",
+		"--aida-db", aidaDbPath,
+		"--db-component=all",
+	}
+
+	app := cli.App{
+		Commands: []*cli.Command{
+			&cmdRange,
+		}}
+	err := app.Run(args)
+	assert.NoError(t, err)
+}
+
+func TestPrintStateHash_IntegrationTest(t *testing.T) {
+	tests := []struct {
+		name        string
+		insertKey   string
+		insertValue string
+		queryArg    string
+		expectErr   bool
+	}{
+		{
+			name:        "Success",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    "1",
+			expectErr:   false,
+		},
+		{
+			name:        "NotFound",
+			insertKey:   "0x2",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    "1",
+			expectErr:   true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			aidaDbPath := t.TempDir() + "aida-db"
+
+			aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if aidaDb == nil {
+				t.Fatal("aidaDb is nil")
+			}
+
+			// insert state hash
+			err = utils.SaveStateRoot(aidaDb, tc.insertKey, tc.insertValue)
+			assert.NoError(t, err)
+
+			err = aidaDb.Close()
+			assert.NoError(t, err)
+
+			args := []string{
+				"info", "state-hash",
+				"--aida-db", aidaDbPath,
+				tc.queryArg,
+			}
+
+			app := cli.App{
+				Commands: []*cli.Command{
+					&cmdPrintStateHash,
+				}}
+			err = app.Run(args)
+			if tc.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestPrintBlockHash_IntegrationTest(t *testing.T) {
+	tests := []struct {
+		name        string
+		insertKey   string
+		insertValue string
+		queryArg    string
+		expectErr   string
+	}{
+		{
+			name:        "Success",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    "1",
+			expectErr:   "",
+		},
+		{
+			name:        "NotFound",
+			insertKey:   "0x2",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    "1",
+			expectErr:   "cannot get block hash for block 1; leveldb: not found",
+		},
+		{
+			name:        "Success",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    "",
+			expectErr:   "cannot parse block number ; strconv.ParseInt: parsing \"\": invalid syntax",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			aidaDbPath := t.TempDir() + "aida-db"
+
+			aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if aidaDb == nil {
+				t.Fatal("aidaDb is nil")
+			}
+
+			// insert block hash
+			err = utils.SaveBlockHash(aidaDb, tc.insertKey, tc.insertValue)
+			assert.NoError(t, err)
+
+			err = aidaDb.Close()
+			assert.NoError(t, err)
+
+			args := []string{
+				"info", "block-hash",
+				"--aida-db", aidaDbPath,
+				tc.queryArg,
+			}
+
+			app := cli.App{
+				Commands: []*cli.Command{
+					&cmdPrintBlockHash,
+				}}
+			err = app.Run(args)
+			if len(tc.expectErr) > 0 {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestPrintHash_EmptyDb(t *testing.T) {
+	aidaDbPath := t.TempDir() + "non-existent-db"
+	args := []string{
+		"info", "block-hash",
+		"--aida-db", aidaDbPath,
+		"1",
+	}
+
+	app := cli.App{
+		Commands: []*cli.Command{
+			&cmdPrintBlockHash,
+		}}
+	err := app.Run(args)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot open leveldb; stat "+aidaDbPath+": no such file or directory")
+}
+
+func TestPrintHash_InvalidArg(t *testing.T) {
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aidaDb == nil {
+		t.Fatal("aidaDb is nil")
+	}
+
+	err = aidaDb.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{
+		"info", "block-hash",
+		"--aida-db", aidaDbPath,
+		"invalid-arg", "invalid-arg2",
+	}
+
+	app := cli.App{
+		Commands: []*cli.Command{
+			&cmdPrintBlockHash,
+		}}
+	err = app.Run(args)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "block-hash command requires exactly 1 argument")
+}
+
+func TestPrintHash_MissingArg(t *testing.T) {
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aidaDb == nil {
+		t.Fatal("aidaDb is nil")
+	}
+
+	err = aidaDb.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{
+		"info", "block-hash",
+		"--aida-db", aidaDbPath,
+	}
+
+	app := cli.App{
+		Commands: []*cli.Command{
+			&cmdPrintBlockHash,
+		}}
+	err = app.Run(args)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to parse cli arguments; this command requires at least 1 argument")
+}
+
+func generateTestAidaDb(t *testing.T) string {
 	aidaDbPath := t.TempDir() + "aida-db"
 
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
@@ -379,9 +762,13 @@ func TestPrintRange_IntegrationTest(t *testing.T) {
 	err = sdb.PutSubstate(&state)
 	assert.NoError(t, err)
 
+	state.Block = 15
+	err = sdb.PutSubstate(&state)
+	assert.NoError(t, err)
+
 	us := updateset.UpdateSet{
 		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
-		Block:           0,
+		Block:           12,
 		DeletedAccounts: []types.Address{},
 	}
 
@@ -390,25 +777,61 @@ func TestPrintRange_IntegrationTest(t *testing.T) {
 	err = udb.PutUpdateSet(&us, us.DeletedAccounts)
 	assert.NoError(t, err)
 
-	// insert deleted account?
+	// write delete accounts to the database
+	for i := 1; i <= 10; i++ {
+		err = aidaDb.Put(db.EncodeDestroyedAccountKey(uint64(i), i), []byte("0x1234567812345678123456781234567812345678123456781234567812345678"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
-	// insert state hash?
+	// write state hashes to the database
+	for i := 11; i <= 20; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveStateRoot(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write block hashes to the database
+	for i := 21; i <= 30; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	err = aidaDb.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return aidaDbPath
+}
 
-	args := []string{
-		"info", "range",
-		"--aida-db", aidaDbPath,
-		"--db-component=all",
+func TestPrintHashForBlock_InvalidHashtype(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
 	}
 
-	app := cli.App{
-		Commands: []*cli.Command{
-			&cmdRange,
-		}}
-	err = app.Run(args)
-	assert.NoError(t, err)
+	// Create an empty database
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	err = aidaDb.Close()
+	if err != nil {
+		t.Fatalf("error closing aida-db %s: %v", aidaDbPath, err)
+	}
+
+	err = printHashForBlock(cfg, log, 0, "invalidHashType")
+	if err == nil {
+		t.Fatal("expected an error for invalid hash type, but got nil")
+	}
 }

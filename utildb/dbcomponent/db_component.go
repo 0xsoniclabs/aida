@@ -47,6 +47,6 @@ func ParseDbComponent(s string) (DbComponent, error) {
 	case "block-hash":
 		return BlockHash, nil
 	default:
-		return "", fmt.Errorf("invalid db component: %v. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\")", s)
+		return "", fmt.Errorf("invalid db component: %v. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")", s)
 	}
 }

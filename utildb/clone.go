@@ -85,7 +85,7 @@ func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch,
 	return nil
 }
 
-// clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
+// Clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
 func Clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb Clone")
@@ -191,17 +191,18 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 		firstDeletionBlock = 0
 	}
 
-	err := c.readDeletions(firstDeletionBlock)
+	c.readDeletions(firstDeletionBlock)
+
+	c.readSubstate()
+
+	err := c.readStateHashes()
 	if err != nil {
-		return fmt.Errorf("cannot read deletions; %v", err)
+		return fmt.Errorf("cannot read state hashes; %v", err)
 	}
 
-	err = c.readSubstate()
-	if err != nil {
-		return err
-	}
+	c.readBlockHashes()
 
-	return c.readStateHashes()
+	return nil
 }
 
 // write data read from func read() into new createDbClone
@@ -329,7 +330,7 @@ func (c *cloner) readUpdateSet(isFirstGenerationFromGenesis bool) uint64 {
 }
 
 // readSubstate from last updateSet before cfg.First until cfg.Last
-func (c *cloner) readSubstate() error {
+func (c *cloner) readSubstate() {
 	endCond := func(key []byte) (bool, error) {
 		block, _, err := db.DecodeSubstateDBKey(key)
 		if err != nil {
@@ -342,8 +343,6 @@ func (c *cloner) readSubstate() error {
 	}
 
 	c.read([]byte(db.SubstateDBPrefix), c.cfg.First, endCond)
-
-	return nil
 }
 
 func (c *cloner) readStateHashes() error {
@@ -379,7 +378,7 @@ func (c *cloner) readStateHashes() error {
 }
 
 // readBlockHashes from last updateSet before cfg.First until cfg.Last
-func (c *cloner) readBlockHashes() error {
+func (c *cloner) readBlockHashes() {
 	endCond := func(key []byte) (bool, error) {
 		block, err := utils.DecodeBlockHashDBKey(key)
 		if err != nil {
@@ -392,8 +391,6 @@ func (c *cloner) readBlockHashes() error {
 	}
 
 	c.read([]byte(utils.BlockHashPrefix), c.cfg.First, endCond)
-
-	return nil
 }
 
 func (c *cloner) sendToWriteChan(k, v []byte) bool {
@@ -414,7 +411,7 @@ func (c *cloner) sendToWriteChan(k, v []byte) bool {
 }
 
 // readDeletions from last updateSet before cfg.First until cfg.Last
-func (c *cloner) readDeletions(firstDeletionBlock uint64) error {
+func (c *cloner) readDeletions(firstDeletionBlock uint64) {
 	endCond := func(key []byte) (bool, error) {
 		block, _, err := db.DecodeDestroyedAccountKey(key)
 		if err != nil {
@@ -427,8 +424,6 @@ func (c *cloner) readDeletions(firstDeletionBlock uint64) error {
 	}
 
 	c.read([]byte(db.DestroyedAccountPrefix), firstDeletionBlock, endCond)
-
-	return nil
 }
 
 // validateDbSize compares size of database and expectedWritten
@@ -467,18 +462,12 @@ func (c *cloner) stop() {
 // readDataCustom retrieves data from source AidaDb based on given dbComponent
 func (c *cloner) readDataCustom() error {
 	if c.cloneComponent == dbcomponent.Substate || c.cloneComponent == dbcomponent.All {
-		c.read([]byte(db.SubstateDBPrefix), 0, nil)
-		err := c.readSubstate()
-		if err != nil {
-			return fmt.Errorf("cannot read substate; %v", err)
-		}
+		c.read([]byte(db.CodeDBPrefix), 0, nil)
+		c.readSubstate()
 	}
 
 	if c.cloneComponent == dbcomponent.Delete || c.cloneComponent == dbcomponent.All {
-		err := c.readDeletions(c.cfg.First)
-		if err != nil {
-			return fmt.Errorf("cannot read deletions; %v", err)
-		}
+		c.readDeletions(c.cfg.First)
 	}
 
 	if c.cloneComponent == dbcomponent.Update || c.cloneComponent == dbcomponent.All {
@@ -494,10 +483,7 @@ func (c *cloner) readDataCustom() error {
 	}
 
 	if c.cloneComponent == dbcomponent.BlockHash || c.cloneComponent == dbcomponent.All {
-		err := c.readBlockHashes()
-		if err != nil {
-			return err
-		}
+		c.readBlockHashes()
 	}
 
 	return nil

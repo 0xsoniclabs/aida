@@ -79,6 +79,10 @@ func (p *hashProvider) GetBlockHash(number int) (common.Hash, error) {
 		return common.Hash{}, nil
 	}
 
+	if len(blockHash) != 32 {
+		return common.Hash{}, fmt.Errorf("invalid block hash length for block %d: expected 32 bytes, got %d bytes", number, len(blockHash))
+	}
+
 	return common.Hash(blockHash), nil
 }
 
@@ -93,7 +97,11 @@ func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 		return common.Hash{}, nil
 	}
 
-	return common.Hash(stateRoot), nil
+	if len(stateRoot) != 32 {
+		return common.Hash{}, fmt.Errorf("invalid state root length for block %d: expected 32 bytes, got %d bytes", number, len(stateRoot))
+	}
+
+	return common.BytesToHash(stateRoot), nil
 }
 
 // StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
