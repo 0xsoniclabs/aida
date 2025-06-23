@@ -40,7 +40,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
+	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
+	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -255,7 +255,7 @@ func TestStateHash_retrieveStateRoot(t *testing.T) {
 	// case success
 	client := NewMockIRpcClient(ctrl)
 	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(nil)
-	output, err := retrieveStateRoot(client, "0x1234")
+	output, err := getBlockByNumber(client, "0x1234")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}(nil), output)
 
@@ -263,7 +263,7 @@ func TestStateHash_retrieveStateRoot(t *testing.T) {
 	mockErr := errors.New("error")
 	client = NewMockIRpcClient(ctrl)
 	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(mockErr)
-	output, err = retrieveStateRoot(client, "0x1234")
+	output, err = getBlockByNumber(client, "0x1234")
 	assert.Error(t, err)
 	assert.Nil(t, output)
 }
