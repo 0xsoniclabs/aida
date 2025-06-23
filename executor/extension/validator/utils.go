@@ -233,6 +233,7 @@ func overwriteWorldState(cfg *utils.Config, alloc txcontext.WorldState, db state
 
 // updateStateDbOnEthereumChain is used to fix exceptions in ethereum dataset inconsistencies
 func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, overwriteAccount bool) error {
+	stateModified := false
 	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
 		if !db.Exist(addr) {
 			db.CreateAccount(addr)
@@ -265,10 +266,26 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 			acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
 				if db.GetState(addr, keyHash) != valueHash {
 					db.SetState(addr, keyHash, valueHash)
+					stateModified = true
 				}
 			})
 		}
 	})
+
+	// If state was modified by this function, the current transaction must be
+	// ended and a new transaction must be started to make sure that the
+	// changed state is considered committed state. Without this, refunds for
+	// state modifications are off while running the main transaction.
+	if stateModified {
+		err := db.EndTransaction()
+		if err != nil {
+			return fmt.Errorf("cannot end transaction: %w", err)
+		}
+		err = db.BeginTransaction(utils.PseudoTx) // the transaction number is ignored
+		if err != nil {
+			return fmt.Errorf("cannot end transaction: %w", err)
+		}
+	}
 
 	return nil
 }
