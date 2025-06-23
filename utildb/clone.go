@@ -378,6 +378,24 @@ func (c *cloner) readStateHashes() error {
 	return nil
 }
 
+// readBlockHashes from last updateSet before cfg.First until cfg.Last
+func (c *cloner) readBlockHashes() error {
+	endCond := func(key []byte) (bool, error) {
+		block, err := utils.DecodeBlockHashDBKey(key)
+		if err != nil {
+			return false, err
+		}
+		if block > c.cfg.Last {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	c.read([]byte(utils.BlockHashPrefix), c.cfg.First, endCond)
+
+	return nil
+}
+
 func (c *cloner) sendToWriteChan(k, v []byte) bool {
 	// make deep read key and value
 	// need to pass deep read of values into the channel
@@ -470,6 +488,13 @@ func (c *cloner) readDataCustom() error {
 
 	if c.cloneComponent == dbcomponent.StateHash || c.cloneComponent == dbcomponent.All {
 		err := c.readStateHashes()
+		if err != nil {
+			return err
+		}
+	}
+
+	if c.cloneComponent == dbcomponent.BlockHash || c.cloneComponent == dbcomponent.All {
+		err := c.readBlockHashes()
 		if err != nil {
 			return err
 		}
