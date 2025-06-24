@@ -10,7 +10,7 @@ import (
 )
 
 func TestStats_NewStats(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 	assert.NotNil(t, ps)
 	assert.Equal(t, tempDir+"/test_print.csv", ps.csv)
@@ -20,7 +20,7 @@ func TestStats_NewStats(t *testing.T) {
 	assert.Equal(t, byte(0), ps.opOrder[0])
 }
 func TestStats_Profile(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 
 	// Profile a new operation
@@ -51,7 +51,7 @@ func TestStats_Profile(t *testing.T) {
 }
 
 func TestStats_FillLabels(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 	labels := map[byte]string{
 		2: "Operation 2",
@@ -103,7 +103,7 @@ func TestStats_PrintProfiling(t *testing.T) {
 }
 
 func TestStats_PrintProfiling_WriteToFile(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 
 	// Prepare stats
@@ -131,7 +131,7 @@ func TestStats_PrintProfiling_WriteToFile(t *testing.T) {
 }
 
 func TestStats_writeCsv(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 	var sb strings.Builder
 	sb.WriteString("Hello, ")
@@ -155,7 +155,7 @@ func TestStats_GetOpFrequency(t *testing.T) {
 }
 
 func TestStats_GetStatByOpId(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	ps := NewStats(tempDir + "/test_print.csv")
 	stat := ps.GetStatByOpId(1)
 	assert.NotNil(t, stat)
