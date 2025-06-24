@@ -207,7 +207,7 @@ func TestSubstateData_GetMessage(t *testing.T) {
 	assert.Empty(t, message3.SetCodeAuthorizations)
 }
 
-func TestNewTxContext(t *testing.T) {
+func TestSubstateData_NewTxContext(t *testing.T) {
 	ss := &substateData{
 		Substate: &substate.Substate{
 			InputSubstate:  substate.WorldState{},

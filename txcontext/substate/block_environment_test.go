@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewBlockEnvironment(t *testing.T) {
+func TestBlockEnvironment_NewBlockEnvironment(t *testing.T) {
 	// Create a substate.Env with test values
 	random := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 	randomBytes := random.Bytes()
@@ -83,7 +83,7 @@ func TestNewBlockEnvironment(t *testing.T) {
 	assert.Equal(t, "", blockEnv.GetFork())
 }
 
-func TestBlockEnvironmentWithNilRandom(t *testing.T) {
+func TestBlockEnvironment_WithNilRandom(t *testing.T) {
 	// Create a substate.Env with nil Random
 	env := &substate.Env{
 		Random:     nil,
@@ -100,7 +100,7 @@ func TestBlockEnvironmentWithNilRandom(t *testing.T) {
 	assert.Nil(t, blockEnv.GetRandom())
 }
 
-func TestBlockEnvironmentWithNilBlockHashes(t *testing.T) {
+func TestBlockEnvironment_WithNilBlockHashes(t *testing.T) {
 	// Create a substate.Env with nil BlockHashes
 	env := &substate.Env{
 		BlockHashes: nil,

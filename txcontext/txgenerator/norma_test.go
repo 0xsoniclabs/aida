@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewNormaTxContext(t *testing.T) {
+func TestNorma_NewNormaTxContext(t *testing.T) {
 	// Create a private key for signing
 	privateKey, err := crypto.GenerateKey()
 	assert.NoError(t, err)
@@ -72,7 +72,7 @@ func TestNewNormaTxContext(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestNormaTxBlockEnv(t *testing.T) {
+func TestNorma_TxBlockEnv(t *testing.T) {
 	// Create block environment
 	blkNumber := uint64(12345)
 	fork := "shanghai"

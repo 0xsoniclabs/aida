@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewNilAccount(t *testing.T) {
+func TestAccount_NewNilAccount(t *testing.T) {
 	acc := NewNilAccount()
 
 	assert.Equal(t, &account{}, acc)
 }
 
-func TestNewAccount(t *testing.T) {
+func TestAccount_NewAccount(t *testing.T) {
 	code := []byte{1, 2, 3, 4}
 	storage := map[common.Hash]common.Hash{
 		common.HexToHash("0x1"): common.HexToHash("0xabc"),
@@ -39,7 +39,7 @@ func TestNewAccount(t *testing.T) {
 	assert.Equal(t, common.HexToHash("0xabc"), acc.GetStorageAt(common.HexToHash("0x1")))
 }
 
-func TestAccountEqual(t *testing.T) {
+func TestAccount_AccountEqual(t *testing.T) {
 	// Create two identical accounts
 	code1 := []byte{1, 2, 3, 4}
 	storage1 := map[common.Hash]common.Hash{
@@ -91,7 +91,7 @@ func TestAccountEqual(t *testing.T) {
 	assert.True(t, AccountEqual(acc1, diffStorage))
 }
 
-func TestAccountStorageHandling(t *testing.T) {
+func TestAccount_StorageHandling(t *testing.T) {
 	storage := map[common.Hash]common.Hash{
 		common.HexToHash("0x1"): common.HexToHash("0xabc"),
 		common.HexToHash("0x2"): common.HexToHash("0xdef"),
@@ -111,7 +111,7 @@ func TestAccountStorageHandling(t *testing.T) {
 	}
 }
 
-func TestAccountString(t *testing.T) {
+func TestAccount_String(t *testing.T) {
 	// Create an account with specific data for string representation testing
 	storage := map[common.Hash]common.Hash{
 		common.HexToHash("0x1"): common.HexToHash("0xabc"),

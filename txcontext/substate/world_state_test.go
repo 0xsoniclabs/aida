@@ -260,8 +260,3 @@ func TestWorldState_String(t *testing.T) {
 	assert.Contains(t, str, "nonce: 5")
 	assert.Contains(t, str, "100") // Balance value
 }
-
-func TestWorldState_Hash(t *testing.T) {
-	// Since Hash is not implemented in the worldState struct,
-	// this test is not applicable. Included for completeness.
-}

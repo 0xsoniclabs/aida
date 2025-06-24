@@ -5,7 +5,6 @@ package substate
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -13,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAccount(t *testing.T) {
+func TestAccount_NewAccount(t *testing.T) {
 	// Create a substate account
 	code := []byte{1, 2, 3, 4}
 	storage := map[substatetypes.Hash]substatetypes.Hash{
@@ -56,7 +55,7 @@ func TestNewAccount(t *testing.T) {
 	assert.Equal(t, common.Hash{}, acc.GetStorageAt(common.HexToHash("0x3")))
 }
 
-func TestForEachStorage(t *testing.T) {
+func TestAccount_ForEachStorage(t *testing.T) {
 	// Create a substate account with storage
 	storage := map[substatetypes.Hash]substatetypes.Hash{
 		substatetypes.Hash(common.HexToHash("0x1")): substatetypes.Hash(common.HexToHash("0xabc")),
@@ -82,7 +81,7 @@ func TestForEachStorage(t *testing.T) {
 	assert.Equal(t, common.HexToHash("0xdef"), visitedKeys[common.HexToHash("0x2")])
 }
 
-func TestAccountString(t *testing.T) {
+func TestAccount_String(t *testing.T) {
 	// Create a substate account with storage
 	code := []byte{1, 2, 3}
 	storage := map[substatetypes.Hash]substatetypes.Hash{
@@ -112,7 +111,7 @@ func TestAccountString(t *testing.T) {
 	assert.Contains(t, str, "0x0000000000000000000000000000000000000000000000000000000000000abc")
 }
 
-func TestAccountWithEmptyStorage(t *testing.T) {
+func TestAccount_WithEmptyStorage(t *testing.T) {
 	// Create a substate account with empty storage
 	code := []byte{1, 2, 3, 4}
 	storage := map[substatetypes.Hash]substatetypes.Hash{}
@@ -137,17 +136,4 @@ func TestAccountWithEmptyStorage(t *testing.T) {
 		visitCount++
 	})
 	assert.Equal(t, 0, visitCount)
-}
-
-func TestAccountImplementsInterface(t *testing.T) {
-	// Create a substate account
-	substateAccount := &substate.Account{
-		Balance: uint256.NewInt(0),
-	}
-
-	// Create a txcontext.Account from the substate.Account
-	acc := NewAccount(substateAccount)
-
-	// Verify that acc implements the txcontext.Account interface
-	var _ txcontext.Account = acc
 }

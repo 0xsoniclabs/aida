@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewReceipt(t *testing.T) {
+func TestReceipt_NewReceipt(t *testing.T) {
 	// Create a substate.Result with test values
 	status := uint64(1)
 	bloom := types.Bloom{1, 2, 3}
@@ -91,7 +91,7 @@ func TestNewReceipt(t *testing.T) {
 	assert.Contains(t, str, "Gas Used: 21000")
 }
 
-func TestReceiptWithEmptyLogs(t *testing.T) {
+func TestReceipt_WithEmptyLogs(t *testing.T) {
 	// Create a substate.Result with empty logs
 	substateResult := &substate.Result{
 		Status:  1,

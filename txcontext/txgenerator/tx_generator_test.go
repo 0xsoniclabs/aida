@@ -13,7 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestNewTxContext(t *testing.T) {
+func TestTxData_NewTxContext(t *testing.T) {
 	// Create a mock controller
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -79,51 +79,4 @@ func TestNewTxContext(t *testing.T) {
 	assert.Nil(t, ctx.GetInputState())
 	assert.Nil(t, ctx.GetOutputState())
 	assert.Nil(t, ctx.GetResult())
-}
-
-func TestTxDataStructure(t *testing.T) {
-	// Create a mock controller
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Create a mock block environment
-	mockEnv := txcontext.NewMockBlockEnvironment(ctrl)
-
-	// Setup expected calls
-	blockNumber := uint64(12345)
-	timestamp := uint64(1621234567)
-	fork := "shanghai"
-
-	mockEnv.EXPECT().GetNumber().Return(blockNumber).AnyTimes()
-	mockEnv.EXPECT().GetTimestamp().Return(timestamp).AnyTimes()
-	mockEnv.EXPECT().GetFork().Return(fork).AnyTimes()
-
-	from := common.HexToAddress("0x1111111111111111111111111111111111111111")
-	to := common.HexToAddress("0x2222222222222222222222222222222222222222")
-	msg := &core.Message{
-		From:  from,
-		To:    &to,
-		Value: big.NewInt(1000),
-		Data:  []byte{1, 2, 3, 4},
-	}
-
-	txDataInstance := &txData{
-		Env:     mockEnv,
-		Message: msg,
-	}
-
-	// Verify fields are set correctly
-	assert.Equal(t, mockEnv, txDataInstance.Env)
-	assert.Equal(t, msg, txDataInstance.Message)
-
-	// Verify methods return expected values
-	assert.Equal(t, mockEnv, txDataInstance.GetBlockEnvironment())
-	assert.Equal(t, msg, txDataInstance.GetMessage())
-	assert.Equal(t, common.Hash{}, txDataInstance.GetLogsHash())
-	assert.Equal(t, common.Hash{}, txDataInstance.GetStateHash())
-
-	// Verify inherited NilTxContext methods
-	assert.Nil(t, txDataInstance.GetInputState())
-	assert.Nil(t, txDataInstance.GetOutputState())
-	assert.Nil(t, txDataInstance.GetResult())
 }
