@@ -29,17 +29,19 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/0xsoniclabs/substate/db"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/tests"
-	"github.com/urfave/cli/v2"
-
 	"github.com/0xsoniclabs/tosca/go/geth_adapter"
 	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmone"
 	_ "github.com/0xsoniclabs/tosca/go/interpreter/evmzero"
 	"github.com/0xsoniclabs/tosca/go/interpreter/lfvm"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/tests"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func init() {
@@ -102,6 +104,13 @@ var AllowedChainIDs = ChainIDs{
 	HoodiChainID:        "hoodi",
 	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
+}
+var EthereumChainIDs = ChainIDs{
+	EthereumChainID: "ethereum",
+	HoleskyChainID:  "holesky",
+	HoodiChainID:    "hoodi",
+	SepoliaChainID:  "sepolia",
+	EthTestsChainID: "eth-tests",
 }
 
 const (
@@ -363,7 +372,7 @@ type Config struct {
 	// -- cached results --
 	chainCfg           *params.ChainConfig   // cached chain configuration
 	interpreterFactory vm.InterpreterFactory // cached interpreter factory to facilitate reuse in interpreter instances
-
+	VmCfg              vm.Config
 }
 
 type configContext struct {
@@ -389,6 +398,10 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 	if err != nil {
 		t.Fatalf("cannot get chain cfg: %v", err)
 	}
+	vmCfg := opera.GetVmConfig(opera.Rules{}) // default VM config
+	vmCfg.NoBaseFee = true
+	vmCfg.Tracer = nil
+	vmCfg.Interpreter = nil
 	return &Config{
 		ChainID:         chainId,
 		First:           first,
@@ -398,6 +411,7 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 		SkipPriming:     true,
 		Validate:        validate,
 		ValidateTxState: validate,
+		VmCfg:           vmCfg,
 	}
 }
 
@@ -420,6 +434,11 @@ func NewConfig(ctx *cli.Context, mode ArgumentMode) (*Config, error) {
 	err = cc.setChainConfig()
 	if err != nil {
 		return nil, fmt.Errorf("cannot set chain id: %w", err)
+	}
+
+	err = cc.setVmConfig()
+	if err != nil {
+		return nil, fmt.Errorf("cannot set vm config: %w", err)
 	}
 
 	// set first Opera block according to chian id
@@ -670,9 +689,10 @@ func splitKeywordOffset(arg string, symbol string) (string, uint64, bool) {
 // offsetBlockNum adds/subtracts the offset to/from block number
 func offsetBlockNum(blkNum uint64, symbol string, offset uint64) uint64 {
 	res := uint64(0)
-	if symbol == "+" {
+	switch symbol {
+	case "+":
 		res = blkNum + offset
-	} else if symbol == "-" {
+	case "-":
 		res = blkNum - offset
 	}
 
@@ -951,17 +971,59 @@ func (cc *configContext) setChainConfig() (err error) {
 	return err
 }
 
+func (cc *configContext) setVmConfig() (err error) {
+	if !IsEthereumNetwork(cc.cfg.ChainID) {
+		// The default VM config is sufficient for all Sonic blocks that have
+		// been created using the Multi-Proposer mode (aka. distributed block
+		// formation). With the switch to the Single-Proposer mode, the charging
+		// of excess gas is removed. This can be disabled by setting
+		//
+		// vmConfig.ChargeExcessGas = false
+		//
+		// or by passing rules with the corresponding feature being enabled to
+		// the opera.GetVmConfig function. However, right now, there seems to be
+		// no information about the network rules available in the substates,
+		// making this distinction impossible. This information may have to be
+		// tracked explicitly in the future.
+		defaultVmConfig := opera.GetVmConfig(opera.Rules{})
+
+		// SonicMainnetChainID, TestnetChainID, MainnetChainID:
+		cc.cfg.VmCfg = defaultVmConfig
+		cc.cfg.VmCfg.NoBaseFee = true
+	}
+
+	factory, err := cc.cfg.GetInterpreterFactory()
+	if err != nil {
+		return err
+	}
+	cc.cfg.VmCfg.Interpreter = factory
+	cc.cfg.VmCfg.Tracer = nil
+
+	switch strings.ToLower(cc.cfg.EvmImpl) {
+	case "ethereum":
+		// for the ethereum mode, Fantom specific modifications are disabled
+		cc.cfg.VmCfg.ChargeExcessGas = false
+		cc.cfg.VmCfg.IgnoreGasFeeCap = false
+		cc.cfg.VmCfg.InsufficientBalanceIsNotAnError = false
+		cc.cfg.VmCfg.SkipTipPaymentToCoinbase = false
+	case "", "opera":
+	default:
+	}
+	return nil
+}
+
 // ToTitleCase adjusts fork names to title case.
 // If the input string contains word glacier anywhere in the string, the word is replaced by "Glacier".
 func ToTitleCase(fork string) string {
 	// Adjust the case when the fork name is glacier
-	fork = strings.Replace(strings.ToLower(fork), "glacier", "Glacier", -1)
-	fork = strings.Title(fork)
+	fork = strings.ReplaceAll(strings.ToLower(fork), "glacier", "Glacier")
+	fork = cases.Title(language.Und, cases.NoLower).String(fork)
 	return fork
 }
 
 // IsEthereumNetwork checks if the chainID is an Ethereum network - mainnet, holesky, hoodi or sepolia.
 // Special conditions for miner rewards and validation are applied.
 func IsEthereumNetwork(chainID ChainID) bool {
-	return chainID == EthereumChainID || chainID == HoleskyChainID || chainID == HoodiChainID || chainID == SepoliaChainID
+	_, ok := EthereumChainIDs[chainID]
+	return ok
 }

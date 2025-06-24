@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestStatedbInfo_WriteReadStateDbInfo tests creation of state DB info json file,
@@ -129,4 +130,111 @@ func TestStatedbInfo_RenameTempStateDbDirectoryToCustomName(t *testing.T) {
 	if _, err := os.Stat(newName); os.IsNotExist(err) {
 		t.Fatalf("failed to rename temporary state DB directory")
 	}
+}
+
+func TestStateDBInfo_copyFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// case success
+	srcfp := filepath.Join(tempDir, "src.txt")
+	dstfp := filepath.Join(tempDir, "dst.txt")
+	if err := os.WriteFile(srcfp, []byte("test"), 0666); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+	err := copyFile(srcfp, dstfp)
+	assert.NoError(t, err)
+
+	// case when a source file does not exist
+	srcfp = filepath.Join(tempDir, "nonexistent.txt")
+	err = copyFile(srcfp, dstfp)
+	assert.Error(t, err)
+
+	// case when a destination file fails to be created
+	srcfp = filepath.Join(tempDir, "src.txt")
+	dstfp = filepath.Join(tempDir, "invalid", "dst.txt")
+	err = copyFile(srcfp, dstfp)
+	assert.Error(t, err)
+}
+
+func TestStateDBInfo_CopyDir(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Test successful copy of a directory
+	t.Run("CopyDirectorySuccessfully", func(t *testing.T) {
+		srcDir := filepath.Join(tempDir, "src")
+		dstDir := filepath.Join(tempDir, "dst")
+		if err := os.Mkdir(srcDir, 0755); err != nil {
+			t.Fatalf("failed to create source directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("test"), 0666); err != nil {
+			t.Fatalf("failed to create test file: %v", err)
+		}
+		err := CopyDir(srcDir, dstDir)
+		assert.NoError(t, err)
+
+		if _, err := os.Stat(filepath.Join(dstDir, "file.txt")); os.IsNotExist(err) {
+			t.Fatalf("file was not copied to destination directory")
+		}
+	})
+
+	// Test failure when source directory does not exist
+	t.Run("SourceDirectoryDoesNotExist", func(t *testing.T) {
+		srcDir := filepath.Join(tempDir, "nonexistent")
+		dstDir := filepath.Join(tempDir, "dst2")
+		err := CopyDir(srcDir, dstDir)
+		assert.Error(t, err)
+	})
+
+	// Test failure when destination directory already exists
+	t.Run("DestinationDirectoryAlreadyExists", func(t *testing.T) {
+		srcDir := filepath.Join(tempDir, "src2")
+		dstDir := filepath.Join(tempDir, "dst2")
+		if err := os.Mkdir(srcDir, 0755); err != nil {
+			t.Fatalf("failed to create source directory: %v", err)
+		}
+		if err := os.Mkdir(dstDir, 0755); err != nil {
+			t.Fatalf("failed to create destination directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(dstDir, "file.txt"), []byte("test"), 0666); err != nil {
+			t.Fatalf("failed to create test file in destination directory: %v", err)
+		}
+		err := CopyDir(srcDir, dstDir)
+		assert.NoError(t, err)
+	})
+
+	// Test copy of nested directories
+	t.Run("CopyNestedDirectories", func(t *testing.T) {
+		srcDir := filepath.Join(tempDir, "src3")
+		nestedDir := filepath.Join(srcDir, "nested")
+		dstDir := filepath.Join(tempDir, "dst3")
+		if err := os.MkdirAll(nestedDir, 0755); err != nil {
+			t.Fatalf("failed to create nested source directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(nestedDir, "file.txt"), []byte("test"), 0666); err != nil {
+			t.Fatalf("failed to create test file in nested directory: %v", err)
+		}
+		err := CopyDir(srcDir, dstDir)
+		assert.NoError(t, err)
+
+		if _, err := os.Stat(filepath.Join(dstDir, "nested", "file.txt")); os.IsNotExist(err) {
+			t.Fatalf("nested file was not copied to destination directory")
+		}
+	})
+}
+
+func TestStateDBInfo_ReadStateDbInfoError(t *testing.T) {
+	tempDir := t.TempDir()
+	dbInfo, err := ReadStateDbInfo(tempDir)
+	assert.Equal(t, StateDbInfo{}, dbInfo)
+	assert.Error(t, err)
+}
+
+func TestStateDBInfo_RenameTempStateDbDirectoryError(t *testing.T) {
+	cfg := &Config{
+		DbImpl:       "geth",
+		DbVariant:    "",
+		CustomDbName: "TestName",
+	}
+	newDir := RenameTempStateDbDirectory(cfg, "", 0)
+	assert.Equal(t, "", newDir)
 }

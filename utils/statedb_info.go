@@ -18,9 +18,9 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -47,8 +47,7 @@ type StateDbInfo struct {
 }
 
 // copyFile copies a single file from src to dst
-func copyFile(src, dst string) error {
-	var err error
+func copyFile(src, dst string) (err error) {
 	var srcfd *os.File
 	var dstfd *os.File
 	var srcinfo os.FileInfo
@@ -59,12 +58,16 @@ func copyFile(src, dst string) error {
 	if srcfd, err = os.Open(src); err != nil {
 		return err
 	}
-	defer srcfd.Close()
+	defer func(srcfd *os.File) {
+		err = errors.Join(err, srcfd.Close())
+	}(srcfd)
 
 	if dstfd, err = os.Create(dst); err != nil {
 		return err
 	}
-	defer dstfd.Close()
+	defer func(dstfd *os.File) {
+		err = errors.Join(err, dstfd.Close())
+	}(dstfd)
 
 	if _, err = io.Copy(dstfd, srcfd); err != nil {
 		return err
@@ -75,7 +78,7 @@ func copyFile(src, dst string) error {
 // CopyDir copies a whole directory recursively
 func CopyDir(src string, dst string) error {
 	var err error
-	var fds []os.FileInfo
+	var fds []os.DirEntry
 	var srcinfo os.FileInfo
 
 	if srcinfo, err = os.Stat(src); err != nil {
@@ -84,9 +87,8 @@ func CopyDir(src string, dst string) error {
 	if err = os.MkdirAll(dst, srcinfo.Mode()); err != nil {
 		return err
 	}
-	if fds, err = ioutil.ReadDir(src); err != nil {
-		os.RemoveAll(dst)
-		return err
+	if fds, err = os.ReadDir(src); err != nil {
+		return errors.Join(err, os.RemoveAll(dst))
 	}
 	for _, fd := range fds {
 		srcfp := path.Join(src, fd.Name())
@@ -94,13 +96,11 @@ func CopyDir(src string, dst string) error {
 
 		if fd.IsDir() {
 			if err = CopyDir(srcfp, dstfp); err != nil {
-				os.RemoveAll(dst)
-				return err
+				return errors.Join(err, os.RemoveAll(dst))
 			}
 		} else {
 			if err = copyFile(srcfp, dstfp); err != nil {
-				os.Remove(dst)
-				return err
+				return errors.Join(err, os.Remove(dst))
 			}
 		}
 	}
@@ -125,10 +125,10 @@ func WriteStateDbInfo(directory string, cfg *Config, block uint64, root common.H
 	filename := filepath.Join(directory, PathToDbInfo)
 	jsonByte, err := json.MarshalIndent(dbinfo, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Failed to encode stateDB info in JSON format")
+		return fmt.Errorf("failed to encode stateDB info in JSON format")
 	}
 	if err := os.WriteFile(filename, jsonByte, 0666); err != nil {
-		return fmt.Errorf("Failed to write stateDB info to file %v. %v\n", filename, err)
+		return fmt.Errorf("failed to write stateDB info to file %v. %v", filename, err)
 	}
 	return nil
 }

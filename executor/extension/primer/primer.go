@@ -63,6 +63,11 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 	// As different substates start on different blocks (either 0 or 1)
 	// we must check the starting block with the key word "first" with appropriate chainid
 	if p.cfg.First == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
+		if utils.IsEthereumNetwork(p.cfg.ChainID) {
+			p.log.Noticef("Priming ethereum genesis...")
+			p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, utils.KeywordBlocks[p.cfg.ChainID]["first"], p.log)
+			return p.primeEthereumGenesis(ctx.State, ctx.AidaDb)
+		}
 		return nil
 	}
 
@@ -189,6 +194,29 @@ func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error 
 	err := utils.DeleteDestroyedAccountsFromStateDB(stateDb, p.cfg, p.cfg.First-1, aidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot delete destroyed accounts from state-db; %v", err)
+	}
+
+	return nil
+}
+
+func (p *stateDbPrimer[T]) primeEthereumGenesis(stateDb state.StateDB, aidaDb db.BaseDB) error {
+	// load pre-computed update-set from update-set db
+	block := p.ctx.GetBlock()
+	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	updateIter := udb.NewUpdateSetIterator(block, block+1)
+	update := make(substate.WorldState)
+
+	for updateIter.Next() {
+		newSet := updateIter.Value()
+		block = newSet.Block
+		update.Merge(newSet.WorldState)
+		// advance block after merge update set
+		block++
+	}
+	updateIter.Release()
+
+	if err := p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
+		return fmt.Errorf("cannot prime state-db; %v", err)
 	}
 
 	return nil

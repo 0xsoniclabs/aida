@@ -22,12 +22,16 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
@@ -242,6 +246,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 1100
 	lastArg = 1900
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstArg, lastArg, first, last)
 	}
@@ -249,6 +256,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 3000
 	lastArg = 4000
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if first != 0 && last != 0 {
+		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", 0, 0, first, last)
+	}
 	if err == nil {
 		t.Fatalf("Ranges not overlapped. Expected an error.")
 	}
@@ -257,6 +267,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 100
 	lastArg = 1000
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", lastArg, lastArg, first, last)
 	}
@@ -264,6 +277,9 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 	firstArg = 2000
 	lastArg = 2200
 	first, last, err = cc.adjustBlockRange(firstArg, lastArg)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
 	if first != firstArg && last != lastArg {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstArg, firstArg, first, last)
 	}
@@ -314,7 +330,10 @@ func TestUtilsConfig_getMdBlockRange(t *testing.T) {
 
 	cfg.AidaDb = "./test.db" //db exists
 	// open an existing AidaDb
-	cc.setAidaDbRepositoryUrl()
+	err = cc.setAidaDbRepositoryUrl()
+	if err != nil {
+		t.Fatalf("cannot set AidaDb repository url; %v", err)
+	}
 	first, last, lastpatch, err = cc.getMdBlockRange()
 	if !cc.hasMetadata || first != firstBlock || last != lastBlock {
 		t.Fatalf("wrong block range; expected %v:%v, have %v:%v", firstBlock, lastBlock, first, last)
@@ -613,7 +632,10 @@ func TestUtilsConfig_adjustMissingConfigValues(t *testing.T) {
 	}()
 
 	// set missing values
-	cc.adjustMissingConfigValues()
+	err = cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.DbVariant == dbVariant {
@@ -670,7 +692,10 @@ func TestUtilsConfig_adjustMissingConfigValuesValidationOn(t *testing.T) {
 		t.Run("validation adjustment", func(t *testing.T) {
 			// set missing values
 			cc := NewConfigContext(&cfg, nil)
-			cc.adjustMissingConfigValues()
+			err := cc.adjustMissingConfigValues()
+			if err != nil {
+				t.Fatalf("failed to adjust missing config values; %v", err)
+			}
 
 			// checks
 			if !cfg.ValidateTxState {
@@ -694,7 +719,10 @@ func TestUtilsConfig_adjustMissingConfigValuesValidationOff(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.ValidateTxState {
@@ -715,7 +743,10 @@ func TestUtilsConfig_adjustMissingConfigValuesKeepStateDb(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.KeepDb {
@@ -734,7 +765,10 @@ func TestUtilsConfig_adjustMissingConfigValuesWrongDbTmp(t *testing.T) {
 	// prepare config context
 	cc := NewConfigContext(cfg, nil)
 
-	cc.adjustMissingConfigValues()
+	err := cc.adjustMissingConfigValues()
+	if err != nil {
+		t.Fatalf("failed to adjust missing config values; %v", err)
+	}
 
 	// checks
 	if cfg.DbTmp != os.TempDir() {
@@ -772,6 +806,97 @@ func TestUtilsConfig_ToTitleCase_Success(t *testing.T) {
 	}
 }
 
+func TestConfigContext_setVmConfig(t *testing.T) {
+	for chainID, name := range AllowedChainIDs {
+		t.Run(name, func(t *testing.T) {
+			cfg := &Config{ChainID: chainID}
+			ctx := NewConfigContext(cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			if IsEthereumNetwork(cfg.ChainID) {
+				require.False(t, cfg.VmCfg.ChargeExcessGas)
+				require.False(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.False(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.False(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			} else {
+				require.True(t, cfg.VmCfg.ChargeExcessGas)
+				require.True(t, cfg.VmCfg.IgnoreGasFeeCap)
+				require.True(t, cfg.VmCfg.InsufficientBalanceIsNotAnError)
+				require.True(t, cfg.VmCfg.SkipTipPaymentToCoinbase)
+			}
+		})
+	}
+}
+
+func TestConfigContext_setVmConfig_EthereumEvmImpl(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		require func(t require.TestingT, value bool, msgAndArgs ...any)
+	}{
+		{
+			name:    "empty-evm-impl",
+			cfg:     &Config{EvmImpl: ""},
+			require: require.True,
+		},
+		{
+			name:    "opera-evm-impl",
+			cfg:     &Config{EvmImpl: "opera"},
+			require: require.True,
+		},
+		{
+			name:    "ethereum-evm-impl",
+			cfg:     &Config{EvmImpl: "ethereum"},
+			require: require.False,
+		},
+		{
+			name:    "unknown",
+			cfg:     &Config{EvmImpl: "unknown"},
+			require: require.True,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := NewConfigContext(test.cfg, nil)
+			err := ctx.setVmConfig()
+			require.NoError(t, err, "cannot set vm cfg")
+			test.require(t, test.cfg.VmCfg.ChargeExcessGas)
+			test.require(t, test.cfg.VmCfg.IgnoreGasFeeCap)
+			test.require(t, test.cfg.VmCfg.InsufficientBalanceIsNotAnError)
+			test.require(t, test.cfg.VmCfg.SkipTipPaymentToCoinbase)
+		})
+	}
+}
+
+func TestConfigContext_setVmConfig_InvalidVmImplCausesError(t *testing.T) {
+	cfg := &Config{VmImpl: "invalid"}
+	ctx := NewConfigContext(cfg, nil)
+	err := ctx.setVmConfig()
+	require.Error(t, err, "error must be returned")
+	require.Contains(t, err.Error(), "cannot get interpreter for \"invalid\"")
+}
+
+func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
+	chainId := MainnetChainID
+	first := uint64(123)
+	last := uint64(456)
+	fork := "london"
+
+	cfg := NewTestConfig(t, chainId, first, last, true, fork)
+
+	require.Equal(t, chainId, cfg.ChainID, "ChainID not set correctly")
+	require.Equal(t, first, cfg.First, "First block not set correctly")
+	require.Equal(t, last, cfg.Last, "Last block not set correctly")
+	require.True(t, cfg.Validate, "Validate not set correctly")
+	require.True(t, cfg.ValidateTxState, "ValidateTxState not set correctly")
+	require.NotNil(t, cfg.chainCfg, "chainCfg should be set")
+	require.Equal(t, "Critical", cfg.LogLevel, "LogLevel should be Critical")
+	require.True(t, cfg.SkipPriming, "SkipPriming should be true")
+	require.True(t, cfg.VmCfg.NoBaseFee, "VmCfg.NoBaseFee should be true")
+	require.Nil(t, cfg.VmCfg.Tracer, "VmCfg.Tracer should be nil")
+	require.Nil(t, cfg.VmCfg.Interpreter, "VmCfg.Interpreter should be nil")
+}
+
 // createFakeAidaDb creates fake empty aidaDB with metadata for testing purposes
 func createFakeAidaDb(cfg *Config) error {
 	// fake metadata values
@@ -799,4 +924,239 @@ func createFakeAidaDb(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func Test_SetChainConfig(t *testing.T) {
+	// case 1
+	cfg := configContext{
+		cfg: &Config{
+			ChainID: EthTestsChainID,
+		},
+	}
+	err := cfg.setChainConfig()
+	assert.NoError(t, err)
+
+	// case 2
+	cfg = configContext{
+		cfg: &Config{
+			ChainID: MainnetChainID,
+		},
+	}
+	err = cfg.setChainConfig()
+	assert.NoError(t, err)
+
+	// case 3
+	cfg = configContext{
+		cfg: &Config{
+			ChainID: ChainID(999),
+		},
+	}
+	err = cfg.setChainConfig()
+	assert.Error(t, err)
+}
+
+func Test_ReportNewConfig(t *testing.T) {
+	cfg := configContext{
+		log: logger.NewLogger("NOTICE", "Config"),
+		cfg: &Config{
+			Profile:        true,
+			ProfileFile:    "test.prof",
+			ProfileSqlite3: "test.db",
+			RegisterRun:    "test",
+			ShadowDb:       true,
+			DbLogging:      "test.db",
+		},
+	}
+	assert.NotPanicsf(t, cfg.reportNewConfig, "reportNewConfig panics")
+}
+
+func Test_AdjustMissingConfigValues(t *testing.T) {
+	cfg := configContext{
+		log: logger.NewLogger("NOTICE", "Config"),
+		cfg: &Config{
+			ChainID:      MainnetChainID,
+			AidaDb:       "./test.db",
+			DbImpl:       "carmen",
+			DbVariant:    "",
+			RandomSeed:   -1,
+			First:        0,
+			LogLevel:     "NOTICE",
+			ErrorLogging: "test.db",
+		},
+	}
+
+	err := cfg.adjustMissingConfigValues()
+	assert.NoError(t, err)
+	assert.Equal(t, true, cfg.cfg.ContinueOnFailure)
+}
+
+func Test_IsEthereumNetwork(t *testing.T) {
+	isEthereum := IsEthereumNetwork(EthereumChainID)
+	assert.True(t, isEthereum)
+
+	isEthereum = IsEthereumNetwork(HoleskyChainID)
+	assert.True(t, isEthereum)
+
+	isEthereum = IsEthereumNetwork(HoodiChainID)
+	assert.True(t, isEthereum)
+
+	isEthereum = IsEthereumNetwork(SepoliaChainID)
+	assert.True(t, isEthereum)
+
+	isEthereum = IsEthereumNetwork(ChainID(999))
+	assert.False(t, isEthereum)
+}
+
+func Test_getChainConfig(t *testing.T) {
+	chainConfig, err := getChainConfig(EthTestsChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(1), chainConfig.ChainID)
+
+	chainConfig, err = getChainConfig(EthereumChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(1), chainConfig.ChainID)
+	assert.Equal(t, false, chainConfig.DAOForkSupport)
+
+	chainConfig, err = getChainConfig(HoleskyChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(17000), chainConfig.ChainID)
+	assert.Equal(t, false, chainConfig.DAOForkSupport)
+
+	chainConfig, err = getChainConfig(HoodiChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(560048), chainConfig.ChainID)
+	assert.Equal(t, false, chainConfig.DAOForkSupport)
+
+	chainConfig, err = getChainConfig(SepoliaChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(11155111), chainConfig.ChainID)
+	assert.Equal(t, false, chainConfig.DAOForkSupport)
+
+	chainConfig, err = getChainConfig(MainnetChainID, "Frontier")
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(250), chainConfig.ChainID)
+	assert.Equal(t, false, chainConfig.DAOForkSupport)
+
+	chainConfig, err = getChainConfig(ChainID(999), "Frontier")
+	assert.Error(t, err)
+	assert.Nil(t, chainConfig)
+}
+
+func Test_SetStateDbSrcReadOnly(t *testing.T) {
+	cfg := Config{}
+	cfg.SetStateDbSrcReadOnly()
+	assert.Equal(t, true, cfg.StateDbSrcDirectAccess)
+	assert.Equal(t, true, cfg.StateDbSrcReadOnly)
+}
+
+func Test_setAidaDbRepositoryUrl(t *testing.T) {
+	testCases := []struct {
+		name     string
+		chainID  ChainID
+		expected string
+	}{
+		{"SonicMainnet", SonicMainnetChainID, AidaDbRepositorySonicUrl},
+		{"Mainnet", MainnetChainID, AidaDbRepositoryOperaUrl},
+		{"Testnet", TestnetChainID, AidaDbRepositoryTestnetUrl},
+		{"Ethereum", EthereumChainID, AidaDbRepositoryEthereumUrl},
+		{"Holesky", HoleskyChainID, AidaDbRepositoryHoleskyUrl},
+		{"Hoodi", HoodiChainID, AidaDbRepositoryHoodiUrl},
+		{"Sepolia", SepoliaChainID, AidaDbRepositorySepoliaUrl},
+		{"Unknown", ChainID(999), AidaDbRepositorySonicUrl}, // Unknown chain ID defaults to Sonic
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Reset the global URL before each test
+			AidaDbRepositoryUrl = ""
+
+			// Create config context with the test chain ID
+			cc := configContext{
+				log: logger.NewLogger("NOTICE", "Config"),
+				cfg: &Config{
+					ChainID: tc.chainID,
+				},
+			}
+
+			// Call the method being tested
+			err := cc.setAidaDbRepositoryUrl()
+
+			// Verify results
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, AidaDbRepositoryUrl)
+		})
+	}
+}
+
+func Test_setFirstOperaBlock(t *testing.T) {
+	cfg := configContext{
+		cfg: &Config{
+			ChainID: MainnetChainID,
+		},
+	}
+
+	err := cfg.setFirstOperaBlock()
+	assert.NoError(t, err)
+
+	cfg = configContext{
+		cfg: &Config{
+			ChainID: ChainID(999),
+		},
+	}
+	err = cfg.setFirstOperaBlock()
+	assert.Error(t, err)
+}
+
+func Test_GetInterpreterFactory(t *testing.T) {
+	// case 1
+	method := func(evm *vm.EVM) vm.Interpreter {
+		return nil
+	}
+	cfg := &Config{
+		interpreterFactory: method,
+	}
+	factory, err := cfg.GetInterpreterFactory()
+	assert.NoError(t, err)
+	assert.Equal(t, reflect.ValueOf(method).Pointer(), reflect.ValueOf(factory).Pointer())
+
+	// case 2
+	cfg = &Config{
+		VmImpl: "",
+	}
+	factory, err = cfg.GetInterpreterFactory()
+	assert.NoError(t, err)
+	assert.Nil(t, factory)
+
+	// case 3
+	cfg = &Config{
+		VmImpl: "unknown",
+	}
+	factory, err = cfg.GetInterpreterFactory()
+	assert.Error(t, err)
+	assert.Nil(t, factory)
+
+	// case 4
+	err = tosca.RegisterInterpreterFactory("unknown", func(config any) (tosca.Interpreter, error) {
+		return nil, nil
+	})
+	if err != nil {
+		t.Fatalf("failed to register interpreter factory: %v", err)
+	}
+	cfg = &Config{
+		VmImpl: "unknown",
+	}
+	factory, err = cfg.GetInterpreterFactory()
+	assert.Nil(t, err)
+	assert.NotNil(t, factory)
+}
+
+func Test_GetChainConfig(t *testing.T) {
+	cfg := &Config{
+		ChainID: MainnetChainID,
+	}
+
+	chainConfig, err := cfg.GetChainConfig("")
+	assert.NoError(t, err)
+	assert.NotNil(t, chainConfig)
+	assert.Equal(t, big.NewInt(250), chainConfig.ChainID) // Example value for MainnetChainID
 }

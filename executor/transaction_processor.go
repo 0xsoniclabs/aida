@@ -34,7 +34,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/0xsoniclabs/tosca/go/tosca"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -195,37 +194,15 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 type TxProcessor struct {
 	cfg       *utils.Config
 	numErrors *atomic.Int32 // transactions can be processed in parallel, so this needs to be thread safe
-	vmCfg     vm.Config
 	log       logger.Logger
 	processor processor
 }
 
 func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
-	var vmCfg vm.Config
-	if !utils.IsEthereumNetwork(cfg.ChainID) {
-		//SonicMainnetChainID, TestnetChainID, MainnetChainID:
-		vmCfg = opera.DefaultVMConfig
-		vmCfg.NoBaseFee = true
-	}
-
-	factory, err := cfg.GetInterpreterFactory()
-	if err != nil {
-		return nil, err
-	}
-	vmCfg.Interpreter = factory
-	vmCfg.Tracer = nil
-
 	var processor processor
 	switch strings.ToLower(cfg.EvmImpl) {
-	case "", "opera":
-		processor = makeAidaProcessor(cfg, vmCfg)
-	case "ethereum":
-		// for the ethereum mode, Fantom specific modifications are disabled
-		vmCfg.ChargeExcessGas = false
-		vmCfg.IgnoreGasFeeCap = false
-		vmCfg.InsufficientBalanceIsNotAnError = false
-		vmCfg.SkipTipPaymentToCoinbase = false
-		processor = makeAidaProcessor(cfg, vmCfg)
+	case "", "opera", "ethereum":
+		processor = makeAidaProcessor(cfg)
 	default:
 		interpreter, err := tosca.NewInterpreter(cfg.VmImpl)
 		if err != nil {
@@ -250,7 +227,6 @@ func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
 	return &TxProcessor{
 		cfg:       cfg,
 		numErrors: new(atomic.Int32),
-		vmCfg:     vmCfg,
 		log:       logger.NewLogger(cfg.LogLevel, "TxProcessor"),
 		processor: processor,
 	}, nil
@@ -286,19 +262,16 @@ type processor interface {
 }
 
 type aidaProcessor struct {
-	vmCfg vm.Config
-	cfg   *utils.Config
-	log   logger.Logger
+	cfg *utils.Config
+	log logger.Logger
 }
 
 // for testing purposes
-func makeAidaProcessor(cfg *utils.Config, vmCfg vm.Config) *aidaProcessor {
+func makeAidaProcessor(cfg *utils.Config) *aidaProcessor {
 	evmImpl := strings.ToLower(cfg.EvmImpl)
-
 	return &aidaProcessor{
-		vmCfg: vmCfg,
-		cfg:   cfg,
-		log:   logger.NewLogger(cfg.LogLevel, fmt.Sprintf("AidaProcessor(%s)", evmImpl)),
+		cfg: cfg,
+		log: logger.NewLogger(cfg.LogLevel, fmt.Sprintf("AidaProcessor(%s)", evmImpl)),
 	}
 }
 
@@ -352,9 +325,8 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 
 	db.SetTxContext(txHash, tx)
 	snapshot := db.Snapshot()
-	blockCtx := prepareBlockCtx(inputEnv, &hashError)
-
-	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.vmCfg)
+	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
+	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.cfg.VmCfg)
 
 	var msgResult messageResult
 	var gasPool = new(core.GasPool)
@@ -403,38 +375,6 @@ func (s *TxProcessor) processPseudoTx(ws txcontext.WorldState, db state.VmStateD
 		})
 	})
 	return newPseudoExecutionResult()
-}
-
-// prepareBlockCtx creates a block context for evm call from given BlockEnvironment.
-func prepareBlockCtx(inputEnv txcontext.BlockEnvironment, hashError *error) *vm.BlockContext {
-	getHash := func(num uint64) common.Hash {
-		var h common.Hash
-		h, *hashError = inputEnv.GetBlockHash(num)
-		return h
-	}
-
-	blockCtx := &vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		Coinbase:    inputEnv.GetCoinbase(),
-		BlockNumber: new(big.Int).SetUint64(inputEnv.GetNumber()),
-		Time:        inputEnv.GetTimestamp(),
-		Difficulty:  inputEnv.GetDifficulty(),
-		Random:      inputEnv.GetRandom(),
-		GasLimit:    inputEnv.GetGasLimit(),
-		GetHash:     getHash,
-	}
-	// If currentBaseFee is defined, add it to the vmContext.
-	baseFee := inputEnv.GetBaseFee()
-	if baseFee != nil {
-		blockCtx.BaseFee = new(big.Int).Set(baseFee)
-	}
-
-	blobBaseFee := inputEnv.GetBlobBaseFee()
-	if blobBaseFee != nil {
-		blockCtx.BlobBaseFee = new(big.Int).Set(blobBaseFee)
-	}
-	return blockCtx
 }
 
 type toscaProcessor struct {

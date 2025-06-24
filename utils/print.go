@@ -18,6 +18,7 @@ package utils
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,8 @@ import (
 )
 
 // Printer is a utility class to output data from the system
+//
+//go:generate mockgen -source print.go -destination print_mock.go -package utils
 type Printer interface {
 	Print() error
 	Close()
@@ -37,7 +40,7 @@ type Printers struct {
 
 func (ps *Printers) Print() {
 	for _, p := range ps.printers {
-		p.Print()
+		_ = p.Print()
 	}
 }
 
@@ -64,12 +67,15 @@ type PrinterToWriter struct {
 }
 
 func (p *PrinterToWriter) Print() error {
-	fmt.Fprintln(p.w, p.f())
+	_, err := fmt.Fprintln(p.w, p.f())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (p *PrinterToWriter) Close() {
-	return
+
 }
 
 func NewPrinterToWriter(w io.Writer, f func() string) *PrinterToWriter {
@@ -98,19 +104,24 @@ type PrinterToFile struct {
 	f        func() string
 }
 
-func (p *PrinterToFile) Print() error {
+func (p *PrinterToFile) Print() (err error) {
 	file, err := os.OpenFile(p.filepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to print to file %s; %v", p.filepath, err)
 	}
 
-	defer file.Close()
-	file.WriteString(p.f())
+	defer func(file *os.File) {
+		err = errors.Join(err, file.Close())
+	}(file)
+	_, err = file.WriteString(p.f())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (p *PrinterToFile) Close() {
-	return
+
 }
 
 func NewPrinterToFile(filepath string, f func() string) *PrinterToFile {
@@ -148,17 +159,18 @@ func (p *PrinterToDb) Print() error {
 	for _, value := range values {
 		_, err = tx.Stmt(stmt).Exec(value...)
 		if err != nil {
-			tx.Rollback()
-			return err
+			return errors.Join(err, tx.Rollback())
 		}
 	}
 
-	defer stmt.Close() // Stmt to be open/close each time a transaction happens
+	defer func(stmt *sql.Stmt) {
+		err = errors.Join(err, stmt.Close())
+	}(stmt) // Stmt to be open/close each time a transaction happens
 	return tx.Commit()
 }
 
 func (p *PrinterToDb) Close() {
-	p.db.Close()
+	_ = p.db.Close()
 }
 
 func NewPrinterToSqlite3(conn string, create string, insert string, f func() [][]any) (*PrinterToDb, error) {
@@ -174,8 +186,14 @@ func NewPrinterToSqlite3(conn string, create string, insert string, f func() [][
 		return nil, fmt.Errorf("failed to create/replace table on %s; %v", conn, err)
 	}
 
-	db.Exec("PRAGMA synchronous = OFF")     // so that insert does not block
-	db.Exec("PRAGMA journal_mode = MEMORY") // improve efficiency - no intermediate write to file
+	_, err = db.Exec("PRAGMA synchronous = OFF")
+	if err != nil {
+		return nil, err
+	} // so that insert does not block
+	_, err = db.Exec("PRAGMA journal_mode = MEMORY")
+	if err != nil {
+		return nil, err
+	} // improve efficiency - no intermediate write to file
 
 	return &PrinterToDb{db, insert, f}, nil
 }
@@ -203,7 +221,7 @@ type PrinterToBuffer struct {
 	capacity int
 	f        func() [][]any
 	buffer   [][]any
-	flusher  *Flusher
+	flusher  IFlusher
 }
 
 func (p *PrinterToBuffer) Print() error {
@@ -216,7 +234,6 @@ func (p *PrinterToBuffer) Print() error {
 }
 
 func (p *PrinterToBuffer) Close() {
-	return
 }
 
 func (p *PrinterToBuffer) Reset() {
@@ -225,6 +242,11 @@ func (p *PrinterToBuffer) Reset() {
 
 func (p *PrinterToBuffer) Length() int {
 	return len(p.buffer)
+}
+
+type IFlusher interface {
+	Print() error
+	Close()
 }
 
 type Flusher struct {

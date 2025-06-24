@@ -16,11 +16,12 @@
 
 package utils
 
-//go:generate mockgen -source state_hash.go -destination state_hash_mocks.go -package utils
+//go:generate mockgen -source hash_provider.go -destination hash_provider_mock.go -package utils
 
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strconv"
@@ -33,23 +34,57 @@ import (
 	"github.com/status-im/keycard-go/hexutils"
 )
 
-const StateHashPrefix = "dbh"
+const (
+	StateRootHashPrefix = "dbh"
+	BlockHashPrefix     = "bh"
+)
 
-type StateHashProvider interface {
-	GetStateHash(blockNumber int) (common.Hash, error)
+// ClientInterface defines the methods that an RPC client must implement.
+type IRpcClient interface {
+	RegisterName(name string, receiver interface{}) error
+	SupportedModules() (map[string]string, error)
+	Close()
+	SetHeader(key, value string)
+	Call(result interface{}, method string, args ...interface{}) error
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
+	BatchCall(b []rpc.BatchElem) error
+	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
+	Notify(ctx context.Context, method string, args ...interface{}) error
+	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	SupportsSubscriptions() bool
 }
 
-func MakeStateHashProvider(db db.BaseDB) StateHashProvider {
-	return &stateHashProvider{db}
+type HashProvider interface {
+	GetStateRootHash(blockNumber int) (common.Hash, error)
+	GetBlockHash(blockNumber int) (common.Hash, error)
 }
 
-type stateHashProvider struct {
+func MakeHashProvider(db db.BaseDB) HashProvider {
+	return &hashProvider{db}
+}
+
+type hashProvider struct {
 	db db.BaseDB
 }
 
-func (p *stateHashProvider) GetStateHash(number int) (common.Hash, error) {
+func (p *hashProvider) GetBlockHash(number int) (common.Hash, error) {
+	blockHash, err := p.db.Get(BlockHashDBKey(uint64(number)))
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	if blockHash == nil {
+		return common.Hash{}, nil
+	}
+
+	return common.Hash(blockHash), nil
+}
+
+func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 	hex := strconv.FormatUint(uint64(number), 16)
-	stateRoot, err := p.db.Get([]byte(StateHashPrefix + "0x" + hex))
+	stateRoot, err := p.db.Get([]byte(StateRootHashPrefix + "0x" + hex))
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -147,7 +182,7 @@ func getClient(ctx context.Context, chainId ChainID, ipcPath string, log logger.
 
 // SaveStateRoot saves the state root hash to the database
 func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
-	fullPrefix := StateHashPrefix + blockNumber
+	fullPrefix := StateRootHashPrefix + blockNumber
 	err := db.Put([]byte(fullPrefix), hexutils.HexToBytes(strings.TrimPrefix(stateRoot, "0x")))
 	if err != nil {
 		return fmt.Errorf("unable to put state hash for block %s: %v", blockNumber, err)
@@ -156,7 +191,7 @@ func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
 }
 
 // retrieveStateRoot gets the state root hash from the rpc node
-func retrieveStateRoot(client *rpc.Client, blockNumber string) (map[string]interface{}, error) {
+func retrieveStateRoot(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
 	var block map[string]interface{}
 	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
 	if err != nil {
@@ -167,7 +202,7 @@ func retrieveStateRoot(client *rpc.Client, blockNumber string) (map[string]inter
 
 // StateHashKeyToUint64 converts a state hash key to a uint64
 func StateHashKeyToUint64(hexBytes []byte) (uint64, error) {
-	prefix := []byte(StateHashPrefix)
+	prefix := []byte(StateRootHashPrefix)
 
 	if len(hexBytes) >= len(prefix) && bytes.HasPrefix(hexBytes, prefix) {
 		hexBytes = hexBytes[len(prefix):]
@@ -184,7 +219,7 @@ func StateHashKeyToUint64(hexBytes []byte) (uint64, error) {
 // GetFirstStateHash returns the first block number for which we have a state hash
 func GetFirstStateHash(db db.BaseDB) (uint64, error) {
 	// TODO MATEJ will be fixed in future commit
-	//iter := db.NewIterator([]byte(StateHashPrefix), []byte("0x"))
+	//iter := db.NewIterator([]byte(StateRootHashPrefix), []byte("0x"))
 	//
 	//defer iter.Release()
 	//
@@ -204,6 +239,13 @@ func GetFirstStateHash(db db.BaseDB) (uint64, error) {
 // GetLastStateHash returns the last block number for which we have a state hash
 func GetLastStateHash(db db.BaseDB) (uint64, error) {
 	// TODO MATEJ will be fixed in future commit
-	//return GetLastKey(db, StateHashPrefix)
+	//return GetLastKey(db, StateRootHashPrefix)
 	return 0, fmt.Errorf("not implemented")
+}
+
+func BlockHashDBKey(block uint64) []byte {
+	prefix := []byte(BlockHashPrefix)
+	blockByte := make([]byte, 8)
+	binary.BigEndian.PutUint64(blockByte[0:8], block)
+	return append(prefix, blockByte...)
 }

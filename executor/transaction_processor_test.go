@@ -17,6 +17,8 @@
 package executor
 
 import (
+	"errors"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
@@ -40,7 +42,7 @@ func TestPrepareBlockCtx(t *testing.T) {
 
 	var hashError error
 	// BlockHashes are nil, expect an error
-	blockCtx := prepareBlockCtx(env, &hashError)
+	blockCtx := utils.PrepareBlockCtx(env, &hashError)
 
 	if blocknum != blockCtx.BlockNumber.Uint64() {
 		t.Fatalf("Wrong block number")
@@ -57,32 +59,10 @@ func TestPrepareBlockCtx(t *testing.T) {
 }
 
 func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) {
-	isOpera := func(t *testing.T, p processor, name string) {
-		processor, ok := p.(*aidaProcessor)
+	isAida := func(t *testing.T, p processor, name string) {
+		_, ok := p.(*aidaProcessor)
 		if !ok {
 			t.Fatalf("Expected aidaProcessor from '%s', got %T", name, p)
-		}
-
-		cfg := processor.vmCfg
-		if !cfg.ChargeExcessGas ||
-			!cfg.IgnoreGasFeeCap ||
-			!cfg.InsufficientBalanceIsNotAnError ||
-			!cfg.SkipTipPaymentToCoinbase {
-			t.Fatalf("Expected Opera features to be enabled")
-		}
-	}
-	isEthereum := func(t *testing.T, p processor, name string) {
-		processor, ok := p.(*aidaProcessor)
-		if !ok {
-			t.Fatalf("Expected aidaProcessor from '%s', got %T", name, p)
-		}
-
-		cfg := processor.vmCfg
-		if cfg.ChargeExcessGas ||
-			cfg.IgnoreGasFeeCap ||
-			cfg.InsufficientBalanceIsNotAnError ||
-			cfg.SkipTipPaymentToCoinbase {
-			t.Fatalf("Expected Opera features to be disabled")
 		}
 	}
 	isTosca := func(t *testing.T, p processor, name string) {
@@ -92,9 +72,9 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 	}
 
 	tests := map[string]func(*testing.T, processor, string){
-		"":         isOpera,
-		"opera":    isOpera,
-		"ethereum": isEthereum,
+		"":         isAida,
+		"opera":    isAida,
+		"ethereum": isAida,
 	}
 
 	for name := range tosca.GetAllRegisteredProcessorFactories() {
@@ -118,6 +98,28 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 		})
 	}
 
+}
+
+func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID: utils.MainnetChainID,
+		EvmImpl: "tosca",
+		VmImpl:  "invalid",
+	}
+	_, err := MakeTxProcessor(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to create interpreter invalid, error interpreter not found: invalid")
+}
+
+func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID: utils.MainnetChainID,
+		EvmImpl: "invalid",
+		VmImpl:  "lfvm",
+	}
+	_, err := MakeTxProcessor(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown EVM implementation: invalid")
 }
 
 func TestEthTestProcessor_DoesNotExecuteTransactionWhenBlobGasCouldExceed(t *testing.T) {
@@ -181,4 +183,19 @@ func TestEthTestProcessor_DoesNotExecuteTransactionWithInvalidTxBytes(t *testing
 			}
 		})
 	}
+}
+
+func TestMessageResult(t *testing.T) {
+	e := errors.New("error")
+	res := executionResult(messageResult{
+		failed:     true,
+		returnData: []byte{0x12},
+		gasUsed:    10,
+		err:        e,
+	})
+
+	require.True(t, res.Failed())
+	require.Equal(t, res.Return(), []byte{0x12})
+	require.Equal(t, res.GetGasUsed(), uint64(10))
+	require.ErrorIs(t, res.GetError(), e)
 }

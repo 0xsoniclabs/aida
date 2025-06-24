@@ -16,6 +16,8 @@
 
 package txcontext
 
+//go:generate mockgen -source block_environment.go -destination block_environment_mock.go -package txcontext
+
 import (
 	"math/big"
 
