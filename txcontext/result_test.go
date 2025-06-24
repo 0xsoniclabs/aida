@@ -3,7 +3,6 @@
 package txcontext
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,27 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// mockResult implements the Result interface for testing
-type mockResult struct {
-	receipt  Receipt
-	rawData  []byte
-	rawError error
-	gasUsed  uint64
-}
-
-func (m mockResult) GetReceipt() Receipt {
-	return m.receipt
-}
-
-func (m mockResult) GetRawResult() ([]byte, error) {
-	return m.rawData, m.rawError
-}
-
-func (m mockResult) GetGasUsed() uint64 {
-	return m.gasUsed
-}
-
-func TestNewResult(t *testing.T) {
+func TestResult_NewResult(t *testing.T) {
 	// Test parameters
 	status := uint64(1)
 	bloom := types.Bloom{}
@@ -50,7 +29,7 @@ func TestNewResult(t *testing.T) {
 	assert.Equal(t, gasUsed, receipt.GetGasUsed())
 }
 
-func TestReceiptEqual(t *testing.T) {
+func TestResult_ReceiptEqual(t *testing.T) {
 	// Create common test data
 	logs1 := []*types.Log{
 		{
@@ -152,32 +131,7 @@ func TestReceiptEqual(t *testing.T) {
 	assert.False(t, ReceiptEqual(receipt1, receiptDiffData))
 }
 
-func TestResultInterface(t *testing.T) {
-	// Create a receipt for the mock result
-	receipt := NewResult(1, types.Bloom{}, []*types.Log{}, common.HexToAddress("0x1"), 21000)
-
-	// Create a mock result with the receipt
-	rawData := []byte("test data")
-	rawError := errors.New("test error")
-	gasUsed := uint64(21000)
-	mockRes := mockResult{
-		receipt:  receipt,
-		rawData:  rawData,
-		rawError: rawError,
-		gasUsed:  gasUsed,
-	}
-
-	// Test the Result interface methods
-	assert.Equal(t, receipt, mockRes.GetReceipt())
-
-	resultData, resultErr := mockRes.GetRawResult()
-	assert.Equal(t, rawData, resultData)
-	assert.Equal(t, rawError, resultErr)
-
-	assert.Equal(t, gasUsed, mockRes.GetGasUsed())
-}
-
-func TestReceiptInstance(t *testing.T) {
+func TestResult_ReceiptEqual2(t *testing.T) {
 	// Create a receipt
 	status := uint64(1)
 	bloom := types.Bloom{}
@@ -192,13 +146,6 @@ func TestReceiptInstance(t *testing.T) {
 	gasUsed := uint64(21000)
 
 	receipt := NewResult(status, bloom, logs, contractAddress, gasUsed)
-
-	// Test the Receipt interface methods directly on the implementation
-	assert.Equal(t, status, receipt.GetStatus())
-	assert.Equal(t, bloom, receipt.GetBloom())
-	assert.Equal(t, logs, receipt.GetLogs())
-	assert.Equal(t, contractAddress, receipt.GetContractAddress())
-	assert.Equal(t, gasUsed, receipt.GetGasUsed())
 
 	// Test the Equal method
 	identicalReceipt := NewResult(status, bloom, logs, contractAddress, gasUsed)

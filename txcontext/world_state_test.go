@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewWorldState(t *testing.T) {
+func TestWorldState_NewWorldState(t *testing.T) {
 	// Create a new empty world state
 	ws := NewWorldState(make(map[common.Address]Account))
 	assert.Equal(t, 0, ws.Len())
@@ -30,7 +30,7 @@ func TestNewWorldState(t *testing.T) {
 	assert.Equal(t, 2, ws.Len())
 }
 
-func TestWorldStateGetAndHas(t *testing.T) {
+func TestWorldState_GetAndHas(t *testing.T) {
 	addr1 := common.HexToAddress("0x1")
 	addr2 := common.HexToAddress("0x2")
 	nonExistentAddr := common.HexToAddress("0x3")
@@ -56,7 +56,7 @@ func TestWorldStateGetAndHas(t *testing.T) {
 	assert.Nil(t, ws.Get(nonExistentAddr))
 }
 
-func TestWorldStateDelete(t *testing.T) {
+func TestWorldState_Delete(t *testing.T) {
 	addr1 := common.HexToAddress("0x1")
 	addr2 := common.HexToAddress("0x2")
 
@@ -82,7 +82,7 @@ func TestWorldStateDelete(t *testing.T) {
 	assert.Equal(t, 1, ws.Len())
 }
 
-func TestWorldStateForEachAccount(t *testing.T) {
+func TestWorldState_ForEachAccount(t *testing.T) {
 	addr1 := common.HexToAddress("0x1")
 	addr2 := common.HexToAddress("0x2")
 
@@ -107,7 +107,7 @@ func TestWorldStateForEachAccount(t *testing.T) {
 	assert.Equal(t, acc2, visitedAccounts[addr2])
 }
 
-func TestWorldStateEqual(t *testing.T) {
+func TestWorldState_Equal(t *testing.T) {
 	addr1 := common.HexToAddress("0x1")
 	addr2 := common.HexToAddress("0x2")
 
@@ -161,7 +161,7 @@ func TestWorldStateEqual(t *testing.T) {
 	assert.False(t, ws1.Equal(ws5))
 }
 
-func TestWorldStateString(t *testing.T) {
+func TestWorldState_String(t *testing.T) {
 	addr1 := common.HexToAddress("0x1")
 	addr2 := common.HexToAddress("0x2")
 
