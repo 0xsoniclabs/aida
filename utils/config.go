@@ -398,7 +398,7 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 	if err != nil {
 		t.Fatalf("cannot get chain cfg: %v", err)
 	}
-	vmCfg := opera.DefaultVMConfig
+	vmCfg := opera.GetVmConfig(opera.Rules{}) // default VM config
 	vmCfg.NoBaseFee = true
 	vmCfg.Tracer = nil
 	vmCfg.Interpreter = nil
@@ -973,8 +973,22 @@ func (cc *configContext) setChainConfig() (err error) {
 
 func (cc *configContext) setVmConfig() (err error) {
 	if !IsEthereumNetwork(cc.cfg.ChainID) {
+		// The default VM config is sufficient for all Sonic blocks that have
+		// been created using the Multi-Proposer mode (aka. distributed block
+		// formation). With the switch to the Single-Proposer mode, the charging
+		// of excess gas is removed. This can be disabled by setting
+		//
+		// vmConfig.ChargeExcessGas = false
+		//
+		// or by passing rules with the corresponding feature being enabled to
+		// the opera.GetVmConfig function. However, right now, there seems to be
+		// no information about the network rules available in the substates,
+		// making this distinction impossible. This information may have to be
+		// tracked explicitly in the future.
+		defaultVmConfig := opera.GetVmConfig(opera.Rules{})
+
 		// SonicMainnetChainID, TestnetChainID, MainnetChainID:
-		cc.cfg.VmCfg = opera.DefaultVMConfig
+		cc.cfg.VmCfg = defaultVmConfig
 		cc.cfg.VmCfg.NoBaseFee = true
 	}
 

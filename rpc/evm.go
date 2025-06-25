@@ -144,7 +144,12 @@ func (e *EvmExecutor) newEVM(msg *core.Message, hashErr *error) *vm.EVM {
 		Time:        e.timestamp,
 	}
 
-	vmConfig = opera.DefaultVMConfig
+	// The default rules only work until there are blocks that have been created
+	// using the single-proposer mode. The crucial difference in the VM setup is
+	// that in the single-proposer mode the charging of excess gas is disabled,
+	// while in the distributed-proposer mode (the default mode), it is enabled.
+	defaultVmConfig := opera.GetVmConfig(opera.Rules{})
+	vmConfig = defaultVmConfig
 	vmConfig.NoBaseFee = true
 	vmConfig.Interpreter = e.vmImpl
 
