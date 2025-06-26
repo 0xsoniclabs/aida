@@ -145,6 +145,7 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 				{"Noticef", "Found %v deleted accounts", []interface{}{0}},
 				{"Noticef", "Found %v state-hashes", []interface{}{uint64(0)}},
 				{"Noticef", "Found %v block-hashes", []interface{}{uint64(0)}},
+				{"Noticef", "Found %v exceptions", []interface{}{0}},
 			},
 		},
 		{
@@ -350,6 +351,8 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find exception range; %v", []interface{}{gomock.Any()}},
 			},
 		},
 		{
