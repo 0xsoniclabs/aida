@@ -438,7 +438,7 @@ var (
 	}
 	DbComponentFlag = cli.StringFlag{
 		Name:     "db-component",
-		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")",
+		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")",
 		Required: true,
 	}
 	TxGeneratorTypeFlag = cli.StringSliceFlag{
