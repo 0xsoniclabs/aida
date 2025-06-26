@@ -18,6 +18,7 @@ package db
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -41,6 +42,7 @@ var InfoCommand = cli.Command{
 		&cmdCount,
 		&cmdRange,
 		&cmdPrintStateHash,
+		&cmdPrintException,
 	},
 }
 
@@ -91,6 +93,16 @@ var cmdPrintStateHash = cli.Command{
 	},
 }
 
+var cmdPrintException = cli.Command{
+	Action:    printException,
+	Name:      "exception",
+	Usage:     "Prints exception for given block number.",
+	ArgsUsage: "<BlockNum>",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+	},
+}
+
 // printCountRun prints count of given db component in given AidaDb
 func printCountRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
@@ -124,6 +136,8 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 		}
 	}()
 
+	var errResult error
+
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
@@ -139,6 +153,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
 		count, err := utildb.GetUpdateCount(cfg, base)
 		if err != nil {
+			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print update count; %v", err)
 		} else {
 			log.Noticef("Found %v updates", count)
@@ -149,6 +164,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
 		count, err := utildb.GetDeletedCount(cfg, base)
 		if err != nil {
+			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print deleted count; %v", err)
 		} else {
 			log.Noticef("Found %v deleted accounts", count)
@@ -159,13 +175,25 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		count, err := utildb.GetStateHashCount(cfg, base)
 		if err != nil {
+			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print state hash count; %v", err)
 		} else {
 			log.Noticef("Found %v state-hashes", count)
 		}
 	}
 
-	return nil
+	// print exception count
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		count, err := utildb.GetExceptionCount(cfg, base)
+		if err != nil {
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print exception count; %v", err)
+		} else {
+			log.Noticef("Found %v exceptions", count)
+		}
+	}
+
+	return errResult
 }
 
 // printRangeRun prints range of given db component in given AidaDb
@@ -247,6 +275,28 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 			log.Warningf("cannot find state hash range; %v", err)
 		} else {
 			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
+		}
+		err = bdb.Close()
+		if err != nil {
+			log.Warningf("Error closing base db: %v", err)
+		}
+	}
+
+	// print exception range
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		edb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open update db")
+		}
+		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInException(edb)
+		if err != nil {
+			log.Warningf("cannot find exception range; %v", err)
+		} else {
+			log.Infof("Exception block range: %v - %v", firstUsBlock, lastUsBlock)
+		}
+		err = edb.Close()
+		if err != nil {
+			log.Warningf("Error closing exception db: %v", err)
 		}
 	}
 	return nil
@@ -339,6 +389,39 @@ func printStateHash(ctx *cli.Context) error {
 	}
 
 	log.Noticef("State hash for block %v is 0x%v", blockNum, hex.EncodeToString(bytes))
+
+	return nil
+}
+
+func printException(ctx *cli.Context) error {
+	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	if argErr != nil {
+		return argErr
+	}
+
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-Exception")
+
+	blockNum, err := strconv.ParseUint(ctx.Args().Slice()[0], 10, 64)
+	if err != nil {
+		return err
+	}
+
+	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %v", err)
+	}
+
+	exception, err := exceptionDb.GetException(blockNum)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			log.Warningf("No exception found for block %d", blockNum)
+			return nil
+		}
+
+		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
+	}
+
+	log.Noticef("Exception for block %v: %v", blockNum, exception)
 
 	return nil
 }

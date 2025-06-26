@@ -76,6 +76,15 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 		log.Infof("State-Hashes hash: %x; count %v", aidaDbStateHashesHash, count)
 	}
 
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		log.Info("Generating Exception hash...")
+		exceptionHash, count, err := GetExceptionDbHash(cfg, base, log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Exception hash: %x; count %v", exceptionHash, count)
+	}
+
 	return nil
 }
 
@@ -233,7 +242,7 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 		for ; i <= cfg.Last; i++ {
 			select {
 			case <-ticker.C:
-				log.Infof("Stat-Hashes hash progress: %v/%v", i, cfg.Last)
+				log.Infof("State-Hashes hash progress: %v/%v", i, cfg.Last)
 			default:
 			}
 
@@ -255,6 +264,51 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 		}
 	}
 
+	return parallelHashComputing(feeder)
+}
+
+func GetExceptionDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	feeder := func(feederChan chan any, errChan chan error) {
+		defer close(feederChan)
+
+		startingBlockBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+
+		edb := db.MakeDefaultExceptionDBFromBaseDB(base)
+		iter := edb.NewIterator([]byte(db.ExceptionDBPrefix), startingBlockBytes)
+		defer iter.Release()
+
+		i := 0
+		for iter.Next() {
+			i++
+			select {
+			case <-ticker.C:
+				log.Infof("Block-Hashes hash progress: %v/%v", i, cfg.Last)
+			default:
+			}
+
+			block, err := db.DecodeExceptionDBKey(iter.Key())
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if block > cfg.Last {
+				break
+			}
+
+			// make copy of value before sending to channel
+			value := bytes.Clone(iter.Value())
+			select {
+			case err = <-errChan:
+				errChan <- err
+				return
+			case feederChan <- value:
+			}
+		}
+	}
 	return parallelHashComputing(feeder)
 }
 
