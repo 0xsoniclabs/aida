@@ -409,7 +409,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		db.GetStorageRoot(addr)
 
 	case GetTransientStateID:
-		db.GetState(addr, key)
+		db.GetTransientState(addr, key)
 
 	case HasSelfDestructedID:
 		db.HasSelfDestructed(addr)
@@ -494,7 +494,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
-		ss.log.Fatal("invalid operation "+opText[op])
+		ss.log.Fatal("invalid operation " + opText[op])
 	}
 }
 
