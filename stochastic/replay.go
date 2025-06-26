@@ -29,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
 )
@@ -319,12 +320,15 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		// print indexes of contract address, storage key, and storage value.
 		if addrCl != statistics.NoArgID {
 			ss.log.Infof(" addr-idx: %v", addrIdx)
+			ss.log.Infof(" addr: %v", addr)
 		}
 		if keyCl != statistics.NoArgID {
 			ss.log.Infof(" key-idx: %v", keyIdx)
+			ss.log.Infof(" key: %v", key)
 		}
 		if valueCl != statistics.NoArgID {
 			ss.log.Infof(" value-idx: %v", valueIdx)
+			ss.log.Infof(" value: %v", value)
 		}
 	}
 
@@ -359,10 +363,14 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		ss.selfDestructed = []int64{}
 
 	case CreateAccountID:
-		db.CreateAccount(addr)
+		if !db.Exist(addr) {
+			db.CreateAccount(addr)
+		}
 
 	case CreateContractID:
-		db.CreateContract(addr)
+		if db.Exist(addr) {
+			db.CreateContract(addr)
+		}
 
 	case EmptyID:
 		db.Empty(addr)
@@ -409,7 +417,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		db.GetStorageRoot(addr)
 
 	case GetTransientStateID:
-		db.GetState(addr, key)
+		db.GetTransientState(addr, key)
 
 	case HasSelfDestructedID:
 		db.HasSelfDestructed(addr)
@@ -489,7 +497,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
-		ss.log.Fatal("invalid operation "+opText[op])
+		ss.log.Fatal("invalid operation " + opText[op])
 	}
 }
 
@@ -531,9 +539,9 @@ func toAddress(idx int64) common.Address {
 	if idx < 0 {
 		panic("invalid index")
 	} else if idx != 0 {
-		arr := make([]byte, 8)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		a.SetBytes(arr)
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		a.SetBytes(crypto.Keccak256(arr))
 	}
 	return a
 }
@@ -544,10 +552,9 @@ func toHash(idx int64) common.Hash {
 	if idx < 0 {
 		panic("invalid index")
 	} else if idx != 0 {
-		// TODO: Improve encoding so that index conversion becomes sparse.
-		arr := make([]byte, 32)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		h.SetBytes(arr)
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		return crypto.Keccak256Hash(arr)
 	}
 	return h
 }

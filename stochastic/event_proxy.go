@@ -227,7 +227,7 @@ func (p *EventProxy) RevertToSnapshot(snapshot int) {
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
 			p.registry.RegisterSnapshotDelta(len(p.snapshots) - i - 1)
-			p.snapshots = p.snapshots[0:i+1]
+			p.snapshots = p.snapshots[0 : i]
 			break
 		}
 	}
@@ -292,7 +292,6 @@ func (p *EventProxy) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 func (p *EventProxy) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
 	return p.db.Commit(block, deleteEmptyObjects)
 }
-
 
 func (p *EventProxy) GetHash() (common.Hash, error) {
 	return p.db.GetHash()
@@ -395,4 +394,3 @@ func (p *EventProxy) GetArchiveBlockHeight() (uint64, bool, error) {
 func (p *EventProxy) GetShadowDB() state.StateDB {
 	return p.db.GetShadowDB()
 }
-
