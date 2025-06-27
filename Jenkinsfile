@@ -71,7 +71,7 @@ pipeline {
                     }
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                             sh 'go test ./... -coverprofile=coverage.txt'
+                             sh 'go test ./... -coverprofile=coverage.txt -coverpkg=./...'
                              sh ('codecov upload-process -r 0xsoniclabs/aida -f ./coverage.txt -t ${CODECOV_TOKEN}')
                         }
                     }
