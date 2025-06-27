@@ -356,7 +356,7 @@ func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
 
 func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	if db, ok := s.db.(*geth.StateDB); ok {
-		return db.GetLogs(hash, block, blockHash, blkTimestamp) // TODO: pass block timestamp
+		return db.GetLogs(hash, block, blockHash, blkTimestamp)
 	}
 	return []*types.Log{}
 }
