@@ -93,11 +93,10 @@ func CreateTestStJson(*testing.T) *stJSON {
 			BaseFee:    newBigInt(1),
 		},
 		Pre: types.GenesisAlloc{common.Address{0x2}: types.Account{
-			Code:       []byte{1},
-			Storage:    make(map[common.Hash]common.Hash),
-			Balance:    big.NewInt(1),
-			Nonce:      1,
-			PrivateKey: []byte{2},
+			Code:    []byte{1},
+			Storage: make(map[common.Hash]common.Hash),
+			Balance: big.NewInt(1),
+			Nonce:   1,
 		}},
 		Tx: stTransaction{
 			Data:          []string{data1, data2, data3, data4},
