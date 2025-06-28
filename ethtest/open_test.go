@@ -27,7 +27,7 @@ func createConfigFile(t *testing.T, path string) {
 	}
 }
 
-func TestGetTestWithinPath(t *testing.T) {
+func TestEthTest_getTestWithinPath(t *testing.T) {
 	tmp := t.TempDir()
 	t.Run("no file", func(t *testing.T) {
 		cfg := &utils.Config{

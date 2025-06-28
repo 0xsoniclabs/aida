@@ -211,7 +211,7 @@ func TestStTransaction_ToMessageError(t *testing.T) {
 
 }
 
-func TestBigMin(t *testing.T) {
+func TestEthTest_bigMin(t *testing.T) {
 	a := big.NewInt(1)
 	b := big.NewInt(2)
 	assert.Equal(t, a, bigMin(a, b))
