@@ -117,6 +117,7 @@ func TestPrintCount_LoggingEmpty(t *testing.T) {
 				{"Noticef", "Found %v updates", []interface{}{uint64(0)}},
 				{"Noticef", "Found %v deleted accounts", []interface{}{0}},
 				{"Noticef", "Found %v state-hashes", []interface{}{uint64(0)}},
+				{"Noticef", "Found %v exceptions", []interface{}{0}},
 			},
 		},
 		{
@@ -242,6 +243,7 @@ func TestPrintRange_LoggingEmpty(t *testing.T) {
 				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find exception range; %v", []interface{}{gomock.Any()}},
 			},
 		},
 		{

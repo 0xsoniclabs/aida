@@ -74,6 +74,21 @@ func FindBlockRangeInStateHash(db db.BaseDB, log logger.Logger) (uint64, uint64,
 	return firstStateHashBlock, lastStateHashBlock, nil
 }
 
+// FindBlockRangeInException finds the first and last block in the exception
+func FindBlockRangeInException(udb db.ExceptionDB) (uint64, uint64, error) {
+	firstBlock, err := udb.GetFirstKey()
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot get first exception; %v", err)
+	}
+
+	// get last exception
+	lastBlock, err := udb.GetLastKey()
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot get last exception; %v", err)
+	}
+	return firstBlock, lastBlock, nil
+}
+
 // GetSubstateCount in given AidaDb
 func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
 
@@ -147,6 +162,29 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 				continue
 			}
 			return 0, err
+		}
+		count++
+	}
+
+	return count, nil
+}
+
+// GetExceptionCount in given AidaDb
+func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
+	startingBlockBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+
+	iter := database.NewIterator([]byte(db.ExceptionDBPrefix), startingBlockBytes)
+	defer iter.Release()
+
+	count := 0
+	for iter.Next() {
+		block, err := db.DecodeExceptionDBKey(iter.Key())
+		if err != nil {
+			return 0, fmt.Errorf("cannot Get all destroyed accounts; %v", err)
+		}
+		if block > cfg.Last {
+			break
 		}
 		count++
 	}
