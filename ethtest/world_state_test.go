@@ -21,7 +21,7 @@ func makeTestAlloc() types.GenesisAlloc {
 	}
 }
 
-func TestNewWorldState(t *testing.T) {
+func TestWorldStateAlloc_NewWorldState(t *testing.T) {
 	alloc := makeTestAlloc()
 	ws := NewWorldState(alloc)
 	assert.NotNil(t, ws)
