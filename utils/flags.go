@@ -327,7 +327,7 @@ var (
 		Usage: "Depth of snapshot history",
 		Value: 100,
 	}
-	OperaDbFlag = cli.PathFlag{
+	ClientDbFlag = cli.PathFlag{
 		Name:    "db",
 		Aliases: []string{"datadir"},
 		Usage:   "Path to the opera database",
@@ -438,7 +438,7 @@ var (
 	}
 	DbComponentFlag = cli.StringFlag{
 		Name:     "db-component",
-		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\")",
+		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")",
 		Required: true,
 	}
 	TxGeneratorTypeFlag = cli.StringSliceFlag{

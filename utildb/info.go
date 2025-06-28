@@ -57,7 +57,7 @@ func FindBlockRangeInDeleted(ddb *db.DestroyedAccountDB) (uint64, uint64, error)
 	return firstBlock, lastBlock, nil
 }
 
-// FindBlockRangeInStateHash finds the first and last block in the state hash
+// FindBlockRangeInStateHash finds the first and last block of block hashes within given AidaDb
 func FindBlockRangeInStateHash(db db.BaseDB, log logger.Logger) (uint64, uint64, error) {
 	var firstStateHashBlock, lastStateHashBlock uint64
 	var err error
@@ -74,9 +74,25 @@ func FindBlockRangeInStateHash(db db.BaseDB, log logger.Logger) (uint64, uint64,
 	return firstStateHashBlock, lastStateHashBlock, nil
 }
 
+// FindBlockRangeOfBlockHashes finds the first and last block in the block hash
+func FindBlockRangeOfBlockHashes(db db.BaseDB, log logger.Logger) (uint64, uint64, error) {
+	var firstBlock, lastBlock uint64
+	var err error
+
+	firstBlock, err = utils.GetFirstBlockHash(db)
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot get first block hash; %v", err)
+	}
+	lastBlock, err = utils.GetLastBlockHash(db)
+	if err != nil {
+		log.Infof("Found first block hash at %v", firstBlock)
+		return 0, 0, fmt.Errorf("cannot get last block hash; %v", err)
+	}
+	return firstBlock, lastBlock, nil
+}
+
 // GetSubstateCount in given AidaDb
 func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
-
 	var count uint64
 
 	iter := sdb.NewSubstateIterator(int(cfg.First), 10)
@@ -142,6 +158,25 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	hashProvider := utils.MakeHashProvider(database)
 	for i := cfg.First; i <= cfg.Last; i++ {
 		_, err := hashProvider.GetStateRootHash(int(i))
+		if err != nil {
+			if errors.Is(err, leveldb.ErrNotFound) {
+				continue
+			}
+			return 0, err
+		}
+		count++
+	}
+
+	return count, nil
+}
+
+// GetBlockHashCount in given AidaDb
+func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+	var count uint64
+
+	hashProvider := utils.MakeHashProvider(database)
+	for i := cfg.First; i <= cfg.Last; i++ {
+		_, err := hashProvider.GetBlockHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				continue

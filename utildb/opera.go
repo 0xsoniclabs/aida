@@ -53,7 +53,7 @@ func (opera *aidaOpera) init() error {
 	/*
 		var err error
 
-		_, err = os.Stat(opera.cfg.OperaDb)
+		_, err = os.Stat(opera.cfg.ClientDb)
 		if os.IsNotExist(err) {
 			opera.isNew = true
 
@@ -83,7 +83,7 @@ func (opera *aidaOpera) init() error {
 		// running this command before starting opera results in getting first block and epoch on which opera starts
 		err = opera.getOperaBlockAndEpoch(true)
 		if err != nil {
-			return fmt.Errorf("cannot retrieve block from existing opera database %v; %v", opera.cfg.OperaDb, err)
+			return fmt.Errorf("cannot retrieve block from existing opera database %v; %v", opera.cfg.ClientDb, err)
 		}
 
 		opera.log.Noticef("Opera block from last run is: %v", opera.firstBlock)
@@ -107,7 +107,7 @@ func createTmpDir(cfg *utils.Config) (string, error) {
 
 // initFromGenesis file
 func (opera *aidaOpera) initFromGenesis() error {
-	cmd := exec.Command(getOperaBinary(opera.cfg), "--datadir", opera.cfg.OperaDb, "--genesis", opera.cfg.Genesis,
+	cmd := exec.Command(getOperaBinary(opera.cfg), "--datadir", opera.cfg.ClientDb, "--genesis", opera.cfg.Genesis,
 		"--exitwhensynced.epoch=0", "--cache", strconv.Itoa(opera.cfg.Cache), "--db.preset=legacy-ldb", "--maxpeers=0")
 
 	err := runCommand(cmd, nil, nil, opera.log)
@@ -123,7 +123,7 @@ func (opera *aidaOpera) getOperaBlockAndEpoch(isFirst bool) error {
 	// TODO resolve dependencies
 	panic("feature not supported")
 	/*
-		operaPath := filepath.Join(opera.cfg.OperaDb, "/chaindata/leveldb-fsh/")
+		operaPath := filepath.Join(opera.cfg.ClientDb, "/chaindata/leveldb-fsh/")
 		store, err := wsOpera.Connect("ldb", operaPath, "main")
 		if err != nil {
 			return err
@@ -158,12 +158,12 @@ func (opera *aidaOpera) getOperaBlockAndEpoch(isFirst bool) error {
 func (opera *aidaOpera) prepareDumpCliContext() error {
 	// TODO: resolve dependencies
 	/*
-		// Dump uses cfg.OperaDb and overwrites it therefore the original value needs to be saved and retrieved after DumpState
-		tmpSaveDbPath := opera.cfg.OperaDb
+		// Dump uses cfg.ClientDb and overwrites it therefore the original value needs to be saved and retrieved after DumpState
+		tmpSaveDbPath := opera.cfg.ClientDb
 		defer func() {
-			opera.cfg.OperaDb = tmpSaveDbPath
+			opera.cfg.ClientDb = tmpSaveDbPath
 		}()
-		opera.cfg.OperaDb = filepath.Join(opera.cfg.OperaDb, "chaindata/leveldb-fsh/")
+		opera.cfg.ClientDb = filepath.Join(opera.cfg.ClientDb, "chaindata/leveldb-fsh/")
 		opera.cfg.DbVariant = "ldb"
 		err := state.DumpState(opera.ctx, opera.cfg)
 		if err != nil {

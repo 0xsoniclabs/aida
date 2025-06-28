@@ -77,7 +77,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		NonceRange:               getFlagValue(ctx, NonceRangeFlag).(int),
 		OnlySuccessful:           getFlagValue(ctx, OnlySuccessfulFlag).(bool),
 		OperaBinary:              getFlagValue(ctx, OperaBinaryFlag).(string),
-		OperaDb:                  getFlagValue(ctx, OperaDbFlag).(string),
+		ClientDb:                 getFlagValue(ctx, ClientDbFlag).(string),
 		Output:                   getFlagValue(ctx, OutputFlag).(string),
 		OverwriteRunId:           getFlagValue(ctx, OverwriteRunIdFlag).(string),
 		PrimeRandom:              getFlagValue(ctx, RandomizePrimingFlag).(bool),

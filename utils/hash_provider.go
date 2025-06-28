@@ -79,6 +79,10 @@ func (p *hashProvider) GetBlockHash(number int) (common.Hash, error) {
 		return common.Hash{}, nil
 	}
 
+	if len(blockHash) != 32 {
+		return common.Hash{}, fmt.Errorf("invalid block hash length for block %d: expected 32 bytes, got %d bytes", number, len(blockHash))
+	}
+
 	return common.Hash(blockHash), nil
 }
 
@@ -93,14 +97,16 @@ func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 		return common.Hash{}, nil
 	}
 
-	return common.Hash(stateRoot), nil
+	if len(stateRoot) != 32 {
+		return common.Hash{}, fmt.Errorf("invalid state root length for block %d: expected 32 bytes, got %d bytes", number, len(stateRoot))
+	}
+
+	return common.BytesToHash(stateRoot), nil
 }
 
-// StateHashScraper scrapes state hashes from a node and saves them to a leveldb database
-func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
-	ipcPath := operaPath + "/sonic.ipc"
-
-	client, err := getClient(ctx, chainId, ipcPath, log)
+// StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
+func StateAndBlockHashScraper(ctx context.Context, chainId ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
+	client, err := getClient(ctx, chainId, clientDb, log)
 	if err != nil {
 		return err
 	}
@@ -111,7 +117,7 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 	// If firstBlock is 0, we need to get the state root for block 1 and save it as the state root for block 0
 	// this is because the correct state root for block 0 is not available from the rpc node (at least in fantom mainnet and testnet)
 	if firstBlock == 0 {
-		block, err := retrieveStateRoot(client, "0x1")
+		block, err := getBlockByNumber(client, "0x1")
 		if err != nil {
 			return err
 		}
@@ -124,12 +130,16 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 		if err != nil {
 			return err
 		}
+		err = SaveBlockHash(db, "0x1", block["hash"].(string))
+		if err != nil {
+			return err
+		}
 		i++
 	}
 
 	for ; i <= lastBlock; i++ {
 		blockNumber := fmt.Sprintf("0x%x", i)
-		block, err := retrieveStateRoot(client, blockNumber)
+		block, err := getBlockByNumber(client, blockNumber)
 		if err != nil {
 			return err
 		}
@@ -139,6 +149,10 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 		}
 
 		err = SaveStateRoot(db, blockNumber, block["stateRoot"].(string))
+		if err != nil {
+			return err
+		}
+		err = SaveBlockHash(db, blockNumber, block["hash"].(string))
 		if err != nil {
 			return err
 		}
@@ -152,32 +166,40 @@ func StateHashScraper(ctx context.Context, chainId ChainID, operaPath string, db
 }
 
 // getClient returns a rpc/ipc client
-func getClient(ctx context.Context, chainId ChainID, ipcPath string, log logger.Logger) (*rpc.Client, error) {
+func getClient(ctx context.Context, chainId ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
 	var client *rpc.Client
 	var err error
 
-	_, errIpc := os.Stat(ipcPath)
-	if errIpc == nil {
-		// ipc file exists
-		client, err = rpc.DialIPC(ctx, ipcPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to IPC at %s: %v", ipcPath, err)
-		}
-		log.Infof("Connected to IPC at %s", ipcPath)
-		return client, err
-	} else {
-		var provider string
-		provider, err = GetProvider(chainId)
-		if err != nil {
-			return nil, err
-		}
-		client, err = rpc.Dial(provider)
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to the RPC client at %s: %v", provider, err)
-		}
-		log.Infof("Connected to RPC at %s", provider)
-		return client, nil
+	// try both sonic and geth ipcs
+	ipcPaths := []string{
+		clientDb + "/sonic.ipc",
+		clientDb + "/geth.ipc",
 	}
+	for _, ipcPath := range ipcPaths {
+		_, errIpc := os.Stat(ipcPath)
+		if errIpc == nil {
+			// ipc file exists
+			client, err = rpc.DialIPC(ctx, ipcPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to connect to IPC at %s: %v", ipcPath, err)
+			}
+			log.Infof("Connected to IPC at %s", ipcPath)
+			return client, err
+		}
+	}
+
+	// if ipc file does not exist, try to connect to RPC
+	var provider string
+	provider, err = GetProvider(chainId)
+	if err != nil {
+		return nil, err
+	}
+	client, err = rpc.Dial(provider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to the RPC client at %s: %v", provider, err)
+	}
+	log.Infof("Connected to RPC at %s", provider)
+	return client, nil
 }
 
 // SaveStateRoot saves the state root hash to the database
@@ -190,8 +212,22 @@ func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
 	return nil
 }
 
-// retrieveStateRoot gets the state root hash from the rpc node
-func retrieveStateRoot(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
+// SaveBlockHash saves the block hash to the database
+func SaveBlockHash(db db.BaseDB, blockNumber string, hash string) error {
+	bn, err := strconv.ParseUint(strings.TrimPrefix(blockNumber, "0x"), 16, 64)
+	if err != nil {
+		return fmt.Errorf("invalid block number %s: %v", blockNumber, err)
+	}
+	fullPrefix := BlockHashDBKey(bn)
+	err = db.Put(fullPrefix, hexutils.HexToBytes(strings.TrimPrefix(hash, "0x")))
+	if err != nil {
+		return fmt.Errorf("unable to put state hash for block %s: %v", blockNumber, err)
+	}
+	return nil
+}
+
+// getBlockByNumber get block from the rpc node
+func getBlockByNumber(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
 	var block map[string]interface{}
 	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
 	if err != nil {
@@ -243,9 +279,53 @@ func GetLastStateHash(db db.BaseDB) (uint64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
+// GetFirstBlockHash returns the first block number for which we have a block hash
+func GetFirstBlockHash(db db.BaseDB) (uint64, error) {
+	iter := db.NewIterator([]byte(BlockHashPrefix), nil)
+	defer iter.Release()
+
+	if !iter.Next() {
+		return 0, fmt.Errorf("no block hash found")
+	}
+
+	firstBlock, err := DecodeBlockHashDBKey(iter.Key())
+	if err != nil {
+		return 0, err
+	}
+	return firstBlock, nil
+}
+
+// GetLastBlockHash returns the last block number for which we have a block hash
+func GetLastBlockHash(db db.BaseDB) (uint64, error) {
+	iter := db.NewIterator([]byte(BlockHashPrefix), nil)
+	defer iter.Release()
+
+	if !iter.Last() {
+		return 0, fmt.Errorf("no block hash found")
+	}
+
+	lastBlock, err := DecodeBlockHashDBKey(iter.Key())
+	if err != nil {
+		return 0, err
+	}
+	return lastBlock, nil
+}
+
 func BlockHashDBKey(block uint64) []byte {
 	prefix := []byte(BlockHashPrefix)
 	blockByte := make([]byte, 8)
 	binary.BigEndian.PutUint64(blockByte[0:8], block)
 	return append(prefix, blockByte...)
+}
+
+// DecodeBlockHashDBKey decodes a block hash key into a block number
+func DecodeBlockHashDBKey(data []byte) (uint64, error) {
+	if len(data) < len(BlockHashPrefix)+8 {
+		return 0, fmt.Errorf("invalid length of block hash key, expected at least %d, got %d", len(BlockHashPrefix)+8, len(data))
+	}
+	if !bytes.HasPrefix(data, []byte(BlockHashPrefix)) {
+		return 0, fmt.Errorf("invalid prefix of block hash key")
+	}
+	block := binary.BigEndian.Uint64(data[len(BlockHashPrefix):])
+	return block, nil
 }
