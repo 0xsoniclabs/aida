@@ -364,7 +364,8 @@ func TestPrintRange_IntegrationTest(t *testing.T) {
 	assert.NoError(t, err)
 
 	us := updateset.UpdateSet{
-		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+		WorldState: substate.
+			NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
 		Block:           0,
 		DeletedAccounts: []types.Address{},
 	}
