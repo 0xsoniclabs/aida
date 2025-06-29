@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/sigurn/crc8"
 )
@@ -146,7 +147,25 @@ func (h *Header) Namespace() (string, error) {
 		return "", fmt.Errorf("namespace not initialized")
 	}
 
-	for n, i := range namespaceDictionary {
+	// TODO may be bug
+	//for n, i := range namespaceDictionary {
+	//	if h.namespace == i {
+	//		return n, nil
+	//	}
+	//}
+
+	// Extract keys into a slice
+	var keys []string
+	for n := range namespaceDictionary {
+		keys = append(keys, n)
+	}
+
+	// Sort the keys
+	sort.Strings(keys)
+
+	// Iterate through sorted keys
+	for _, n := range keys {
+		i := namespaceDictionary[n]
 		if h.namespace == i {
 			return n, nil
 		}

@@ -24,10 +24,15 @@ import (
 	"sync"
 )
 
+//go:generate mockgen -source iterator.go -destination iterator_mock.go -package rpc
+type ProxyIoReadCloser interface {
+	io.ReadCloser
+}
+
 // iterator implements asynchronous data provider over a recorder API call set.
 type iterator struct {
 	ctx    context.Context
-	in     io.ReadCloser
+	in     ProxyIoReadCloser
 	closed chan interface{}
 	out    chan *RequestAndResults
 	item   *RequestAndResults
@@ -134,12 +139,13 @@ func (i *iterator) read() (*RequestAndResults, error) {
 		return nil, err
 	}
 
-	method, err := hdr.Method()
+	// TODO may be bug
+	namespace, err := hdr.Namespace()
 	if err != nil {
 		return nil, err
 	}
 
-	namespace, err := hdr.Namespace()
+	method, err := hdr.Method()
 	if err != nil {
 		return nil, err
 	}

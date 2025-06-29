@@ -176,6 +176,25 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	evm = e.newEVM(msg, hashErr)
 
 	executionResult, err = core.ApplyMessage(evm, msg, gp)
+	//TODO: bug
+	//if executionResult.Err != nil {
+	//	return nil, fmt.Errorf("execution returned err; %w", executionResult.Err)
+	//}
+	//
+	//if hashErr != nil {
+	//	return nil, fmt.Errorf("cannot get state hash; %w", *hashErr)
+	//}
+	//
+	//// If the timer caused an abort, return an appropriate error message
+	//if evm.Cancelled() {
+	//	return nil, fmt.Errorf("execution aborted: timeout")
+	//}
+	//if err != nil {
+	//	return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
+	//}
+	if err != nil {
+		return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
+	}
 	if executionResult.Err != nil {
 		return nil, fmt.Errorf("execution returned err; %w", executionResult.Err)
 	}
@@ -188,9 +207,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	if evm.Cancelled() {
 		return nil, fmt.Errorf("execution aborted: timeout")
 	}
-	if err != nil {
-		return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
-	}
+
 	return executionResult, nil
 
 }
@@ -295,13 +312,13 @@ func (e *EvmExecutor) findHiLoCap() (uint64, uint64, uint64, error) {
 			available.Sub(available, e.args.Value.ToInt())
 		}
 		allowance := new(big.Int).Div(available, feeCap)
-
 		// If the allowance is larger than maximum uint64, skip checking
 		if allowance.IsUint64() && hi > allowance.Uint64() {
-			transfer := e.args.Value
-			if transfer == nil {
-				transfer = new(hexutil.Big)
-			}
+			// TODO no used
+			//transfer := e.args.Value
+			//if transfer == nil {
+			//	transfer = new(hexutil.Big)
+			//}
 			hi = allowance.Uint64()
 		}
 	}
