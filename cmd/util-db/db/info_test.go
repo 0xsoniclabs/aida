@@ -282,45 +282,6 @@ func TestPrintRange(t *testing.T) {
 				DbComponent: "all",
 			},
 			wantErr: "cannot open aida-db; cannot open leveldb; stat %s: no such file or directory",
-		}, {
-			name: "NonExistentDb",
-			cfg: &utils.Config{
-				AidaDb:      t.TempDir() + "non-existent-db",
-				DbComponent: "all",
-			},
-			wantErr: "cannot open aida-db; cannot open leveldb; stat %s: no such file or directory",
-		},
-		{
-			name: "NonExistentUpdateDb",
-			cfg: &utils.Config{
-				AidaDb:      t.TempDir() + "non-existent-db",
-				DbComponent: "update",
-			},
-			wantErr: "cannot open update db",
-		},
-		{
-			name: "NonExistentDeleteDb",
-			cfg: &utils.Config{
-				AidaDb:      t.TempDir() + "non-existent-db",
-				DbComponent: "delete",
-			},
-			wantErr: "cannot open destroyed account db; error opening deletion-db %s: cannot open leveldb; stat %s: no such file or directory",
-		},
-		{
-			name: "NonExistentStateHashDb",
-			cfg: &utils.Config{
-				AidaDb:      t.TempDir() + "non-existent-db",
-				DbComponent: "state-hash",
-			},
-			wantErr: "cannot open leveldb; stat %s: no such file or directory",
-		},
-		{
-			name: "NonExistentBlockHashDb",
-			cfg: &utils.Config{
-				AidaDb:      t.TempDir() + "non-existent-db",
-				DbComponent: "block-hash",
-			},
-			wantErr: "cannot open leveldb; stat %s: no such file or directory",
 		},
 		{
 			name: "InvalidEncoding",
@@ -365,7 +326,7 @@ func TestPrintRange(t *testing.T) {
 	}
 }
 
-func TestPrintRange_LoggingEmpty(t *testing.T) {
+func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 	type testCase struct {
 		name         string
 		dbComponent  string

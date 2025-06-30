@@ -206,7 +206,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	baseDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
-		return fmt.Errorf("cannot open aida db; %w", err)
+		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
 
 	// print substate range
