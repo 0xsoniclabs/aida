@@ -11,7 +11,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestFindBlockRangeInStateHash_Success(t *testing.T) {
+func TestInfo_Info_FindBlockRangeInStateHash_Success(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	_, _, err := FindBlockRangeInStateHash(testDb, log)
@@ -21,7 +21,7 @@ func TestFindBlockRangeInStateHash_Success(t *testing.T) {
 	assert.Equal(t, "cannot get first state hash; not implemented", err.Error())
 }
 
-func TestFindBlockRangeInStateHash_FirstError(t *testing.T) {
+func TestInfo_FindBlockRangeInStateHash_FirstError(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	first, last, err := FindBlockRangeInStateHash(testDb, log)
@@ -31,7 +31,7 @@ func TestFindBlockRangeInStateHash_FirstError(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot get first state hash")
 }
 
-func TestFindBlockRangeInBlockHash_Success(t *testing.T) {
+func TestInfo_FindBlockRangeInBlockHash_Success(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	first, last, err := FindBlockRangeOfBlockHashes(testDb, log)
@@ -40,7 +40,7 @@ func TestFindBlockRangeInBlockHash_Success(t *testing.T) {
 	assert.Equal(t, uint64(30), last)
 }
 
-func TestFindBlockRangeInBlockHash_FirstError(t *testing.T) {
+func TestInfo_FindBlockRangeInBlockHash_FirstError(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashDbFirstError"
 	testDb, err := db.NewDefaultBaseDB(tmpDir)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestFindBlockRangeInBlockHash_FirstError(t *testing.T) {
 	assert.Equal(t, "cannot get first block hash; no block hash found", err.Error())
 }
 
-func TestGetStateHashCount_Success(t *testing.T) {
+func TestInfo_GetStateHashCount_Success(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 11,
@@ -64,7 +64,7 @@ func TestGetStateHashCount_Success(t *testing.T) {
 	assert.Equal(t, uint64(10), count)
 }
 
-func TestGetStateHashCount_Empty(t *testing.T) {
+func TestInfo_GetStateHashCount_Empty(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 1, // Intentionally outside of state hash range
@@ -75,7 +75,7 @@ func TestGetStateHashCount_Empty(t *testing.T) {
 	assert.Equal(t, uint64(0), count)
 }
 
-func TestGetBlockHashCount_Success(t *testing.T) {
+func TestInfo_GetBlockHashCount_Success(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 21,
@@ -86,7 +86,7 @@ func TestGetBlockHashCount_Success(t *testing.T) {
 	assert.Equal(t, uint64(10), count)
 }
 
-func TestGetBlockHashCount_Empty(t *testing.T) {
+func TestInfo_GetBlockHashCount_Empty(t *testing.T) {
 	testDb := generateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 1, // Intentionally outside of block hash range
@@ -97,7 +97,7 @@ func TestGetBlockHashCount_Empty(t *testing.T) {
 	assert.Equal(t, uint64(0), count)
 }
 
-func TestGetStateHashCount_Error(t *testing.T) {
+func TestInfo_GetStateHashCount_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	testDb := db.NewMockBaseDB(ctrl)
 
@@ -112,7 +112,7 @@ func TestGetStateHashCount_Error(t *testing.T) {
 	assert.Equal(t, errWant, err, "expected error to match")
 }
 
-func TestGetBlockHashCount_Error(t *testing.T) {
+func TestInfo_GetBlockHashCount_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	testDb := db.NewMockBaseDB(ctrl)
 

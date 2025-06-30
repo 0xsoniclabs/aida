@@ -12,7 +12,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestStartOperaIpc_Timeout(t *testing.T) {
+func TestUtils_StartOperaIpc_Timeout(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &utils.Config{
@@ -36,7 +36,7 @@ func TestStartOperaIpc_Timeout(t *testing.T) {
 	}
 }
 
-func TestStartOperaIpc_InvalidBinary(t *testing.T) {
+func TestUtils_StartOperaIpc_InvalidBinary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &utils.Config{
@@ -58,7 +58,7 @@ func TestStartOperaIpc_InvalidBinary(t *testing.T) {
 	}
 }
 
-func TestStartOperaRecording(t *testing.T) {
+func TestUtils_StartOperaRecording(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &utils.Config{
@@ -79,7 +79,7 @@ func TestStartOperaRecording(t *testing.T) {
 	}
 }
 
-func TestStartOperaRecording_InvalidBinary(t *testing.T) {
+func TestUtils_StartOperaRecording_InvalidBinary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	cfg := &utils.Config{
@@ -100,7 +100,7 @@ func TestStartOperaRecording_InvalidBinary(t *testing.T) {
 	}
 }
 
-func TestIpcLoadingProcessWait_ResultSuccess(t *testing.T) {
+func TestUtils_IpcLoadingProcessWait_ResultSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
@@ -121,7 +121,7 @@ func TestIpcLoadingProcessWait_ResultSuccess(t *testing.T) {
 	}
 }
 
-func TestErrorRelayer_Success(t *testing.T) {
+func TestUtils_ErrorRelayer_Success(t *testing.T) {
 	errChan := make(chan error, 1)
 	errChanParser := make(chan error, 1)
 	resChan := make(chan string)
@@ -142,7 +142,7 @@ func TestErrorRelayer_Success(t *testing.T) {
 	}
 }
 
-func TestErrorRelayer_Fail(t *testing.T) {
+func TestUtils_ErrorRelayer_Fail(t *testing.T) {
 	errChan := make(chan error, 1)
 	errChanParser := make(chan error, 1)
 	resChan := make(chan string, 1)

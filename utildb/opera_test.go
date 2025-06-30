@@ -9,7 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestInitFromGenesis_Success(t *testing.T) {
+func TestOpera_InitFromGenesis_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
@@ -28,7 +28,7 @@ func TestInitFromGenesis_Success(t *testing.T) {
 	}
 }
 
-func TestInitFromGenesis_Failure(t *testing.T) {
+func TestOpera_InitFromGenesis_Failure(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 

@@ -487,7 +487,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 	return numSubstates, numDestroyedAccounts, numUpdates, numStateHashes, numBlockHashes
 }
 
-func TestGetHashesHash_Ticker(t *testing.T) {
+func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 	tests := []struct {
 		name        string
 		getHashFunc func(cfg *utils.Config, db db.BaseDB, log logger.Logger) ([]byte, uint64, error)

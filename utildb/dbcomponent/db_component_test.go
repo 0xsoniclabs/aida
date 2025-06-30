@@ -2,7 +2,7 @@ package dbcomponent
 
 import "testing"
 
-func TestParseDbComponent(t *testing.T) {
+func TestDbComponent_Parse(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected DbComponent

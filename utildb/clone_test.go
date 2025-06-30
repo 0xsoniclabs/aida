@@ -220,7 +220,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	assert.Equal(t, 10, blockHashCount, "Expected 10 block hashes in the cloned database")
 }
 
-func TestClone_lastUpdateBeforeRange(t *testing.T) {
+func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cfg := &utils.Config{
 		First:       1000,
 		Last:        1001,
@@ -246,25 +246,25 @@ func TestClone_lastUpdateBeforeRange(t *testing.T) {
 	assert.Equal(t, 10, blockHashCount, "Expected 10 block hashes in the cloned database")
 }
 
-func TestOpenCloningDbs_SourceDbNotExist(t *testing.T) {
+func TestClone_OpenCloningDbs_SourceDbNotExist(t *testing.T) {
 	_, _, err := OpenCloningDbs("/not/exist/source", "/tmp/target")
 	assert.Error(t, err)
 }
 
-func TestOpenCloningDbs_SourceDbInvalid(t *testing.T) {
+func TestClose_OpenCloningDbs_SourceDbInvalid(t *testing.T) {
 	tmpFile, _ := os.CreateTemp("", "sourcedb")
 	_, _, err := OpenCloningDbs(tmpFile.Name(), "/tmp/target")
 	assert.Error(t, err)
 }
 
-func TestOpenCloningDbs_TargetExists(t *testing.T) {
+func TestClone_OpenCloningDbs_TargetExists(t *testing.T) {
 	tmpFile, _ := os.CreateTemp("", "targetdb")
 	defer os.Remove(tmpFile.Name())
 	_, _, err := OpenCloningDbs(tmpFile.Name(), tmpFile.Name())
 	assert.Error(t, err)
 }
 
-func TestOpenCloningDbs_Success(t *testing.T) {
+func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	sourceDir := t.TempDir() + "/source"
 	targetDir := t.TempDir() + "/target"
 
