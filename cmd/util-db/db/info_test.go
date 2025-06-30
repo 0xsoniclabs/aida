@@ -18,7 +18,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestPrintCount(t *testing.T) {
+func TestInfo_PrintCount(t *testing.T) {
 	type testCase struct {
 		name    string
 		args    []string
@@ -90,7 +90,7 @@ func TestPrintCount(t *testing.T) {
 	}
 }
 
-func TestPrintCount_OnlyCalculateGivenRange(t *testing.T) {
+func TestInfo_PrintCount_OnlyCalculateGivenRange(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 
 	cfg := &utils.Config{
@@ -115,7 +115,7 @@ func TestPrintCount_OnlyCalculateGivenRange(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPrintCount_LoggingEmpty(t *testing.T) {
+func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 	type testCase struct {
 		name         string
 		first        uint64
@@ -261,7 +261,7 @@ func TestPrintCount_LoggingEmpty(t *testing.T) {
 	}
 }
 
-func TestPrintRange(t *testing.T) {
+func TestInfo_PrintRange(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *utils.Config
@@ -311,7 +311,7 @@ func TestPrintRange(t *testing.T) {
 				err = testDb.Close()
 				assert.NoError(t, err)
 			}
-			err := printRange(tc.cfg, logger.NewLogger("Warning", "TestPrintRange_Errors"))
+			err := printRange(tc.cfg, logger.NewLogger("Warning", "TestInfo_PrintRange_Errors"))
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 			} else {
@@ -441,7 +441,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 	}
 }
 
-func TestPrintRange_Success(t *testing.T) {
+func TestInfo_PrintRange_Success(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 
 	// mock logger
@@ -465,7 +465,7 @@ func TestPrintRange_Success(t *testing.T) {
 	}
 }
 
-func TestPrintRange_IntegrationTest(t *testing.T) {
+func TestInfo_PrintRange_IntegrationTest(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 	args := []string{
 		"info", "range",
@@ -481,7 +481,7 @@ func TestPrintRange_IntegrationTest(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPrintStateHash_IntegrationTest(t *testing.T) {
+func TestInfo_PrintStateHash_IntegrationTest(t *testing.T) {
 	tests := []struct {
 		name        string
 		insertKey   string
@@ -544,7 +544,7 @@ func TestPrintStateHash_IntegrationTest(t *testing.T) {
 	}
 }
 
-func TestPrintBlockHash_IntegrationTest(t *testing.T) {
+func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 	tests := []struct {
 		name        string
 		insertKey   string
@@ -615,7 +615,7 @@ func TestPrintBlockHash_IntegrationTest(t *testing.T) {
 	}
 }
 
-func TestPrintHash_EmptyDb(t *testing.T) {
+func TestInfo_PrintHash_EmptyDb(t *testing.T) {
 	aidaDbPath := t.TempDir() + "non-existent-db"
 	args := []string{
 		"info", "block-hash",
@@ -632,7 +632,7 @@ func TestPrintHash_EmptyDb(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot open leveldb; stat "+aidaDbPath+": no such file or directory")
 }
 
-func TestPrintHash_InvalidArg(t *testing.T) {
+func TestInfo_PrintHash_InvalidArg(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aida-db"
 
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
@@ -663,7 +663,7 @@ func TestPrintHash_InvalidArg(t *testing.T) {
 	assert.Contains(t, err.Error(), "block-hash command requires exactly 1 argument")
 }
 
-func TestPrintHash_MissingArg(t *testing.T) {
+func TestInfo_PrintHash_MissingArg(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aida-db"
 
 	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
@@ -771,7 +771,7 @@ func generateTestAidaDb(t *testing.T) string {
 	return aidaDbPath
 }
 
-func TestPrintHashForBlock_InvalidHashtype(t *testing.T) {
+func TestInfo_PrintHashForBlock_InvalidHashtype(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
