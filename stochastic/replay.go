@@ -294,7 +294,21 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		value common.Hash
 		db    = ss.db
 		rg    = ss.rg
+		msg   string
 	)
+
+	if addrCl == statistics.ZeroValueID || addrCl == statistics.NewValueID {
+		return
+	}
+
+	if op == GetTransientStateID || op == SetTransientStateID {
+		return
+	}
+
+	if op == CreateContractID {
+		return 
+	}
+
 
 	// fetch indexes from index access generators
 	addrIdx := ss.contracts.NextIndex(addrCl)
@@ -315,20 +329,20 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	// print opcode and its arguments
 	if ss.traceDebug {
 		// print operation
-		ss.log.Infof("opcode:%v (%v)", opText[op], EncodeOpcode(op, addrCl, keyCl, valueCl))
+		msg = fmt.Sprintf("opcode:%v (%v) ", opText[op], EncodeOpcode(op, addrCl, keyCl, valueCl))
 
 		// print indexes of contract address, storage key, and storage value.
 		if addrCl != statistics.NoArgID {
-			ss.log.Infof(" addr-idx: %v", addrIdx)
-			ss.log.Infof(" addr: %v", addr)
+			msg = fmt.Sprintf("%v addr-idx: %v", msg, addrIdx)
+			msg = fmt.Sprintf("%v addr: %v", msg, addr)
 		}
 		if keyCl != statistics.NoArgID {
-			ss.log.Infof(" key-idx: %v", keyIdx)
-			ss.log.Infof(" key: %v", key)
+			msg = fmt.Sprintf("%v key-idx: %v", msg, keyIdx)
+			msg = fmt.Sprintf("%v key: %v", msg, key)
 		}
 		if valueCl != statistics.NoArgID {
-			ss.log.Infof(" value-idx: %v", valueIdx)
-			ss.log.Infof(" value: %v", value)
+			msg = fmt.Sprintf("%v value-idx: %v", msg, valueIdx)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 	}
 
@@ -336,13 +350,13 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case AddBalanceID:
 		value := rg.Int63n(BalanceRange)
 		if ss.traceDebug {
-			ss.log.Infof("value: %v", value)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 		db.AddBalance(addr, uint256.NewInt(uint64(value)), 0)
 
 	case BeginBlockID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.blockNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.blockNum)
 		}
 		db.BeginBlock(ss.blockNum)
 		ss.txNum = 0
@@ -350,22 +364,22 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 
 	case BeginSyncPeriodID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.syncPeriodNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.syncPeriodNum)
 		}
 		db.BeginSyncPeriod(ss.syncPeriodNum)
 
 	case BeginTransactionID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.txNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.txNum)
 		}
 		db.BeginTransaction(ss.txNum)
 		ss.snapshot = []int{}
 		ss.selfDestructed = []int64{}
 
 	case CreateAccountID:
-		if !db.Exist(addr) {
+		//if !db.Exist(addr) {
 			db.CreateAccount(addr)
-		}
+		//}
 
 	case CreateContractID:
 		if db.Exist(addr) {
@@ -430,7 +444,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			snapshotIdx := snapshotNum - int(exponential.DiscreteSample(rg, ss.snapshotLambda, int64(snapshotNum))) - 1
 			snapshot := ss.snapshot[snapshotIdx]
 			if ss.traceDebug {
-				ss.log.Infof(" id: %v", snapshot)
+				msg = fmt.Sprintf("%v id: %v", msg, snapshot)
 			}
 			db.RevertToSnapshot(snapshot)
 
@@ -453,12 +467,12 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case SetCodeID:
 		sz := rg.Intn(MaxCodeSize-1) + 1
 		if ss.traceDebug {
-			ss.log.Infof(" code-size: %v", sz)
+			msg = fmt.Sprintf("%v code-size: %v", msg, sz)
 		}
 		code := make([]byte, sz)
 		_, err := rg.Read(code)
 		if err != nil {
-			ss.log.Fatalf("error producing a random byte slice. Error: %v", err)
+			msg = fmt.Sprintf("%v error producing a random byte slice. Error: %v", msg, err)
 		}
 		db.SetCode(addr, code)
 
@@ -475,7 +489,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case SnapshotID:
 		id := db.Snapshot()
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", id)
+			msg = fmt.Sprintf("%v id: %v", msg, id)
 		}
 		ss.snapshot = append(ss.snapshot, id)
 
@@ -492,13 +506,14 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			// in the current snapshot
 			value := uint64(rg.Int63n(int64(balance)))
 			if ss.traceDebug {
-				ss.log.Infof(" value: %v", value)
+				msg = fmt.Sprintf("%v value: %v", msg, value)
 			}
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
-		ss.log.Fatal("invalid operation " + opText[op])
+		msg = ("invalid operation " + opText[op])
 	}
+	ss.log.Infof("%s", msg)
 }
 
 // nextState produces the next state in the Markovian process.
