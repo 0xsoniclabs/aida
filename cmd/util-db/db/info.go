@@ -204,12 +204,14 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		return err
 	}
 
+	baseDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida db; %w", err)
+	}
+
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
-		sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open aida-db; %w", err)
-		}
+		sdb := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
 		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
@@ -221,49 +223,33 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		} else {
 			log.Infof("Substate block range: %v - %v", firstBlock, lastBlock)
 		}
-		sdb.Close()
 	}
 
 	// print update range
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
-		udb, err := db.NewReadOnlyUpdateDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open update db")
-		}
+		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %v", err)
 		} else {
 			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
-		udb.Close()
 	}
 
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		ddb, err := db.NewReadOnlyDestroyedAccountDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open destroyed account db; %w", err)
-		}
+		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
 		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
 		if err != nil {
 			log.Warningf("cannot find deleted range; %v", err)
 		} else {
 			log.Infof("Deleted block range: %v - %v", first, last)
 		}
-		err = ddb.Close()
-		if err != nil {
-			log.Warningf("Error closing destroyed account db: %v", err)
-		}
 	}
 
 	// print state hash range
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
-		bdb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
-		if err != nil {
-			return err
-		}
-		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(bdb, log)
+		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
 		if err != nil {
 			log.Warningf("cannot find state hash range; %s", err.Error())
 		} else {
@@ -273,16 +259,17 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print block hash range
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
-		bdb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
-		if err != nil {
-			return err
-		}
-		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(bdb, log)
+		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
 		if err != nil {
 			log.Warningf("cannot find block hash range; %v", err)
 		} else {
 			log.Infof("Block Hash range: %v - %v", firstBlockHashBlock, lastBlockHashBlock)
 		}
+	}
+
+	err = baseDb.Close()
+	if err != nil {
+		return fmt.Errorf("cannot close aida db; %w", err)
 	}
 	return nil
 }
