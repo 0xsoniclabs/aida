@@ -50,7 +50,7 @@ func CreateTestTransaction(t *testing.T) txcontext.TxContext {
 			Difficulty: newBigInt(1),
 			GasLimit:   newBigInt(1),
 			Number:     newBigInt(1),
-			Timestamp:  newBigInt(1),
+			Timestamp:  newBigInt(10),
 			BaseFee:    newBigInt(1),
 			chainCfg:   chainCfg,
 			fork:       "Cancun",
