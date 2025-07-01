@@ -567,7 +567,9 @@ func TestVmAdb_ValidationFailsOnInvalidTransaction_Parallel(t *testing.T) {
 
 // emptyTx is a dummy substate that will be processed without crashing.
 var emptyTx = &substate.Substate{
-	Env: &substate.Env{},
+	Env: &substate.Env{
+		Timestamp: uint64(10),
+	},
 	Message: &substate.Message{
 		GasPrice: big.NewInt(12),
 		Value:    big.NewInt(1),

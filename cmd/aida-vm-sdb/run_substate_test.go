@@ -313,7 +313,8 @@ func TestVmSdb_Substate_ValidationFailsOnInvalidTransaction(t *testing.T) {
 // emptyTx is a dummy substate that will be processed without crashing.
 var emptyTx = &substate.Substate{
 	Env: &substate.Env{
-		GasLimit: 100_000_000,
+		GasLimit:  100_000_000,
+		Timestamp: uint64(10),
 	},
 	Message: &substate.Message{
 		GasPrice:  big.NewInt(12),
