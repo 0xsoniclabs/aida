@@ -300,6 +300,7 @@ func TestOperationProfiler_WithMalformedConfig(t *testing.T) {
 func getStateDbFuncs(db state.StateDB) []func() {
 	mockAddress := common.HexToAddress("0x00000F1")
 	mockHash := common.BigToHash(big.NewInt(0))
+	mockTimestamp := uint64(0)
 	return []func(){
 		func() { db.CreateAccount(mockAddress) },
 		func() { db.CreateContract(mockAddress) },
@@ -349,7 +350,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.BeginSyncPeriod(0) },
 		func() { db.EndSyncPeriod() },
 		func() { db.AddLog(nil) },
-		func() { db.GetLogs(mockHash, uint64(0), mockHash) },
+		func() { db.GetLogs(mockHash, uint64(0), mockHash, mockTimestamp) },
 		func() { db.PointCache() },
 		func() { db.Witness() },
 		func() { db.AddPreimage(mockHash, []byte{0}) },
@@ -403,7 +404,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
 	m.EXPECT().EndSyncPeriod().AnyTimes()
 	m.EXPECT().AddLog(gomock.Any()).AnyTimes()
-	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().PointCache().AnyTimes()
 	m.EXPECT().Witness().AnyTimes()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any()).AnyTimes()
@@ -456,7 +457,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().BeginSyncPeriod(gomock.Any())
 	m.EXPECT().EndSyncPeriod()
 	m.EXPECT().AddLog(gomock.Any())
-	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any())
+	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().PointCache()
 	m.EXPECT().Witness()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any())

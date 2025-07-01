@@ -314,9 +314,9 @@ func (s *shadowVmStateDb) AddLog(log *types.Log) {
 	})
 }
 
-func (s *shadowVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
-	logsP := s.prime.GetLogs(hash, block, blockHash)
-	logsS := s.shadow.GetLogs(hash, block, blockHash)
+func (s *shadowVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
+	logsP := s.prime.GetLogs(hash, block, blockHash, blkTimestamp)
+	logsS := s.shadow.GetLogs(hash, block, blockHash, blkTimestamp)
 
 	equal := len(logsP) == len(logsS)
 	if equal {
@@ -328,8 +328,8 @@ func (s *shadowVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash comm
 		}
 	}
 	if !equal {
-		s.logIssue("GetLogs", logsP, logsS, hash, blockHash)
-		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString("GetLogs", hash, blockHash))
+		s.logIssue("GetLogs", logsP, logsS, hash, blockHash, blkTimestamp)
+		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString("GetLogs", hash, blockHash, blkTimestamp))
 	}
 	return logsP
 }
