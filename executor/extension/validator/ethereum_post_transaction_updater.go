@@ -29,7 +29,7 @@ import (
 // only post alloc is diverging for these ethereum block exceptions, so it needs to be overwritten
 var ethereumLfvmBlockExceptions = map[utils.ChainID]map[int]struct{}{
 	utils.EthereumChainID: {13803456: {}, 14340503: {}, 14953169: {}, 15025981: {}, 15427798: {}, 15445161: {}, 15445481: {}},
-	utils.SepoliaChainID:  {2299256: {}},
+	utils.SepoliaChainID:  {2259736: {}, 2259718: {}, 2259775: {}, 2261404: {}, 2261423: {}, 2267647: {}, 2299256: {}, 2513443: {}, 2612238: {}, 2656617: {}, 2825745: {}},
 }
 
 // MakeEthereumDbPostTransactionUpdater creates an extension which fixes Ethereum exceptions in LiveDB
