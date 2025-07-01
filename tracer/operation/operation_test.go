@@ -285,8 +285,8 @@ func (s *MockStateDB) ForEachStorage(addr common.Address, cb func(common.Hash, c
 	return nil
 }
 
-func (s *MockStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
-	s.recording = append(s.recording, Record{GetLogsID, []any{hash, block, blockHash}})
+func (s *MockStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
+	s.recording = append(s.recording, Record{GetLogsID, []any{hash, block, blockHash, blkTimestamp}})
 	return nil
 }
 

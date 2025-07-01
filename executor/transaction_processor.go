@@ -358,7 +358,7 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 
 	blockHash := common.HexToHash(fmt.Sprintf("0x%016d", block))
 	// if no prior error, create result and pass it to the data.
-	res = newTransactionResult(db.GetLogs(txHash, uint64(block), blockHash), msg, msgResult, finalError, msg.From)
+	res = newTransactionResult(db.GetLogs(txHash, uint64(block), blockHash, inputEnv.GetTimestamp()), msg, msgResult, finalError, msg.From)
 	return
 }
 
@@ -644,7 +644,7 @@ func (a *toscaTxContext) EmitLog(log tosca.Log) {
 
 func (a *toscaTxContext) GetLogs() []tosca.Log {
 	res := []tosca.Log{}
-	for _, l := range a.db.GetLogs(common.Hash{}, 0, common.Hash{}) {
+	for _, l := range a.db.GetLogs(common.Hash{}, 0, common.Hash{}, 0) {
 		topics := make([]tosca.Hash, len(l.Topics))
 		for i, t := range l.Topics {
 			topics[i] = tosca.Hash(t)

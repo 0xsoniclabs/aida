@@ -229,8 +229,8 @@ func (r *DeletionProxy) AddLog(log *types.Log) {
 }
 
 // GetLogs retrieves log entries.
-func (r *DeletionProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
-	return r.db.GetLogs(hash, block, blockHash)
+func (r *DeletionProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
+	return r.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
 // PointCache returns the point cache used in computations.
