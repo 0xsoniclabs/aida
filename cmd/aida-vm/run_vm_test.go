@@ -432,7 +432,9 @@ var emptyTx = &substate.Substate{
 // testTx is a dummy substate used for testing validation.
 var testTx = &substate.Substate{
 	InputSubstate: substate.WorldState{substatetypes.Address(testingAddress): substate.NewAccount(1, uint256.NewInt(1), []byte{})},
-	Env:           &substate.Env{},
+	Env: &substate.Env{
+		Timestamp: uint64(10),
+	},
 	Message: &substate.Message{
 		GasPrice: big.NewInt(12),
 		Value:    big.NewInt(1),
