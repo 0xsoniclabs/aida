@@ -345,7 +345,7 @@ func (s *carmenStateDB) AddLog(log *types.Log) {
 	})
 }
 
-func (s *carmenStateDB) GetLogs(common.Hash, uint64, common.Hash) []*types.Log {
+func (s *carmenStateDB) GetLogs(common.Hash, uint64, common.Hash, uint64) []*types.Log {
 	list := s.txCtx.GetLogs()
 
 	res := make([]*types.Log, 0, len(list))

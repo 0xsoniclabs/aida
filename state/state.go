@@ -83,7 +83,7 @@ type VmStateDB interface {
 
 	// Logging
 	AddLog(*types.Log)
-	GetLogs(common.Hash, uint64, common.Hash) []*types.Log
+	GetLogs(common.Hash, uint64, common.Hash, uint64) []*types.Log
 
 	// PointCache returns the point cache used in computations
 	PointCache() *utils.PointCache
