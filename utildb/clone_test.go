@@ -151,12 +151,6 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			dbComponent: "delete",
 			expectedErr: "clone failed for DestroyedAccountsInvalidDbKey: condition emit error; invalid length of destroyed account key, expected 14, got 5",
 		},
-		//{ INCOMPATIBLE with stateHash key hex encoding - uncomment after converting to bigEnding
-		//	name:        "StateHashInvalidDbKey",
-		//	keyPrefix:   utils.StateRootHashPrefix,
-		//	dbComponent: "state-hash",
-		//	expectedErr: "clone failed for StateHashInvalidDbKey: condition emit error; invalid length of state hash db key: 5",
-		//},
 		{
 			name:        "BlockHashInvalidDbKey",
 			keyPrefix:   utils.BlockHashPrefix,
