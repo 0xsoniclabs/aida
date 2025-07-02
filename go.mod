@@ -5,8 +5,8 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/0xsoniclabs/carmen/go v0.0.0-20250530111616-fabde4233b62
-	github.com/0xsoniclabs/sonic v1.2.1-b.0.20250107055220-a9cc91ac7463
+	github.com/0xsoniclabs/carmen/go v0.0.0-20250702070814-1d4741d26b23
+	github.com/0xsoniclabs/sonic v0.0.0-20250702075630-22c3974d50ad
 	github.com/0xsoniclabs/substate v0.0.0-20250623051532-878ecb79b20d
 	github.com/0xsoniclabs/tosca v0.0.0-20250624065842-ec138d34756c
 	github.com/DATA-DOG/go-sqlmock v1.5.2
