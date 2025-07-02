@@ -25,6 +25,8 @@ import (
 )
 
 // BlockEnvironment represents an interface for retrieving and modifying Ethereum-like blockchain environment information.
+//
+//go:generate mockgen -source block_environment.go -destination block_environment_mock.go -package txcontext
 type BlockEnvironment interface {
 	// GetCoinbase returns the coinbase address.
 	GetCoinbase() common.Address
