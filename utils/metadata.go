@@ -734,6 +734,12 @@ func (md *AidaDbMetadata) findEpochs() error {
 		firstEpochMinus, lastEpochPlus uint64
 	)
 
+	// Finding epoch number calls rpc method eth_getBlockByNumber.
+	// Ethereum does not provide information about epoch number in their RPC interface.
+	if IsEthereumNetwork(md.ChainId) {
+		return nil
+	}
+
 	md.FirstEpoch, err = FindEpochNumber(md.FirstBlock, md.ChainId)
 	if err != nil {
 		return err
