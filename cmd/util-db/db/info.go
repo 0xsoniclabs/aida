@@ -17,7 +17,6 @@
 package db
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,8 +27,6 @@ import (
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -41,6 +38,7 @@ var InfoCommand = cli.Command{
 		&cmdCount,
 		&cmdRange,
 		&cmdPrintStateHash,
+		&cmdPrintBlockHash,
 	},
 }
 
@@ -91,6 +89,16 @@ var cmdPrintStateHash = cli.Command{
 	},
 }
 
+var cmdPrintBlockHash = cli.Command{
+	Action:    printBlockHash,
+	Name:      "block-hash",
+	Usage:     "Prints block hash for given block number.",
+	ArgsUsage: "<BlockNum>",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+	},
+}
+
 // printCountRun prints count of given db component in given AidaDb
 func printCountRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
@@ -120,7 +128,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	defer func() {
 		err = base.Close()
 		if err != nil {
-			log.Warningf("Error closing base db: %v", err)
+			log.Warningf("Error closing aida db: %v", err)
 		}
 	}()
 
@@ -165,6 +173,16 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 		}
 	}
 
+	// print block hash count
+	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
+		count, err := utildb.GetBlockHashCount(cfg, base)
+		if err != nil {
+			log.Warningf("cannot print block hash count; %v", err)
+		} else {
+			log.Noticef("Found %v block-hashes", count)
+		}
+	}
+
 	return nil
 }
 
@@ -186,12 +204,14 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		return err
 	}
 
+	baseDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %w", err)
+	}
+
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
-		sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open aida-db; %w", err)
-		}
+		sdb := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
 		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
@@ -203,51 +223,53 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		} else {
 			log.Infof("Substate block range: %v - %v", firstBlock, lastBlock)
 		}
-		sdb.Close()
 	}
 
 	// print update range
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
-		udb, err := db.NewReadOnlyUpdateDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open update db")
-		}
+		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %v", err)
 		} else {
 			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
-		udb.Close()
 	}
 
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		ddb, err := db.NewDefaultDestroyedAccountDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot open destroyed account db; %w", err)
-		}
+		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
 		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
 		if err != nil {
 			log.Warningf("cannot find deleted range; %v", err)
 		} else {
 			log.Infof("Deleted block range: %v - %v", first, last)
 		}
-		ddb.Close()
 	}
 
 	// print state hash range
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
-		bdb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
 		if err != nil {
-			return err
-		}
-		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(bdb, log)
-		if err != nil {
-			log.Warningf("cannot find state hash range; %v", err)
+			log.Warningf("cannot find state hash range; %s", err.Error())
 		} else {
 			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
 		}
+	}
+
+	// print block hash range
+	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
+		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
+		if err != nil {
+			log.Warningf("cannot find block hash range; %v", err)
+		} else {
+			log.Infof("Block Hash range: %v - %v", firstBlockHashBlock, lastBlockHashBlock)
+		}
+	}
+
+	err = baseDb.Close()
+	if err != nil {
+		return fmt.Errorf("cannot close aida db; %w", err)
 	}
 	return nil
 }
@@ -312,33 +334,64 @@ func printTableHash(ctx *cli.Context) error {
 }
 
 func printStateHash(ctx *cli.Context) error {
+	return printHash(ctx, "state-hash")
+}
+
+func printBlockHash(ctx *cli.Context) error {
+	return printHash(ctx, "block-hash")
+}
+
+func printHash(ctx *cli.Context, hashType string) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
 	if argErr != nil {
 		return argErr
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-State-Hash")
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-"+strings.Title(hashType))
 
-	blockNum, err := strconv.ParseUint(ctx.Args().Slice()[0], 10, 64)
+	if ctx.Args().Len() != 1 {
+		return fmt.Errorf("%s command requires exactly 1 argument", hashType)
+	}
+	blockNumStr := ctx.Args().Slice()[0]
+	blockNumInt32, err := strconv.ParseInt(blockNumStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("cannot parse block number %s; %v", blockNumStr, err)
+	}
+	blockNum := int(blockNumInt32)
+
+	return printHashForBlock(cfg, log, blockNum, hashType)
+}
+
+// printHashForBlock prints state or block hash for given block number in AidaDb
+func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashType string) error {
+	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = base.Close()
+		if err != nil {
+			log.Warningf("Error closing aida db: %v", err)
+		}
+	}()
 
-	aidaDb, err := leveldb.New(cfg.AidaDb, 1024, 100, "profiling", true)
-	if err != nil {
-		return fmt.Errorf("cannot open aida-db; %v", err)
+	provider := utils.MakeHashProvider(base)
+	switch hashType {
+	case "state-hash":
+		bytes, err := provider.GetStateRootHash(blockNum)
+		if err != nil {
+			return fmt.Errorf("cannot get state hash for block %v; %v", blockNum, err)
+		}
+		log.Noticef("State hash for block %v is %v", blockNum, bytes)
+	case "block-hash":
+		bytesHash, err := provider.GetBlockHash(blockNum)
+		if err != nil {
+			return fmt.Errorf("cannot get block hash for block %v; %v", blockNum, err)
+		}
+		log.Noticef("Block hash for block %v is %v", blockNum, bytesHash)
+	default:
+		return fmt.Errorf("unsupported hash type: %s", hashType)
 	}
-
-	hexStr := hexutil.EncodeUint64(blockNum)
-
-	prefix := []byte(utils.StateRootHashPrefix + hexStr)
-
-	bytes, err := aidaDb.Get(prefix)
-	if err != nil {
-		return fmt.Errorf("aida-db doesn't contain state hash for block %v", blockNum)
-	}
-
-	log.Noticef("State hash for block %v is 0x%v", blockNum, hex.EncodeToString(bytes))
 
 	return nil
 }
