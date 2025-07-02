@@ -16,7 +16,7 @@
 
 package executor
 
-//go:generate mockgen -source executor.go -destination executor_mocks.go -package executor
+//go:generate mockgen -source executor.go -destination executor_mock.go -package executor
 
 import (
 	"errors"

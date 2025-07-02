@@ -22,6 +22,7 @@ import (
 type MockTxConsumer struct {
 	ctrl     *gomock.Controller
 	recorder *MockTxConsumerMockRecorder
+	isgomock struct{}
 }
 
 // MockTxConsumerMockRecorder is the mock recorder for MockTxConsumer.
@@ -59,6 +60,7 @@ func (mr *MockTxConsumerMockRecorder) Consume(block, transaction, substate any) 
 type MockRPCReqConsumer struct {
 	ctrl     *gomock.Controller
 	recorder *MockRPCReqConsumerMockRecorder
+	isgomock struct{}
 }
 
 // MockRPCReqConsumerMockRecorder is the mock recorder for MockRPCReqConsumer.
@@ -96,6 +98,7 @@ func (mr *MockRPCReqConsumerMockRecorder) Consume(block, transaction, req any) *
 type MockOperationConsumer struct {
 	ctrl     *gomock.Controller
 	recorder *MockOperationConsumerMockRecorder
+	isgomock struct{}
 }
 
 // MockOperationConsumerMockRecorder is the mock recorder for MockOperationConsumer.

@@ -1,6 +1,6 @@
 package state
 
-//go:generate mockgen -source cache.go -destination cache_mocks.go -package state
+//go:generate mockgen -source cache.go -destination cache_mock.go -package state
 import (
 	"sync"
 
