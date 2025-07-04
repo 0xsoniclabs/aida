@@ -464,10 +464,6 @@ func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint6
 
 	exception, err := exceptionDb.GetException(blockNum)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			log.Warningf("No exception found for block %d", blockNum)
-			return nil
-		}
 		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
 	}
 

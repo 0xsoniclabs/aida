@@ -816,22 +816,36 @@ func TestInfo_PrintException_IntegrationTest(t *testing.T) {
 		name        string
 		insertKey   string
 		insertValue string
-		queryArg    string
+		queryArg    []string
 		expectErr   string
 	}{
 		{
 			name:        "InvalidData",
 			insertKey:   "0x1",
 			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			queryArg:    "1",
+			queryArg:    []string{"1"},
 			expectErr:   "cannot get exception for block 1; cannot decode exception data from protobuf block: 1, proto:",
+		},
+		{
+			name:        "MissingBlockNumber",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    nil,
+			expectErr:   "unable to parse cli arguments; this command requires at least 1 argument",
 		},
 		{
 			name:        "InvalidBlockNumber",
 			insertKey:   "0x1",
 			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-			queryArg:    "",
+			queryArg:    []string{""},
 			expectErr:   "cannot parse block number ; strconv.ParseUint: parsing \"\": invalid syntax",
+		},
+		{
+			name:        "TooManyArgs",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    []string{"1", "2"},
+			expectErr:   "printException command requires exactly 1 argument",
 		},
 	}
 
@@ -857,8 +871,8 @@ func TestInfo_PrintException_IntegrationTest(t *testing.T) {
 			args := []string{
 				"info", "exception",
 				"--aida-db", aidaDbPath,
-				tc.queryArg,
 			}
+			args = append(args, tc.queryArg...)
 
 			app := cli.App{
 				Commands: []*cli.Command{
@@ -982,4 +996,23 @@ func TestInfo_PrintExceptionForBlock_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}
+}
+
+func TestInfo_PrintExceptionForBlock_AidaDbDoesNotExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
+	}
+
+	errWant := "cannot open aida-db; cannot open leveldb; stat " + aidaDbPath + ": no such file or directory"
+
+	err := printExceptionForBlock(cfg, log, 0)
+	if err == nil {
+		t.Fatalf("expected an error %v, but got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error())
 }
