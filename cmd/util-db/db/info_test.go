@@ -110,6 +110,7 @@ func TestInfo_PrintCount_OnlyCalculateGivenRange(t *testing.T) {
 	log.EXPECT().Noticef("Found %v deleted accounts", 1)
 	log.EXPECT().Noticef("Found %v state-hashes", uint64(1))
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(0))
+	log.EXPECT().Noticef("Found %v exceptions", 0)
 
 	err := printCount(cfg, log)
 	assert.NoError(t, err)
@@ -351,7 +352,6 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find state hash range; %v", []interface{}{gomock.Any()}},
 				{"Warningf", "cannot find exception range; %v", []interface{}{gomock.Any()}},
 			},
 		},
@@ -456,6 +456,7 @@ func TestInfo_PrintRange_Success(t *testing.T) {
 	log.EXPECT().Infof("Deleted block range: %v - %v", uint64(1), uint64(10))
 	log.EXPECT().Warningf("cannot find state hash range; %s", "cannot get first state hash; not implemented")
 	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
+	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(35))
 
 	cfg := &utils.Config{
 		AidaDb:      aidaDbPath,
@@ -762,6 +763,16 @@ func generateTestAidaDb(t *testing.T) string {
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
 		err = utils.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write exceptions to the database
+	for i := 31; i <= 35; i++ {
+		key := []byte(db.ExceptionDBPrefix)
+		key = append(key, db.BlockToBytes(uint64(i))...)
+		err = aidaDb.Put(key, []byte("exception data"))
 		if err != nil {
 			t.Fatal(err)
 		}

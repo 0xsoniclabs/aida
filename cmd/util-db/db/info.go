@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"

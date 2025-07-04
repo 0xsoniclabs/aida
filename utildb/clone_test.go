@@ -33,7 +33,8 @@ func TestClone(t *testing.T) {
 		{"CustomTypeUpdate", utils.CustomType, "update", ""},
 		{"CustomTypeStateHash", utils.CustomType, "state-hash", ""},
 		{"CustomTypeBlockHash", utils.CustomType, "block-hash", ""},
-		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")"},
+		{"CustomTypeException", utils.CustomType, "exception", ""},
+		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
 	}
 
 	for _, tt := range tests {

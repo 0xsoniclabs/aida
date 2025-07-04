@@ -395,7 +395,7 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 		DbComponent: "invalid_component",
 	}
 
-	errWant := "invalid db component: invalid_component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")"
+	errWant := "invalid db component: invalid_component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"
 	err = TableHash(cfg, database, log)
 	if err == nil {
 		t.Fatalf("expected an error: %v, but got nil", errWant)
