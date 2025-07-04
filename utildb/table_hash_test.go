@@ -29,7 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
-	substatetypes "github.com/0xsoniclabs/substate/types"
+	stypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
@@ -69,6 +69,9 @@ func TestTableHash_Empty(t *testing.T) {
 		// block hash count
 		log.EXPECT().Info(gomock.Any()),
 		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(0)),
+		// exception count
+		log.EXPECT().Info(gomock.Any()),
+		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(0)),
 	)
 
 	// Call the function
@@ -95,19 +98,21 @@ func TestTableHash_Filled(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	substateCount, deleteCount, updateCount, stateHashCount, blockHashCount := fillFakeAidaDb(t, database)
+	substateCount, deleteCount, updateCount, stateHashCount, blockHashCount, exceptionCount := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
-		log.EXPECT().Info(gomock.Any()),
-		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(substateCount)),
-		log.EXPECT().Info(gomock.Any()),
-		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(deleteCount)),
-		log.EXPECT().Info(gomock.Any()),
-		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(updateCount)),
-		log.EXPECT().Info(gomock.Any()),
-		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(stateHashCount)),
-		log.EXPECT().Info(gomock.Any()),
-		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(blockHashCount)),
+		log.EXPECT().Info("Generating Substate hash..."),
+		log.EXPECT().Infof("Substate hash: %x; count %v", gomock.Any(), uint64(substateCount)),
+		log.EXPECT().Info("Generating Deletion hash..."),
+		log.EXPECT().Infof("Deletion hash: %x; count %v", gomock.Any(), uint64(deleteCount)),
+		log.EXPECT().Info("Generating Updateset hash..."),
+		log.EXPECT().Infof("Updateset hash: %x; count %v", gomock.Any(), uint64(updateCount)),
+		log.EXPECT().Info("Generating State-Hashes hash..."),
+		log.EXPECT().Infof("State-Hashes hash: %x; count %v", gomock.Any(), uint64(stateHashCount)),
+		log.EXPECT().Info("Generating Block-Hashes hash..."),
+		log.EXPECT().Infof("Block-Hashes hash: %x; count %v", gomock.Any(), uint64(blockHashCount)),
+		log.EXPECT().Info("Generating Exception hash..."),
+		log.EXPECT().Infof("Exception hash: %x; count %v", gomock.Any(), uint64(exceptionCount)),
 	)
 
 	// Call the function
@@ -134,7 +139,7 @@ func TestTableHash_JustSubstate(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	substateCount, _, _, _, _ := fillFakeAidaDb(t, database)
+	substateCount, _, _, _, _, _ := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
 		log.EXPECT().Info(gomock.Any()),
@@ -165,7 +170,7 @@ func TestTableHash_JustDelete(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	_, deleteCount, _, _, _ := fillFakeAidaDb(t, database)
+	_, deleteCount, _, _, _, _ := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
 		log.EXPECT().Info(gomock.Any()),
@@ -196,7 +201,7 @@ func TestTableHash_JustUpdate(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	_, _, updateCount, _, _ := fillFakeAidaDb(t, database)
+	_, _, updateCount, _, _, _ := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
 		log.EXPECT().Info(gomock.Any()),
@@ -227,7 +232,7 @@ func TestTableHash_JustStateHash(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	_, _, _, stateHashCount, _ := fillFakeAidaDb(t, database)
+	_, _, _, stateHashCount, _, _ := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
 		log.EXPECT().Info(gomock.Any()),
@@ -258,7 +263,7 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 		Last:        100, // None of the following generators must not generate record higher than this number
 	}
 
-	_, _, _, _, blockHashCount := fillFakeAidaDb(t, database)
+	_, _, _, _, blockHashCount, _ := fillFakeAidaDb(t, database)
 
 	gomock.InOrder(
 		log.EXPECT().Info(gomock.Any()),
@@ -390,7 +395,7 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 		DbComponent: "invalid_component",
 	}
 
-	errWant := "invalid db component: invalid_component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")"
+	errWant := "invalid db component: invalid_component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"
 	err = TableHash(cfg, database, log)
 	if err == nil {
 		t.Fatalf("expected an error: %v, but got nil", errWant)
@@ -398,7 +403,38 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 	assert.Equal(t, errWant, err.Error())
 }
 
-func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
+func TestTableHash_JustException(t *testing.T) {
+	tmpDir := t.TempDir() + "/aidaDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer database.Close()
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	// Create a config
+	cfg := &utils.Config{
+		DbComponent: string(dbcomponent.Exception), // Set this to the component you want to test
+		First:       0,
+		Last:        100, // None of the following generators must not generate record higher than this number
+	}
+
+	_, _, _, _, _, exceptionCount := fillFakeAidaDb(t, database)
+
+	gomock.InOrder(
+		log.EXPECT().Info(gomock.Any()),
+		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(exceptionCount)),
+	)
+
+	// Call the function
+	err = TableHash(cfg, database, log) // Pass a logger if needed
+	assert.NoError(t, err)
+}
+
+func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, int) {
 	// Seed the random number generator
 	rand.NewSource(time.Now().UnixNano())
 
@@ -420,8 +456,8 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 				Value:    big.NewInt(int64(rand.Intn(100))),
 				GasPrice: big.NewInt(int64(rand.Intn(100))),
 			},
-			InputSubstate:  substate.WorldState{substatetypes.Address{0x0}: acc},
-			OutputSubstate: substate.WorldState{substatetypes.Address{0x0}: acc},
+			InputSubstate:  substate.WorldState{stypes.Address{0x0}: acc},
+			OutputSubstate: substate.WorldState{stypes.Address{0x0}: acc},
 			Result:         &substate.Result{},
 		}
 
@@ -437,7 +473,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 	numDestroyedAccounts := rand.Intn(5) + 6
 
 	for i := 0; i < numDestroyedAccounts; i++ {
-		err := ddb.SetDestroyedAccounts(uint64(i), 0, []substatetypes.Address{substatetypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))}, []substatetypes.Address{})
+		err := ddb.SetDestroyedAccounts(uint64(i), 0, []stypes.Address{stypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))}, []stypes.Address{})
 		if err != nil {
 			t.Fatalf("error setting destroyed accounts: %v", err)
 		}
@@ -451,7 +487,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 	for i := 0; i < numUpdates; i++ {
 		sa := new(substate.Account)
 		sa.Balance = uint256.NewInt(uint64(utils.GetRandom(1, 1000*5000)))
-		randomAddress := substatetypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
+		randomAddress := stypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
 		worldState := substate.WorldState{
 
 			randomAddress: sa,
@@ -459,7 +495,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 		err := udb.PutUpdateSet(&updateset.UpdateSet{
 			WorldState: worldState,
 			Block:      uint64(i),
-		}, []substatetypes.Address{})
+		}, []stypes.Address{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -484,7 +520,28 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int) {
 		}
 	}
 
-	return numSubstates, numDestroyedAccounts, numUpdates, numStateHashes, numBlockHashes
+	// Generate random number between 26-30
+	numExceptions := rand.Intn(5) + 26
+	udbEx := db.MakeDefaultExceptionDBFromBaseDB(aidaDb)
+	for i := 0; i < numExceptions; i++ {
+		err := udbEx.PutException(&substate.Exception{
+			Block: uint64(i),
+			Data: substate.ExceptionBlock{
+				Transactions: make(map[int]substate.ExceptionTx),
+				PreBlock: &substate.WorldState{
+					stypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
+				},
+				PostBlock: &substate.WorldState{
+					stypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("error setting exception: %v", err)
+		}
+	}
+
+	return numSubstates, numDestroyedAccounts, numUpdates, numStateHashes, numBlockHashes, numExceptions
 }
 
 func TestTableHash_GetHashesHash_Ticker(t *testing.T) {

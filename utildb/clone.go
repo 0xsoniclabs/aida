@@ -202,6 +202,11 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 
 	c.readBlockHashes()
 
+	err = c.readExceptions()
+	if err != nil {
+		return fmt.Errorf("cannot read exceptions; %v", err)
+	}
+
 	return nil
 }
 
@@ -393,6 +398,24 @@ func (c *cloner) readBlockHashes() {
 	c.read([]byte(utils.BlockHashPrefix), c.cfg.First, endCond)
 }
 
+// readExceptions reading exceptions from AidaDb
+func (c *cloner) readExceptions() error {
+	endCond := func(key []byte) (bool, error) {
+		block, err := db.DecodeExceptionDBKey(key)
+		if err != nil {
+			return false, err
+		}
+		if block > c.cfg.Last {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	c.read([]byte(db.ExceptionDBPrefix), c.cfg.First, endCond)
+
+	return nil
+}
+
 func (c *cloner) sendToWriteChan(k, v []byte) bool {
 	// make deep read key and value
 	// need to pass deep read of values into the channel
@@ -484,6 +507,13 @@ func (c *cloner) readDataCustom() error {
 
 	if c.cloneComponent == dbcomponent.BlockHash || c.cloneComponent == dbcomponent.All {
 		c.readBlockHashes()
+	}
+
+	if c.cloneComponent == dbcomponent.Exception || c.cloneComponent == dbcomponent.All {
+		err := c.readExceptions()
+		if err != nil {
+			return fmt.Errorf("cannot read exceptions; %v", err)
+		}
 	}
 
 	return nil
