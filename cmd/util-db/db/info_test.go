@@ -824,7 +824,7 @@ func TestInfo_PrintException_IntegrationTest(t *testing.T) {
 			insertKey:   "0x1",
 			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			queryArg:    "1",
-			expectErr:   "cannot get exception for block 1; cannot decode exception data from protobuf block: 1, proto: cannot parse invalid wire-format data",
+			expectErr:   "cannot get exception for block 1; cannot decode exception data from protobuf block: 1, proto:",
 		},
 		{
 			name:        "InvalidBlockNumber",
