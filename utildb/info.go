@@ -216,7 +216,7 @@ func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 	for iter.Next() {
 		block, err := db.DecodeExceptionDBKey(iter.Key())
 		if err != nil {
-			return 0, fmt.Errorf("cannot Get all destroyed accounts; %v", err)
+			return 0, fmt.Errorf("cannot get exception count; %v", err)
 		}
 		if block > cfg.Last {
 			break

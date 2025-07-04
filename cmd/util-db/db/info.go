@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -441,13 +442,21 @@ func printException(ctx *cli.Context) error {
 		return argErr
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-Exception")
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-PrintException")
 
+	if ctx.Args().Len() != 1 {
+		return fmt.Errorf("printException command requires exactly 1 argument")
+	}
+	blockNumStr := ctx.Args().Slice()[0]
 	blockNum, err := strconv.ParseUint(ctx.Args().Slice()[0], 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot parse block number %s; %v", blockNumStr, err)
 	}
 
+	return printExceptionForBlock(cfg, log, blockNum)
+}
+
+func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint64) error {
 	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %v", err)
@@ -455,11 +464,6 @@ func printException(ctx *cli.Context) error {
 
 	exception, err := exceptionDb.GetException(blockNum)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			log.Warningf("No exception found for block %d", blockNum)
-			return nil
-		}
-
 		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
 	}
 
