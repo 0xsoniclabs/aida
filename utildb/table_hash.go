@@ -331,7 +331,7 @@ func GetExceptionDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 			i++
 			select {
 			case <-ticker.C:
-				log.Infof("Block-Hashes hash progress: %v/%v", i, cfg.Last)
+				log.Infof("Exceptions hash progress: %v/%v", i, cfg.Last)
 			default:
 			}
 
