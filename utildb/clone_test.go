@@ -169,6 +169,12 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			dbComponent: "block-hash",
 			expectedErr: "clone failed for BlockHashInvalidDbKey: condition emit error; invalid length of block hash key, expected at least 10, got 5",
 		},
+		{
+			name:        "ExceptionInvalidDbKey",
+			keyPrefix:   db.ExceptionDBPrefix,
+			dbComponent: "exception",
+			expectedErr: "clone failed for ExceptionInvalidDbKey: condition emit error; invalid length of exception key: 5",
+		},
 	}
 
 	for _, tt := range tests {
