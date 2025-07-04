@@ -124,6 +124,17 @@ func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, nam
 		})
 	}
 
+	if dbc == "" || dbc == "all" || dbc == "exception" {
+		t.Run("Exception", func(t *testing.T) {
+			exceptionCount := 0
+			exceptionIter := cloneDb.NewIterator([]byte(db.ExceptionDBPrefix), nil)
+			for exceptionIter.Next() {
+				exceptionCount++
+			}
+			assert.Equal(t, 10, exceptionCount, "Expected 10 exceptions in the cloned database")
+		})
+	}
+
 	return nil
 }
 
@@ -357,6 +368,22 @@ func generateTestAidaDb(t *testing.T) db.BaseDB {
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
 		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write exceptions to the database
+	for i := 31; i <= 40; i++ {
+		exception := &substate.Exception{
+			Block: uint64(i),
+			Data: substate.ExceptionBlock{
+				PreBlock:  &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100)}},
+				PostBlock: &substate.WorldState{types.Address{0x02}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(200)}},
+			},
+		}
+		eDb := db.MakeDefaultExceptionDBFromBaseDB(database)
+		err = eDb.PutException(exception)
 		if err != nil {
 			t.Fatal(err)
 		}

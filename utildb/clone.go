@@ -202,6 +202,11 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 
 	c.readBlockHashes()
 
+	err = c.readExceptions()
+	if err != nil {
+		return fmt.Errorf("cannot read exceptions; %v", err)
+	}
+
 	return nil
 }
 
