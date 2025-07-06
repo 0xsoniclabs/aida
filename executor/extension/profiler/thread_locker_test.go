@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeThreadLocker(t *testing.T) {
+func TestThreadLocker_MakeThreadLocker(t *testing.T) {
 	ext := MakeThreadLocker[int]()
 	_, ok := ext.(executor.Extension[int])
 	assert.True(t, ok)
