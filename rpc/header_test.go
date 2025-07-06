@@ -132,7 +132,6 @@ func TestHeader_Namespace(t *testing.T) {
 		}
 		ns, err := h.Namespace()
 		assert.NoError(t, err)
-		// TODO may be bug
 		assert.Equal(t, "eth", ns)
 	})
 

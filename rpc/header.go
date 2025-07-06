@@ -147,13 +147,6 @@ func (h *Header) Namespace() (string, error) {
 		return "", fmt.Errorf("namespace not initialized")
 	}
 
-	// TODO may be bug
-	//for n, i := range namespaceDictionary {
-	//	if h.namespace == i {
-	//		return n, nil
-	//	}
-	//}
-
 	// Extract keys into a slice
 	var keys []string
 	for n := range namespaceDictionary {

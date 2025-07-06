@@ -139,7 +139,6 @@ func (i *iterator) read() (*RequestAndResults, error) {
 		return nil, err
 	}
 
-	// TODO may be bug
 	namespace, err := hdr.Namespace()
 	if err != nil {
 		return nil, err

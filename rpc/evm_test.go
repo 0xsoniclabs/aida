@@ -169,21 +169,6 @@ func TestEvmExecutor_sendEstimateGas(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockArchive := state.NewMockNonCommittableStateDB(ctrl)
-	mockArchive.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(99_999_999 * 100)).AnyTimes()
-	mockArchive.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockArchive.EXPECT().Prepare(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockArchive.EXPECT().GetNonce(gomock.Any()).Return(uint64(1234)).AnyTimes()
-	mockArchive.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockArchive.EXPECT().GetRefund().Return(uint64(0)).AnyTimes()
-	mockArchive.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
-	mockArchive.EXPECT().GetCode(gomock.Any()).Return([]uint8{}).AnyTimes()
-	mockArchive.EXPECT().Snapshot().Return(0).AnyTimes()
-	mockArchive.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-	mockArchive.EXPECT().GetCodeHash(gomock.Any()).Return(common.Hash{}).AnyTimes()
-	mockArchive.EXPECT().GetStorageRoot(gomock.Any()).Return(common.Hash{}).AnyTimes()
-	mockArchive.EXPECT().GetRefund().Return(uint64(0)).AnyTimes()
-	mockArchive.EXPECT().RevertToSnapshot(gomock.Any()).AnyTimes()
-
 	e := &EvmExecutor{
 		args:     newTxArgs(map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}),
 		archive:  mockArchive,
@@ -191,9 +176,9 @@ func TestEvmExecutor_sendEstimateGas(t *testing.T) {
 		blockId:  big.NewInt(1),
 		rules:    opera.DefaultEconomyRules(),
 	}
-	out, err := e.sendEstimateGas()
-	assert.Equal(t, hexutil.Uint64(0x0), out)
-	assert.NotNil(t, err)
+	assert.Panics(t, func() {
+		_, _ = e.sendEstimateGas()
+	})
 }
 
 func TestEvmExecutor_executable(t *testing.T) {

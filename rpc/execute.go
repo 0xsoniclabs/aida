@@ -24,7 +24,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/Fantom-foundation/lachesis-base/common/littleendian"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -112,15 +111,6 @@ func executeCall(evm *EvmExecutor) *result {
 		gasUsed: gasUsed,
 		result:  res,
 		err:     err,
-	}
-}
-
-// executeEstimateGas into EvmExecutor which calculates gas needed for a transaction
-func executeEstimateGas(evm *EvmExecutor) *result {
-	gas, err := evm.sendEstimateGas()
-	return &result{
-		result: littleendian.Uint64ToBytes(uint64(gas)),
-		err:    err,
 	}
 }
 

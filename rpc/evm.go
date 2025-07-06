@@ -176,22 +176,6 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	evm = e.newEVM(msg, hashErr)
 
 	executionResult, err = core.ApplyMessage(evm, msg, gp)
-	//TODO: bug
-	//if executionResult.Err != nil {
-	//	return nil, fmt.Errorf("execution returned err; %w", executionResult.Err)
-	//}
-	//
-	//if hashErr != nil {
-	//	return nil, fmt.Errorf("cannot get state hash; %w", *hashErr)
-	//}
-	//
-	//// If the timer caused an abort, return an appropriate error message
-	//if evm.Cancelled() {
-	//	return nil, fmt.Errorf("execution aborted: timeout")
-	//}
-	//if err != nil {
-	//	return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
-	//}
 	if err != nil {
 		return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
 	}
@@ -215,46 +199,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 // sendEstimateGas executes estimateGas method in the EvmExecutor
 // It calculates how much gas would transaction need if it was executed
 func (e *EvmExecutor) sendEstimateGas() (hexutil.Uint64, error) {
-	hi, lo, cap, err := e.findHiLoCap()
-	if err != nil {
-		return 0, err
-	}
-
-	// Execute the binary search and hone in on an executable gas limit
-	for lo+1 < hi {
-		mid := (hi + lo) / 2
-		failed, _, err := e.executable(mid)
-
-		// If the error is not nil(consensus error), it means the provided message
-		// call or transaction will never be accepted no matter how much gas it is
-		// assigned. Return the error directly, don't struggle anymore.
-		if err != nil {
-			return 0, err
-		}
-		if failed {
-			lo = mid
-		} else {
-			hi = mid
-		}
-	}
-	// Reject the transaction as invalid if it still fails at the highest allowance
-	if hi == cap {
-		failed, result, err := e.executable(hi)
-		if err != nil {
-			return 0, err
-		}
-		if failed {
-			if result != nil && result.Err != vm.ErrOutOfGas {
-				if len(result.Revert()) > 0 {
-					return 0, result.Err
-				}
-				return 0, result.Err
-			}
-			// Otherwise, the specified gas cap is too low
-			return 0, fmt.Errorf("gas required exceeds allowance (%d)", cap)
-		}
-	}
-	return hexutil.Uint64(hi), nil
+	panic("not implemented")
 }
 
 // executable tries to execute call with given gas into EVM. This func is used for estimateGas calculation
@@ -314,11 +259,6 @@ func (e *EvmExecutor) findHiLoCap() (uint64, uint64, uint64, error) {
 		allowance := new(big.Int).Div(available, feeCap)
 		// If the allowance is larger than maximum uint64, skip checking
 		if allowance.IsUint64() && hi > allowance.Uint64() {
-			// TODO no used
-			//transfer := e.args.Value
-			//if transfer == nil {
-			//	transfer = new(hexutil.Big)
-			//}
 			hi = allowance.Uint64()
 		}
 	}
