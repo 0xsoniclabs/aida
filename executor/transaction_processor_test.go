@@ -1177,7 +1177,7 @@ func TestToscaTxContext_IsSlotInAccessList(t *testing.T) {
 }
 
 // TestBigToValue tests the bigToValue function
-func TestBigToValue(t *testing.T) {
+func TestExecutor_BigToValue(t *testing.T) {
 	tests := []struct {
 		name  string
 		input *big.Int
@@ -1223,7 +1223,7 @@ func TestBigToValue(t *testing.T) {
 }
 
 // TestUint256ToValue tests the uint256ToValue function
-func TestUint256ToValue(t *testing.T) {
+func TestExecutor_Uint256ToValue(t *testing.T) {
 	tests := []struct {
 		name  string
 		input *uint256.Int
@@ -1556,7 +1556,7 @@ func TestMessageResult_Interface(t *testing.T) {
 }
 
 // TestMakeTxProcessor tests the creation of TxProcessor with different configurations
-func TestMakeTxProcessor(t *testing.T) {
+func TestExecutor_MakeTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *utils.Config
@@ -1999,7 +1999,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 
 }
 
-func TestMessageToTransaction(t *testing.T) {
+func TestExecutor_MessageToTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -2227,7 +2227,7 @@ func TestLiveDbTxProcessor_Process(t *testing.T) {
 	})
 }
 
-func TestMakeLiveDbTxProcessor(t *testing.T) {
+func TestExecutor_MakeLiveDbTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *utils.Config
@@ -2272,7 +2272,7 @@ func TestMakeLiveDbTxProcessor(t *testing.T) {
 	}
 }
 
-func TestMakeArchiveDbTxProcessor(t *testing.T) {
+func TestExecutor_MakeArchiveDbTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *utils.Config
@@ -2317,7 +2317,7 @@ func TestMakeArchiveDbTxProcessor(t *testing.T) {
 	}
 }
 
-func TestMakeMakeEthTestProcessor(t *testing.T) {
+func TestExecutor_MakeMakeEthTestProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *utils.Config
