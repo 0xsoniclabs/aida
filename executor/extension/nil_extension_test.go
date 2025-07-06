@@ -17,13 +17,11 @@
 package extension
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"errors"
-
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNilExtensionIsExtension(t *testing.T) {
