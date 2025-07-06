@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-//go:generate mockgen -source result.go -destination result_mocks.go -package txcontext
+//go:generate mockgen -source result.go -destination result_mock.go -package txcontext
 
 package txcontext
 
