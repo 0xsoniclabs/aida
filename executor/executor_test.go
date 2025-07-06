@@ -23,11 +23,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 

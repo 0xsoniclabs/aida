@@ -20,13 +20,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli/v2"
-
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 

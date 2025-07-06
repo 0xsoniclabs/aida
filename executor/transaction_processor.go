@@ -24,27 +24,24 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/0xsoniclabs/aida/ethtest"
-	"github.com/ethereum/go-ethereum/core"
-	"golang.org/x/exp/maps"
-
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/0xsoniclabs/tosca/go/tosca"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/holiman/uint256"
-
 	_ "github.com/0xsoniclabs/tosca/go/processor/floria"
 	_ "github.com/0xsoniclabs/tosca/go/processor/geth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/geth_eth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/opera"
+	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
+	"golang.org/x/exp/maps"
 )
 
 // MakeLiveDbTxProcessor creates a executor.Processor which processes transaction into LIVE StateDb.
