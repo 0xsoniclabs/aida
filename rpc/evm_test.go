@@ -5,18 +5,17 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/ethapi"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/holiman/uint256"
-	"go.uber.org/mock/gomock"
-
-	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestRpc_newEvmExecutor(t *testing.T) {
