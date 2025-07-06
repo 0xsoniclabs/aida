@@ -180,7 +180,7 @@ func TestEthereumDbPostTransactionUpdater_PreRun(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestMakeEthereumDbPostTransactionUpdater(t *testing.T) {
+func TestEthereumDbPostTransactionUpdater_MakeEthereumDbPostTransactionUpdater(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.ChainID = utils.PseudoTx
 	ext := MakeEthereumDbPostTransactionUpdater(cfg)

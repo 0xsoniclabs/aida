@@ -137,7 +137,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 	})
 }
 
-func TestMakeShadowDbValidator(t *testing.T) {
+func TestShadowDbValidator_MakeShadowDbValidator(t *testing.T) {
 	t.Run("ShadowDbEnabled", func(t *testing.T) {
 		cfg := &utils.Config{
 			ShadowDb: true,

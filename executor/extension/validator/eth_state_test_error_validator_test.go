@@ -121,7 +121,7 @@ func TestEthStateTestValidator_PostBlockChecksError(t *testing.T) {
 	}
 }
 
-func TestMakeEthStateTestErrorValidator(t *testing.T) {
+func TestEthStateTestValidator_MakeEthStateTestErrorValidator(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestErrorValidator(cfg)

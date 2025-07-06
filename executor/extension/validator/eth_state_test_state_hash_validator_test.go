@@ -99,7 +99,7 @@ func TestEthStateTestStateHashValidator_PostBlock(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestMakeEthStateTestStateHashValidator(t *testing.T) {
+func TestEthStateTestStateHashValidator_MakeEthStateTestStateHashValidator(t *testing.T) {
 	t.Run("with validation enabled", func(t *testing.T) {
 		cfg := &utils.Config{Validate: true}
 		ext := MakeEthStateTestStateHashValidator(cfg)
