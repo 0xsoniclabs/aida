@@ -51,7 +51,7 @@ func TestArchivePrepper_ArchiveGetsReleasedInPostBlock(t *testing.T) {
 	}
 }
 
-func TestMakeArchivePrepper(t *testing.T) {
+func TestArchivePrepper_MakeArchivePrepper(t *testing.T) {
 	ext := MakeArchivePrepper[any]()
 	assert.NotNil(t, ext)
 }

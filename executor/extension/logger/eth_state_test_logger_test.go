@@ -52,7 +52,7 @@ func TestEthStateTestLogger_PostRunLogsOverall(t *testing.T) {
 
 }
 
-func TestMakeEthStateTestLogger(t *testing.T) {
+func TestEthStateTestLogger_MakeEthStateTestLogger(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeEthStateTestLogger(cfg, 0)
 

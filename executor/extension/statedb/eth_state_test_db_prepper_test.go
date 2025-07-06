@@ -81,7 +81,7 @@ func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
 	}
 }
 
-func TestMakeEthStateTestDbPrepper(t *testing.T) {
+func Test_ethStateTestDbPrepper_MakeEthStateTestDbPrepper(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeEthStateTestDbPrepper(cfg)
 	_, ok := ext.(*ethStateTestDbPrepper)

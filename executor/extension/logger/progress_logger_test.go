@@ -136,7 +136,7 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
 }
 
-func TestMakeProgressLogger(t *testing.T) {
+func TestProgressLoggerExtension_MakeProgressLogger(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeProgressLogger[any](cfg, -1)
 

@@ -556,7 +556,7 @@ func Test_RPCComparator_InvalidArgumentInSomeMethodsDoesNotCauseError(t *testing
 
 }
 
-func TestNewUnexpectedDataTypeErr(t *testing.T) {
+func TestRpcComparator_NewUnexpectedDataTypeErr(t *testing.T) {
 	t.Run("Response is not nil", func(t *testing.T) {
 		data := &rpc.RequestAndResults{
 			Query: &rpc.Body{
@@ -586,7 +586,7 @@ func TestNewUnexpectedDataTypeErr(t *testing.T) {
 	})
 }
 
-func TestNewNoMatchingErrorsErr(t *testing.T) {
+func TestRpcComparator_NewNoMatchingErrorsErr(t *testing.T) {
 	data := &rpc.RequestAndResults{
 		Query: &rpc.Body{
 			Method: "ftm_getBalance",
@@ -600,7 +600,7 @@ func TestNewNoMatchingErrorsErr(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestNewCannotUnmarshalResult(t *testing.T) {
+func TestRpcComparator_NewCannotUnmarshalResult(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -620,7 +620,7 @@ func TestNewCannotUnmarshalResult(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestNewCannotSendRPCRequestErr(t *testing.T) {
+func TestRpcComparator_NewCannotSendRPCRequestErr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -639,7 +639,7 @@ func TestNewCannotSendRPCRequestErr(t *testing.T) {
 	err := newCannotSendRPCRequestErr(result, data, 0)
 	assert.Error(t, err)
 }
-func TestNewComparatorError(t *testing.T) {
+func TestRpcComparator_NewComparatorError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -674,7 +674,7 @@ func TestNewComparatorError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCompareEVMStateDBError(t *testing.T) {
+func TestRpcComparator_CompareEVMStateDBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -722,7 +722,7 @@ func TestCompareEVMStateDBError(t *testing.T) {
 	})
 }
 
-func TestCompare(t *testing.T) {
+func TestRpcComparator_Compare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

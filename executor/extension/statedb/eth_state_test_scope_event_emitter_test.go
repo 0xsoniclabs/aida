@@ -61,7 +61,7 @@ func TestEthStateScopeEventEmitter_PostBlockCallsEndBlockAndEndTransaction(t *te
 	}
 }
 
-func TestMakeEthStateScopeTestEventEmitter(t *testing.T) {
+func TestEthStateScopeEventEmitter_MakeEthStateScopeTestEventEmitter(t *testing.T) {
 	ext := MakeEthStateScopeTestEventEmitter()
 	_, ok := ext.(executor.Extension[txcontext.TxContext])
 	assert.True(t, ok)

@@ -13,7 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestMakeTxPrimer(t *testing.T) {
+func TestTxPrimer_MakeTxPrimer(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeTxPrimer(cfg)
 

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeReplayProfiler(t *testing.T) {
+func TestReplayProfiler_MakeReplayProfiler(t *testing.T) {
 	// case profile true
 	cfg := &utils.Config{
 		Profile: true,
