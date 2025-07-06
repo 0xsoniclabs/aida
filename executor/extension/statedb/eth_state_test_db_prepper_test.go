@@ -21,13 +21,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {

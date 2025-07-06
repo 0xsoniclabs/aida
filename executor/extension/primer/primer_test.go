@@ -23,16 +23,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
-
-	"github.com/0xsoniclabs/substate/types/rlp"
-	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -40,7 +30,15 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/rlp"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"go.uber.org/mock/gomock"
 )
 

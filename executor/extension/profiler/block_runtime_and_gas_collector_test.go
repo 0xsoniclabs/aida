@@ -22,14 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/aida/profile/blockprofile"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/profile/blockprofile"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestBlockProfilerExtension_NoProfileIsCollectedIfDisabled(t *testing.T) {

@@ -22,10 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/executor/extension"
-
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"

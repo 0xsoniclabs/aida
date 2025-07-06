@@ -19,12 +19,11 @@ package statedb
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 

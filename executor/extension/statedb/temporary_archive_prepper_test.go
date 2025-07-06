@@ -21,11 +21,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 

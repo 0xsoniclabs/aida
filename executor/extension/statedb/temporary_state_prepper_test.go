@@ -22,9 +22,8 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTemporaryStatePrepper_DefaultDbImplementationIsOffTheChainStateDb(t *testing.T) {
