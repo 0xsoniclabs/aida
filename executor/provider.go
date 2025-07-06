@@ -16,7 +16,7 @@
 
 package executor
 
-//go:generate mockgen -source provider.go -destination provider_mocks.go -package executor
+//go:generate mockgen -source provider.go -destination provider_mock.go -package executor
 
 type Provider[T any] interface {
 	// Run iterates through transaction in the block range [from,to) in order
