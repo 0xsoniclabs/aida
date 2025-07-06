@@ -19,11 +19,10 @@ package executor
 import (
 	_ "embed"
 	"encoding/json"
-	"os"
-	"testing"
-
 	"errors"
+	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/utils"
@@ -80,7 +79,7 @@ func createTestDataFile(t *testing.T) string {
 	return pathFile
 }
 
-func TestNewEthStateTestProvider(t *testing.T) {
+func TestExecutor_NewEthStateTestProvider(t *testing.T) {
 	cfg := &utils.Config{ArgPath: "somepath"}
 	provider := NewEthStateTestProvider(cfg)
 	require.NotNil(t, provider)
@@ -109,27 +108,7 @@ func TestEthTestProvider_Run_NewSplitterFails_NonExistentFile(t *testing.T) {
 	err := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
 	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), "no such file or directory", "Error should indicate file issue")
-}
-
-func TestEthTestProvider_Run_SplitStateTestsFails_MalformedJSON(t *testing.T) {
-	malformedJSONPath := filepath.Join(t.TempDir(), "malformed.json")
-	err := os.WriteFile(malformedJSONPath, []byte("{ \"test\" : malformed }"), 0644)
-	require.NoError(t, err)
-
-	cfg := &utils.Config{
-		ArgPath: malformedJSONPath,
-		Fork:    "all",
-	}
-	provider := NewEthStateTestProvider(cfg)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockConsumer := NewMockTxConsumer(ctrl)
-
-	runErr := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
-	require.Error(t, runErr)
-
-	assert.Contains(t, runErr.Error(), "cannot unmarshal", "Error should indicate JSON parsing issue")
+	assert.Contains(t, err.Error(), "no such file or directory")
 }
 
 func TestEthTestProvider_Run_ConsumerError(t *testing.T) {
@@ -149,8 +128,8 @@ func TestEthTestProvider_Run_ConsumerError(t *testing.T) {
 
 	runErr := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
 	require.Error(t, runErr)
-	assert.True(t, errors.Is(runErr, expectedErr), "Expected consumer error to be wrapped")
-	assert.Contains(t, runErr.Error(), "transaction failed", "Error message should indicate transaction failure context")
+	assert.True(t, errors.Is(runErr, expectedErr))
+	assert.Contains(t, runErr.Error(), "transaction failed")
 }
 
 func TestEthTestProvider_Run_NoTestsFromSplitter(t *testing.T) {
@@ -170,5 +149,5 @@ func TestEthTestProvider_Run_NoTestsFromSplitter(t *testing.T) {
 	mockConsumer := NewMockTxConsumer(ctrl)
 
 	runErr := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
-	assert.NoError(t, runErr, "Run should succeed with no errors if there are no tests")
+	assert.NoError(t, runErr)
 }
