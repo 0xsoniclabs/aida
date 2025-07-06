@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestToSubstateConsumer(t *testing.T) {
+func TestExecutor_ToSubstateConsumer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	consumer := NewMockTxConsumer(ctrl)
@@ -32,7 +32,7 @@ func TestToSubstateConsumer(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestToRPCConsumer(t *testing.T) {
+func TestExecutor_ToRPCConsumer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	consumer := NewMockRPCReqConsumer(ctrl)
@@ -54,7 +54,7 @@ func TestToRPCConsumer(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestToOperationConsumer(t *testing.T) {
+func TestExecutor_ToOperationConsumer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	consumer := NewMockOperationConsumer(ctrl)

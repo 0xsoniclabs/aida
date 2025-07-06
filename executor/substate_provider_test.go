@@ -212,7 +212,7 @@ func createSubstateDb(t *testing.T, path string) error {
 	return nil
 }
 
-func TestOpenSubstateProvider(t *testing.T) {
+func TestExecutor_OpenSubstateProvider(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
