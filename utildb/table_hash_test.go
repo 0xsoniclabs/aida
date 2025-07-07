@@ -631,3 +631,68 @@ func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count, "Expected count to be 2")
 }
+
+func TestTableHash_GetExceptionDbHash_OnlyGivenRange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	aidaDb := db.NewMockBaseDB(ctrl)
+	mockDb := db.NewMockDbAdapter(ctrl)
+
+	cfg := &utils.Config{
+		First: 0,
+		Last:  1,
+	}
+
+	excData := substate.ExceptionBlock{
+		Transactions: map[int]substate.ExceptionTx{
+			1: {
+				PreTransaction: &substate.WorldState{stypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
+			},
+		},
+	}
+
+	aidaDb.EXPECT().GetBackend().Return(mockDb)
+
+	kv := &testutil.KeyValue{}
+
+	data, err := protobuf.EncodeExceptionBlock(&excData)
+	kv.PutU(db.ExceptionDBBlockPrefix(0), data)
+	kv.PutU(db.ExceptionDBBlockPrefix(1), data)
+	// block 2 is outside of range, therefore this should not be counted
+	kv.PutU(db.ExceptionDBBlockPrefix(2), data)
+	iter := iterator.NewArrayIterator(kv)
+
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+
+	_, count, err := GetExceptionDbHash(cfg, aidaDb, log)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(2), count, "Expected count to be 2")
+}
+
+func TestTableHash_GetExceptionDbHash_InvalidData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	aidaDb := db.NewMockBaseDB(ctrl)
+	mockDb := db.NewMockDbAdapter(ctrl)
+
+	cfg := &utils.Config{
+		First: 0,
+		Last:  1,
+	}
+
+	aidaDb.EXPECT().GetBackend().Return(mockDb)
+
+	kv := &testutil.KeyValue{}
+
+	kv.PutU([]byte{0x01}, []byte{0x01})
+	iter := iterator.NewArrayIterator(kv)
+
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+
+	errWant := "invalid length of exception key: 1"
+	_, _, err := GetExceptionDbHash(cfg, aidaDb, log)
+	if err == nil {
+		t.Fatalf("expected an error: %v, but got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error(), "error message mismatch")
+}
