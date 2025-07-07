@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -37,4 +38,10 @@ func TestInMemoryDb_SelfDestruct6780OnlyDeletesContractsCreatedInSameTransaction
 	if want, got := false, db.HasSelfDestructed(b); want != got {
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
 	}
+}
+
+func TestInMemoryStateDB_GetLogs_ReturnEmptyLogsWithNilSnapshot(t *testing.T) {
+	sdb := &inMemoryStateDB{state: nil}
+	logs := sdb.GetLogs(common.Hash{}, 0, common.Hash{}, 0)
+	assert.Empty(t, logs)
 }
