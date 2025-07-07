@@ -411,12 +411,17 @@ func (db *inMemoryStateDB) Commit(block uint64, deleteEmptyObjects bool) (common
 	return common.Hash{}, nil
 }
 
-func collectLogs(s *snapshot) []*types.Log {
+func collectLogs(s *snapshot, blkTimestamp uint64) []*types.Log {
 	if s == nil {
 		return []*types.Log{}
 	}
-	logs := collectLogs(s.parent)
-	logs = append(logs, s.logs...)
+	logs := collectLogs(s.parent, blkTimestamp)
+	for _, log := range s.logs {
+		// only append logs that match the block timestamp
+		if log.BlockTimestamp == blkTimestamp {
+			logs = append(logs, log)
+		}
+	}
 	return logs
 }
 
@@ -425,7 +430,8 @@ func (db *inMemoryStateDB) GetLogs(txHash common.Hash, blk uint64, blkHash commo
 	// transaction, all logs are from the same transactions. But
 	// those need to be collected in the right order (inverse order
 	// snapshots).
-	logs := collectLogs(db.state)
+	logs := collectLogs(db.state, blkTimestamp)
+	// append data about the logs
 	for _, log := range logs {
 		log.TxHash = txHash
 		log.BlockNumber = blk

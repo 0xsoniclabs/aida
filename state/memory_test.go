@@ -47,21 +47,22 @@ func TestInMemoryStateDB_GetLogs_ReturnEmptyLogsWithNilSnapshot(t *testing.T) {
 	assert.Empty(t, logs)
 }
 
-func TestInMemoryStateDB_GetLogs_AddsInfoAboutBlockAndTx(t *testing.T) {
-	sdb := &inMemoryStateDB{state: &snapshot{
-		parent: &snapshot{
-			logs: []*types.Log{{Index: 1}},
-		},
-		logs: []*types.Log{{Index: 0}},
-	}}
+func TestInMemoryStateDB_GetLogs_AddsLogsWithCorrectTimestamp(t *testing.T) {
 	txHash := common.Hash{0x1, 0x2, 0x3}
 	blkNumber := uint64(10)
 	blkHash := common.Hash{0x4, 0x5, 0x6}
 	blkTimestamp := uint64(11)
+	sdb := &inMemoryStateDB{state: &snapshot{
+		parent: &snapshot{
+			logs: []*types.Log{{Index: 1, BlockTimestamp: blkTimestamp}},
+		},
+		logs: []*types.Log{{Index: 0}},
+	}}
 	logs := sdb.GetLogs(txHash, blkNumber, blkHash, blkTimestamp)
-	assert.Len(t, logs, 2) // No logs added yet
+	assert.Len(t, logs, 1) // No logs added yet
 	assert.Equal(t, logs[0].TxHash, txHash)
 	assert.Equal(t, blkNumber, logs[0].BlockNumber)
 	assert.Equal(t, blkHash, logs[0].BlockHash)
 	assert.Equal(t, blkTimestamp, logs[0].BlockTimestamp)
+	assert.Equal(t, uint(1), logs[0].Index)
 }
