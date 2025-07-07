@@ -1,7 +1,7 @@
 github.com/0xsoniclabs/go-ethereum v0.0.0-20250623123926-e563918a84b4 h1:CXx1PvzOP9kXGKSdPE+S+va2ovhFWnfb3nE7mStpNA4=
 github.com/0xsoniclabs/go-ethereum v0.0.0-20250623123926-e563918a84b4/go.mod h1:1VtASSKSjBQIF9mFv5/B5sllR7KFR05tVsiouSGI2dQ=
-github.com/0xsoniclabs/substate v0.0.0-20250623051532-878ecb79b20d h1:vqURCDbn2Pvr4fftTyYs1rwu2xodmjk9olXtX+0jNTs=
-github.com/0xsoniclabs/substate v0.0.0-20250623051532-878ecb79b20d/go.mod h1:7Hx9hLSJ9ZvBETy0ClSFqUii7O9BeyAuxv+jEp2rESM=
+github.com/0xsoniclabs/substate v0.0.0-20250626124144-3a4a1ba23f55 h1:4mvTvmI9mgF8y9xnJ2SxTFias0d08brfBnKKsD07ORo=
+github.com/0xsoniclabs/substate v0.0.0-20250626124144-3a4a1ba23f55/go.mod h1:7Hx9hLSJ9ZvBETy0ClSFqUii7O9BeyAuxv+jEp2rESM=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
 github.com/DataDog/zstd v1.5.6 h1:LbEglqepa/ipmmQJUDnSsfvA8e8IStVcGaFWDuxvGOY=
