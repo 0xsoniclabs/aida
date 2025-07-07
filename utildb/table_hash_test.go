@@ -28,11 +28,16 @@ import (
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/protobuf"
 	"github.com/0xsoniclabs/substate/substate"
 	stypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"go.uber.org/mock/gomock"
 )
 
@@ -585,4 +590,44 @@ func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 			assert.Equal(t, uint64(2), count, "Expected count to be 2")
 		})
 	}
+}
+
+func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	aidaDb := db.NewMockBaseDB(ctrl)
+	mockDb := db.NewMockDbAdapter(ctrl)
+
+	cfg := &utils.Config{
+		First: 0,
+		Last:  1,
+	}
+
+	excData := substate.ExceptionBlock{
+		Transactions: map[int]substate.ExceptionTx{
+			1: {
+				PreTransaction: &substate.WorldState{stypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
+			},
+		},
+	}
+
+	aidaDb.EXPECT().GetBackend().Return(mockDb)
+
+	kv := &testutil.KeyValue{}
+
+	data, err := protobuf.EncodeExceptionBlock(&excData)
+	kv.PutU(db.ExceptionDBBlockPrefix(0), data)
+	kv.PutU(db.ExceptionDBBlockPrefix(1), data)
+	iter := iterator.NewArrayIterator(kv)
+
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).DoAndReturn(func(r *util.Range, ro *opt.ReadOptions) iterator.Iterator {
+		time.Sleep(60 * time.Second) // Simulate a delay - works, because timer starts before creating iterator
+		return iter
+	})
+
+	log.EXPECT().Infof("Exception hash progress: %v/%v", 1, uint64(1))
+
+	_, count, err := GetExceptionDbHash(cfg, aidaDb, log)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(2), count, "Expected count to be 2")
 }
