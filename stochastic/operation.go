@@ -30,6 +30,7 @@ const (
 	BeginSyncPeriodID
 	BeginTransactionID
 	CreateAccountID
+	CreateContractID
 	EmptyID
 	EndBlockID
 	EndSyncPeriodID
@@ -42,19 +43,19 @@ const (
 	GetCommittedStateID
 	GetNonceID
 	GetStateID
+	GetStorageRootID
+	GetTransientStateID
 	HasSelfDestructedID
 	RevertToSnapshotID
+	SelfDestructID
+	SelfDestruct6780ID
 	SetCodeID
 	SetNonceID
 	SetStateID
+	SetTransientStateID
 	SnapshotID
 	SubBalanceID
-	SelfDestructID
-	CreateContractID
-	GetStorageRootID
-	GetTransientStateID
-	SetTransientStateID
-	SelfDestruct6780ID
+
 	// Add new operations below this line
 
 	NumOps
@@ -92,9 +93,9 @@ var opText = map[int]string{
 	SetCodeID:           "SetCode",
 	SetNonceID:          "SetNonce",
 	SetStateID:          "SetState",
+	SetTransientStateID: "SetTransientState",
 	SnapshotID:          "Snapshot",
 	SubBalanceID:        "SubBalance",
-	SetTransientStateID: "SetTransientState",
 }
 
 // opMnemo is a mnemonics table for operations.
@@ -126,9 +127,9 @@ var opMnemo = map[int]string{
 	SetCodeID:           "SC",
 	SetNonceID:          "SO",
 	SetStateID:          "SS",
+	SetTransientStateID: "ST",
 	SnapshotID:          "SN",
 	SubBalanceID:        "SB",
-	SetTransientStateID: "ST",
 }
 
 // opNumArgs is an argument number table for operations.
@@ -160,9 +161,9 @@ var opNumArgs = map[int]int{
 	SetCodeID:           1,
 	SetNonceID:          1,
 	SetStateID:          3,
+	SetTransientStateID: 3,
 	SnapshotID:          0,
 	SubBalanceID:        1,
-	SetTransientStateID: 3,
 }
 
 // opId is an operation ID table.
@@ -193,10 +194,10 @@ var opId = map[string]int{
 	"S6": SelfDestruct6780ID,
 	"SC": SetCodeID,
 	"SO": SetNonceID,
-	"SN": SnapshotID,
-	"SB": SubBalanceID,
 	"SS": SetStateID,
 	"ST": SetTransientStateID,
+	"SN": SnapshotID,
+	"SB": SubBalanceID,
 }
 
 // argMnemo is the argument-class mnemonics table.
