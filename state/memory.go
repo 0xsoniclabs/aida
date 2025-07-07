@@ -420,7 +420,7 @@ func collectLogs(s *snapshot) []*types.Log {
 	return logs
 }
 
-func (db *inMemoryStateDB) GetLogs(txHash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
+func (db *inMemoryStateDB) GetLogs(txHash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	// Since the in-memory stateDB is only to be used for a single
 	// transaction, all logs are from the same transactions. But
 	// those need to be collected in the right order (inverse order

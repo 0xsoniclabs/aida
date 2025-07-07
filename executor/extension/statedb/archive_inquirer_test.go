@@ -125,7 +125,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	archive.EXPECT().SetCode(gomock.Any(), gomock.Any()).AnyTimes()
 	archive.EXPECT().GetRefund().AnyTimes()
 	archive.EXPECT().RevertToSnapshot(gomock.Any()).AnyTimes()
-	archive.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	archive.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	archive.EXPECT().EndTransaction().AnyTimes()
 	archive.EXPECT().Release().MinTimes(1)
 	archive.EXPECT().GetStorageRoot(gomock.Any()).AnyTimes()

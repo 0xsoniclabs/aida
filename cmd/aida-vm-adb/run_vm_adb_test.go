@@ -74,7 +74,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(15),
-		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		archiveBlockOne.EXPECT().EndTransaction(),
 		// Tx 2
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(2)),
@@ -84,7 +84,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(16),
-		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		archiveBlockOne.EXPECT().EndTransaction(),
 		archiveBlockOne.EXPECT().Release(),
 		// Block 3
@@ -96,7 +96,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		archiveBlockTwo.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockTwo.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockTwo.EXPECT().RevertToSnapshot(17),
-		archiveBlockTwo.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3))),
+		archiveBlockTwo.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		archiveBlockTwo.EXPECT().EndTransaction(),
 		archiveBlockTwo.EXPECT().Release(),
 		// Block 4
@@ -161,7 +161,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(15),
-		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		archiveBlockOne.EXPECT().EndTransaction(),
 		// Tx 2
 		archiveBlockOne.EXPECT().BeginTransaction(uint32(2)),
@@ -171,7 +171,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockOne.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockOne.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockOne.EXPECT().RevertToSnapshot(19),
-		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archiveBlockOne.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		archiveBlockOne.EXPECT().EndTransaction(),
 
 		archiveBlockOne.EXPECT().Release(),
@@ -186,7 +186,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		archiveBlockTwo.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archiveBlockTwo.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archiveBlockTwo.EXPECT().RevertToSnapshot(17),
-		archiveBlockTwo.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3))),
+		archiveBlockTwo.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		archiveBlockTwo.EXPECT().EndTransaction(),
 		archiveBlockTwo.EXPECT().Release(),
 	)
@@ -404,7 +404,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 		archive.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archive.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archive.EXPECT().RevertToSnapshot(15),
-		archive.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archive.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		// end transaction is not called because we expect fail
 	)
 
@@ -458,7 +458,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 		archive.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		archive.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		archive.EXPECT().RevertToSnapshot(15),
-		archive.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		archive.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 	)
 
 	archive.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
@@ -567,7 +567,9 @@ func TestVmAdb_ValidationFailsOnInvalidTransaction_Parallel(t *testing.T) {
 
 // emptyTx is a dummy substate that will be processed without crashing.
 var emptyTx = &substate.Substate{
-	Env: &substate.Env{},
+	Env: &substate.Env{
+		Timestamp: uint64(10),
+	},
 	Message: &substate.Message{
 		GasPrice: big.NewInt(12),
 		Value:    big.NewInt(1),
@@ -581,7 +583,8 @@ var emptyTx = &substate.Substate{
 var testTx = &substate.Substate{
 	InputSubstate: substate.WorldState{substatetypes.Address(testingAddress): substate.NewAccount(1, uint256.NewInt(1), []byte{})},
 	Env: &substate.Env{
-		GasLimit: 100_000_000,
+		GasLimit:  100_000_000,
+		Timestamp: uint64(10),
 	},
 	Message: &substate.Message{
 		GasPrice: big.NewInt(0),

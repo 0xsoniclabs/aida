@@ -63,7 +63,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 0)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 0)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 
@@ -76,7 +76,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 	)
@@ -215,7 +215,7 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 		db.EXPECT().GetHash(),
