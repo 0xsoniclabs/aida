@@ -26,15 +26,15 @@ func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB
 		}
 	}()
 	proxies := make(map[string]state.StateDB)
-	proxies["deletion"] = NewDeletionProxy(base, delChan, "info")
+	proxies["Deletion"] = NewDeletionProxy(base, delChan, "info")
 	wg := new(sync.WaitGroup)
-	proxies["logger"] = NewLoggerProxy(proxies["deletion"], logger.NewLogger("info", "Proxy Logger"), logChan, wg)
-	proxies["profiler"] = NewProfilerProxy(proxies["logger"], analytics.NewIncrementalAnalytics(len(operation.CreateIdLabelMap())), "info")
+	proxies["Logger"] = NewLoggerProxy(proxies["Deletion"], logger.NewLogger("info", "Proxy Logger"), logChan, wg)
+	proxies["Profiler"] = NewProfilerProxy(proxies["Logger"], analytics.NewIncrementalAnalytics(len(operation.CreateIdLabelMap())), "info")
 	traceFile := t.TempDir() + "trace"
 	recordCtx, err := context.NewRecord(traceFile, 0)
 	assert.NoError(t, err, "failed to create record context")
-	proxies["recorder"] = NewRecorderProxy(proxies["profiler"], recordCtx)
-	proxies["shadow"] = NewShadowProxy(base, proxies["recorder"], true)
+	proxies["Recorder"] = NewRecorderProxy(proxies["Profiler"], recordCtx)
+	proxies["Shadow"] = NewShadowProxy(base, proxies["Recorder"], true)
 	return proxies
 }
 
@@ -48,9 +48,10 @@ func TestProxies_GetLogs(t *testing.T) {
 	blk := uint64(2)
 	blkHash := common.Hash{2}
 	blkTimestamp := uint64(13)
+
 	base.EXPECT().GetLogs(hash, blk, blkHash, blkTimestamp).Times(len(proxies) + 1) // +1 because shadow proxy calls twice
 	for name, proxy := range proxies {
-		t.Run(name, func(t *testing.T) {
+		t.Run(name+"_GetLogs", func(t *testing.T) {
 			proxy.GetLogs(hash, blk, blkHash, blkTimestamp)
 		})
 	}
