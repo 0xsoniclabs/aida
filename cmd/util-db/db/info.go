@@ -120,18 +120,6 @@ func printCountRun(ctx *cli.Context) error {
 
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
 
-	return printCount(cfg, log)
-}
-
-// printCount prints count of given db component in given AidaDb
-func printCount(cfg *utils.Config, log logger.Logger) error {
-	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
-	if err != nil {
-		return err
-	}
-
-	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
-
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err
@@ -143,6 +131,18 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 			log.Warningf("Error closing aida db: %v", err)
 		}
 	}()
+
+	return printCount(cfg, base, log)
+}
+
+// printCount prints count of given db component in given AidaDb
+func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
+	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
+	if err != nil {
+		return err
+	}
+
+	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
 
 	var errResult error
 
@@ -162,7 +162,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 		count, err := utildb.GetUpdateCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
-			log.Warningf("cannot print update count; %v", err)
+			log.Warningf("cannot print update count; %s", err.Error())
 		} else {
 			log.Noticef("Found %v updates", count)
 		}
@@ -173,7 +173,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 		count, err := utildb.GetDeletedCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
-			log.Warningf("cannot print deleted count; %v", err)
+			log.Warningf("cannot print deleted count; %s", err.Error())
 		} else {
 			log.Noticef("Found %v deleted accounts", count)
 		}
@@ -206,7 +206,7 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 		count, err := utildb.GetExceptionCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
-			log.Warningf("cannot print exception count; %v", err)
+			log.Warningf("cannot print exception count; %s", err.Error())
 		} else {
 			log.Noticef("Found %v exceptions", count)
 		}
