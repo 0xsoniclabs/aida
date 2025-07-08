@@ -39,6 +39,8 @@ var RecordCommand = cli.Command{
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.UpdateBufferSizeFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.DbTmpFlag,
 		&utils.CpuProfileFlag,
 		&utils.SyncPeriodLengthFlag,
 		&utils.WorkersFlag,
@@ -109,6 +111,7 @@ func record(
 		executor.Params{
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last) + 1,
+			NumWorkers:             cfg.Workers,
 			ParallelismGranularity: executor.TransactionLevel,
 		},
 		processor,
