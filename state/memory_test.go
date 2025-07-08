@@ -1,6 +1,8 @@
 package state
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -37,4 +39,27 @@ func TestInMemoryDb_SelfDestruct6780OnlyDeletesContractsCreatedInSameTransaction
 	if want, got := false, db.HasSelfDestructed(b); want != got {
 		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
 	}
+}
+
+func TestInMemoryStateDB_GetLogs_ReturnEmptyLogsWithNilSnapshot(t *testing.T) {
+	sdb := &inMemoryStateDB{state: nil}
+	logs := sdb.GetLogs(common.Hash{}, 0, common.Hash{}, 0)
+	assert.Empty(t, logs)
+}
+
+func TestInMemoryStateDB_GetLogs_AddsLogsWithCorrectTimestamp(t *testing.T) {
+	txHash := common.Hash{0x1, 0x2, 0x3}
+	blkNumber := uint64(10)
+	blkHash := common.Hash{0x4, 0x5, 0x6}
+	blkTimestamp := uint64(11)
+	sdb := &inMemoryStateDB{state: &snapshot{
+		parent: &snapshot{
+			logs: []*types.Log{{Index: 1, BlockTimestamp: blkTimestamp}},
+		},
+		logs: []*types.Log{{Index: 0}},
+	}}
+	logs := sdb.GetLogs(txHash, blkNumber, blkHash, blkTimestamp)
+	assert.Len(t, logs, 1) // No logs added yet
+	assert.Equal(t, blkTimestamp, logs[0].BlockTimestamp)
+	assert.Equal(t, uint(1), logs[0].Index)
 }

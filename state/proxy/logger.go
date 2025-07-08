@@ -303,9 +303,9 @@ func (s *loggingVmStateDb) AddLog(entry *types.Log) {
 	s.db.AddLog(entry)
 }
 
-func (s *loggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
-	res := s.db.GetLogs(hash, block, blockHash)
-	s.writeLog("GetLogs, %v, %v, %v, %v", hash, block, blockHash, res)
+func (s *loggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
+	res := s.db.GetLogs(hash, block, blockHash, blkTimestamp)
+	s.writeLog("GetLogs, %v, %v, %v, %v, %v", hash, block, blockHash, blkTimestamp, res)
 	return res
 }
 

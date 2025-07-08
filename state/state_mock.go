@@ -313,17 +313,17 @@ func (mr *MockVmStateDBMockRecorder) GetCommittedState(arg0, arg1 any) *gomock.C
 }
 
 // GetLogs mocks base method.
-func (m *MockVmStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash) []*types.Log {
+func (m *MockVmStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash, arg3 uint64) []*types.Log {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]*types.Log)
 	return ret0
 }
 
 // GetLogs indicates an expected call of GetLogs.
-func (mr *MockVmStateDBMockRecorder) GetLogs(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockVmStateDBMockRecorder) GetLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockVmStateDB)(nil).GetLogs), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockVmStateDB)(nil).GetLogs), arg0, arg1, arg2, arg3)
 }
 
 // GetNonce mocks base method.
@@ -928,17 +928,17 @@ func (mr *MockNonCommittableStateDBMockRecorder) GetHash() *gomock.Call {
 }
 
 // GetLogs mocks base method.
-func (m *MockNonCommittableStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash) []*types.Log {
+func (m *MockNonCommittableStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash, arg3 uint64) []*types.Log {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]*types.Log)
 	return ret0
 }
 
 // GetLogs indicates an expected call of GetLogs.
-func (mr *MockNonCommittableStateDBMockRecorder) GetLogs(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockNonCommittableStateDBMockRecorder) GetLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockNonCommittableStateDB)(nil).GetLogs), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockNonCommittableStateDB)(nil).GetLogs), arg0, arg1, arg2, arg3)
 }
 
 // GetNonce mocks base method.
@@ -1683,17 +1683,17 @@ func (mr *MockStateDBMockRecorder) GetHash() *gomock.Call {
 }
 
 // GetLogs mocks base method.
-func (m *MockStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash) []*types.Log {
+func (m *MockStateDB) GetLogs(arg0 common.Hash, arg1 uint64, arg2 common.Hash, arg3 uint64) []*types.Log {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetLogs", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]*types.Log)
 	return ret0
 }
 
 // GetLogs indicates an expected call of GetLogs.
-func (mr *MockStateDBMockRecorder) GetLogs(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockStateDBMockRecorder) GetLogs(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockStateDB)(nil).GetLogs), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogs", reflect.TypeOf((*MockStateDB)(nil).GetLogs), arg0, arg1, arg2, arg3)
 }
 
 // GetMemoryUsage mocks base method.
