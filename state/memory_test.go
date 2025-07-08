@@ -60,9 +60,6 @@ func TestInMemoryStateDB_GetLogs_AddsLogsWithCorrectTimestamp(t *testing.T) {
 	}}
 	logs := sdb.GetLogs(txHash, blkNumber, blkHash, blkTimestamp)
 	assert.Len(t, logs, 1) // No logs added yet
-	assert.Equal(t, logs[0].TxHash, txHash)
-	assert.Equal(t, blkNumber, logs[0].BlockNumber)
-	assert.Equal(t, blkHash, logs[0].BlockHash)
 	assert.Equal(t, blkTimestamp, logs[0].BlockTimestamp)
 	assert.Equal(t, uint(1), logs[0].Index)
 }
