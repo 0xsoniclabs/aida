@@ -26,7 +26,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 )
 
-//go:generate mockgen -source reader.go -destination reader_mocks.go -package rpc
+//go:generate mockgen -source reader.go -destination reader_mock.go -package rpc
 
 type Iterator interface {
 	Next() bool

@@ -69,11 +69,20 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		log.Info("Generating State-Hashes hash...")
-		aidaDbStateHashesHash, count, err := GetStateHashesHash(cfg, base, log)
+		aidaDbStateHashesHash, count, err := GetStateRootHashesHash(cfg, base, log)
 		if err != nil {
 			return err
 		}
 		log.Infof("State-Hashes hash: %x; count %v", aidaDbStateHashesHash, count)
+	}
+
+	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
+		log.Info("Generating Block-Hashes hash...")
+		aidaDbBlockHashesHash, count, err := GetBlockHashesHash(cfg, base, log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Block-Hashes hash: %x; count %v", aidaDbBlockHashesHash, count)
 	}
 
 	return nil
@@ -220,7 +229,7 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	return parallelHashComputing(feeder)
 }
 
-func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
+func GetStateRootHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
@@ -229,15 +238,51 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 
 		provider := utils.MakeHashProvider(base)
 
-		var i = cfg.First
-		for ; i <= cfg.Last; i++ {
+		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
 			case <-ticker.C:
-				log.Infof("Stat-Hashes hash progress: %v/%v", i, cfg.Last)
+				log.Infof("State-Hashes hash progress: %v/%v", i, cfg.Last)
 			default:
 			}
 
 			h, err := provider.GetStateRootHash(int(i))
+			if err != nil {
+				if errors.Is(err, leveldb.ErrNotFound) {
+					continue
+				}
+				errChan <- err
+				return
+			}
+
+			select {
+			case err = <-errChan:
+				errChan <- err
+				return
+			case feederChan <- h:
+			}
+		}
+	}
+
+	return parallelHashComputing(feeder)
+}
+
+func GetBlockHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	feeder := func(feederChan chan any, errChan chan error) {
+		defer close(feederChan)
+
+		provider := utils.MakeHashProvider(base)
+
+		for i := cfg.First; i <= cfg.Last; i++ {
+			select {
+			case <-ticker.C:
+				log.Infof("Block-Hashes hash progress: %v/%v", i, cfg.Last)
+			default:
+			}
+
+			h, err := provider.GetBlockHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue

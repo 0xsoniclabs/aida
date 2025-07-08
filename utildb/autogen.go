@@ -69,7 +69,7 @@ func AutogenRun(cfg *utils.Config, g *Generator) error {
 	if ok && err != nil {
 		return err
 	}
-	g.Log.Noticef("Recording (%v) for epoch range %d - %d finished. It took: %v", g.Cfg.OperaDb, g.Opera.FirstEpoch, g.TargetEpoch, time.Since(start).Round(1*time.Second))
+	g.Log.Noticef("Recording (%v) for epoch range %d - %d finished. It took: %v", g.Cfg.ClientDb, g.Opera.FirstEpoch, g.TargetEpoch, time.Since(start).Round(1*time.Second))
 	g.Log.Noticef("Total elapsed time: %v", time.Since(g.start).Round(1*time.Second))
 
 	// reopen aida-db

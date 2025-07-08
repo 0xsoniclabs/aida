@@ -16,7 +16,7 @@
 
 package logger
 
-//go:generate mockgen -source logger.go -destination logger_mocks.go -package logger
+//go:generate mockgen -source logger.go -destination logger_mock.go -package logger
 
 import (
 	"os"

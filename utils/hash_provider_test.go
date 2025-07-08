@@ -19,11 +19,15 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/rand"
+	"os"
 	"strconv"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +44,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
+	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -77,8 +81,26 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 }
 
+func TestStateHash_Log(t *testing.T) {
+	tmpDir := t.TempDir() + "/blockHashes"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	log.EXPECT().Infof("Connected to RPC at %s", RPCTestnet)
+	log.EXPECT().Infof("Scraping block %d done!\n", uint64(10000))
+
+	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 9990, 10100, log)
+	if err != nil {
+		t.Fatalf("error scraping state hashes: %v", err)
+	}
+}
+
 // TestStateHash_ZeroHasSameStateHashAsOne tests that the state hash of block 0 is different to the state hash of block 100
-// we are expecting that at least some storage has changed between block 0 and block 100
+// we are expecting that at least some storage has changed between block  and block 100
 func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashes"
 	database, err := db.NewDefaultBaseDB(tmpDir)
@@ -87,7 +109,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
+	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -185,6 +207,21 @@ func Test_getClient(t *testing.T) {
 	}
 }
 
+func TestStateHash_GetClientIpcFail(t *testing.T) {
+	tmpIpcPath := t.TempDir()
+	// create this file
+	if err := os.WriteFile(tmpIpcPath+"/geth.ipc", []byte("test"), 0644); err != nil {
+		t.Fatalf("error creating ipc file %s: %v", tmpIpcPath+"/geth.ipc", err)
+	}
+
+	log := logger.NewLogger("info", "Test state hash")
+	_, err := getClient(context.Background(), TestnetChainID, tmpIpcPath, log)
+	if err == nil {
+		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
+	}
+	assert.Equal(t, fmt.Sprintf("failed to connect to IPC at %v/geth.ipc: dial unix %v/geth.ipc: connect: connection refused", tmpIpcPath, tmpIpcPath), err.Error())
+}
+
 func TestStateHash_GetStateRootHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -255,7 +292,7 @@ func TestStateHash_retrieveStateRoot(t *testing.T) {
 	// case success
 	client := NewMockIRpcClient(ctrl)
 	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(nil)
-	output, err := retrieveStateRoot(client, "0x1234")
+	output, err := getBlockByNumber(client, "0x1234")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}(nil), output)
 
@@ -263,7 +300,7 @@ func TestStateHash_retrieveStateRoot(t *testing.T) {
 	mockErr := errors.New("error")
 	client = NewMockIRpcClient(ctrl)
 	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(mockErr)
-	output, err = retrieveStateRoot(client, "0x1234")
+	output, err = getBlockByNumber(client, "0x1234")
 	assert.Error(t, err)
 	assert.Nil(t, output)
 }
@@ -375,4 +412,128 @@ func TestStateHashProvider_GetBlockHash(t *testing.T) {
 			assert.Equal(t, got, test.wantHash)
 		})
 	}
+}
+
+func TestStateHash_GetFirstBlockHash(t *testing.T) {
+	testDb := generateTestBlockHashDb(t)
+	defer func() {
+		err := testDb.Close()
+		assert.NoError(t, err, "error closing test database")
+	}()
+
+	keyFirst := fmt.Sprintf("0x%x", 1+rand.Intn(1000))
+	err := SaveBlockHash(testDb, keyFirst, "0x1234")
+	assert.NoError(t, err, "error saving state root "+keyFirst)
+	keyLast := fmt.Sprintf("0x%x", 1000+rand.Intn(1000))
+	err = SaveBlockHash(testDb, keyLast, "0x1234")
+	assert.NoError(t, err, "error saving state root "+keyLast)
+
+	output, err := GetFirstBlockHash(testDb)
+	assert.NoError(t, err)
+
+	assert.Equal(t, keyFirst, "0x"+strconv.FormatUint(output, 16))
+}
+
+func TestStateHash_GetLastBlockHash(t *testing.T) {
+	testDb := generateTestBlockHashDb(t)
+	defer func() {
+		err := testDb.Close()
+		assert.NoError(t, err, "error closing test database")
+	}()
+
+	keyFirst := fmt.Sprintf("0x%x", 1+rand.Intn(1000))
+	err := SaveBlockHash(testDb, keyFirst, "0x1234")
+	assert.NoError(t, err, "error saving state root "+keyFirst)
+	keyLast := fmt.Sprintf("0x%x", 1000+rand.Intn(1000))
+	err = SaveBlockHash(testDb, keyLast, "0x1234")
+	assert.NoError(t, err, "error saving state root "+keyLast)
+
+	output, err := GetLastBlockHash(testDb)
+	assert.NoError(t, err)
+	assert.Equal(t, keyLast, "0x"+strconv.FormatUint(output, 16))
+}
+
+func generateTestBlockHashDb(t *testing.T) db.BaseDB {
+	tmpDir := t.TempDir() + "/blockHashDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+
+	return database
+}
+
+func TestDecodeBlockHashDBKey_Errors(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     []byte
+		want    uint64
+		wantErr string
+	}{
+		{"valid key", append([]byte(BlockHashPrefix), bigendian.Uint64ToBytes(uint64(2))...), 2, ""},
+		{"invalid key", []byte("invalidkey"), 0, "invalid prefix of block hash key"},
+		{"invalid key", []byte("shrt"), 0, "invalid length of block hash key, expected at least 10, got 4"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DecodeBlockHashDBKey(tt.key)
+
+			if err != nil {
+				if err.Error() != tt.wantErr {
+					t.Errorf("DecodeBlockHashDBKey() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+			} else if tt.wantErr != "" {
+				t.Errorf("DecodeBlockHashDBKey() expected error %v, got nil", tt.wantErr)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("DecodeBlockHashDBKey() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetLastBlockHash_EmptyDb(t *testing.T) {
+	tmpDir := t.TempDir() + "/blockHashDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+	defer func() {
+		err := database.Close()
+		assert.NoError(t, err, "error closing test database")
+	}()
+
+	output, err := GetLastBlockHash(database)
+	if err == nil {
+		t.Fatalf("expected error when getting last block hash from empty db, but got nil")
+	}
+	assert.Equal(t, "no block hash found", err.Error())
+	assert.Equal(t, uint64(0), output)
+}
+
+func TestGetLastBlockHash_InvalidKey(t *testing.T) {
+	tmpDir := t.TempDir() + "/blockHashDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+
+	// Save an invalid block hash key
+	err = database.Put([]byte(BlockHashPrefix+"inv"), []byte("someValue"))
+
+	defer func() {
+		err := database.Close()
+		assert.NoError(t, err, "error closing test database")
+	}()
+
+	output, err := GetLastBlockHash(database)
+	if err == nil {
+		t.Fatalf("expected error when getting last block hash with invalid key, but got nil")
+	}
+	assert.Equal(t, "invalid length of block hash key, expected at least 10, got 5", err.Error())
+	assert.Equal(t, uint64(0), output)
 }
