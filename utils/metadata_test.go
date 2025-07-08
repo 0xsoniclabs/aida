@@ -1175,7 +1175,7 @@ func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
 	for chainID, _ := range EthereumChainIDs {
 		md := &AidaDbMetadata{ChainId: chainID}
 		assert.NoError(t, md.findEpochs())
-		// Epochs must be unchangee
+		// Epochs must be unchange
 		assert.Equal(t, md.FirstEpoch, uint64(0))
 		assert.Equal(t, md.LastEpoch, uint64(0))
 	}
