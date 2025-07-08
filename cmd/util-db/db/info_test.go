@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -356,31 +357,31 @@ func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
 	kvUpdate.PutU([]byte{1}, []byte("value"))
 	iterUpdate := iterator.NewArrayIterator(kvUpdate)
 	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterUpdate)
-	log.EXPECT().Warningf("cannot print update count; %s", "cannot decode updateset key; invalid length of updateset key: 1")
+	log.EXPECT().Warningf("cannot print update count; %w", fmt.Errorf("cannot decode updateset key; %w", errors.New("invalid length of updateset key: 1")))
 
 	// Deleted accounts
 	kvDelete := &testutil.KeyValue{}
 	kvDelete.PutU([]byte{2}, []byte("value"))
 	iterDelete := iterator.NewArrayIterator(kvDelete)
 	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterDelete)
-	log.EXPECT().Warningf("cannot print deleted count; %s", "cannot Get all destroyed accounts; invalid length of destroyed account key, expected 14, got 1")
+	log.EXPECT().Warningf("cannot print deleted count; %w", fmt.Errorf("cannot Get all destroyed accounts; %w", errors.New("invalid length of destroyed account key, expected 14, got 1")))
 
 	// State Hash
 	errStateHashWant := errors.New("error getting state hash count")
 	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errStateHashWant)
-	log.EXPECT().Warningf("cannot print state hash count; %v", errStateHashWant)
+	log.EXPECT().Warningf("cannot print state hash count; %w", errStateHashWant)
 
 	// Block Hash
 	errBlockHashWant := errors.New("error getting block hash count")
 	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errBlockHashWant)
-	log.EXPECT().Warningf("cannot print block hash count; %v", errBlockHashWant)
+	log.EXPECT().Warningf("cannot print block hash count; %w", errBlockHashWant)
 
 	// Exception
 	kvException := &testutil.KeyValue{}
 	kvException.PutU([]byte{3}, []byte("value"))
 	iterException := iterator.NewArrayIterator(kvException)
 	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterException)
-	log.EXPECT().Warningf("cannot print exception count; %s", "cannot get exception count; invalid length of exception key: 1")
+	log.EXPECT().Warningf("cannot print exception count; %w", fmt.Errorf("cannot get exception count; %w", errors.New("invalid length of exception key: 1")))
 
 	errWant := "cannot decode updateset key; invalid length of updateset key: 1\n" +
 		"cannot Get all destroyed accounts; invalid length of destroyed account key, expected 14, got 1\n" +
@@ -480,11 +481,11 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				args   []interface{}
 			}{
 				{"Warning", "No substate found", []interface{}{}},
-				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find exception range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find updateset range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find deleted range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find block hash range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find exception range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -506,7 +507,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find updateset range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -517,7 +518,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find deleted range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -528,7 +529,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 	}
@@ -586,7 +587,7 @@ func TestInfo_PrintRange_Success(t *testing.T) {
 	log.EXPECT().Infof("Substate block range: %v - %v", uint64(11), uint64(11))
 	log.EXPECT().Infof("Updateset block range: %v - %v", uint64(12), uint64(12))
 	log.EXPECT().Infof("Deleted block range: %v - %v", uint64(1), uint64(10))
-	log.EXPECT().Warningf("cannot find state hash range; %s", "cannot get first state hash; not implemented")
+	log.EXPECT().Warningf("cannot find state hash range; %w", fmt.Errorf("cannot get first state hash; %w", errors.New("not implemented")))
 	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
 	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(35))
 

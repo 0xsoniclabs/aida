@@ -31,13 +31,13 @@ import (
 func FindBlockRangeInUpdate(udb db.UpdateDB) (uint64, uint64, error) {
 	firstBlock, err := udb.GetFirstKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first updateset; %v", err)
+		return 0, 0, fmt.Errorf("cannot get first updateset; %w", err)
 	}
 
 	// get last updateset
 	lastBlock, err := udb.GetLastKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get last updateset; %v", err)
+		return 0, 0, fmt.Errorf("cannot get last updateset; %w", err)
 	}
 	return firstBlock, lastBlock, nil
 }
@@ -46,13 +46,13 @@ func FindBlockRangeInUpdate(udb db.UpdateDB) (uint64, uint64, error) {
 func FindBlockRangeInDeleted(ddb *db.DestroyedAccountDB) (uint64, uint64, error) {
 	firstBlock, err := ddb.GetFirstKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first deleted accounts; %v", err)
+		return 0, 0, fmt.Errorf("cannot get first deleted accounts; %w", err)
 	}
 
 	// get last updateset
 	lastBlock, err := ddb.GetLastKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get last deleted accounts; %v", err)
+		return 0, 0, fmt.Errorf("cannot get last deleted accounts; %w", err)
 	}
 	return firstBlock, lastBlock, nil
 }
@@ -63,13 +63,13 @@ func FindBlockRangeInStateHash(db db.BaseDB, log logger.Logger) (uint64, uint64,
 	var err error
 	firstStateHashBlock, err = utils.GetFirstStateHash(db)
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first state hash; %v", err)
+		return 0, 0, fmt.Errorf("cannot get first state hash; %w", err)
 	}
 
 	lastStateHashBlock, err = utils.GetLastStateHash(db)
 	if err != nil {
 		log.Infof("Found first state hash at %v", firstStateHashBlock)
-		return 0, 0, fmt.Errorf("cannot get last state hash; %v", err)
+		return 0, 0, fmt.Errorf("cannot get last state hash; %w", err)
 	}
 	return firstStateHashBlock, lastStateHashBlock, nil
 }
@@ -81,27 +81,27 @@ func FindBlockRangeOfBlockHashes(db db.BaseDB, log logger.Logger) (uint64, uint6
 
 	firstBlock, err = utils.GetFirstBlockHash(db)
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first block hash; %v", err)
+		return 0, 0, fmt.Errorf("cannot get first block hash; %w", err)
 	}
 	lastBlock, err = utils.GetLastBlockHash(db)
 	if err != nil {
 		log.Infof("Found first block hash at %v", firstBlock)
-		return 0, 0, fmt.Errorf("cannot get last block hash; %v", err)
+		return 0, 0, fmt.Errorf("cannot get last block hash; %w", err)
 	}
 	return firstBlock, lastBlock, nil
 }
 
 // FindBlockRangeInException finds the first and last block in the exception
-func FindBlockRangeInException(udb db.ExceptionDB) (uint64, uint64, error) {
-	firstBlock, err := udb.GetFirstKey()
+func FindBlockRangeInException(edb db.ExceptionDB) (uint64, uint64, error) {
+	firstBlock, err := edb.GetFirstKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first exception; %v", err)
+		return 0, 0, fmt.Errorf("cannot get first exception; %w", err)
 	}
 
 	// get last exception
-	lastBlock, err := udb.GetLastKey()
+	lastBlock, err := edb.GetLastKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get last exception; %v", err)
+		return 0, 0, fmt.Errorf("cannot get last exception; %w", err)
 	}
 	return firstBlock, lastBlock, nil
 }
@@ -134,7 +134,7 @@ func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 	for iter.Next() {
 		block, _, err := db.DecodeDestroyedAccountKey(iter.Key())
 		if err != nil {
-			return 0, fmt.Errorf("cannot Get all destroyed accounts; %v", err)
+			return 0, fmt.Errorf("cannot Get all destroyed accounts; %w", err)
 		}
 		if block > cfg.Last {
 			break
@@ -155,7 +155,7 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	for iter.Next() {
 		block, err := db.DecodeUpdateSetKey(iter.Key())
 		if err != nil {
-			return 0, fmt.Errorf("cannot decode updateset key; %v", err)
+			return 0, fmt.Errorf("cannot decode updateset key; %w", err)
 		}
 		if block > cfg.Last {
 			break
@@ -216,7 +216,7 @@ func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 	for iter.Next() {
 		block, err := db.DecodeExceptionDBKey(iter.Key())
 		if err != nil {
-			return 0, fmt.Errorf("cannot get exception count; %v", err)
+			return 0, fmt.Errorf("cannot get exception count; %w", err)
 		}
 		if block > cfg.Last {
 			break
