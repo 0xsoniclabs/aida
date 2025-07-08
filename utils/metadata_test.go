@@ -1172,7 +1172,7 @@ func TestProcessMergeMetadata(t *testing.T) {
 }
 
 func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
-	for chainID, _ := range EthereumChainIDs {
+	for chainID := range EthereumChainIDs {
 		md := &AidaDbMetadata{ChainId: chainID}
 		assert.NoError(t, md.findEpochs())
 		// Epochs must be unchange
