@@ -111,7 +111,6 @@ func record(
 		executor.Params{
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last) + 1,
-			NumWorkers:             cfg.Workers,
 			ParallelismGranularity: executor.TransactionLevel,
 		},
 		processor,
