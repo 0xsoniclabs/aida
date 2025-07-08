@@ -462,13 +462,34 @@ func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint6
 		return fmt.Errorf("cannot open aida-db; %v", err)
 	}
 
-	exception, err := exceptionDb.GetException(blockNum)
-	if err != nil {
-		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
+	iter := exceptionDb.NewExceptionIterator(0, 1)
+	defer iter.Release()
+
+	type Issues map[int]struct {
+		Accounts map[string]struct {
+			Balance string
+		}
 	}
 
-	log.Noticef("Exception for block %v: %v", blockNum, exception)
+	issue := Issues{}
+	for iter.Next() {
+		exception := iter.Value()
+		fmt.Printf("Exception for block %d: %v\n", exception.Block, exception.Data)
+		accounts := issue[exception.Block].Accounts
+		if accounts == nil {
+			accounts = make(map[string]struct {
+		issue[exception.Block] = struct {
+		}
+	}
 
+	/*
+		exception, err := exceptionDb.GetException(blockNum)
+		if err != nil {
+			return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
+		}
+
+		log.Noticef("Exception for block %v: %v", blockNum, exception)
+	*/
 	return nil
 }
 
