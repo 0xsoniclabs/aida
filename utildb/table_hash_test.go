@@ -30,7 +30,7 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/protobuf"
 	"github.com/0xsoniclabs/substate/substate"
-	stypes "github.com/0xsoniclabs/substate/types"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
@@ -461,8 +461,8 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 				Value:    big.NewInt(int64(rand.Intn(100))),
 				GasPrice: big.NewInt(int64(rand.Intn(100))),
 			},
-			InputSubstate:  substate.WorldState{stypes.Address{0x0}: acc},
-			OutputSubstate: substate.WorldState{stypes.Address{0x0}: acc},
+			InputSubstate:  substate.WorldState{substatetypes.Address{0x0}: acc},
+			OutputSubstate: substate.WorldState{substatetypes.Address{0x0}: acc},
 			Result:         &substate.Result{},
 		}
 
@@ -478,7 +478,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	numDestroyedAccounts := rand.Intn(5) + 6
 
 	for i := 0; i < numDestroyedAccounts; i++ {
-		err := ddb.SetDestroyedAccounts(uint64(i), 0, []stypes.Address{stypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))}, []stypes.Address{})
+		err := ddb.SetDestroyedAccounts(uint64(i), 0, []substatetypes.Address{substatetypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))}, []substatetypes.Address{})
 		if err != nil {
 			t.Fatalf("error setting destroyed accounts: %v", err)
 		}
@@ -492,7 +492,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	for i := 0; i < numUpdates; i++ {
 		sa := new(substate.Account)
 		sa.Balance = uint256.NewInt(uint64(utils.GetRandom(1, 1000*5000)))
-		randomAddress := stypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
+		randomAddress := substatetypes.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
 		worldState := substate.WorldState{
 
 			randomAddress: sa,
@@ -500,7 +500,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		err := udb.PutUpdateSet(&updateset.UpdateSet{
 			WorldState: worldState,
 			Block:      uint64(i),
-		}, []stypes.Address{})
+		}, []substatetypes.Address{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -534,10 +534,10 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 			Data: substate.ExceptionBlock{
 				Transactions: make(map[int]substate.ExceptionTx),
 				PreBlock: &substate.WorldState{
-					stypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
+					substatetypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
 				},
 				PostBlock: &substate.WorldState{
-					stypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
+					substatetypes.Address{0x0}: substate.NewAccount(1, uint256.NewInt(1), []byte{1}),
 				},
 			},
 		})
@@ -606,7 +606,7 @@ func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
 	excData := substate.ExceptionBlock{
 		Transactions: map[int]substate.ExceptionTx{
 			1: {
-				PreTransaction: &substate.WorldState{stypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
+				PreTransaction: &substate.WorldState{substatetypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
 			},
 		},
 	}
@@ -646,7 +646,7 @@ func TestTableHash_GetExceptionDbHash_OnlyGivenRange(t *testing.T) {
 	excData := substate.ExceptionBlock{
 		Transactions: map[int]substate.ExceptionTx{
 			1: {
-				PreTransaction: &substate.WorldState{stypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
+				PreTransaction: &substate.WorldState{substatetypes.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(500)}},
 			},
 		},
 	}
