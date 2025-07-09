@@ -29,6 +29,7 @@ const (
 	Update    DbComponent = "update"
 	StateHash DbComponent = "state-hash"
 	BlockHash DbComponent = "block-hash"
+	Exception DbComponent = "exception"
 )
 
 // ParseDbComponent parses string to DbComponent
@@ -46,7 +47,9 @@ func ParseDbComponent(s string) (DbComponent, error) {
 		return StateHash, nil
 	case "block-hash":
 		return BlockHash, nil
+	case "exception":
+		return Exception, nil
 	default:
-		return "", fmt.Errorf("invalid db component: %v. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")", s)
+		return "", fmt.Errorf("invalid db component: %v. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")", s)
 	}
 }

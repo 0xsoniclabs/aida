@@ -33,7 +33,8 @@ func TestClone(t *testing.T) {
 		{"CustomTypeUpdate", utils.CustomType, "update", ""},
 		{"CustomTypeStateHash", utils.CustomType, "state-hash", ""},
 		{"CustomTypeBlockHash", utils.CustomType, "block-hash", ""},
-		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\")"},
+		{"CustomTypeException", utils.CustomType, "exception", ""},
+		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
 	}
 
 	for _, tt := range tests {
@@ -123,6 +124,17 @@ func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, nam
 		})
 	}
 
+	if dbc == "" || dbc == "all" || dbc == "exception" {
+		t.Run("Exception", func(t *testing.T) {
+			exceptionCount := 0
+			exceptionIter := cloneDb.NewIterator([]byte(db.ExceptionDBPrefix), nil)
+			for exceptionIter.Next() {
+				exceptionCount++
+			}
+			assert.Equal(t, 10, exceptionCount, "Expected 10 exceptions in the cloned database")
+		})
+	}
+
 	return nil
 }
 
@@ -156,6 +168,12 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			keyPrefix:   utils.BlockHashPrefix,
 			dbComponent: "block-hash",
 			expectedErr: "clone failed for BlockHashInvalidDbKey: condition emit error; invalid length of block hash key, expected at least 10, got 5",
+		},
+		{
+			name:        "ExceptionInvalidDbKey",
+			keyPrefix:   db.ExceptionDBPrefix,
+			dbComponent: "exception",
+			expectedErr: "clone failed for ExceptionInvalidDbKey: condition emit error; invalid length of exception key: 5",
 		},
 	}
 
@@ -356,6 +374,22 @@ func generateTestAidaDb(t *testing.T) db.BaseDB {
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
 		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write exceptions to the database
+	for i := 31; i <= 40; i++ {
+		exception := &substate.Exception{
+			Block: uint64(i),
+			Data: substate.ExceptionBlock{
+				PreBlock:  &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100)}},
+				PostBlock: &substate.WorldState{types.Address{0x02}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(200)}},
+			},
+		}
+		eDb := db.MakeDefaultExceptionDBFromBaseDB(database)
+		err = eDb.PutException(exception)
 		if err != nil {
 			t.Fatal(err)
 		}

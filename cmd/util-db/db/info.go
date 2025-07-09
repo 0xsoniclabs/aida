@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -39,6 +40,7 @@ var InfoCommand = cli.Command{
 		&cmdRange,
 		&cmdPrintStateHash,
 		&cmdPrintBlockHash,
+		&cmdPrintException,
 	},
 }
 
@@ -99,6 +101,16 @@ var cmdPrintBlockHash = cli.Command{
 	},
 }
 
+var cmdPrintException = cli.Command{
+	Action:    printException,
+	Name:      "exception",
+	Usage:     "Prints exception for given block number.",
+	ArgsUsage: "<BlockNum>",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+	},
+}
+
 // printCountRun prints count of given db component in given AidaDb
 func printCountRun(ctx *cli.Context) error {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
@@ -108,18 +120,6 @@ func printCountRun(ctx *cli.Context) error {
 
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
 
-	return printCount(cfg, log)
-}
-
-// printCount prints count of given db component in given AidaDb
-func printCount(cfg *utils.Config, log logger.Logger) error {
-	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
-	if err != nil {
-		return err
-	}
-
-	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
-
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err
@@ -128,9 +128,23 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	defer func() {
 		err = base.Close()
 		if err != nil {
-			log.Warningf("Error closing aida db: %v", err)
+			log.Warningf("Error closing aida db: %w", err)
 		}
 	}()
+
+	return printCount(cfg, base, log)
+}
+
+// printCount prints count of given db component in given AidaDb
+func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
+	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
+	if err != nil {
+		return err
+	}
+
+	log.Noticef("Inspecting database between blocks %v-%v", cfg.First, cfg.Last)
+
+	var errResult error
 
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
@@ -147,7 +161,8 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
 		count, err := utildb.GetUpdateCount(cfg, base)
 		if err != nil {
-			log.Warningf("cannot print update count; %v", err)
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print update count; %w", err)
 		} else {
 			log.Noticef("Found %v updates", count)
 		}
@@ -157,7 +172,8 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
 		count, err := utildb.GetDeletedCount(cfg, base)
 		if err != nil {
-			log.Warningf("cannot print deleted count; %v", err)
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print deleted count; %w", err)
 		} else {
 			log.Noticef("Found %v deleted accounts", count)
 		}
@@ -167,7 +183,8 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		count, err := utildb.GetStateHashCount(cfg, base)
 		if err != nil {
-			log.Warningf("cannot print state hash count; %v", err)
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print state hash count; %w", err)
 		} else {
 			log.Noticef("Found %v state-hashes", count)
 		}
@@ -177,13 +194,25 @@ func printCount(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
 		count, err := utildb.GetBlockHashCount(cfg, base)
 		if err != nil {
-			log.Warningf("cannot print block hash count; %v", err)
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print block hash count; %w", err)
 		} else {
 			log.Noticef("Found %v block-hashes", count)
 		}
 	}
 
-	return nil
+	// print exception count
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		count, err := utildb.GetExceptionCount(cfg, base)
+		if err != nil {
+			errResult = errors.Join(errResult, err)
+			log.Warningf("cannot print exception count; %w", err)
+		} else {
+			log.Noticef("Found %v exceptions", count)
+		}
+	}
+
+	return errResult
 }
 
 // printRangeRun prints range of given db component in given AidaDb
@@ -230,7 +259,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
-			log.Warningf("cannot find updateset range; %v", err)
+			log.Warningf("cannot find updateset range; %w", err)
 		} else {
 			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
@@ -241,7 +270,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
 		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
 		if err != nil {
-			log.Warningf("cannot find deleted range; %v", err)
+			log.Warningf("cannot find deleted range; %w", err)
 		} else {
 			log.Infof("Deleted block range: %v - %v", first, last)
 		}
@@ -251,7 +280,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
 		if err != nil {
-			log.Warningf("cannot find state hash range; %s", err.Error())
+			log.Warningf("cannot find state hash range; %w", err)
 		} else {
 			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
 		}
@@ -261,9 +290,20 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
 		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
 		if err != nil {
-			log.Warningf("cannot find block hash range; %v", err)
+			log.Warningf("cannot find block hash range; %w", err)
 		} else {
 			log.Infof("Block Hash range: %v - %v", firstBlockHashBlock, lastBlockHashBlock)
+		}
+	}
+
+	// print exception range
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		edb := db.MakeDefaultExceptionDBFromBaseDB(baseDb)
+		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInException(edb)
+		if err != nil {
+			log.Warningf("cannot find exception range; %w", err)
+		} else {
+			log.Infof("Exception block range: %v - %v", firstUsBlock, lastUsBlock)
 		}
 	}
 
@@ -290,7 +330,7 @@ func printDeletedAccountInfo(ctx *cli.Context) error {
 
 	accounts, err := db.GetAccountsDestroyedInRange(cfg.First, cfg.Last)
 	if err != nil {
-		return fmt.Errorf("cannot Get all destroyed accounts; %v", err)
+		return fmt.Errorf("cannot Get all destroyed accounts; %w", err)
 	}
 
 	wantedAcc := ctx.String(flags.Account.Name)
@@ -371,7 +411,7 @@ func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashT
 	defer func() {
 		err = base.Close()
 		if err != nil {
-			log.Warningf("Error closing aida db: %v", err)
+			log.Warningf("Error closing aida db: %w", err)
 		}
 	}()
 
@@ -392,6 +432,42 @@ func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashT
 	default:
 		return fmt.Errorf("unsupported hash type: %s", hashType)
 	}
+
+	return nil
+}
+
+func printException(ctx *cli.Context) error {
+	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	if argErr != nil {
+		return argErr
+	}
+
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-PrintException")
+
+	if ctx.Args().Len() != 1 {
+		return fmt.Errorf("printException command requires exactly 1 argument")
+	}
+	blockNumStr := ctx.Args().Slice()[0]
+	blockNum, err := strconv.ParseUint(ctx.Args().Slice()[0], 10, 64)
+	if err != nil {
+		return fmt.Errorf("cannot parse block number %s; %v", blockNumStr, err)
+	}
+
+	return printExceptionForBlock(cfg, log, blockNum)
+}
+
+func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint64) error {
+	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %w", err)
+	}
+
+	exception, err := exceptionDb.GetException(blockNum)
+	if err != nil {
+		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
+	}
+
+	log.Noticef("Exception for block %v: %v", blockNum, exception)
 
 	return nil
 }

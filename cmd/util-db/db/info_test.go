@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -14,6 +16,8 @@ import (
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
@@ -90,7 +94,7 @@ func TestInfo_PrintCount(t *testing.T) {
 	}
 }
 
-func TestInfo_PrintCount_OnlyCalculateGivenRange(t *testing.T) {
+func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 
 	cfg := &utils.Config{
@@ -110,8 +114,47 @@ func TestInfo_PrintCount_OnlyCalculateGivenRange(t *testing.T) {
 	log.EXPECT().Noticef("Found %v deleted accounts", 1)
 	log.EXPECT().Noticef("Found %v state-hashes", uint64(1))
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(0))
+	log.EXPECT().Noticef("Found %v exceptions", 0)
 
-	err := printCount(cfg, log)
+	base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	err = printCount(cfg, base, log)
+	assert.NoError(t, err)
+	err = base.Close()
+	assert.NoError(t, err)
+}
+
+func TestInfo_PrintCount_OnlyCalculateGivenRangeUpdateBlockHashException(t *testing.T) {
+	aidaDbPath := generateTestAidaDb(t)
+
+	cfg := &utils.Config{
+		AidaDb:      aidaDbPath,
+		DbComponent: "all",
+		LogLevel:    "info",
+		First:       12,
+		Last:        31,
+	}
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(12), uint64(31))
+	log.EXPECT().Noticef("Found %v substates", uint64(1))
+	log.EXPECT().Noticef("Found %v updates", uint64(1))
+	log.EXPECT().Noticef("Found %v deleted accounts", 0)
+	log.EXPECT().Noticef("Found %v state-hashes", uint64(9))
+	log.EXPECT().Noticef("Found %v block-hashes", uint64(10))
+	log.EXPECT().Noticef("Found %v exceptions", 1)
+
+	base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	err = printCount(cfg, base, log)
+	assert.NoError(t, err)
+	err = base.Close()
 	assert.NoError(t, err)
 }
 
@@ -145,6 +188,7 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 				{"Noticef", "Found %v deleted accounts", []interface{}{0}},
 				{"Noticef", "Found %v state-hashes", []interface{}{uint64(0)}},
 				{"Noticef", "Found %v block-hashes", []interface{}{uint64(0)}},
+				{"Noticef", "Found %v exceptions", []interface{}{0}},
 			},
 		},
 		{
@@ -255,10 +299,101 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 				}
 			}
 
-			err = printCount(cfg, log)
+			base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+			if err != nil {
+				t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+			}
+			err = printCount(cfg, base, log)
+			assert.NoError(t, err)
+			err = base.Close()
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestInfo_PrintCount_InvalidDbComponent(t *testing.T) {
+	cfg := &utils.Config{
+		DbComponent: "invalid-component",
+		LogLevel:    "info",
+	}
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	baseDb := db.NewMockBaseDB(ctrl)
+
+	errWant := "invalid db component: invalid-component. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"
+
+	err := printCount(cfg, baseDb, log)
+	if err == nil {
+		t.Fatalf("expected error %v, got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error())
+}
+
+func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
+	cfg := &utils.Config{
+		DbComponent: "all",
+		LogLevel:    "info",
+	}
+
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	baseDb := db.NewMockBaseDB(ctrl)
+	mockDb := db.NewMockDbAdapter(ctrl)
+
+	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(0), uint64(0))
+	baseDb.EXPECT().GetBackend().Return(mockDb)
+	errIter := errors.New("error getting iterator")
+	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errIter).AnyTimes()
+
+	// Substate set
+	kv := &testutil.KeyValue{}
+	iter := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	log.EXPECT().Noticef("Found %v substates", uint64(0))
+
+	// Update set
+	kvUpdate := &testutil.KeyValue{}
+	kvUpdate.PutU([]byte{1}, []byte("value"))
+	iterUpdate := iterator.NewArrayIterator(kvUpdate)
+	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterUpdate)
+	log.EXPECT().Warningf("cannot print update count; %w", fmt.Errorf("cannot decode updateset key; %w", errors.New("invalid length of updateset key: 1")))
+
+	// Deleted accounts
+	kvDelete := &testutil.KeyValue{}
+	kvDelete.PutU([]byte{2}, []byte("value"))
+	iterDelete := iterator.NewArrayIterator(kvDelete)
+	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterDelete)
+	log.EXPECT().Warningf("cannot print deleted count; %w", fmt.Errorf("cannot Get all destroyed accounts; %w", errors.New("invalid length of destroyed account key, expected 14, got 1")))
+
+	// State Hash
+	errStateHashWant := errors.New("error getting state hash count")
+	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errStateHashWant)
+	log.EXPECT().Warningf("cannot print state hash count; %w", errStateHashWant)
+
+	// Block Hash
+	errBlockHashWant := errors.New("error getting block hash count")
+	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errBlockHashWant)
+	log.EXPECT().Warningf("cannot print block hash count; %w", errBlockHashWant)
+
+	// Exception
+	kvException := &testutil.KeyValue{}
+	kvException.PutU([]byte{3}, []byte("value"))
+	iterException := iterator.NewArrayIterator(kvException)
+	baseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterException)
+	log.EXPECT().Warningf("cannot print exception count; %w", fmt.Errorf("cannot get exception count; %w", errors.New("invalid length of exception key: 1")))
+
+	errWant := "cannot decode updateset key; invalid length of updateset key: 1\n" +
+		"cannot Get all destroyed accounts; invalid length of destroyed account key, expected 14, got 1\n" +
+		"error getting state hash count\n" +
+		"error getting block hash count\n" +
+		"cannot get exception count; invalid length of exception key: 1"
+
+	err := printCount(cfg, baseDb, log)
+	if err == nil {
+		t.Fatalf("expected error %v, got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error())
 }
 
 func TestInfo_PrintRange(t *testing.T) {
@@ -346,10 +481,11 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				args   []interface{}
 			}{
 				{"Warning", "No substate found", []interface{}{}},
-				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
-				{"Warningf", "cannot find block hash range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find updateset range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find deleted range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find block hash range; %w", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find exception range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -371,7 +507,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find updateset range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find updateset range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -382,7 +518,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find deleted range; %v", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find deleted range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 		{
@@ -393,7 +529,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				format string
 				args   []interface{}
 			}{
-				{"Warningf", "cannot find state hash range; %s", []interface{}{gomock.Any()}},
+				{"Warningf", "cannot find state hash range; %w", []interface{}{gomock.Any()}},
 			},
 		},
 	}
@@ -451,8 +587,9 @@ func TestInfo_PrintRange_Success(t *testing.T) {
 	log.EXPECT().Infof("Substate block range: %v - %v", uint64(11), uint64(11))
 	log.EXPECT().Infof("Updateset block range: %v - %v", uint64(12), uint64(12))
 	log.EXPECT().Infof("Deleted block range: %v - %v", uint64(1), uint64(10))
-	log.EXPECT().Warningf("cannot find state hash range; %s", "cannot get first state hash; not implemented")
+	log.EXPECT().Warningf("cannot find state hash range; %w", fmt.Errorf("cannot get first state hash; %w", errors.New("not implemented")))
 	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
+	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(35))
 
 	cfg := &utils.Config{
 		AidaDb:      aidaDbPath,
@@ -567,7 +704,7 @@ func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 			expectErr:   "cannot get block hash for block 1; leveldb: not found",
 		},
 		{
-			name:        "Success",
+			name:        "InvalidBlockNumber",
 			insertKey:   "0x1",
 			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			queryArg:    "",
@@ -764,6 +901,16 @@ func generateTestAidaDb(t *testing.T) string {
 		}
 	}
 
+	// write exceptions to the database
+	for i := 31; i <= 35; i++ {
+		key := []byte(db.ExceptionDBPrefix)
+		key = append(key, db.BlockToBytes(uint64(i))...)
+		err = aidaDb.Put(key, []byte("exception data"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	err = aidaDb.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -771,7 +918,7 @@ func generateTestAidaDb(t *testing.T) string {
 	return aidaDbPath
 }
 
-func TestInfo_PrintHashForBlock_InvalidHashtype(t *testing.T) {
+func TestInfo_PrintHashForBlock_InvalidHashType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
@@ -795,4 +942,210 @@ func TestInfo_PrintHashForBlock_InvalidHashtype(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error for invalid hash type, but got nil")
 	}
+}
+
+func TestInfo_PrintException_IntegrationTest(t *testing.T) {
+	tests := []struct {
+		name        string
+		insertKey   string
+		insertValue string
+		queryArg    []string
+		expectErr   string
+	}{
+		{
+			name:        "InvalidData",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    []string{"1"},
+			expectErr:   "cannot get exception for block 1; cannot decode exception data from protobuf block: 1, proto:",
+		},
+		{
+			name:        "MissingBlockNumber",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    nil,
+			expectErr:   "unable to parse cli arguments; this command requires at least 1 argument",
+		},
+		{
+			name:        "InvalidBlockNumber",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    []string{""},
+			expectErr:   "cannot parse block number ; strconv.ParseUint: parsing \"\": invalid syntax",
+		},
+		{
+			name:        "TooManyArgs",
+			insertKey:   "0x1",
+			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+			queryArg:    []string{"1", "2"},
+			expectErr:   "printException command requires exactly 1 argument",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			aidaDbPath := t.TempDir() + "aida-db"
+
+			eDb, err := db.NewDefaultExceptionDB(aidaDbPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if eDb == nil {
+				t.Fatal("aidaDb is nil")
+			}
+
+			// insert exception
+			err = eDb.Put(db.ExceptionDBBlockPrefix(1), []byte(tc.insertValue))
+			assert.NoError(t, err)
+
+			err = eDb.Close()
+			assert.NoError(t, err)
+
+			args := []string{
+				"info", "exception",
+				"--aida-db", aidaDbPath,
+			}
+			args = append(args, tc.queryArg...)
+
+			app := cli.App{
+				Commands: []*cli.Command{
+					&cmdPrintException,
+				}}
+			err = app.Run(args)
+			if len(tc.expectErr) > 0 {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestInfo_PrintExceptionForBlock_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
+	}
+
+	storage := make(map[types.Hash]types.Hash, 1)
+	storage[types.Hash{0x01}] = types.Hash{0x02}
+
+	txMap := make(map[int]substate.ExceptionTx, 1)
+	txMap[0] = substate.ExceptionTx{
+		PreTransaction:  &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100), Storage: storage}},
+		PostTransaction: &substate.WorldState{types.Address{0x02}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(200), Storage: storage}},
+	}
+
+	// Create an empty database
+	eDb, err := db.NewDefaultExceptionDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	exc := &substate.Exception{
+		Block: 1,
+		Data: substate.ExceptionBlock{
+			Transactions: txMap,
+			PreBlock:     &substate.WorldState{types.Address{0x03}: &substate.Account{Nonce: 3, Balance: uint256.NewInt(300), Storage: storage}},
+			PostBlock:    &substate.WorldState{types.Address{0x04}: &substate.Account{Nonce: 4, Balance: uint256.NewInt(400), Storage: storage}},
+		},
+	}
+	err = eDb.PutException(exc)
+	assert.NoError(t, err)
+	err = eDb.Close()
+	if err != nil {
+		t.Fatalf("error closing aida-db %s: %v", aidaDbPath, err)
+	}
+
+	log.EXPECT().Noticef("Exception for block %v: %v", uint64(1), exc)
+
+	err = printExceptionForBlock(cfg, log, 1)
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+}
+
+func TestInfo_PrintExceptionForBlock_EmptyData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
+	}
+
+	// Create an empty database
+	eDb, err := db.NewDefaultExceptionDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	exc := &substate.Exception{
+		Block: 1,
+	}
+	err = eDb.PutException(exc)
+	assert.NoError(t, err)
+	err = eDb.Close()
+	if err != nil {
+		t.Fatalf("error closing aida-db %s: %v", aidaDbPath, err)
+	}
+
+	errWant := "cannot get exception for block 1; exception data for block 1 is empty"
+	err = printExceptionForBlock(cfg, log, 1)
+	if err == nil {
+		t.Fatalf("expected an error %v, but got nil", errWant)
+	}
+
+	assert.Equal(t, errWant, err.Error())
+}
+
+func TestInfo_PrintExceptionForBlock_Empty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
+	}
+
+	// Create an empty database
+	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	if err != nil {
+		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
+	}
+	err = aidaDb.Close()
+	if err != nil {
+		t.Fatalf("error closing aida-db %s: %v", aidaDbPath, err)
+	}
+
+	log.EXPECT().Noticef("Exception for block %v: %v", uint64(0), nil)
+
+	err = printExceptionForBlock(cfg, log, 0)
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+}
+
+func TestInfo_PrintExceptionForBlock_AidaDbDoesNotExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+
+	aidaDbPath := t.TempDir() + "aida-db"
+
+	cfg := &utils.Config{
+		AidaDb: aidaDbPath,
+	}
+
+	errWant := "cannot open aida-db; cannot open leveldb; stat " + aidaDbPath + ": no such file or directory"
+
+	err := printExceptionForBlock(cfg, log, 0)
+	if err == nil {
+		t.Fatalf("expected an error %v, but got nil", errWant)
+	}
+	assert.Equal(t, errWant, err.Error())
 }
