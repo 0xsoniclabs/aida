@@ -300,9 +300,9 @@ func (p *EventProxy) AddLog(log *types.Log) {
 }
 
 // GetLogs retrieves log entries.
-func (p *EventProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
+func (p *EventProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	// call real StateDB
-	return p.db.GetLogs(hash, block, blockHash)
+	return p.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
 // PointCache returns the point cache used in computations.
