@@ -39,6 +39,8 @@ var RecordCommand = cli.Command{
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.UpdateBufferSizeFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.DbTmpFlag,
 		&utils.CpuProfileFlag,
 		&utils.SyncPeriodLengthFlag,
 		&utils.WorkersFlag,

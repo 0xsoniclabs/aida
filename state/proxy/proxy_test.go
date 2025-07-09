@@ -46,6 +46,8 @@ func TestProxies_GetLogs(t *testing.T) {
 	proxies := getAllProxyImpls(t, base)
 	addr := common.Address{0x11}
 	hash := common.Hash{0x12}
+	key := common.Hash{0x13}
+	val := common.Hash{0x14}
 	blk := uint64(2)
 	blkHash := common.Hash{2}
 	blkTimestamp := uint64(13)
@@ -73,6 +75,12 @@ func TestProxies_GetLogs(t *testing.T) {
 	for name, proxy := range proxies {
 		t.Run(name+"_GetLogs", func(t *testing.T) {
 			proxy.GetLogs(hash, blk, blkHash, blkTimestamp)
+		})
+	}
+	base.EXPECT().SetTransientState(addr, key, val).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_SetTransientState", func(t *testing.T) {
+			proxy.SetTransientState(addr, key, val)
 		})
 	}
 }

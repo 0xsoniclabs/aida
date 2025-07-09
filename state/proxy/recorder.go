@@ -209,7 +209,7 @@ func (r *RecorderProxy) SetTransientState(addr common.Address, key common.Hash, 
 	} else {
 		r.write(operation.NewSetTransientState(contract, key, value))
 	}
-	r.db.SetState(addr, key, value)
+	r.db.SetTransientState(addr, key, value)
 }
 
 func (r *RecorderProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
