@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package statistics
+package tracer
 
 import (
 	"encoding/json"
 	"testing"
 )
 
-// TestQueuingSimple tests for existence/non-existence of elements.
-func TestQueuingSimple(t *testing.T) {
+// TestQueueSimple tests for existence/non-existence of elements.
+func TestQueueSimple(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewQueue[int]()
 
 	// place first element
 	queue.Place(0)
@@ -42,10 +42,10 @@ func TestQueuingSimple(t *testing.T) {
 	}
 }
 
-// TestQueuingSimple1 tests for existence/non-existence of elements.
-func TestQueuingSimple1(t *testing.T) {
+// TestQueueSimple1 tests for existence/non-existence of elements.
+func TestQueueSimple1(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewQueue[int]()
 
 	// find first element
 	pos := queue.Find(0)
@@ -70,10 +70,10 @@ func TestQueuingSimple1(t *testing.T) {
 	}
 }
 
-// TestQueuingSimple2 tests for existence/non-existence of elements.
-func TestQueuingSimple2(t *testing.T) {
+// TestQueueSimple2 tests for existence/non-existence of elements.
+func TestQueueSimple2(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewQueue[int]()
 
 	// place first element
 	for i := 0; i < QueueLen+1; i++ {
@@ -109,4 +109,6 @@ func TestQueuingSimple2(t *testing.T) {
 		t.Fatalf("last element must be found")
 	}
 }
+
+// Write testcase for Classify
 
