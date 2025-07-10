@@ -53,7 +53,7 @@ func TestArchiveInquirer_ReportsErrorIfNoArchiveIsPresent(t *testing.T) {
 	cfg := utils.Config{}
 	cfg.ChainID = utils.MainnetChainID
 	cfg.ArchiveQueryRate = 100
-	ext, err := makeArchiveInquirer(&cfg, log)
+	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestArchiveInquirer_CanStartUpAndShutdownGracefully(t *testing.T) {
 	cfg.ChainID = utils.MainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
-	ext, err := makeArchiveInquirer(&cfg, log)
+	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	archive.EXPECT().CreateContract(gomock.Any()).AnyTimes()
 	archive.EXPECT().Prepare(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	ext, err := makeArchiveInquirer(cfg, log)
+	ext, err := makeArchiveInquirer(cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	inquirer := &archiveInquirer{
 		log:            mockLog,
 		finished:       utils.MakeEvent(),
-		tickerDuration: &duration,
+		tickerDuration: duration,
 	}
 
 	initialTxCount := uint64(20)
