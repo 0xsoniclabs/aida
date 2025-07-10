@@ -106,30 +106,19 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 
 		// Check here before the stats are reset by the extension
 		totalOpCount := make([]int, int(ext.depth)+1)
-		ops := operation.CreateIdLabelMap()
 
-		// Exclude special tracing operations (LC/LS/CS surfix)
-		notImplemented := make([]bool, len(ops))
+		notImplemented := make(map[byte]struct{})
 		for _, a := range []byte{
-			operation.GetCodeHashLcID,
-			operation.GetCommittedStateLclsID,
-			operation.GetStateLccsID,
-			operation.GetStateLcID,
-			operation.GetStateLclsID,
-			operation.GetTransientStateLccsID,
-			operation.GetTransientStateLcID,
-			operation.GetTransientStateLclsID,
-			operation.SetStateLclsID,
-			operation.SetTransientStateLclsID,
+			tracer.GetArchiveStateID,
+			tracer.GetArchiveBlockHeightID,
 		} {
-			notImplemented[a] = true
+			notImplemented[a] = struct{}{}
 		}
 
-		for _, op := range maps.Keys(ops) {
-			if notImplemented[op] {
+		for _, op := range maps.Keys(tracer.OpText) {
+			if _, ok := notImplemented[byte(op)]; ok {
 				continue
 			}
-
 			for depth := IntervalLevel; depth <= ext.depth; depth++ {
 				c := ext.anlts[int(depth)].GetCount(op)
 				if c != 1 {
