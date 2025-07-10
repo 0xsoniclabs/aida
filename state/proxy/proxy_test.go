@@ -6,7 +6,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils/analytics"
@@ -19,7 +19,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB {
+func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.ArgumentContext) map[string]state.StateDB {
 	t.Helper()
 
 	delChan := make(chan ContractLiveliness, 10)
@@ -31,7 +31,6 @@ func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB
 			case <-delChan:
 			case <-logChan:
 			}
-
 		}
 	}()
 	proxies := make(map[string]state.StateDB)
@@ -39,10 +38,7 @@ func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB
 	wg := new(sync.WaitGroup)
 	proxies["Logger"] = NewLoggerProxy(base, logger.NewLogger("CRITICAL", "Proxy Logger"), logChan, wg)
 	proxies["Profiler"] = NewProfilerProxy(base, analytics.NewIncrementalAnalytics(len(operation.CreateIdLabelMap())), "info")
-	traceFile := t.TempDir() + "trace"
-	recordCtx, err := context.NewRecord(traceFile, 0)
-	assert.NoError(t, err, "failed to create record context")
-	proxies["Recorder"] = NewRecorderProxy(base, recordCtx)
+	proxies["Tracer"] = NewTracerProxy(base, ctx)
 	proxies["Shadow"] = NewShadowProxy(base, base, true)
 	return proxies
 }
@@ -50,9 +46,11 @@ func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB
 // TODO test all proxy calls
 
 func TestProxies_AllCalls(t *testing.T) {
+	t.Parallel()
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)
-	proxies := getAllProxyImpls(t, base)
+	traceCtx := tracer.NewMockArgumentContext(ctrl)
+	proxies := getAllProxyImpls(t, base, traceCtx)
 	addr := common.Address{0x11}
 	hash := common.Hash{0x12}
 	hash2 := common.Hash{0x22}
@@ -69,11 +67,99 @@ func TestProxies_AllCalls(t *testing.T) {
 	nonceReason := tracing.NonceChangeUnspecified
 	ws := txcontext.NewWorldState(make(map[common.Address]txcontext.Account))
 
+	// Set up trace ctx expectations with the range of the tracer operations
+	traceOperations := maps.Keys(tracer.OpText)
+	uint16ToAny := make([]any, len(traceOperations))
+	for i, v := range traceOperations {
+		uint16ToAny[i] = v
+	}
+	traceCtx.EXPECT().WriteOp(gomock.AnyOf(uint16ToAny...), gomock.Any()).AnyTimes()
+	traceCtx.EXPECT().WriteAddressOp(gomock.AnyOf(uint16ToAny...), &addr, gomock.Any()).AnyTimes()
+	traceCtx.EXPECT().WriteKeyOp(gomock.AnyOf(uint16ToAny...), &addr, &key, gomock.Any()).AnyTimes()
+	traceCtx.EXPECT().WriteValueOp(gomock.AnyOf(uint16ToAny...), &addr, &key, &val).AnyTimes()
+	traceCtx.EXPECT().Close()
+
 	// CreateContract
 	base.EXPECT().CreateContract(addr).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_CreateContract", func(t *testing.T) {
 			proxy.CreateContract(addr)
+		})
+	}
+
+	// CreateAccount(
+	base.EXPECT().CreateAccount(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_CreateAccount(", func(t *testing.T) {
+			proxy.CreateAccount(addr)
+		})
+	}
+
+	// SubBalance
+	base.EXPECT().SubBalance(addr, amount, balanceReason).Times(len(proxies) + 1)
+	// LoggerProxy calls GetBalance to log current balance
+	base.EXPECT().GetBalance(addr)
+	for name, proxy := range proxies {
+		t.Run(name+"_SubBalance", func(t *testing.T) {
+			proxy.SubBalance(addr, amount, balanceReason)
+		})
+	}
+
+	// AddBalance
+	// LoggerProxy calls GetBalance to log current balance
+	base.EXPECT().GetBalance(addr)
+	base.EXPECT().AddBalance(addr, amount, balanceReason).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_AddBalance", func(t *testing.T) {
+			proxy.AddBalance(addr, amount, balanceReason)
+		})
+	}
+
+	// GetBalance
+	base.EXPECT().GetBalance(addr).Times(len(proxies) + 1).Return(amount)
+	for name, proxy := range proxies {
+		t.Run(name+"_GetBalance", func(t *testing.T) {
+			proxy.GetBalance(addr)
+		})
+	}
+
+	// GetNonce
+	base.EXPECT().GetNonce(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_GetNonce", func(t *testing.T) {
+			proxy.GetNonce(addr)
+		})
+	}
+
+	// SetNonce
+	base.EXPECT().SetNonce(addr, uint64Val, nonceReason).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"SetNonce", func(t *testing.T) {
+			proxy.SetNonce(addr, uint64Val, nonceReason)
+		})
+	}
+
+	// SelfDestruct
+	base.EXPECT().SelfDestruct(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_SelfDestruct", func(t *testing.T) {
+			proxy.SelfDestruct(addr)
+		})
+	}
+
+	// SelfDestruct6780
+	base.EXPECT().SelfDestruct6780(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_SelfDestruct6780", func(t *testing.T) {
+			proxy.SelfDestruct6780(addr)
+		})
+	}
+
+	// HasSelfDestructed
+	base.EXPECT().HasSelfDestructed(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_HasSelfDestructed", func(t *testing.T) {
+			proxy.HasSelfDestructed(addr)
 		})
 	}
 
@@ -295,10 +381,10 @@ func TestProxies_AllCalls(t *testing.T) {
 	}
 
 	// Prepare
-	base.EXPECT().Prepare(gomock.Any(), addr, addr, gomock.Nil(), gomock.Any(), gomock.Any()).Times(len(proxies) + 1)
+	base.EXPECT().Prepare(gomock.Any(), addr, addr, &addr, gomock.Any(), gomock.Any()).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_Prepare", func(t *testing.T) {
-			proxy.Prepare(params.Rules{}, addr, addr, nil, []common.Address{}, types.AccessList{})
+			proxy.Prepare(params.Rules{}, addr, addr, &addr, []common.Address{}, types.AccessList{})
 		})
 	}
 
