@@ -69,88 +69,97 @@ func (p *TracerProxy) GetBalance(address common.Address) *uint256.Int {
 }
 
 func (p *TracerProxy) GetNonce(address common.Address) uint64 {
-	p.ctx.WriteAddressOp(GetNonceID, &address)
+	p.ctx.WriteAddressOp(GetNonceID, &address, []byte{})
 	return p.db.GetNonce(address)
 }
 
 func (p *TracerProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
-	p.ctx.WriteAddressOp(SetNonceID, &address)
+	// TBD: find an encoding for nonce and reason in the form of a byte sequence
+	data := []byte{}
+	p.ctx.WriteAddressOp(SetNonceID, &address, data)
 	p.db.SetNonce(address, nonce, reason)
 }
 
 func (p *TracerProxy) GetCodeHash(address common.Address) common.Hash {
-	p.ctx.WriteAddressOp(GetCodeHashID, &address)
+	p.ctx.WriteAddressOp(GetCodeHashID, &address, []byte{})
 	return p.db.GetCodeHash(address)
 }
 
 func (p *TracerProxy) GetCode(address common.Address) []byte {
-	p.ctx.WriteAddressOp(GetCodeID, &address)
+	p.ctx.WriteAddressOp(GetCodeID, &address, []byte{})
 	return p.db.GetCode(address)
 }
 
 func (p *TracerProxy) SetCode(address common.Address, code []byte) []byte {
-	p.ctx.WriteAddressOp(SetCodeID, &address)
+	p.ctx.WriteAddressOp(SetCodeID, &address, code)
 	return p.db.SetCode(address, code)
 }
 
 func (p *TracerProxy) GetCodeSize(address common.Address) int {
-	p.ctx.WriteAddressOp(GetCodeSizeID, &address)
+	p.ctx.WriteAddressOp(GetCodeSizeID, &address, []byte{})
 	return p.db.GetCodeSize(address)
 }
 
 func (p *TracerProxy) AddRefund(gas uint64) {
+	// TBD: find an encoding for gas
+	data := []byte{} 
+	p.ctx.WriteOp(GetCodeSizeID, data)
 	p.db.AddRefund(gas)
 }
 
 func (p *TracerProxy) SubRefund(gas uint64) {
+	// TBD: find an encoding for gas
+	data := []byte{} 
+	p.ctx.WriteOp(SubRefundID, data)
 	p.db.SubRefund(gas)
 }
 
 func (p *TracerProxy) GetRefund() uint64 {
+	p.ctx.WriteOp(SubRefundID, []byte{})
 	return p.db.GetRefund()
 }
 
 func (p *TracerProxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetCommittedStateID, &address, &key)
+	p.ctx.WriteKeyOp(GetCommittedStateID, &address, &key, []byte{})
 	return p.db.GetCommittedState(address, key)
 }
 
 func (p *TracerProxy) GetState(address common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetStateID, &address, &key)
+	p.ctx.WriteKeyOp(GetStateID, &address, &key, []byte{})
 	return p.db.GetState(address, key)
 }
 
 func (p *TracerProxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
-	p.ctx.WriteValueOp(SetStateID, &address, &key, &value)
+	p.ctx.WriteValueOp(SetStateID, &address, &key, &value, []byte{})
 	return p.db.SetState(address, key, value)
 }
 func (p *TracerProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value)
+	p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value, []byte{})
 	p.db.SetTransientState(addr, key, value)
 }
 
 func (p *TracerProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetTransientStateID, &addr, &key)
+	p.ctx.WriteKeyOp(GetTransientStateID, &addr, &key, []byte{})
 	return p.db.GetState(addr, key)
 }
 
 func (p *TracerProxy) SelfDestruct(address common.Address) uint256.Int {
-	p.ctx.WriteAddressOp(SelfDestructID, &address)
+	p.ctx.WriteAddressOp(SelfDestructID, &address, []byte{})
 	return p.db.SelfDestruct(address)
 }
 
 func (p *TracerProxy) HasSelfDestructed(address common.Address) bool {
-	p.ctx.WriteAddressOp(HasSelfDestructedID, &address)
+	p.ctx.WriteAddressOp(HasSelfDestructedID, &address, []byte{})
 	return p.db.HasSelfDestructed(address)
 }
 
 func (p *TracerProxy) Exist(address common.Address) bool {
-	p.ctx.WriteAddressOp(ExistID, &address)
+	p.ctx.WriteAddressOp(ExistID, &address, []byte{})
 	return p.db.Exist(address)
 }
 
 func (p *TracerProxy) Empty(address common.Address) bool {
-	p.ctx.WriteAddressOp(EmptyID, &address)
+	p.ctx.WriteAddressOp(EmptyID, &address, []byte{})
 	return p.db.Empty(address)
 }
 
