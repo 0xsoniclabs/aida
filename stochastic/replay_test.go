@@ -22,8 +22,12 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/generator"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"gonum.org/v1/gonum/stat/distuv"
@@ -233,4 +237,73 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 	ss.execute(RevertToSnapshotID, 1, 1, 1)
 	assert.GreaterOrEqual(t, len(ss.snapshot), 1)         // must have at lest one snapshot
 	assert.LessOrEqual(t, len(ss.snapshot), snapshotSize) // must not have more than 5 snapshots
+}
+
+func TestReplay_RunStochasticReplay(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tmpDir := t.TempDir()
+	cfg := &utils.Config{
+		ContractNumber:    1000,
+		KeysNumber:        1000,
+		ValuesNumber:      1000,
+		SnapshotDepth:     100,
+		BlockLength:       3,
+		SyncPeriodLength:  10,
+		TransactionLength: 2,
+		BalanceRange:      100,
+		NonceRange:        100,
+		Debug:             true,
+		ShadowImpl:        "geth",
+		DbTmp:             tmpDir,
+		DbImpl:            "carmen",
+		DbVariant:         "go-file",
+	}
+	db := state.NewMockStateDB(ctrl)
+	log := logger.NewLogger("INFO", "test")
+	events := GenerateUniformRegistry(cfg, logger.NewLogger(cfg.LogLevel, "FuzzingTest")).NewEventRegistryJSON()
+	e := NewEstimationModelJSON(&events)
+	// remove invalid operations
+	operations := e.Operations
+	for i := 0; i < len(operations); i++ {
+		op, _, _, _ := DecodeOpcode(operations[i])
+		switch op {
+		case 28:
+			e.Operations[i] = EncodeOpcode(SnapshotID, 0, 0, 0)
+		case 27:
+			e.Operations[i] = EncodeOpcode(EndSyncPeriodID, 0, 0, 0)
+		}
+	}
+	db.EXPECT().GetShadowDB().Return(db).Times(5)
+	db.EXPECT().Error().Return(nil).Times(302)
+	db.EXPECT().EndSyncPeriod().Return().Times(22)
+	db.EXPECT().EndTransaction().Return(nil).Times(3)
+	db.EXPECT().BeginSyncPeriod(gomock.Any()).Return().Times(2)
+	db.EXPECT().BeginBlock(gomock.Any()).Return(nil).Times(2)
+	db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).Times(3)
+	db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1005)
+	db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(0)).Times(7)
+	db.EXPECT().EndBlock().Return(nil).Times(2)
+	db.EXPECT().GetState(gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(18)
+	db.EXPECT().GetCodeHash(gomock.Any()).Return(common.Hash{}).Times(2)
+	db.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(95)
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1005)
+	db.EXPECT().GetCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(21)
+	db.EXPECT().GetStorageRoot(gomock.Any()).Return(common.Hash{}).Times(1)
+	db.EXPECT().GetCodeSize(gomock.Any()).Return(0).Times(3)
+	db.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)).Times(5)
+	db.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return(nil).Times(5)
+	db.EXPECT().Empty(gomock.Any()).Return(false).Times(4)
+	db.EXPECT().Exist(gomock.Any()).Return(false).Times(4)
+	db.EXPECT().HasSelfDestructed(gomock.Any()).Return(false).Times(2)
+	db.EXPECT().CreateContract(gomock.Any()).Return().Times(2)
+	db.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).Return().Times(2)
+	db.EXPECT().GetCode(gomock.Any()).Return(nil).Times(1)
+	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0)).Times(4)
+	db.EXPECT().SelfDestruct6780(gomock.Any()).Return(*uint256.NewInt(0), false).Times(2)
+	db.EXPECT().Snapshot().Return(0).Times(86)
+	db.EXPECT().RevertToSnapshot(gomock.Any()).Return().Times(3)
+
+	err := RunStochasticReplay(db, &e, 0, cfg, log)
+	assert.NoError(t, err)
 }

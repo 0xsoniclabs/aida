@@ -205,7 +205,7 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 		if err := ss.db.Error(); err != nil {
 			errCount++
 			if runErr == nil {
-				runErr = fmt.Errorf("error: stochastic replay failed.")
+				runErr = fmt.Errorf("error: stochastic replay failed")
 			}
 
 			runErr = fmt.Errorf("%v\n\tBlock %v Tx %v: %v", runErr, ss.blockNum, ss.txNum, err)
@@ -263,8 +263,14 @@ func (ss *stochasticState) prime() {
 	pt := utils.NewProgressTracker(int(numInitialAccounts), ss.log)
 	db := ss.db
 	db.BeginSyncPeriod(0)
-	db.BeginBlock(0)
-	db.BeginTransaction(0)
+	err := db.BeginBlock(0)
+	if err != nil {
+		ss.log.Fatal(err)
+	}
+	err = db.BeginTransaction(0)
+	if err != nil {
+		ss.log.Fatal(err)
+	}
 
 	// initialise accounts in memory with balances greater than zero
 	for i := int64(0); i <= numInitialAccounts; i++ {
@@ -274,8 +280,14 @@ func (ss *stochasticState) prime() {
 		pt.PrintProgress()
 	}
 	ss.log.Notice("Finalizing...")
-	db.EndTransaction()
-	db.EndBlock()
+	err = db.EndTransaction()
+	if err != nil {
+		ss.log.Fatal(err)
+	}
+	err = db.EndBlock()
+	if err != nil {
+		ss.log.Fatal(err)
+	}
 	db.EndSyncPeriod()
 	ss.log.Notice("End priming...")
 }
@@ -340,7 +352,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if ss.traceDebug {
 			ss.log.Infof(" id: %v", ss.blockNum)
 		}
-		db.BeginBlock(ss.blockNum)
+		err := db.BeginBlock(ss.blockNum)
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.txNum = 0
 		ss.selfDestructed = []int64{}
 
@@ -354,7 +369,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if ss.traceDebug {
 			ss.log.Infof(" id: %v", ss.txNum)
 		}
-		db.BeginTransaction(ss.txNum)
+		err := db.BeginTransaction(ss.txNum)
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.snapshot = []int{}
 		ss.selfDestructed = []int64{}
 
@@ -368,7 +386,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		db.Empty(addr)
 
 	case EndBlockID:
-		db.EndBlock()
+		err := db.EndBlock()
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.blockNum++
 		ss.deleteAccounts()
 
@@ -377,7 +398,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		ss.syncPeriodNum++
 
 	case EndTransactionID:
-		db.EndTransaction()
+		err := db.EndTransaction()
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.txNum++
 		ss.totalTx++
 

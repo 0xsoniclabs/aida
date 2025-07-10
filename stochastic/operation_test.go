@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestOperationDecoding checks whether number encoding/decoding of operations with their arguments works.
@@ -71,7 +72,15 @@ func TestOperationOpcode(t *testing.T) {
 
 						// decode argument-encoded operation
 						dop, daddr, dkey, dvalue := DecodeOpcode(opcode)
-
+						if dop == BeginTransactionID {
+							println(opcode)
+						}
+						if dop == BeginBlockID {
+							println(opcode)
+						}
+						if dop == BeginSyncPeriodID {
+							println(opcode)
+						}
 						if op != dop || addr != daddr || key != dkey || value != dvalue {
 							t.Fatalf("Encoding/decoding failed for %v", opcode)
 						}
@@ -80,4 +89,45 @@ func TestOperationOpcode(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestStochastic_OpMnemo(t *testing.T) {
+	// case 1
+	out := OpMnemo(SnapshotID)
+	assert.Equal(t, "SN", out)
+
+	// case 2
+	assert.Panics(t, func() {
+		OpMnemo(-1)
+	})
+}
+
+func TestStochastic_checkArgOp(t *testing.T) {
+	// case 1
+	valid := checkArgOp(SnapshotID, statistics.NoArgID, statistics.NoArgID, statistics.NoArgID)
+	assert.True(t, valid)
+
+	// case 2
+	valid = checkArgOp(-1, statistics.NoArgID, statistics.NoArgID, statistics.NoArgID)
+	assert.False(t, valid)
+
+	// case 3
+	valid = checkArgOp(SnapshotID, -1, statistics.NoArgID, statistics.NoArgID)
+	assert.False(t, valid)
+
+	// case 4
+	valid = checkArgOp(SnapshotID, statistics.NoArgID, -1, statistics.NoArgID)
+	assert.False(t, valid)
+
+	// case 5
+	valid = checkArgOp(SnapshotID, statistics.NoArgID, statistics.NoArgID, -1)
+	assert.False(t, valid)
+}
+
+func TestStochastic_IsValidArgOp(t *testing.T) {
+	valid := IsValidArgOp(4752)
+	assert.True(t, valid)
+
+	invalid := IsValidArgOp(-1)
+	assert.False(t, invalid)
 }

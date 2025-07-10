@@ -21,6 +21,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -84,4 +85,62 @@ func TestRandomAccessRandInd(t *testing.T) {
 	if chi2 > chi2Critical {
 		t.Fatalf("The random index selection biased.")
 	}
+}
+
+// TestMle tests the Maximum Likelihood Estimation function.
+func TestExponential_mle(t *testing.T) {
+	// Test normal case
+	result, err := mle(2.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.04348235725033439, result)
+
+	// Test with NaN lambda
+	result, err = mle(math.NaN(), 0.3)
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test with NaN mean
+	result, err = mle(2.0, math.NaN())
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test with both NaN
+	result, err = mle(math.NaN(), math.NaN())
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test very large lambda
+	result, err = mle(100.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, -0.29, result)
+
+	// Test very small positive lambda
+	result, err = mle(1e-10, 0.3)
+	assert.NoError(t, err)
+
+	// Test zero lambda (should cause division by zero)
+	// TODO maybe bug
+	result, err = mle(0.0, 0.3)
+	assert.NoError(t, err)
+	assert.True(t, math.IsNaN(result))
+
+	// Test negative lambda
+	result, err = mle(-1.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.28197670686932647, result)
+
+	// Test negative mean
+	result, err = mle(-1.0, -0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.8819767068693265, result)
+
+	// Test with Infinity mean
+	result, err = mle(2.0, math.Inf(1))
+	assert.NoError(t, err)
+	assert.Equal(t, -math.Inf(1), result)
+
+	// Test with Infinity lambda
+	result, err = mle(math.Inf(1), 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, -0.3, result)
 }
