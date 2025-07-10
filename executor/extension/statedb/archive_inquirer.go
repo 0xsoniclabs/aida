@@ -52,6 +52,9 @@ func makeArchiveInquirer(cfg *utils.Config, log logger.Logger, duration *time.Du
 	if duration != nil {
 		tickerDuration = *duration
 	}
+	if tickerDuration <= 0 {
+		return nil, fmt.Errorf("duration must greater than 0")
+	}
 	return &archiveInquirer{
 		ArchiveDbTxProcessor: processor,
 		cfg:                  cfg,

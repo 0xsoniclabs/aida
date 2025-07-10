@@ -17,6 +17,7 @@
 package statedb
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"slices"
@@ -35,6 +36,49 @@ import (
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
+
+func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
+	t.Run("no duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		ext, err := makeArchiveInquirer(&cfg, log, nil)
+		assert.NoError(t, err)
+		out, ok := ext.(*archiveInquirer)
+		assert.True(t, ok)
+		assert.Equal(t, defaultTickerDuration, out.tickerDuration)
+	})
+
+	t.Run("valid duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		duration := 150 * time.Second
+		ext, err := makeArchiveInquirer(&cfg, log, &duration)
+		assert.NoError(t, err)
+		out, ok := ext.(*archiveInquirer)
+		assert.True(t, ok)
+		assert.Equal(t, duration, out.tickerDuration)
+	})
+
+	t.Run("invalid duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		duration := -150 * time.Second
+		ext, err := makeArchiveInquirer(&cfg, log, &duration)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "duration must greater than 0")
+		assert.Nil(t, ext)
+	})
+
+}
 
 func TestArchiveInquirer_DisabledIfNoQueryRateIsGiven(t *testing.T) {
 	config := utils.Config{}
