@@ -15,8 +15,7 @@ func TestRpc_newIterator(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockContext := context.TODO()
-	mockReadCloser := NewMockProxyIoReadCloser(ctrl)
-	mockReadCloser.EXPECT().Read(gomock.Any()).Return(0, io.EOF).AnyTimes()
+	mockReadCloser := io.NopCloser(bytes.NewReader([]byte{}))
 	out := newIterator(mockContext, mockReadCloser, 10)
 	assert.NotNil(t, out)
 	assert.Equal(t, mockContext, out.ctx)
@@ -30,8 +29,7 @@ func TestIterator_Next(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockContext := context.TODO()
-	mockReadCloser := NewMockProxyIoReadCloser(ctrl)
-	mockReadCloser.EXPECT().Read(gomock.Any()).Return(0, io.EOF).AnyTimes()
+	mockReadCloser := io.NopCloser(bytes.NewReader([]byte{}))
 	iter := newIterator(mockContext, mockReadCloser, 1)
 	out := iter.Next()
 	assert.False(t, out) // Expecting false since Read will return io.EOF
@@ -41,9 +39,7 @@ func TestIterator_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockContext := context.TODO()
-	mockReadCloser := NewMockProxyIoReadCloser(ctrl)
-	mockReadCloser.EXPECT().Read(gomock.Any()).Return(0, io.EOF)
-	mockReadCloser.EXPECT().Close().Return(nil)
+	mockReadCloser := io.NopCloser(bytes.NewReader([]byte{}))
 	iter := newIterator(mockContext, mockReadCloser, 1)
 	iter.Close()
 }
@@ -277,8 +273,7 @@ func TestIterator_loadPayload(t *testing.T) {
 	defer ctrl.Finish()
 
 	t.Run("success", func(t *testing.T) {
-		mockReadCloser := NewMockProxyIoReadCloser(ctrl)
-		mockReadCloser.EXPECT().Read(gomock.Any()).Return(2, nil)
+		mockReadCloser := io.NopCloser(bytes.NewReader([]byte{0x1, 0x2}))
 		iter := &iterator{
 			in: mockReadCloser,
 		}
@@ -288,15 +283,14 @@ func TestIterator_loadPayload(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		mockReadCloser := NewMockProxyIoReadCloser(ctrl)
-		mockReadCloser.EXPECT().Read(gomock.Any()).Return(0, io.ErrUnexpectedEOF)
+		mockReadCloser := io.NopCloser(bytes.NewReader([]byte{}))
 		iter := &iterator{
 			in: mockReadCloser,
 		}
 
 		err := iter.loadPayload([]byte{0x1, 0x2})
 		assert.Error(t, err)
-		assert.Equal(t, io.ErrUnexpectedEOF, err)
+		assert.Equal(t, io.EOF, err)
 	})
 
 }

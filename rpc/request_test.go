@@ -72,6 +72,7 @@ func TestRequestAndResults_DecodeInfo(t *testing.T) {
 }
 
 func TestRequestAndResults_findRequestedBlock(t *testing.T) {
+
 	t.Run("single param", func(t *testing.T) {
 		var r = &RequestAndResults{
 			Query:         &Body{},

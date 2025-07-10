@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -215,59 +214,4 @@ func (e *EvmExecutor) executable(gas uint64) (bool, *core.ExecutionResult, error
 		return true, nil, err // Bail out
 	}
 	return result.Failed(), result, nil
-}
-
-func (e *EvmExecutor) findHiLoCap() (uint64, uint64, uint64, error) {
-	// Binary search the gas requirement, as it may be higher than the amount used
-	var (
-		lo  = params.TxGas - 1
-		hi  uint64
-		cap uint64
-	)
-
-	// Use zero address if sender unspecified.
-	if e.args.From == nil {
-		e.args.From = new(common.Address)
-	}
-	// Determine the highest gas limit can be used during the estimation.
-	if e.args.Gas != nil && uint64(*e.args.Gas) >= params.TxGas {
-		hi = uint64(*e.args.Gas)
-	} else {
-		hi = maxGasLimit
-	}
-	// Normalize the max fee per gas the call is willing to spend.
-	var feeCap *big.Int
-	if e.args.GasPrice != nil && (e.args.MaxFeePerGas != nil || e.args.MaxPriorityFeePerGas != nil) {
-		return 0, 0, 0, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
-	} else if e.args.GasPrice != nil {
-		feeCap = e.args.GasPrice.ToInt()
-	} else if e.args.MaxFeePerGas != nil {
-		feeCap = e.args.MaxFeePerGas.ToInt()
-	} else {
-		feeCap = common.Big0
-	}
-	// Recap the highest gas limit with account's available balance.
-	if feeCap.BitLen() != 0 {
-		balance := e.archive.GetBalance(*e.args.From) // from can't be nil
-		available := balance.ToBig()
-		if e.args.Value != nil {
-			if e.args.Value.ToInt().Cmp(available) >= 0 {
-				return 0, 0, 0, errors.New("insufficient funds for transfer")
-			}
-			available.Sub(available, e.args.Value.ToInt())
-		}
-		allowance := new(big.Int).Div(available, feeCap)
-		// If the allowance is larger than maximum uint64, skip checking
-		if allowance.IsUint64() && hi > allowance.Uint64() {
-			hi = allowance.Uint64()
-		}
-	}
-
-	// Recap the highest gas allowance with specified gascap.
-	if hi > globalGasCap {
-		hi = globalGasCap
-	}
-	cap = hi
-
-	return hi, lo, cap, nil
 }
