@@ -17,10 +17,13 @@
 package stochastic
 
 import (
+	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEventRegistryUpdateFreq checks some operation labels with their argument classes.
@@ -207,4 +210,58 @@ func TestEventRegistryZeroOperation(t *testing.T) {
 	if !checkFrequencies(&r, opFreq, transitFreq) {
 		t.Fatalf("operation/transit frequency diverges")
 	}
+}
+
+func TestStochastic_ReadEvents(t *testing.T) {
+	tempDir := t.TempDir()
+
+	t.Run("success", func(t *testing.T) {
+		input := &EventRegistryJSON{
+			FileId: "events",
+		}
+		marshal, err := json.Marshal(input)
+		if err != nil {
+			t.Fatalf("cannot marshal EventRegistryJSON; %v", err)
+		}
+		err = os.WriteFile(tempDir+"/events.json", marshal, 0644)
+		if err != nil {
+			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+		}
+
+		events, err := ReadEvents(tempDir + "/events.json")
+		assert.NoError(t, err)
+		assert.NotNil(t, events)
+	})
+
+	t.Run("not events file", func(t *testing.T) {
+		input := &EventRegistryJSON{}
+		marshal, err := json.Marshal(input)
+		if err != nil {
+			t.Fatalf("cannot marshal EventRegistryJSON; %v", err)
+		}
+		err = os.WriteFile(tempDir+"/events.json", marshal, 0644)
+		if err != nil {
+			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+		}
+
+		events, err := ReadEvents(tempDir + "/events.json")
+		assert.Error(t, err)
+		assert.Nil(t, events)
+	})
+
+	t.Run("not json", func(t *testing.T) {
+		err := os.WriteFile(tempDir+"/events.json", []byte{}, 0644)
+		if err != nil {
+			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+		}
+		events, err := ReadEvents(tempDir + "/events.json")
+		assert.Error(t, err)
+		assert.Nil(t, events)
+	})
+
+	t.Run("not exist", func(t *testing.T) {
+		events, err := ReadEvents(tempDir + "/1234.json")
+		assert.Error(t, err)
+		assert.Nil(t, events)
+	})
 }
