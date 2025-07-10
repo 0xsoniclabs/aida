@@ -17,169 +17,161 @@
 package tracer
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/paulmach/orb"
-	"github.com/paulmach/orb/simplify"
-
-	"github.com/0xsoniclabs/aida/stochastic/
 )
 
 // ArgumentContext keeps track of previously used arguments in StateDB operations
 type ArgumentContext struct {
 	// Contract-address queue
-	contracts queue[common.Address]
+	contracts Queue[common.Address]
 
 	// Storage-key queue
-	keys queue[common.Hash]
+	keys Queue[common.Hash]
 
 	// Storage-value queue
-	values queue[common.Hash]
+	values Queue[common.Hash]
 
 	// File handler
 	// TBD: Use old file procedures (gzip etc.)
+	file *FileHandler
 }
 
 // NewArgumentContext creates a new event registry.
-func NewArgumentContext(file FH) ArgumentContext {
+func NewArgumentContext(file *FileHandler) ArgumentContext {
 	return ArgumentContext{
-		contracts:    NewQueue[common.Address](),
-		keys:         NewQueue[common.Hash](),
-		values:       NewQueue[common.Hash](),
-		file:         file,
+		contracts: NewQueue[common.Address](),
+		keys:      NewQueue[common.Hash](),
+		values:    NewQueue[common.Hash](),
+		file:      file,
 	}
 }
 
 // WriteOp registers an operation with no simulation arguments
-func (ctx *ArgumentContext) WriteOp(op int, data []byte) {
+func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) {
 	if op < 0 || op >= NumOps {
 		log.Fatalf("invalid operation ID")
 	}
 	addrClass := NoArgID
 	keyClass := NoArgID
-	valueClass := NoArgID 
+	valueClass := NoArgID
 
-	argOp := EncodeArgOp(op, addr, key, value)
+	argOp := EncodeArgOp(op, addrClass, keyClass, valueClass)
 
-	ctx.f.WriteUint16(argOp)
-	ctx.f.WriteData(data)
+	ctx.file.WriteUint16(argOp)
+	ctx.file.WriteData(data)
 }
 
 // WriteAddressOp registers an operation with a contract-address argument
-func (r *ArgumentContext) WriteAddressOp(op int, address *common.Address, data []byte) {
+func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) {
 	if op < 0 || op >= NumOps {
 		log.Fatalf("invalid stochastic operation ID")
 	}
 
-	addrClass, addrIdx := r.contracts.Classify(*address) // zero, previous, recent, address
-	keyClass := NoArgID
-	valueClass := NoArgID
+	addrClass, addrIdx := ctx.contracts.Classify(*address) // zero, previous, recent, address
 
-	argOp := EncodeArgOp(op, addr, key, value)
-	ctx.f.WriteUint16(argOp)
+	argOp := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
+	ctx.file.WriteUint16(argOp)
 
-	switch(addrClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*address})
- 	default:
+	switch addrClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(addrIdx))
+	case NewValueID:
+		ctx.file.WriteData(address.Bytes())
+	default:
 		panic("Unexpected argument classification")
 	}
 
-	ctx.f.WriteData(data)
+	ctx.file.WriteData(data)
 }
 
-// WriteAddressKeyOp registers an operation with a contract-address and a storage-key arguments.
-func (r *ArgumentContext) WriteKeyOp(op int, address *common.Address, key *common.Hash, data []byte) {
+// WriteKeyOp registers an operation with a contract-address and a storage-key arguments.
+func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) {
 	if op < 0 || op >= NumOps {
 		log.Fatalf("invalid stochastic operation ID")
 	}
 
-	addrClass, addrIdx := r.contracts.Classify(*address)
-	keyClass, keyIdx := r.keys.Classify(*key)
-	valueClass := NoArgID
+	addrClass, addrIdx := ctx.contracts.Classify(*address)
+	keyClass, keyIdx := ctx.keys.Classify(*key)
 
-	argOp := EncodeArgOp(op, addr, key, value)
-	ctx.f.WriteUint16(argOp)
+	argOp := EncodeArgOp(op, addrClass, keyClass, NoArgID)
+	ctx.file.WriteUint16(argOp)
 
-	switch(addrClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*address})
- 	default:
+	switch addrClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(addrIdx))
+	case NewValueID:
+		ctx.file.WriteData(address.Bytes())
+	default:
 		panic("Unexpected argument classification")
 	}
 
-	switch(keyClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*key})
- 	default:
+	switch keyClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(keyIdx))
+	case NewValueID:
+		ctx.file.WriteData(key.Bytes())
+	default:
 		panic("Unexpected argument classification")
 	}
 
-	ctx.f.WriteData(data)
+	ctx.file.WriteData(data)
 }
 
-// WriteAddressKeyOp registers an operation with a contract-address, a storage-key and storage-value arguments.
-func (ctx *ArgumentContext) WriteValueOp(op int, address *common.Address, key *common.Hash, value *common.Hash) {
+// WriteValueOp registers an operation with a contract-address, a storage-key and storage-value arguments.
+func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) {
 	if op < 0 || op >= NumOps {
 		log.Fatalf("invalid stochastic operation ID")
 	}
 
-	addrClass, addrIdx := r.contracts.Classify(*address)
-	keyClass, keyIdx := r.keys.Classify(*key)
-	valueClass, valueIdx := r.values.Classify(*value)
+	addrClass, addrIdx := ctx.contracts.Classify(*address)
+	keyClass, keyIdx := ctx.keys.Classify(*key)
+	valueClass, valueIdx := ctx.values.Classify(*value)
 
-	argOp := EncodeArgOp(op, addr, key, value)
-	ctx.f.WriteUint16(argOp)
+	argOp := EncodeArgOp(op, addrClass, keyClass, valueClass)
+	ctx.file.WriteUint16(argOp)
 
-	switch(addrClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*address})
- 	default:
+	switch addrClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(addrIdx))
+	case NewValueID:
+		ctx.file.WriteData(address.Bytes())
+	default:
 		panic("Unexpected argument classification")
 	}
 
-	switch(keyClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*key})
- 	default:
+	switch keyClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(keyIdx))
+	case NewValueID:
+		ctx.file.WriteData(key.Bytes())
+	default:
 		panic("Unexpected key classification")
 	}
 
-	switch(valueClass) {
-	ZeroValueID:
-	PreviousValueID:
-	RecentValueID:
-		f.WriteUint8(addrIdx)
-	NewValueID:
-		f.WriteData([]byte{*value})
- 	default:
+	switch valueClass {
+	case ZeroValueID:
+	case PreviousValueID:
+	case RecentValueID:
+		ctx.file.WriteUint8(uint8(valueIdx))
+	case NewValueID:
+		ctx.file.WriteData(value.Bytes())
+	default:
 		panic("Unexpected value classification")
 	}
+}
 
-	ctx.f.WriteData(data)
+func (ctx *ArgumentContext) Close() error {
+	return ctx.file.Close()
 }

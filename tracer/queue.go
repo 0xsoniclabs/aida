@@ -26,7 +26,6 @@ type Queue[T comparable] struct {
 	data [QueueLen]T // queue data
 }
 
-
 // NewQueue creates a new queue.
 func NewQueue[T comparable]() Queue[T] {
 	return Queue[T]{
@@ -69,7 +68,6 @@ func (q *Queue[T]) Find(item T) int {
 		// if found, return position in the FIFO queue
 		if q.data[i] == item {
 			idx := (q.top - i + QueueLen) % QueueLen
-			q.freq[idx]++
 			return idx
 		}
 
@@ -83,19 +81,20 @@ func (q *Queue[T]) Find(item T) int {
 	}
 }
 
-func (q *Queue[T]) Classify(item T) int, int {
-	var zero T{}
-
+func (q *Queue[T]) Classify(item T) (uint8, int) {
+	var zero T
 	if item == zero {
-		return ZeroValuArg, -1
-	} 
+		return ZeroValueID, -1
+	}
 
 	idx := q.Find(item)
-	if idx < 0 { 
-		return NewValueArg, -1
-	} else if idx == 0 { 
-		return PrevValueArg, -1
-	} else { 
-		return RecentValueArg, idx - 1
+	if idx < 0 {
+		// New Values needs to be saved
+		q.Place(item)
+		return NewValueID, -1
+	} else if idx == 0 {
+		return PreviousValueID, -1
+	} else {
+		return RecentValueID, idx - 1
 	}
 }

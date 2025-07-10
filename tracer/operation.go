@@ -55,6 +55,8 @@ const (
 	GetTransientStateID
 	SetTransientStateID
 	SelfDestruct6780ID
+	SubRefundID
+	GetRefundID
 	// Add new operations below this line
 
 	NumOps
@@ -98,7 +100,7 @@ var opText = map[int]string{
 }
 
 // opMnemo is a mnemonics table for operations.
-var opMnemo = map[int]string{
+var opMnemo = map[uint16]string{
 	AddBalanceID:        "AB",
 	BeginBlockID:        "BB",
 	BeginSyncPeriodID:   "BS",
@@ -132,7 +134,7 @@ var opMnemo = map[int]string{
 }
 
 // opNumArgs is an argument number table for operations.
-var opNumArgs = map[int]int{
+var opNumArgs = map[uint16]int{
 	AddBalanceID:        1,
 	BeginBlockID:        0,
 	BeginSyncPeriodID:   0,
@@ -166,7 +168,7 @@ var opNumArgs = map[int]int{
 }
 
 // opId is an operation ID table.
-var opId = map[string]int{
+var opId = map[string]uint16{
 	"AB": AddBalanceID,
 	"BB": BeginBlockID,
 	"BS": BeginSyncPeriodID,
@@ -200,26 +202,24 @@ var opId = map[string]int{
 }
 
 // argMnemo is the argument-class mnemonics table.
-var argMnemo = map[int]string{
-	statistics.NoArgID:         "",
-	statistics.ZeroValueID:     "z",
-	statistics.NewValueID:      "n",
-	statistics.PreviousValueID: "p",
-	statistics.RecentValueID:   "q",
-	statistics.RandomValueID:   "r",
+var argMnemo = map[uint8]string{
+	NoArgID:         "",
+	ZeroValueID:     "z",
+	NewValueID:      "n",
+	PreviousValueID: "p",
+	RecentValueID:   "q",
 }
 
 // argId is the argument-class id table.
-var argId = map[byte]int{
-	'z': statistics.ZeroValueID,
-	'n': statistics.NewValueID,
-	'p': statistics.PreviousValueID,
-	'q': statistics.RecentValueID,
-	'r': statistics.RandomValueID,
+var argId = map[byte]uint8{
+	'z': ZeroValueID,
+	'n': NewValueID,
+	'p': PreviousValueID,
+	'q': RecentValueID,
 }
 
 // OpMnemo returns the mnemonic code for an operation.
-func OpMnemo(op int) string {
+func OpMnemo(op uint16) string {
 	if op < 0 || op >= NumOps {
 		panic("opcode is out of range")
 	}
@@ -227,43 +227,43 @@ func OpMnemo(op int) string {
 }
 
 // checkArgOp checks whether op/argument combination is valid.
-func checkArgOp(op int, contract int, key int, value int) bool {
+func checkArgOp(op uint16, contract uint8, key uint8, value uint8) bool {
 	if op < 0 || op >= NumOps {
 		return false
 	}
-	if contract < 0 || contract >= statistics.NumClasses {
+	if contract < 0 || contract >= NumClasses {
 		return false
 	}
-	if key < 0 || key >= statistics.NumClasses {
+	if key < 0 || key >= NumClasses {
 		return false
 	}
-	if value < 0 || value >= statistics.NumClasses {
+	if value < 0 || value >= NumClasses {
 		return false
 	}
 	switch opNumArgs[op] {
 	case 0:
-		return contract == statistics.NoArgID &&
-			key == statistics.NoArgID &&
-			value == statistics.NoArgID
+		return contract == NoArgID &&
+			key == NoArgID &&
+			value == NoArgID
 	case 1:
-		return contract != statistics.NoArgID &&
-			key == statistics.NoArgID &&
-			value == statistics.NoArgID
+		return contract != NoArgID &&
+			key == NoArgID &&
+			value == NoArgID
 	case 2:
-		return contract != statistics.NoArgID &&
-			key != statistics.NoArgID &&
-			value == statistics.NoArgID
+		return contract != NoArgID &&
+			key != NoArgID &&
+			value == NoArgID
 	case 3:
-		return contract != statistics.NoArgID &&
-			key != statistics.NoArgID &&
-			value != statistics.NoArgID
+		return contract != NoArgID &&
+			key != NoArgID &&
+			value != NoArgID
 	default:
 		return false
 	}
 }
 
 // IsValidArgOp returns true if the encoding is valid.
-func IsValidArgOp(argop int) bool {
+func IsValidArgOp(argop uint16) bool {
 	if argop < 0 || argop >= numArgOps {
 		return false
 	}
@@ -272,35 +272,35 @@ func IsValidArgOp(argop int) bool {
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.
-func EncodeArgOp(op int, addr int, key int, value int) int {
+func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) uint16 {
 	if !checkArgOp(op, addr, key, value) {
 		log.Fatalf("EncodeArgOp: invalid operation/arguments")
 	}
-	return (((int(op)*statistics.NumClasses)+addr)*statistics.NumClasses+key)*statistics.NumClasses + value
+	return (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value)
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
-func DecodeArgOp(argop int) (int, int, int, int) {
+func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8) {
 	if argop < 0 || argop >= numArgOps {
 		log.Fatalf("DecodeArgOp: invalid op range")
 	}
 
-	value := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	value := argop % uint16(NumClasses)
+	argop = argop / uint16(NumClasses)
 
-	key := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	key := argop % uint16(NumClasses)
+	argop = argop / uint16(NumClasses)
 
-	addr := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	addr := argop % uint16(NumClasses)
+	argop = argop / uint16(NumClasses)
 
 	op := argop
 
-	return op, addr, key, value
+	return op, uint8(addr), uint8(key), uint8(value)
 }
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
-func EncodeOpcode(op int, addr int, key int, value int) string {
+func EncodeOpcode(op uint16, addr uint8, key uint8, value uint8) string {
 	if !checkArgOp(op, addr, key, value) {
 		log.Fatalf("EncodeOpcode: invalid operation/arguments")
 	}
@@ -318,7 +318,7 @@ func validateArg(argMnemo byte) bool {
 }
 
 // DecodeOpcode decodes opcode producing the operation id and its argument classes
-func DecodeOpcode(opc string) (int, int, int, int) {
+func DecodeOpcode(opc string) (uint16, uint8, uint8, uint8) {
 	mnemo := opc[:2]
 	op, ok := opId[mnemo]
 	if !ok {
@@ -327,20 +327,20 @@ func DecodeOpcode(opc string) (int, int, int, int) {
 	if len(opc) != 2+opNumArgs[op] {
 		log.Fatalf("DecodeOpcode: wrong opcode length for %v", opc)
 	}
-	var contract, key, value int
+	var contract, key, value uint8
 	switch len(opc) - 2 {
 	case 0:
-		contract, key, value = statistics.NoArgID, statistics.NoArgID, statistics.NoArgID
+		contract, key, value = NoArgID, NoArgID, NoArgID
 	case 1:
 		if !validateArg(opc[2]) {
 			log.Fatalf("DecodeOpcode: wrong argument code")
 		}
-		contract, key, value = argId[opc[2]], statistics.NoArgID, statistics.NoArgID
+		contract, key, value = argId[opc[2]], NoArgID, NoArgID
 	case 2:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) {
 			log.Fatalf("DecodeOpcode: wrong argument code")
 		}
-		contract, key, value = argId[opc[2]], argId[opc[3]], statistics.NoArgID
+		contract, key, value = argId[opc[2]], argId[opc[3]], NoArgID
 	case 3:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) || !validateArg(opc[4]) {
 			log.Fatalf("DecodeOpcode: wrong argument code")

@@ -18,11 +18,11 @@ package tracer
 
 // IDs for argument classes
 const (
-	NoArgID         = iota // default label (for no argument)
-	ZeroValueID            // zero value access
-	NewValueID             // newly occurring value access
-	PreviousValueID        // value that was previously accessed
-	RecentValueID          // value that recently accessed (time-window is fixed to statistics.QueueLen)
+	NoArgID         uint8 = iota // default label (for no argument)
+	ZeroValueID                  // zero value access
+	NewValueID                   // newly occurring value access
+	PreviousValueID              // value that was previously accessed
+	RecentValueID                // value that recently accessed (time-window is fixed to statistics.QueueLen)
 
 	NumClasses
 )
