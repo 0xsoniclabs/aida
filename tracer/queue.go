@@ -16,10 +16,10 @@
 
 package tracer
 
-const QueueLen = 256
+const QueueLen = 257
 
-// Queuing data structure for a generic FIFO queue.
-type Queuing[T comparable] struct {
+// Queue data structure for a generic FIFO queue.
+type Queue[T comparable] struct {
 	// queue structure
 	top  int         // index of first entry in queue
 	rear int         // index of last entry in queue
@@ -27,9 +27,9 @@ type Queuing[T comparable] struct {
 }
 
 
-// NewQueuing creates a new queue.
-func NewQueuing[T comparable]() Queuing[T] {
-	return Queuing[T]{
+// NewQueue creates a new queue.
+func NewQueue[T comparable]() Queue[T] {
+	return Queue[T]{
 		top:  -1,
 		rear: -1,
 		data: [QueueLen]T{},
@@ -37,7 +37,7 @@ func NewQueuing[T comparable]() Queuing[T] {
 }
 
 // Place a new item into the queue.
-func (q *Queuing[T]) Place(item T) {
+func (q *Queue[T]) Place(item T) {
 	// is the queue empty => initialize top/rear
 	if q.top == -1 {
 		q.top, q.rear = 0, 0
@@ -56,7 +56,7 @@ func (q *Queuing[T]) Place(item T) {
 }
 
 // Find the index position of an item.
-func (q *Queuing[T]) Find(item T) int {
+func (q *Queue[T]) Find(item T) int {
 
 	// if queue is empty, return -1
 	if q.top == -1 {
@@ -83,3 +83,19 @@ func (q *Queuing[T]) Find(item T) int {
 	}
 }
 
+func (q *Queue[T]) Classify(item T) int, int {
+	var zero T{}
+
+	if item == zero {
+		return ZeroValuArg, -1
+	} 
+
+	idx := q.Find(item)
+	if idx < 0 { 
+		return NewValueArg, -1
+	} else if idx == 0 { 
+		return PrevValueArg, -1
+	} else { 
+		return RecentValueArg, idx - 1
+	}
+}
