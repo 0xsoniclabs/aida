@@ -1,4 +1,4 @@
-package stochastic
+package tracer
 
 import (
 	"github.com/0xsoniclabs/aida/state"
