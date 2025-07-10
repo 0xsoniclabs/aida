@@ -48,7 +48,7 @@ func NewProfilerProxy(db state.StateDB, anlt *analytics.IncrementalAnalytics, lo
 	p := new(ProfilerProxy)
 	p.db = db
 	p.anlt = anlt
-	p.log = logger.NewLogger(logLevel, "Proxy Profiler")
+	p.log = logger.NewLogger(logLevel, "TracerProxy Profiler")
 	return p
 }
 
