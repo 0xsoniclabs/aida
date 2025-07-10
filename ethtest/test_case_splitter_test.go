@@ -3,11 +3,10 @@ package ethtest
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/0xsoniclabs/aida/logger"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
 )

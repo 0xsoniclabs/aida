@@ -4,12 +4,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	etests "github.com/ethereum/go-ethereum/tests"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStBlockEnvironment_GetBaseFee(t *testing.T) {
