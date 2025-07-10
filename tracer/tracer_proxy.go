@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package stochastic
+package tracer
 
 import (
+	"errors"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/txctx"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	geth_state "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
@@ -29,297 +31,297 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// TracerProxy data structure for writing StateDB operations
-type TracerProxy struct {
-	db   state.StateDB      // StateDB object
-	ctx  *ArgumentContext   // context that keeps track of the argument history
-	                        // of previous StateDB operations
+// Proxy data structure for writing StateDB operations
+type Proxy struct {
+	db  state.StateDB    // StateDB object
+	ctx *ArgumentContext // context that keeps track of the argument history
+	// of previous StateDB operations
 }
 
 // NewTracerProxy creates a new StateDB proxy for recording and writing events.
-func NewTracerProxy(db state.StateDB, ctx *ArgumentContext) *TracerProxy {
-	return &TracerProxy{
-		db:   db,
-		ctx:  ctx,
+func NewTracerProxy(db state.StateDB, ctx *ArgumentContext) *Proxy {
+	return &Proxy{
+		db:  db,
+		ctx: ctx,
 	}
 }
 
-func (p *TracerProxy) CreateAccount(address common.Address) {
+func (p *Proxy) CreateAccount(address common.Address) {
 	p.ctx.WriteAddressOp(CreateAccountID, &address, []byte{})
 	p.db.CreateAccount(address)
 }
 
-func (p *TracerProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	// TBD: find an encoding for amount and reason in the form of a byte sequence
-	data := []byte{} 
+func (p *Proxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	data := append(amount.Bytes(), byte(reason))
 	p.ctx.WriteAddressOp(SubBalanceID, &address, data)
 	return p.db.SubBalance(address, amount, reason)
 }
 
-func (p *TracerProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	// TBD: find an encoding for amount and reason in the form of a byte sequence
-	data := []byte{} 
-	p.ctx.WriteAddressOp(AddBalanceID, &address)
+func (p *Proxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	data := append(amount.Bytes(), byte(reason))
+	p.ctx.WriteAddressOp(AddBalanceID, &address, data)
 	return p.db.AddBalance(address, amount, reason)
 }
 
-func (p *TracerProxy) GetBalance(address common.Address) *uint256.Int {
+func (p *Proxy) GetBalance(address common.Address) *uint256.Int {
 	p.ctx.WriteAddressOp(GetBalanceID, &address, []byte{})
 	return p.db.GetBalance(address)
 }
 
-func (p *TracerProxy) GetNonce(address common.Address) uint64 {
+func (p *Proxy) GetNonce(address common.Address) uint64 {
 	p.ctx.WriteAddressOp(GetNonceID, &address, []byte{})
 	return p.db.GetNonce(address)
 }
 
-func (p *TracerProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
+func (p *Proxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	// TBD: find an encoding for nonce and reason in the form of a byte sequence
 	data := []byte{}
 	p.ctx.WriteAddressOp(SetNonceID, &address, data)
 	p.db.SetNonce(address, nonce, reason)
 }
 
-func (p *TracerProxy) GetCodeHash(address common.Address) common.Hash {
+func (p *Proxy) GetCodeHash(address common.Address) common.Hash {
 	p.ctx.WriteAddressOp(GetCodeHashID, &address, []byte{})
 	return p.db.GetCodeHash(address)
 }
 
-func (p *TracerProxy) GetCode(address common.Address) []byte {
+func (p *Proxy) GetCode(address common.Address) []byte {
 	p.ctx.WriteAddressOp(GetCodeID, &address, []byte{})
 	return p.db.GetCode(address)
 }
 
-func (p *TracerProxy) SetCode(address common.Address, code []byte) []byte {
+func (p *Proxy) SetCode(address common.Address, code []byte) []byte {
 	p.ctx.WriteAddressOp(SetCodeID, &address, code)
 	return p.db.SetCode(address, code)
 }
 
-func (p *TracerProxy) GetCodeSize(address common.Address) int {
+func (p *Proxy) GetCodeSize(address common.Address) int {
 	p.ctx.WriteAddressOp(GetCodeSizeID, &address, []byte{})
 	return p.db.GetCodeSize(address)
 }
 
-func (p *TracerProxy) AddRefund(gas uint64) {
-	// TBD: find an encoding for gas
-	data := []byte{} 
+func (p *Proxy) AddRefund(gas uint64) {
+	data := bigendian.Uint64ToBytes(gas)
 	p.ctx.WriteOp(GetCodeSizeID, data)
 	p.db.AddRefund(gas)
 }
 
-func (p *TracerProxy) SubRefund(gas uint64) {
-	// TBD: find an encoding for gas
-	data := []byte{} 
+func (p *Proxy) SubRefund(gas uint64) {
+	data := bigendian.Uint64ToBytes(gas)
 	p.ctx.WriteOp(SubRefundID, data)
 	p.db.SubRefund(gas)
 }
 
-func (p *TracerProxy) GetRefund() uint64 {
-	p.ctx.WriteOp(SubRefundID, []byte{})
+func (p *Proxy) GetRefund() uint64 {
+	p.ctx.WriteOp(GetRefundID, []byte{})
 	return p.db.GetRefund()
 }
 
-func (p *TracerProxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
+func (p *Proxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
 	p.ctx.WriteKeyOp(GetCommittedStateID, &address, &key, []byte{})
 	return p.db.GetCommittedState(address, key)
 }
 
-func (p *TracerProxy) GetState(address common.Address, key common.Hash) common.Hash {
+func (p *Proxy) GetState(address common.Address, key common.Hash) common.Hash {
 	p.ctx.WriteKeyOp(GetStateID, &address, &key, []byte{})
 	return p.db.GetState(address, key)
 }
 
-func (p *TracerProxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
-	p.ctx.WriteValueOp(SetStateID, &address, &key, &value, []byte{})
+func (p *Proxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
+	p.ctx.WriteValueOp(SetStateID, &address, &key, &value)
 	return p.db.SetState(address, key, value)
 }
-func (p *TracerProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value, []byte{})
+func (p *Proxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
+	p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value)
 	p.db.SetTransientState(addr, key, value)
 }
 
-func (p *TracerProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
+func (p *Proxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
 	p.ctx.WriteKeyOp(GetTransientStateID, &addr, &key, []byte{})
 	return p.db.GetState(addr, key)
 }
 
-func (p *TracerProxy) SelfDestruct(address common.Address) uint256.Int {
+func (p *Proxy) SelfDestruct(address common.Address) uint256.Int {
 	p.ctx.WriteAddressOp(SelfDestructID, &address, []byte{})
 	return p.db.SelfDestruct(address)
 }
 
-func (p *TracerProxy) HasSelfDestructed(address common.Address) bool {
+func (p *Proxy) HasSelfDestructed(address common.Address) bool {
 	p.ctx.WriteAddressOp(HasSelfDestructedID, &address, []byte{})
 	return p.db.HasSelfDestructed(address)
 }
 
-func (p *TracerProxy) Exist(address common.Address) bool {
+func (p *Proxy) Exist(address common.Address) bool {
 	p.ctx.WriteAddressOp(ExistID, &address, []byte{})
 	return p.db.Exist(address)
 }
 
-func (p *TracerProxy) Empty(address common.Address) bool {
+func (p *Proxy) Empty(address common.Address) bool {
 	p.ctx.WriteAddressOp(EmptyID, &address, []byte{})
 	return p.db.Empty(address)
 }
 
-func (p *TracerProxy) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList) {
+func (p *Proxy) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList) {
 	p.db.Prepare(rules, sender, coinbase, dest, precompiles, txAccesses)
 }
 
-func (p *TracerProxy) AddAddressToAccessList(address common.Address) {
+func (p *Proxy) AddAddressToAccessList(address common.Address) {
 	p.db.AddAddressToAccessList(address)
 }
 
-func (p *TracerProxy) AddressInAccessList(address common.Address) bool {
+func (p *Proxy) AddressInAccessList(address common.Address) bool {
 	return p.db.AddressInAccessList(address)
 }
 
-func (p *TracerProxy) SlotInAccessList(address common.Address, slot common.Hash) (bool, bool) {
+func (p *Proxy) SlotInAccessList(address common.Address, slot common.Hash) (bool, bool) {
 	return p.db.SlotInAccessList(address, slot)
 }
 
-func (p *TracerProxy) AddSlotToAccessList(address common.Address, slot common.Hash) {
+func (p *Proxy) AddSlotToAccessList(address common.Address, slot common.Hash) {
 	p.db.AddSlotToAccessList(address, slot)
 }
 
-func (p *TracerProxy) RevertToSnapshot(snapshot int) {
-	p.ctx.WriteOp(RevertToSnapshotID)
+func (p *Proxy) RevertToSnapshot(snapshot int) {
+	data := bigendian.Uint32ToBytes(uint32(snapshot))
+	p.ctx.WriteOp(RevertToSnapshotID, data)
 	p.db.RevertToSnapshot(snapshot)
 }
 
-func (p *TracerProxy) Snapshot() int {
-	p.ctx.WriteOp(SnapshotID)
-	return snapshot
+func (p *Proxy) Snapshot() int {
+	p.ctx.WriteOp(SnapshotID, []byte{})
+	return p.db.Snapshot()
 }
 
-func (p *TracerProxy) AddLog(log *types.Log) {
+func (p *Proxy) AddLog(log *types.Log) {
 	p.db.AddLog(log)
 }
 
-func (p *TracerProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
+func (p *Proxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	return p.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
-func (p *TracerProxy) PointCache() *utils.PointCache {
+func (p *Proxy) PointCache() *utils.PointCache {
 	return p.db.PointCache()
 }
 
-func (p *TracerProxy) Witness() *stateless.Witness {
+func (p *Proxy) Witness() *stateless.Witness {
 	return p.db.Witness()
 }
 
-func (p *TracerProxy) AddPreimage(address common.Hash, image []byte) {
+func (p *Proxy) AddPreimage(address common.Hash, image []byte) {
 	p.db.AddPreimage(address, image)
 }
 
-func (p *TracerProxy) AccessEvents() *geth_state.AccessEvents {
+func (p *Proxy) AccessEvents() *geth_state.AccessEvents {
 	return p.db.AccessEvents()
 }
 
-func (p *TracerProxy) SetTxContext(thash common.Hash, ti int) {
-	p.db.SetTxContext(thash, ti)
+func (p *Proxy) SetTxContext(hash common.Hash, ti int) {
+	p.db.SetTxContext(hash, ti)
 }
 
-func (p *TracerProxy) Finalise(deleteEmptyObjects bool) {
+func (p *Proxy) Finalise(deleteEmptyObjects bool) {
 	p.db.Finalise(deleteEmptyObjects)
 }
 
-func (p *TracerProxy) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+func (p *Proxy) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	return p.db.IntermediateRoot(deleteEmptyObjects)
 }
 
-func (p *TracerProxy) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
+func (p *Proxy) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
 	return p.db.Commit(block, deleteEmptyObjects)
 }
 
-func (p *TracerProxy) GetHash() (common.Hash, error) {
+func (p *Proxy) GetHash() (common.Hash, error) {
 	return p.db.GetHash()
 }
 
-func (p *TracerProxy) Error() error {
+func (p *Proxy) Error() error {
 	return p.db.Error()
 }
 
-func (p *TracerProxy) GetSubstatePostAlloc() txctx.WorldState {
+func (p *Proxy) GetSubstatePostAlloc() txcontext.WorldState {
 	return p.db.GetSubstatePostAlloc()
 }
 
-func (p *TracerProxy) PrepareSubstate(substate txctx.WorldState, block uint64) {
+func (p *Proxy) PrepareSubstate(substate txcontext.WorldState, block uint64) {
 	p.db.PrepareSubstate(substate, block)
 }
 
-func (p *TracerProxy) BeginTransaction(number uint32) error {
-	p.ctx.WriteOp(BeginTransactionID)
+func (p *Proxy) BeginTransaction(number uint32) error {
+	data := bigendian.Uint32ToBytes(number)
+	p.ctx.WriteOp(BeginTransactionID, data)
 	if err := p.db.BeginTransaction(number); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *TracerProxy) EndTransaction() error {
-	p.ctx.WriteOp(EndTransactionID)
+func (p *Proxy) EndTransaction() error {
+	p.ctx.WriteOp(EndTransactionID, []byte{})
 	if err := p.db.EndTransaction(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *TracerProxy) BeginBlock(number uint64) error {
-	p.ctx.WriteOp(BeginBlockID)
+func (p *Proxy) BeginBlock(number uint64) error {
+	data := bigendian.Uint64ToBytes(number)
+	p.ctx.WriteOp(BeginBlockID, data)
 	return p.db.BeginBlock(number)
 }
 
-func (p *TracerProxy) EndBlock() error {
-	p.ctx.WriteOp(EndBlockID)
+func (p *Proxy) EndBlock() error {
+	p.ctx.WriteOp(EndBlockID, []byte{})
 	return p.db.EndBlock()
 }
 
-func (p *TracerProxy) BeginSyncPeriod(number uint64) {
-	p.ctx.WriteOp(BeginSyncPeriodID)
+func (p *Proxy) BeginSyncPeriod(number uint64) {
+	data := bigendian.Uint64ToBytes(number)
+	p.ctx.WriteOp(BeginSyncPeriodID, data)
 	p.db.BeginSyncPeriod(number)
 }
 
-func (p *TracerProxy) EndSyncPeriod() {
-	p.ctx.WriteOp(EndSyncPeriodID)
+func (p *Proxy) EndSyncPeriod() {
+	p.ctx.WriteOp(EndSyncPeriodID, []byte{})
 	p.db.EndSyncPeriod()
 }
 
-func (p *TracerProxy) Close() error {
-	return p.db.Close()
+func (p *Proxy) Close() error {
+	return errors.Join(p.ctx.Close(), p.db.Close())
 }
 
-func (p *TracerProxy) StartBulkLoad(uint64) (state.BulkLoad, error) {
+func (p *Proxy) StartBulkLoad(uint64) (state.BulkLoad, error) {
 	panic("StartBulkLoad not supported by TracerProxy")
 }
 
-func (p *TracerProxy) GetMemoryUsage() *state.MemoryUsage {
+func (p *Proxy) GetMemoryUsage() *state.MemoryUsage {
 	return p.db.GetMemoryUsage()
 }
 
-func (p *TracerProxy) GetArchiveState(block uint64) (state.NonCommittableStateDB, error) {
+func (p *Proxy) GetArchiveState(block uint64) (state.NonCommittableStateDB, error) {
 	return p.db.GetArchiveState(block)
 }
 
-func (p *TracerProxy) GetArchiveBlockHeight() (uint64, bool, error) {
+func (p *Proxy) GetArchiveBlockHeight() (uint64, bool, error) {
 	return p.db.GetArchiveBlockHeight()
 }
 
-func (p *TracerProxy) GetShadowDB() state.StateDB {
+func (p *Proxy) GetShadowDB() state.StateDB {
 	return p.db.GetShadowDB()
 }
 
-func (p *TracerProxy) CreateContract(addr common.Address) {
-	p.ctx.WriteAddressOp(CreateContractID, addr)
+func (p *Proxy) CreateContract(addr common.Address) {
+	p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{})
 	p.db.CreateContract(addr)
 }
 
-func (p *TracerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	p.ctx.WriteAddressOp(SelfDestruct6780ID, addr)
+func (p *Proxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	p.ctx.WriteAddressOp(SelfDestruct6780ID, &addr, []byte{})
 	return p.db.SelfDestruct6780(addr)
 }
 
-func (p *TracerProxy) GetStorageRoot(addr common.Address) common.Hash {
-	p.ctx.WriteAddressOp(CreateContractID, addr)
+func (p *Proxy) GetStorageRoot(addr common.Address) common.Hash {
+	p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{})
 	return p.db.GetStorageRoot(addr)
 }
