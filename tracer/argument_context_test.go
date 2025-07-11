@@ -18,6 +18,7 @@ package tracer
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -27,75 +28,106 @@ func TestArgumentContext_WriteOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fh := NewMockFileHandler(ctrl)
 	ctx := NewArgumentContext(fh)
-	uintData := uint16(123)
-	byteData := []byte("test data")
 
-	fh.EXPECT().WriteUint16(uintData)
-	fh.EXPECT().WriteData(byteData)
-
-	ctx.WriteOp(uintData, byteData)
+	fh.EXPECT().WriteUint16(uint16(125))
+	fh.EXPECT().WriteData([]byte{})
+	ctx.WriteOp(BeginBlockID, []byte{})
 }
 
 func TestArgumentContext_WriteAddressOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fh := NewMockFileHandler(ctrl)
 	ctx := NewArgumentContext(fh)
-	uintData := uint16(123)
-	addrData := common.Address{0x1, 0x2, 0x3}
-	byteData := []byte("test data")
+	addrData1 := common.Address{0x1, 0x2, 0x3}
+	addrData2 := common.Address{0x2, 0x3, 0x4}
+	byteData := uint256.NewInt(123).Bytes()
+	gomock.InOrder(
+		// The address is unknown, so we expect it to be written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(50)),
+		fh.EXPECT().WriteData(addrData1.Bytes()),
+		fh.EXPECT().WriteData(byteData),
 
-	// The address is unknown, so we expect it to be written as a byte slice
-	fh.EXPECT().WriteData(addrData.Bytes())
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteAddressOp(uintData, &addrData, byteData)
+		// The address is previous, so we do not write any info about it
+		fh.EXPECT().WriteUint16(uint16(75)),
+		fh.EXPECT().WriteData(byteData),
 
-	// The address is known, so we expect only the idx is written as uint8
-	fh.EXPECT().WriteUint8(uint8(0))
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteAddressOp(uintData, &addrData, byteData)
+		// The address is unknown, so we expect it to be written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(50)),
+		fh.EXPECT().WriteData(addrData2.Bytes()),
+		fh.EXPECT().WriteData(byteData),
+
+		// The address is known although not previous are used - written as idx
+		fh.EXPECT().WriteUint16(uint16(100)),
+		fh.EXPECT().WriteUint8(uint8(0)),
+		fh.EXPECT().WriteData(byteData),
+	)
+
+	err := ctx.WriteAddressOp(AddBalanceID, &addrData1, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteAddressOp(AddBalanceID, &addrData1, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteAddressOp(AddBalanceID, &addrData2, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteAddressOp(AddBalanceID, &addrData1, byteData)
+	assert.NoError(t, err)
 }
 
 func TestArgumentContext_WriteKeyOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fh := NewMockFileHandler(ctrl)
 	ctx := NewArgumentContext(fh)
-	uintData := uint16(123)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
 	keyData1 := common.Hash{0x4, 0x5, 0x6}
 	keyData2 := common.Hash{0x5, 0x6, 0x7}
 	byteData := []byte("test data")
 
-	// The address and the are unknown, so we expect it to be written as a byte slice
-	fh.EXPECT().WriteData(addrData1.Bytes())
-	fh.EXPECT().WriteData(keyData1.Bytes())
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteKeyOp(uintData, &addrData1, &keyData1, byteData)
+	gomock.InOrder(
+		// Everything is unknown - everything is written as bytes slice
+		fh.EXPECT().WriteUint16(uint16(2060)),
+		fh.EXPECT().WriteData(addrData1.Bytes()),
+		fh.EXPECT().WriteData(keyData1.Bytes()),
+		fh.EXPECT().WriteData(byteData),
 
-	// The address is known, so we expect only the idx is written as uint8, key is unknown hence written as a byte slice
-	fh.EXPECT().WriteUint8(uint8(0))
-	fh.EXPECT().WriteData(keyData2.Bytes())
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteKeyOp(uintData, &addrData1, &keyData2, byteData)
+		// Previous address was used - no writing
+		// key is unknown hence written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(2085)),
+		fh.EXPECT().WriteData(keyData2.Bytes()),
+		fh.EXPECT().WriteData(byteData),
 
-	// The key is known, so we expect only the idx is written as uint8, address is unknown hence written as a byte slice
-	fh.EXPECT().WriteData(addrData2.Bytes())
-	fh.EXPECT().WriteUint8(uint8(0))
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteKeyOp(uintData, &addrData2, &keyData2, byteData)
+		// Previous key was used - no writing
+		// address is unknown hence written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(2065)),
+		fh.EXPECT().WriteData(addrData2.Bytes()),
+		fh.EXPECT().WriteData(byteData),
 
-	// Both is known, so we expect only the idx is written as uint8
-	fh.EXPECT().WriteUint8(uint8(1))
-	fh.EXPECT().WriteUint8(uint8(1))
-	fh.EXPECT().WriteData(byteData)
-	ctx.WriteKeyOp(uintData, &addrData2, &keyData2, byteData)
+		// Previous key and address were used - no writing
+		fh.EXPECT().WriteUint16(uint16(2090)),
+		fh.EXPECT().WriteData(byteData),
+
+		// Everything is known although not previous are used - everything is written as idx
+		fh.EXPECT().WriteUint16(uint16(2120)),
+		fh.EXPECT().WriteUint8(uint8(0)),
+		fh.EXPECT().WriteUint8(uint8(0)),
+		fh.EXPECT().WriteData(byteData),
+	)
+
+	err := ctx.WriteKeyOp(GetStateID, &addrData1, &keyData1, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteKeyOp(GetStateID, &addrData1, &keyData2, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteKeyOp(GetStateID, &addrData2, &keyData2, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteKeyOp(GetStateID, &addrData2, &keyData2, byteData)
+	assert.NoError(t, err)
+	err = ctx.WriteKeyOp(GetStateID, &addrData1, &keyData1, byteData)
+	assert.NoError(t, err)
 }
 
 func TestArgumentContext_WriteValueOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fh := NewMockFileHandler(ctrl)
 	ctx := NewArgumentContext(fh)
-	uintData := uint16(123)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
 	keyData1 := common.Hash{0x4, 0x5, 0x6}
@@ -104,31 +136,40 @@ func TestArgumentContext_WriteValueOp(t *testing.T) {
 	valueData2 := common.Hash{0x7, 0x8, 0x9}
 	valueData3 := common.Hash{0x8, 0x9, 0x10}
 
-	// Everything is unknown, so we expect it to be written as a byte slice
-	fh.EXPECT().WriteData(addrData1.Bytes())
-	fh.EXPECT().WriteData(keyData1.Bytes())
-	fh.EXPECT().WriteData(valueData1.Bytes())
-	ctx.WriteValueOp(uintData, &addrData1, &keyData1, &valueData1)
+	gomock.InOrder(
+		// Everything is unknown - everyting is written as bytes slice
+		fh.EXPECT().WriteUint16(uint16(2687)),
+		fh.EXPECT().WriteData(addrData1.Bytes()),
+		fh.EXPECT().WriteData(keyData1.Bytes()),
+		fh.EXPECT().WriteData(valueData1.Bytes()),
 
-	// The address is known, so we expect only the idx is written as uint8,
-	// key and value are unknown hence written as a byte slice
-	fh.EXPECT().WriteUint8(uint8(0))
-	fh.EXPECT().WriteData(keyData2.Bytes())
-	fh.EXPECT().WriteData(valueData2.Bytes())
-	ctx.WriteValueOp(uintData, &addrData1, &keyData2, &valueData1)
+		// Previous address was used - no writing
+		// key and value are unknown hence written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(2712)),
+		fh.EXPECT().WriteData(keyData2.Bytes()),
+		fh.EXPECT().WriteData(valueData2.Bytes()),
 
-	// The key is known, so we expect only the idx is written as uint8,
-	// address and value are unknown hence written as a byte slice
-	fh.EXPECT().WriteData(addrData2.Bytes())
-	fh.EXPECT().WriteUint8(uint8(0))
-	fh.EXPECT().WriteData(valueData3.Bytes())
-	ctx.WriteValueOp(uintData, &addrData2, &keyData2, &valueData3)
+		// Previous key was used - no writing
+		// address and value are unknown hence written as a byte slice
+		fh.EXPECT().WriteUint16(uint16(2692)),
+		fh.EXPECT().WriteData(addrData2.Bytes()),
+		fh.EXPECT().WriteData(valueData3.Bytes()),
 
-	// Everything is known, so we expect only the idx is written as uint8
-	fh.EXPECT().WriteUint8(uint8(1))
-	fh.EXPECT().WriteUint8(uint8(1))
-	fh.EXPECT().WriteData(uint8(1))
-	ctx.WriteValueOp(uintData, &addrData1, &keyData1, &valueData1)
+		// Everything is known although not previous are used - everything is written as idx
+		fh.EXPECT().WriteUint16(uint16(2749)),
+		fh.EXPECT().WriteUint8(uint8(0)),
+		fh.EXPECT().WriteUint8(uint8(0)),
+		fh.EXPECT().WriteUint8(uint8(1)),
+	)
+
+	err := ctx.WriteValueOp(SetStateID, &addrData1, &keyData1, &valueData1)
+	assert.NoError(t, err)
+	err = ctx.WriteValueOp(SetStateID, &addrData1, &keyData2, &valueData2)
+	assert.NoError(t, err)
+	err = ctx.WriteValueOp(SetStateID, &addrData2, &keyData2, &valueData3)
+	assert.NoError(t, err)
+	err = ctx.WriteValueOp(SetStateID, &addrData1, &keyData1, &valueData1)
+	assert.NoError(t, err)
 }
 
 func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
