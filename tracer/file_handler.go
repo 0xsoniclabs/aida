@@ -5,21 +5,14 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/carmen/go/common"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"io"
 	"os"
 )
 
-//go:generate mockgen -source file_handler.go -destination file_handler_mock.go -package tracer
-
-type FileHandler interface {
-	WriteData(data []byte)
-	WriteUint16(data uint16)
-	WriteUint8(idx uint8)
-	Close() error
-}
-
-func NewFileHandler(filename string) (*fileHandler, error) {
+// NewFileHandler creates a new FileHandler that writes to a gzip-compressed file using a buffer.
+func NewFileHandler(filename string) (FileHandler, error) {
 	file, err := os.Create(filename)
 	if err != nil {
 		return nil, err
@@ -31,8 +24,28 @@ func NewFileHandler(filename string) (*fileHandler, error) {
 	}, nil
 }
 
+//go:generate mockgen -source file_handler.go -destination file_handler_mock.go -package tracer
+
+type FileHandler interface {
+	// WriteData writes a byte slice of any size to the file.
+	WriteData(data []byte)
+	// WriteUint16 writes a big-endian encoded uint16 value to the file.
+	WriteUint16(data uint16)
+	// WriteUint8 writes a single byte (uint8) to the file.
+	WriteUint8(idx uint8)
+	// todo add write code hash
+	Close() error
+}
+
+// Buffer is a wrapper around necessary interfaces for writing data to a file for mocking purposes.
+type Buffer interface {
+	io.Writer
+	io.ByteWriter
+	common.Flusher
+}
+
 type fileHandler struct {
-	buffer *bufio.Writer
+	buffer Buffer
 	file   io.Closer
 }
 
