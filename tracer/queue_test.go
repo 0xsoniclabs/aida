@@ -108,3 +108,37 @@ func TestQueueSimple2(t *testing.T) {
 		t.Fatalf("last element must be found")
 	}
 }
+
+func TestQueue_Classify(t *testing.T) {
+	queue := NewQueue[int]()
+
+	// Zero value
+	id, idx := queue.Classify(0)
+	if id != ZeroValueID || idx != -1 {
+		t.Fatalf("expected ZeroValueID for zero value, got id=%d idx=%d", id, idx)
+	}
+
+	// New value (non-zero)
+	id, idx = queue.Classify(1)
+	if id != NewValueID || idx != -1 {
+		t.Fatalf("expected NewValueID for new value, got id=%d idx=%d", id, idx)
+	}
+
+	// Previous value (just placed)
+	id, idx = queue.Classify(1)
+	if id != PreviousValueID || idx != -1 {
+		t.Fatalf("expected PreviousValueID for previous value, got id=%d idx=%d", id, idx)
+	}
+
+	// Add another value
+	id, idx = queue.Classify(2)
+	if id != NewValueID || idx != -1 {
+		t.Fatalf("expected NewValueID for new value, got id=%d idx=%d", id, idx)
+	}
+
+	// Recent value (not the most recent)
+	id, idx = queue.Classify(1)
+	if id != RecentValueID || idx != 0 {
+		t.Fatalf("expected RecentValueID for recent value, got id=%d idx=%d", id, idx)
+	}
+}
