@@ -272,11 +272,11 @@ func IsValidArgOp(argop uint16) bool {
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.
-func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) uint16 {
+func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) (uint16, error) {
 	if !checkArgOp(op, addr, key, value) {
-		log.Fatalf("EncodeArgOp: invalid operation/arguments")
+		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments\naddr: %d, key: %d, value: %d, op: %d", addr, key, value, op)
 	}
-	return (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value)
+	return (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value), nil
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
@@ -318,14 +318,14 @@ func validateArg(argMnemo byte) bool {
 }
 
 // DecodeOpcode decodes opcode producing the operation id and its argument classes
-func DecodeOpcode(opc string) (uint16, uint8, uint8, uint8) {
+func DecodeOpcode(opc string) (uint16, uint8, uint8, uint8, error) {
 	mnemo := opc[:2]
 	op, ok := opId[mnemo]
 	if !ok {
-		log.Fatalf("DecodeOpcode: lookup failed for %v", mnemo)
+		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: lookup failed for %v", mnemo)
 	}
 	if len(opc) != 2+opNumArgs[op] {
-		log.Fatalf("DecodeOpcode: wrong opcode length for %v", opc)
+		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong opcode length for %v", opc)
 	}
 	var contract, key, value uint8
 	switch len(opc) - 2 {
@@ -333,19 +333,19 @@ func DecodeOpcode(opc string) (uint16, uint8, uint8, uint8) {
 		contract, key, value = NoArgID, NoArgID, NoArgID
 	case 1:
 		if !validateArg(opc[2]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code")
 		}
 		contract, key, value = argId[opc[2]], NoArgID, NoArgID
 	case 2:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code")
 		}
 		contract, key, value = argId[opc[2]], argId[opc[3]], NoArgID
 	case 3:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) || !validateArg(opc[4]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code")
 		}
 		contract, key, value = argId[opc[2]], argId[opc[3]], argId[opc[4]]
 	}
-	return op, contract, key, value
+	return op, contract, key, value, nil
 }

@@ -17,7 +17,6 @@
 package tracer
 
 import (
-	"encoding/json"
 	"testing"
 )
 
@@ -109,6 +108,3 @@ func TestQueueSimple2(t *testing.T) {
 		t.Fatalf("last element must be found")
 	}
 }
-
-// Write testcase for Classify
-

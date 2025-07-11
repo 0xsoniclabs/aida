@@ -45,29 +45,44 @@ func NewArgumentContext(file FileHandler) ArgumentContext {
 }
 
 // WriteOp registers an operation with no simulation arguments
-func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) {
-	argOp := EncodeArgOp(op, NoArgID, NoArgID, NoArgID)
+func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) error {
+	argOp, err := EncodeArgOp(op, NoArgID, NoArgID, NoArgID)
+	if err != nil {
+		return err
+	}
 	ctx.file.WriteUint16(argOp)
 	ctx.file.WriteData(data)
+	return nil
 }
 
 // WriteAddressOp registers an operation with a contract-address argument
-func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) {
+func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address) // zero, previous, recent, address
-	ctx.writeClassifiedOp(addrClass, addrIdx, address)
 
-	argOp := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
+	argOp, err := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
+	if err != nil {
+		return err
+	}
+	// Write the operation code with argument classifications
 	ctx.file.WriteUint16(argOp)
 
+	// Write the address argument
+	ctx.writeClassifiedOp(addrClass, addrIdx, address)
+
+	// Write the data argument
 	ctx.file.WriteData(data)
+	return nil
 }
 
 // WriteKeyOp registers an operation with a contract-address and a storage-key arguments.
-func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) {
+func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 
-	argOp := EncodeArgOp(op, addrClass, keyClass, NoArgID)
+	argOp, err := EncodeArgOp(op, addrClass, keyClass, NoArgID)
+	if err != nil {
+		return err
+	}
 	// Write the operation code with argument classifications
 	ctx.file.WriteUint16(argOp)
 
@@ -77,21 +92,26 @@ func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *
 
 	// Write the data argument
 	ctx.file.WriteData(data)
+	return nil
 }
 
 // WriteValueOp registers an operation with a contract-address, a storage-key and storage-value arguments.
-func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) {
+func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 	valueClass, valueIdx := ctx.values.Classify(*value)
 
-	argOp := EncodeArgOp(op, addrClass, keyClass, valueClass)
+	argOp, err := EncodeArgOp(op, addrClass, keyClass, valueClass)
+	if err != nil {
+		return err
+	}
 	ctx.file.WriteUint16(argOp)
 
 	// Write the address, key and value arguments
 	ctx.writeClassifiedOp(addrClass, addrIdx, address)
 	ctx.writeClassifiedOp(keyClass, keyIdx, key)
-	ctx.writeClassifiedOp(valueClass, valueIdx, key)
+	ctx.writeClassifiedOp(valueClass, valueIdx, value)
+	return nil
 }
 
 func (ctx *ArgumentContext) Close() error {
