@@ -17,194 +17,126 @@
 package tracer
 
 import (
-	"testing"
-
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+	"testing"
 )
 
-// TestEventRegistryUpdateFreq checks some operation labels with their argument classes.
-func TestEventRegistryUpdateFreq(t *testing.T) {
-	r := NewEventRegistry()
+func TestArgumentContext_WriteOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	uintData := uint16(123)
+	byteData := []byte("test data")
 
-	// check that frequencies of argument-encoded operations and
-	// transit frequencies are zero.
-	for i := 0; i < numArgOps; i++ {
-		if r.argOpFreq[i] > 0 {
-			t.Fatalf("Operation frequency must be zero")
-		}
-		for j := 0; j < numArgOps; j++ {
-			if r.transitFreq[i][j] > 0 {
-				t.Fatalf("Transit frequency must be zero")
-			}
-		}
-	}
+	fh.EXPECT().WriteUint16(uintData)
+	fh.EXPECT().WriteData(byteData)
 
-	// inject first operation
-	op := CreateAccountID
-	addr := statistics.RandomValueID
-	key := statistics.NoArgID
-	value := statistics.NoArgID
-	r.updateFreq(op, addr, key, value)
-	argop1 := EncodeArgOp(op, addr, key, value)
-
-	// check updated operation/transit frequencies
-	for i := 0; i < numArgOps; i++ {
-		for j := 0; j < numArgOps; j++ {
-			if r.transitFreq[i][j] > 0 {
-				t.Fatalf("Transit frequency must be zero")
-			}
-		}
-		if i != argop1 && r.argOpFreq[i] > 0 {
-			t.Fatalf("Operation frequency must be zero")
-		}
-	}
-	if r.argOpFreq[argop1] != 1 {
-		t.Fatalf("Operation frequency must be one")
-	}
-
-	// inject second operation
-	op = SetStateID
-	addr = statistics.RandomValueID
-	key = statistics.PreviousValueID
-	value = statistics.ZeroValueID
-	r.updateFreq(op, addr, key, value)
-	argop2 := EncodeArgOp(op, addr, key, value)
-	for i := 0; i < numArgOps; i++ {
-		for j := 0; j < numArgOps; j++ {
-			if r.transitFreq[i][j] > 0 && i != argop1 && j != argop2 {
-				t.Fatalf("Transit frequency must be zero")
-			}
-		}
-	}
-	for i := 0; i < numArgOps; i++ {
-		if (i == argop1 || i == argop2) && r.argOpFreq[i] != 1 {
-			t.Fatalf("Operation frequency must be one")
-		}
-		if (i != argop1 && i != argop2) && r.argOpFreq[i] > 0 {
-			t.Fatalf("Operation frequency must be zero")
-		}
-	}
-	if r.transitFreq[argop1][argop2] != 1 {
-		t.Fatalf("Transit frequency must be one %v", r.transitFreq[argop2][argop1])
-	}
+	ctx.WriteOp(uintData, byteData)
 }
 
-// check frequencies
-func checkFrequencies(r *EventRegistry, opFreq [numArgOps]uint64, transitFreq [numArgOps][numArgOps]uint64) bool {
-	for i := 0; i < numArgOps; i++ {
-		if r.argOpFreq[i] != opFreq[i] {
-			return false
-		}
-		for j := 0; j < numArgOps; j++ {
-			if r.transitFreq[i][j] != transitFreq[i][j] {
-				return false
-			}
-		}
-	}
-	return true
+func TestArgumentContext_WriteAddressOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	uintData := uint16(123)
+	addrData := common.Address{0x1, 0x2, 0x3}
+	byteData := []byte("test data")
+
+	// The address is unknown, so we expect it to be written as a byte slice
+	fh.EXPECT().WriteData(addrData.Bytes())
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteAddressOp(uintData, &addrData, byteData)
+
+	// The address is known, so we expect only the idx is written as uint8
+	fh.EXPECT().WriteUint8(uint8(0))
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteAddressOp(uintData, &addrData, byteData)
 }
 
-// TestEventRegistryOperation checks registration for operations
-func TestEventRegistryOperation(t *testing.T) {
-	// operation/transit frequencies
-	var (
-		opFreq      [numArgOps]uint64
-		transitFreq [numArgOps][numArgOps]uint64
-	)
+func TestArgumentContext_WriteKeyOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	uintData := uint16(123)
+	addrData1 := common.Address{0x1, 0x2, 0x3}
+	addrData2 := common.Address{0x2, 0x3, 0x4}
+	keyData1 := common.Hash{0x4, 0x5, 0x6}
+	keyData2 := common.Hash{0x5, 0x6, 0x7}
+	byteData := []byte("test data")
 
-	// create new event registry
-	r := NewEventRegistry()
+	// The address and the are unknown, so we expect it to be written as a byte slice
+	fh.EXPECT().WriteData(addrData1.Bytes())
+	fh.EXPECT().WriteData(keyData1.Bytes())
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteKeyOp(uintData, &addrData1, &keyData1, byteData)
 
-	// check that frequencies are zero.
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// The address is known, so we expect only the idx is written as uint8, key is unknown hence written as a byte slice
+	fh.EXPECT().WriteUint8(uint8(0))
+	fh.EXPECT().WriteData(keyData2.Bytes())
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteKeyOp(uintData, &addrData1, &keyData2, byteData)
 
-	// inject first operation and check frequencies.
-	addr := common.HexToAddress("0x000000010")
-	r.RegisterAddressOp(CreateAccountID, &addr)
-	argop1 := EncodeArgOp(CreateAccountID, statistics.NewValueID, statistics.NoArgID, statistics.NoArgID)
-	opFreq[argop1]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// The key is known, so we expect only the idx is written as uint8, address is unknown hence written as a byte slice
+	fh.EXPECT().WriteData(addrData2.Bytes())
+	fh.EXPECT().WriteUint8(uint8(0))
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteKeyOp(uintData, &addrData2, &keyData2, byteData)
 
-	// inject second operation and check frequencies.
-	key := common.HexToHash("0x000000200")
-	r.RegisterKeyOp(GetStateID, &addr, &key)
-	argop2 := EncodeArgOp(GetStateID, statistics.PreviousValueID, statistics.NewValueID, statistics.NoArgID)
-	opFreq[argop2]++
-	transitFreq[argop1][argop2]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
-
-	// inject third operation and check frequencies.
-	value := common.Hash{}
-	r.RegisterValueOp(SetStateID, &addr, &key, &value)
-	argop3 := EncodeArgOp(SetStateID, statistics.PreviousValueID, statistics.PreviousValueID, statistics.ZeroValueID)
-	opFreq[argop3]++
-	transitFreq[argop2][argop3]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
-
-	// inject forth operation and check frequencies.
-	r.RegisterOp(SnapshotID)
-	argop4 := EncodeArgOp(SnapshotID, statistics.NoArgID, statistics.NoArgID, statistics.NoArgID)
-	opFreq[argop4]++
-	transitFreq[argop3][argop4]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// Both is known, so we expect only the idx is written as uint8
+	fh.EXPECT().WriteUint8(uint8(1))
+	fh.EXPECT().WriteUint8(uint8(1))
+	fh.EXPECT().WriteData(byteData)
+	ctx.WriteKeyOp(uintData, &addrData2, &keyData2, byteData)
 }
 
-// TestEventRegistryZeroOperation checks zero value, new and previous argument classes.
-func TestEventRegistryZeroOperation(t *testing.T) {
-	// operation/transit frequencies
-	var (
-		opFreq      [numArgOps]uint64
-		transitFreq [numArgOps][numArgOps]uint64
-	)
+func TestArgumentContext_WriteValueOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	uintData := uint16(123)
+	addrData1 := common.Address{0x1, 0x2, 0x3}
+	addrData2 := common.Address{0x2, 0x3, 0x4}
+	keyData1 := common.Hash{0x4, 0x5, 0x6}
+	keyData2 := common.Hash{0x5, 0x6, 0x7}
+	valueData1 := common.Hash{0x6, 0x7, 0x8}
+	valueData2 := common.Hash{0x7, 0x8, 0x9}
+	valueData3 := common.Hash{0x8, 0x9, 0x10}
 
-	// create new event registry
-	r := NewEventRegistry()
+	// Everything is unknown, so we expect it to be written as a byte slice
+	fh.EXPECT().WriteData(addrData1.Bytes())
+	fh.EXPECT().WriteData(keyData1.Bytes())
+	fh.EXPECT().WriteData(valueData1.Bytes())
+	ctx.WriteValueOp(uintData, &addrData1, &keyData1, &valueData1)
 
-	// check that frequencies are zero.
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// The address is known, so we expect only the idx is written as uint8,
+	// key and value are unknown hence written as a byte slice
+	fh.EXPECT().WriteUint8(uint8(0))
+	fh.EXPECT().WriteData(keyData2.Bytes())
+	fh.EXPECT().WriteData(valueData2.Bytes())
+	ctx.WriteValueOp(uintData, &addrData1, &keyData2, &valueData1)
 
-	// inject first operation and check frequencies.
-	addr := common.Address{}
-	key := common.Hash{}
-	value := common.Hash{}
-	r.RegisterValueOp(SetStateID, &addr, &key, &value)
-	argop1 := EncodeArgOp(SetStateID, statistics.ZeroValueID, statistics.ZeroValueID, statistics.ZeroValueID)
-	opFreq[argop1]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// The key is known, so we expect only the idx is written as uint8,
+	// address and value are unknown hence written as a byte slice
+	fh.EXPECT().WriteData(addrData2.Bytes())
+	fh.EXPECT().WriteUint8(uint8(0))
+	fh.EXPECT().WriteData(valueData3.Bytes())
+	ctx.WriteValueOp(uintData, &addrData2, &keyData2, &valueData3)
 
-	// inject second operation and check frequencies.
-	addr = common.HexToAddress("0x12312121212")
-	key = common.HexToHash("0x232313123123213")
-	value = common.HexToHash("0x2301238021830912830")
-	r.RegisterValueOp(SetStateID, &addr, &key, &value)
-	argop2 := EncodeArgOp(SetStateID, statistics.NewValueID, statistics.NewValueID, statistics.NewValueID)
-	opFreq[argop2]++
-	transitFreq[argop1][argop2]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+	// Everything is known, so we expect only the idx is written as uint8
+	fh.EXPECT().WriteUint8(uint8(1))
+	fh.EXPECT().WriteUint8(uint8(1))
+	fh.EXPECT().WriteData(uint8(1))
+	ctx.WriteValueOp(uintData, &addrData1, &keyData1, &valueData1)
+}
 
-	// inject third operation and check frequencies.
-	r.RegisterValueOp(SetStateID, &addr, &key, &value)
-	argop3 := EncodeArgOp(SetStateID, statistics.PreviousValueID, statistics.PreviousValueID, statistics.PreviousValueID)
-	opFreq[argop3]++
-	transitFreq[argop2][argop3]++
-	if !checkFrequencies(&r, opFreq, transitFreq) {
-		t.Fatalf("operation/transit frequency diverges")
-	}
+func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	fh.EXPECT().Close().Return(nil)
+
+	err := ctx.Close()
+	assert.NoError(t, err)
 }
