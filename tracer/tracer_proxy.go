@@ -33,9 +33,9 @@ import (
 
 // Proxy data structure for writing StateDB operations
 type Proxy struct {
-	db  state.StateDB    // StateDB object
-	ctx *ArgumentContext // context that keeps track of the argument history
-	// of previous StateDB operations
+	db       state.StateDB    // StateDB object
+	ctx      *ArgumentContext // context that keeps track of the argument history
+	writeErr error
 }
 
 // NewTracerProxy creates a new StateDB proxy for recording and writing events.
@@ -47,117 +47,117 @@ func NewTracerProxy(db state.StateDB, ctx *ArgumentContext) *Proxy {
 }
 
 func (p *Proxy) CreateAccount(address common.Address) {
-	p.ctx.WriteAddressOp(CreateAccountID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(CreateAccountID, &address, []byte{}))
 	p.db.CreateAccount(address)
 }
 
 func (p *Proxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	data := append(amount.Bytes(), byte(reason))
-	p.ctx.WriteAddressOp(SubBalanceID, &address, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(SubBalanceID, &address, data))
 	return p.db.SubBalance(address, amount, reason)
 }
 
 func (p *Proxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	data := append(amount.Bytes(), byte(reason))
-	p.ctx.WriteAddressOp(AddBalanceID, &address, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(AddBalanceID, &address, data))
 	return p.db.AddBalance(address, amount, reason)
 }
 
 func (p *Proxy) GetBalance(address common.Address) *uint256.Int {
-	p.ctx.WriteAddressOp(GetBalanceID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(GetBalanceID, &address, []byte{}))
 	return p.db.GetBalance(address)
 }
 
 func (p *Proxy) GetNonce(address common.Address) uint64 {
-	p.ctx.WriteAddressOp(GetNonceID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(GetNonceID, &address, []byte{}))
 	return p.db.GetNonce(address)
 }
 
 func (p *Proxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	// TBD: find an encoding for nonce and reason in the form of a byte sequence
 	data := []byte{}
-	p.ctx.WriteAddressOp(SetNonceID, &address, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(SetNonceID, &address, data))
 	p.db.SetNonce(address, nonce, reason)
 }
 
 func (p *Proxy) GetCodeHash(address common.Address) common.Hash {
-	p.ctx.WriteAddressOp(GetCodeHashID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(GetCodeHashID, &address, []byte{}))
 	return p.db.GetCodeHash(address)
 }
 
 func (p *Proxy) GetCode(address common.Address) []byte {
-	p.ctx.WriteAddressOp(GetCodeID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(GetCodeID, &address, []byte{}))
 	return p.db.GetCode(address)
 }
 
 func (p *Proxy) SetCode(address common.Address, code []byte) []byte {
-	p.ctx.WriteAddressOp(SetCodeID, &address, code)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(SetCodeID, &address, code))
 	return p.db.SetCode(address, code)
 }
 
 func (p *Proxy) GetCodeSize(address common.Address) int {
-	p.ctx.WriteAddressOp(GetCodeSizeID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(GetCodeSizeID, &address, []byte{}))
 	return p.db.GetCodeSize(address)
 }
 
 func (p *Proxy) AddRefund(gas uint64) {
 	data := bigendian.Uint64ToBytes(gas)
-	p.ctx.WriteOp(GetCodeSizeID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(GetCodeSizeID, data))
 	p.db.AddRefund(gas)
 }
 
 func (p *Proxy) SubRefund(gas uint64) {
 	data := bigendian.Uint64ToBytes(gas)
-	p.ctx.WriteOp(SubRefundID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(SubRefundID, data))
 	p.db.SubRefund(gas)
 }
 
 func (p *Proxy) GetRefund() uint64 {
-	p.ctx.WriteOp(GetRefundID, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(GetRefundID, []byte{}))
 	return p.db.GetRefund()
 }
 
 func (p *Proxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetCommittedStateID, &address, &key, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteKeyOp(GetCommittedStateID, &address, &key, []byte{}))
 	return p.db.GetCommittedState(address, key)
 }
 
 func (p *Proxy) GetState(address common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetStateID, &address, &key, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteKeyOp(GetStateID, &address, &key, []byte{}))
 	return p.db.GetState(address, key)
 }
 
 func (p *Proxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
-	p.ctx.WriteValueOp(SetStateID, &address, &key, &value)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteValueOp(SetStateID, &address, &key, &value))
 	return p.db.SetState(address, key, value)
 }
 func (p *Proxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteValueOp(SetTransientStateID, &addr, &key, &value))
 	p.db.SetTransientState(addr, key, value)
 }
 
 func (p *Proxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	p.ctx.WriteKeyOp(GetTransientStateID, &addr, &key, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteKeyOp(GetTransientStateID, &addr, &key, []byte{}))
 	return p.db.GetState(addr, key)
 }
 
 func (p *Proxy) SelfDestruct(address common.Address) uint256.Int {
-	p.ctx.WriteAddressOp(SelfDestructID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(SelfDestructID, &address, []byte{}))
 	return p.db.SelfDestruct(address)
 }
 
 func (p *Proxy) HasSelfDestructed(address common.Address) bool {
-	p.ctx.WriteAddressOp(HasSelfDestructedID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(HasSelfDestructedID, &address, []byte{}))
 	return p.db.HasSelfDestructed(address)
 }
 
 func (p *Proxy) Exist(address common.Address) bool {
-	p.ctx.WriteAddressOp(ExistID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(ExistID, &address, []byte{}))
 	return p.db.Exist(address)
 }
 
 func (p *Proxy) Empty(address common.Address) bool {
-	p.ctx.WriteAddressOp(EmptyID, &address, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(EmptyID, &address, []byte{}))
 	return p.db.Empty(address)
 }
 
@@ -183,12 +183,12 @@ func (p *Proxy) AddSlotToAccessList(address common.Address, slot common.Hash) {
 
 func (p *Proxy) RevertToSnapshot(snapshot int) {
 	data := bigendian.Uint32ToBytes(uint32(snapshot))
-	p.ctx.WriteOp(RevertToSnapshotID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(RevertToSnapshotID, data))
 	p.db.RevertToSnapshot(snapshot)
 }
 
 func (p *Proxy) Snapshot() int {
-	p.ctx.WriteOp(SnapshotID, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(SnapshotID, []byte{}))
 	return p.db.Snapshot()
 }
 
@@ -237,7 +237,7 @@ func (p *Proxy) GetHash() (common.Hash, error) {
 }
 
 func (p *Proxy) Error() error {
-	return p.db.Error()
+	return errors.Join(errors.Unwrap(p.writeErr), p.db.Error())
 }
 
 func (p *Proxy) GetSubstatePostAlloc() txcontext.WorldState {
@@ -250,7 +250,7 @@ func (p *Proxy) PrepareSubstate(substate txcontext.WorldState, block uint64) {
 
 func (p *Proxy) BeginTransaction(number uint32) error {
 	data := bigendian.Uint32ToBytes(number)
-	p.ctx.WriteOp(BeginTransactionID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(BeginTransactionID, data))
 	if err := p.db.BeginTransaction(number); err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func (p *Proxy) BeginTransaction(number uint32) error {
 }
 
 func (p *Proxy) EndTransaction() error {
-	p.ctx.WriteOp(EndTransactionID, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(EndTransactionID, []byte{}))
 	if err := p.db.EndTransaction(); err != nil {
 		return err
 	}
@@ -267,23 +267,23 @@ func (p *Proxy) EndTransaction() error {
 
 func (p *Proxy) BeginBlock(number uint64) error {
 	data := bigendian.Uint64ToBytes(number)
-	p.ctx.WriteOp(BeginBlockID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(BeginBlockID, data))
 	return p.db.BeginBlock(number)
 }
 
 func (p *Proxy) EndBlock() error {
-	p.ctx.WriteOp(EndBlockID, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(EndBlockID, []byte{}))
 	return p.db.EndBlock()
 }
 
 func (p *Proxy) BeginSyncPeriod(number uint64) {
 	data := bigendian.Uint64ToBytes(number)
-	p.ctx.WriteOp(BeginSyncPeriodID, data)
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(BeginSyncPeriodID, data))
 	p.db.BeginSyncPeriod(number)
 }
 
 func (p *Proxy) EndSyncPeriod() {
-	p.ctx.WriteOp(EndSyncPeriodID, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(EndSyncPeriodID, []byte{}))
 	p.db.EndSyncPeriod()
 }
 
@@ -312,16 +312,16 @@ func (p *Proxy) GetShadowDB() state.StateDB {
 }
 
 func (p *Proxy) CreateContract(addr common.Address) {
-	p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{}))
 	p.db.CreateContract(addr)
 }
 
 func (p *Proxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	p.ctx.WriteAddressOp(SelfDestruct6780ID, &addr, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(SelfDestruct6780ID, &addr, []byte{}))
 	return p.db.SelfDestruct6780(addr)
 }
 
 func (p *Proxy) GetStorageRoot(addr common.Address) common.Hash {
-	p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{})
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(CreateContractID, &addr, []byte{}))
 	return p.db.GetStorageRoot(addr)
 }

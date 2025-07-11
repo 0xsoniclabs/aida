@@ -10,7 +10,8 @@ import (
 )
 
 func TestNewFileHandler(t *testing.T) {
-	fh, err := NewFileHandler(t.TempDir())
+	fp := t.TempDir() + "test_record.gz"
+	fh, err := NewFileHandler(fp)
 	assert.NoError(t, err)
 	assert.NotNil(t, fh)
 	_, ok := fh.(*fileHandler)
@@ -18,7 +19,7 @@ func TestNewFileHandler(t *testing.T) {
 }
 
 func TestFileHandler_WritesDataIntoFile(t *testing.T) {
-	fp := t.TempDir()
+	fp := t.TempDir() + "test_record.gz"
 	fh, err := NewFileHandler(fp)
 	assert.NoError(t, err)
 	fh.WriteData([]byte("hello world"))
@@ -44,7 +45,7 @@ func createNewFileHandler(t *testing.T, buffer *MockBuffer, filepath string) *fi
 func TestFileHandler_WriteData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
-	fp := t.TempDir()
+	fp := t.TempDir() + "test_record.gz"
 	fh := createNewFileHandler(t, buffer, fp)
 	data := []byte("hello world")
 	buffer.EXPECT().Write(data)
@@ -54,17 +55,17 @@ func TestFileHandler_WriteData(t *testing.T) {
 func TestFileHandler_WriteUint16(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
-	fp := t.TempDir()
+	fp := t.TempDir() + "test_record.gz"
 	fh := createNewFileHandler(t, buffer, fp)
 	data := uint16(1234)
-	buffer.EXPECT().WriteByte(bigendian.Uint16ToBytes(data))
+	buffer.EXPECT().Write(bigendian.Uint16ToBytes(data))
 	fh.WriteUint16(data)
 }
 
 func TestFileHandler_WriteUint8(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
-	fp := t.TempDir()
+	fp := t.TempDir() + "test_record.gz"
 	fh := createNewFileHandler(t, buffer, fp)
 	data := uint8(11)
 	buffer.EXPECT().WriteByte(data)
