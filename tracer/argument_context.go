@@ -17,6 +17,7 @@
 package tracer
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -50,8 +51,12 @@ func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) error {
 	if err != nil {
 		return err
 	}
-	ctx.file.WriteUint16(argOp)
-	ctx.file.WriteData(data)
+	if err = ctx.file.WriteUint16(argOp); err != nil {
+		return err
+	}
+	if err = ctx.file.WriteData(data); err != nil {
+		return fmt.Errorf("failed to write operation data: %w", err)
+	}
 	return nil
 }
 
@@ -64,13 +69,19 @@ func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, d
 		return err
 	}
 	// Write the operation code with argument classifications
-	ctx.file.WriteUint16(argOp)
+	if err = ctx.file.WriteUint16(argOp); err != nil {
+		return fmt.Errorf("failed to write addr encoded arg operation: %w", err)
+	}
 
 	// Write the address argument
-	ctx.writeClassifiedOp(addrClass, addrIdx, address)
+	if err = ctx.writeClassifiedOp(addrClass, addrIdx, address); err != nil {
+		return fmt.Errorf("failed to write addr operation: %w", err)
+	}
 
 	// Write the data argument
-	ctx.file.WriteData(data)
+	if err = ctx.file.WriteData(data); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -84,14 +95,22 @@ func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *
 		return err
 	}
 	// Write the operation code with argument classifications
-	ctx.file.WriteUint16(argOp)
+	if err = ctx.file.WriteUint16(argOp); err != nil {
+		return fmt.Errorf("failed to write key encoded arg operation: %w", err)
+	}
 
 	// Write the address and key arguments
-	ctx.writeClassifiedOp(addrClass, addrIdx, address)
-	ctx.writeClassifiedOp(keyClass, keyIdx, key)
+	if err = ctx.writeClassifiedOp(addrClass, addrIdx, address); err != nil {
+		return fmt.Errorf("failed to write addr operation: %w", err)
+	}
+	if err = ctx.writeClassifiedOp(keyClass, keyIdx, key); err != nil {
+		return fmt.Errorf("failed to write key operation: %w", err)
+	}
 
 	// Write the data argument
-	ctx.file.WriteData(data)
+	if err = ctx.file.WriteData(data); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -105,12 +124,20 @@ func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key
 	if err != nil {
 		return err
 	}
-	ctx.file.WriteUint16(argOp)
+	if err = ctx.file.WriteUint16(argOp); err != nil {
+		return fmt.Errorf("failed to write value encoded arg operation: %w", err)
+	}
 
 	// Write the address, key and value arguments
-	ctx.writeClassifiedOp(addrClass, addrIdx, address)
-	ctx.writeClassifiedOp(keyClass, keyIdx, key)
-	ctx.writeClassifiedOp(valueClass, valueIdx, value)
+	if err = ctx.writeClassifiedOp(addrClass, addrIdx, address); err != nil {
+		return fmt.Errorf("failed to write addr operation: %w", err)
+	}
+	if err = ctx.writeClassifiedOp(keyClass, keyIdx, key); err != nil {
+		return fmt.Errorf("failed to write key operation: %w", err)
+	}
+	if err = ctx.writeClassifiedOp(valueClass, valueIdx, value); err != nil {
+		return fmt.Errorf("failed to write value operation: %w", err)
+	}
 	return nil
 }
 
@@ -118,17 +145,21 @@ func (ctx *ArgumentContext) Close() error {
 	return ctx.file.Close()
 }
 
-func (ctx *ArgumentContext) writeClassifiedOp(class uint8, idx int, data Byter) {
+func (ctx *ArgumentContext) writeClassifiedOp(class uint8, idx int, data Byter) error {
 	switch class {
 	case ZeroValueID:
 	case PreviousValueID:
 	case RecentValueID:
-		ctx.file.WriteUint8(uint8(idx))
+		if err := ctx.file.WriteUint8(uint8(idx)); err != nil {
+			return err
+		}
 	case NewValueID:
-		ctx.file.WriteData(data.Bytes())
+		if err := ctx.file.WriteData(data.Bytes()); err != nil {
+			return err
+		}
 	default:
-		panic("Unexpected argument classification")
 	}
+	return fmt.Errorf("unexpected argument classification: %d", class)
 }
 
 type Byter interface {
