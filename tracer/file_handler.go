@@ -10,46 +10,55 @@ import (
 	"os"
 )
 
-func NewFileHandler(filename string) (*FileHandler, error) {
+//go:generate mockgen -source file_handler.go -destination file_handler_mock.go -package tracer
+
+type FileHandler interface {
+	WriteData(data []byte)
+	WriteUint16(data uint16)
+	WriteUint8(idx uint8)
+	Close() error
+}
+
+func NewFileHandler(filename string) (*fileHandler, error) {
 	file, err := os.Create(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FileHandler{
+	return &fileHandler{
 		file:   gzip.NewWriter(file),
 		buffer: bufio.NewWriter(file),
 	}, nil
 }
 
-type FileHandler struct {
+type fileHandler struct {
 	buffer *bufio.Writer
 	file   io.Closer
 }
 
-func (f *FileHandler) Close() error {
-	// Flush the buffer to ensure all data is written to the file
-	// then close the file
-	return errors.Join(f.buffer.Flush(), f.file.Close())
-}
-
-func (f *FileHandler) WriteData(data []byte) {
+func (f *fileHandler) WriteData(data []byte) {
 	_, err := f.buffer.Write(data)
 	if err != nil {
 		panic(fmt.Errorf("error writing []byte to buffer: %v", err))
 	}
 }
 
-func (f *FileHandler) WriteUint16(data uint16) {
+func (f *fileHandler) WriteUint16(data uint16) {
 	_, err := f.buffer.Write(bigendian.Uint16ToBytes(data))
 	if err != nil {
 		panic(fmt.Errorf("error writing uint16 to buffer: %v", err))
 	}
 }
 
-func (f *FileHandler) WriteUint8(idx uint8) {
+func (f *fileHandler) WriteUint8(idx uint8) {
 	err := f.buffer.WriteByte(idx)
 	if err != nil {
 		panic(fmt.Errorf("error writing uint8 to buffer: %v", err))
 	}
+}
+
+func (f *fileHandler) Close() error {
+	// Flush the buffer to ensure all data is written to the file
+	// then close the file
+	return errors.Join(f.buffer.Flush(), f.file.Close())
 }
