@@ -17,6 +17,14 @@ func TestPrinter_NewPrinter(t *testing.T) {
 	assert.NotNil(t, p)
 }
 
+func TestPrinter_NewCustomPrinters(t *testing.T) {
+	p1 := &PrinterToWriter{}
+	p2 := &PrinterToWriter{}
+	p := NewCustomPrinters([]Printer{p1, p2})
+	assert.NotNil(t, p)
+	assert.Equal(t, 2, len(p.printers))
+}
+
 func TestPrinter_AddPrinter(t *testing.T) {
 	p := &Printers{[]Printer{}}
 	p1 := &PrinterToWriter{}

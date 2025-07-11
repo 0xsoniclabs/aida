@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
@@ -78,4 +79,11 @@ func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
 	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
 		t.Fatalf("tmp dir not removed")
 	}
+}
+
+func Test_ethStateTestDbPrepper_MakeEthStateTestDbPrepper(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestDbPrepper(cfg)
+	_, ok := ext.(*ethStateTestDbPrepper)
+	assert.True(t, ok)
 }
