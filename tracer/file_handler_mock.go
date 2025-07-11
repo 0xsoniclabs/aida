@@ -54,9 +54,11 @@ func (mr *MockFileHandlerMockRecorder) Close() *gomock.Call {
 }
 
 // WriteData mocks base method.
-func (m *MockFileHandler) WriteData(data []byte) {
+func (m *MockFileHandler) WriteData(data []byte) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WriteData", data)
+	ret := m.ctrl.Call(m, "WriteData", data)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // WriteData indicates an expected call of WriteData.
@@ -66,9 +68,11 @@ func (mr *MockFileHandlerMockRecorder) WriteData(data any) *gomock.Call {
 }
 
 // WriteUint16 mocks base method.
-func (m *MockFileHandler) WriteUint16(data uint16) {
+func (m *MockFileHandler) WriteUint16(data uint16) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WriteUint16", data)
+	ret := m.ctrl.Call(m, "WriteUint16", data)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // WriteUint16 indicates an expected call of WriteUint16.
@@ -78,9 +82,11 @@ func (mr *MockFileHandlerMockRecorder) WriteUint16(data any) *gomock.Call {
 }
 
 // WriteUint8 mocks base method.
-func (m *MockFileHandler) WriteUint8(idx uint8) {
+func (m *MockFileHandler) WriteUint8(idx uint8) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WriteUint8", idx)
+	ret := m.ctrl.Call(m, "WriteUint8", idx)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // WriteUint8 indicates an expected call of WriteUint8.
