@@ -158,8 +158,9 @@ func (ctx *ArgumentContext) writeClassifiedOp(class uint8, idx int, data Byter) 
 			return err
 		}
 	default:
+		return fmt.Errorf("unexpected argument classification: %d", class)
 	}
-	return fmt.Errorf("unexpected argument classification: %d", class)
+	return nil
 }
 
 type Byter interface {

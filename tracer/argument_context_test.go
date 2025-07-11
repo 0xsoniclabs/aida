@@ -17,6 +17,7 @@
 package tracer
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,8 @@ func TestArgumentContext_WriteOp(t *testing.T) {
 
 	fh.EXPECT().WriteUint16(uint16(125))
 	fh.EXPECT().WriteData([]byte{})
-	ctx.WriteOp(BeginBlockID, []byte{})
+	err := ctx.WriteOp(BeginBlockID, []byte{})
+	assert.NoError(t, err)
 }
 
 func TestArgumentContext_WriteAddressOp(t *testing.T) {
@@ -180,4 +182,13 @@ func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
 
 	err := ctx.Close()
 	assert.NoError(t, err)
+}
+
+func TestArgumentContext_writeClassifiedOp_UnknownOp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileHandler(ctrl)
+	ctx := NewArgumentContext(fh)
+	err := ctx.writeClassifiedOp(NumOps+1, 0, nil)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf("unexpected argument classification: %d", NumOps+1), err.Error())
 }
