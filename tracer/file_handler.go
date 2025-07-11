@@ -28,11 +28,11 @@ func NewFileHandler(filename string) (FileHandler, error) {
 
 type FileHandler interface {
 	// WriteData writes a byte slice of any size to the file.
-	WriteData(data []byte)
+	WriteData(data []byte) error
 	// WriteUint16 writes a big-endian encoded uint16 value to the file.
-	WriteUint16(data uint16)
+	WriteUint16(data uint16) error
 	// WriteUint8 writes a single byte (uint8) to the file.
-	WriteUint8(idx uint8)
+	WriteUint8(idx uint8) error
 	// todo add write code hash
 	Close() error
 }
@@ -49,25 +49,28 @@ type fileHandler struct {
 	file   io.Closer
 }
 
-func (f *fileHandler) WriteData(data []byte) {
+func (f *fileHandler) WriteData(data []byte) error {
 	_, err := f.buffer.Write(data)
 	if err != nil {
-		panic(fmt.Errorf("error writing []byte to buffer: %v", err))
+		return fmt.Errorf("error writing []byte to buffer: %v", err)
 	}
+	return nil
 }
 
-func (f *fileHandler) WriteUint16(data uint16) {
+func (f *fileHandler) WriteUint16(data uint16) error {
 	_, err := f.buffer.Write(bigendian.Uint16ToBytes(data))
 	if err != nil {
-		panic(fmt.Errorf("error writing uint16 to buffer: %v", err))
+		return fmt.Errorf("error writing uint16 to buffer: %v", err)
 	}
+	return nil
 }
 
-func (f *fileHandler) WriteUint8(idx uint8) {
+func (f *fileHandler) WriteUint8(idx uint8) error {
 	err := f.buffer.WriteByte(idx)
 	if err != nil {
-		panic(fmt.Errorf("error writing uint8 to buffer: %v", err))
+		return fmt.Errorf("error writing uint8 to buffer: %v", err)
 	}
+	return nil
 }
 
 func (f *fileHandler) Close() error {

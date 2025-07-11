@@ -22,7 +22,8 @@ func TestFileHandler_WritesDataIntoFile(t *testing.T) {
 	fp := t.TempDir() + "test_record.gz"
 	fh, err := NewFileHandler(fp)
 	assert.NoError(t, err)
-	fh.WriteData([]byte("hello world"))
+	err = fh.WriteData([]byte("hello world"))
+	assert.NoError(t, err)
 	err = fh.Close()
 	assert.NoError(t, err)
 	file, err := os.Open(fp)
@@ -49,7 +50,8 @@ func TestFileHandler_WriteData(t *testing.T) {
 	fh := createNewFileHandler(t, buffer, fp)
 	data := []byte("hello world")
 	buffer.EXPECT().Write(data)
-	fh.WriteData(data)
+	err := fh.WriteData(data)
+	assert.NoError(t, err)
 }
 
 func TestFileHandler_WriteUint16(t *testing.T) {
@@ -59,7 +61,8 @@ func TestFileHandler_WriteUint16(t *testing.T) {
 	fh := createNewFileHandler(t, buffer, fp)
 	data := uint16(1234)
 	buffer.EXPECT().Write(bigendian.Uint16ToBytes(data))
-	fh.WriteUint16(data)
+	err := fh.WriteUint16(data)
+	assert.NoError(t, err)
 }
 
 func TestFileHandler_WriteUint8(t *testing.T) {
@@ -69,5 +72,6 @@ func TestFileHandler_WriteUint8(t *testing.T) {
 	fh := createNewFileHandler(t, buffer, fp)
 	data := uint8(11)
 	buffer.EXPECT().WriteByte(data)
-	fh.WriteUint8(data)
+	err := fh.WriteUint8(data)
+	assert.NoError(t, err)
 }
