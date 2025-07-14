@@ -211,18 +211,19 @@ func (tx *stTransaction) toMessage(ps stPost, baseFee *BigInt) (*core.Message, e
 	}
 
 	msg := &core.Message{
-		To:            to,
-		From:          from,
-		Nonce:         tx.Nonce.Uint64(),
-		Value:         value,
-		GasLimit:      gasLimit.Uint64(),
-		GasPrice:      gasPrice.Convert(),
-		GasFeeCap:     tx.MaxFeePerGas.Convert(),
-		GasTipCap:     tx.MaxPriorityFeePerGas.Convert(),
-		Data:          data,
-		AccessList:    accessList,
-		BlobGasFeeCap: tx.BlobGasFeeCap.Convert(),
-		BlobHashes:    tx.BlobHashes,
+		To:                    to,
+		From:                  from,
+		Nonce:                 tx.Nonce.Uint64(),
+		Value:                 value,
+		GasLimit:              gasLimit.Uint64(),
+		GasPrice:              gasPrice.Convert(),
+		GasFeeCap:             tx.MaxFeePerGas.Convert(),
+		GasTipCap:             tx.MaxPriorityFeePerGas.Convert(),
+		Data:                  data,
+		AccessList:            accessList,
+		BlobGasFeeCap:         tx.BlobGasFeeCap.Convert(),
+		BlobHashes:            tx.BlobHashes,
+		SetCodeAuthorizations: authList,
 	}
 	return msg, nil
 }
