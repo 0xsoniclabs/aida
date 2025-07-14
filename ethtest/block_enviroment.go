@@ -45,14 +45,6 @@ func (s *stBlockEnvironment) GetCoinbase() common.Address {
 
 func (s *stBlockEnvironment) GetBlobBaseFee() *big.Int {
 	if s.chainCfg.IsCancun(new(big.Int), s.Timestamp.Uint64()) && s.ExcessBlobGas != nil {
-		cancunTime := uint64(0)
-		config := &params.ChainConfig{}
-		config.LondonBlock = big.NewInt(1)
-		config.CancunTime = &cancunTime
-		config.BlobScheduleConfig = &params.BlobScheduleConfig{
-			Cancun: params.DefaultCancunBlobConfig,
-			Prague: params.DefaultPragueBlobConfig,
-		}
 		excessBlobGas := s.ExcessBlobGas.Uint64()
 		header := &types.Header{
 			ExcessBlobGas: &excessBlobGas,
