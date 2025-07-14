@@ -18,7 +18,10 @@ package ethtest
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/holiman/uint256"
 	"math/big"
 	"strings"
 
@@ -48,6 +51,77 @@ type stTransaction struct {
 	BlobGasFeeCap        *BigInt             `json:"maxFeePerBlobGas"`
 	BlobHashes           []common.Hash       `json:"blobVersionedHashes"`
 	Sender               *common.Address     `json:"sender"`
+	AuthorizationList    []*stAuthorization  `json:"authorizationList,omitempty"`
+}
+
+type stAuthorization struct {
+	ChainID *big.Int       `json:"chainId" gencodec:"required"`
+	Address common.Address `json:"address" gencodec:"required"`
+	Nonce   uint64         `json:"nonce" gencodec:"required"`
+	V       uint8          `json:"v" gencodec:"required"`
+	R       *big.Int       `json:"r" gencodec:"required"`
+	S       *big.Int       `json:"s" gencodec:"required"`
+}
+
+// MarshalJSON marshals as JSON.
+func (s *stAuthorization) MarshalJSON() ([]byte, error) {
+	type stAuthorization struct {
+		ChainID *math.HexOrDecimal256 `json:"chainId" gencodec:"required"`
+		Address common.Address        `json:"address" gencodec:"required"`
+		Nonce   math.HexOrDecimal64   `json:"nonce" gencodec:"required"`
+		V       math.HexOrDecimal64   `json:"v" gencodec:"required"`
+		R       *math.HexOrDecimal256 `json:"r" gencodec:"required"`
+		S       *math.HexOrDecimal256 `json:"s" gencodec:"required"`
+	}
+	var enc stAuthorization
+	enc.ChainID = (*math.HexOrDecimal256)(s.ChainID)
+	enc.Address = s.Address
+	enc.Nonce = math.HexOrDecimal64(s.Nonce)
+	enc.V = math.HexOrDecimal64(s.V)
+	enc.R = (*math.HexOrDecimal256)(s.R)
+	enc.S = (*math.HexOrDecimal256)(s.S)
+	return json.Marshal(&enc)
+}
+
+// UnmarshalJSON unmarshals from JSON.
+func (s *stAuthorization) UnmarshalJSON(input []byte) error {
+	type stAuthorization struct {
+		ChainID *math.HexOrDecimal256 `json:"chainId" gencodec:"required"`
+		Address *common.Address       `json:"address" gencodec:"required"`
+		Nonce   *math.HexOrDecimal64  `json:"nonce" gencodec:"required"`
+		V       *math.HexOrDecimal64  `json:"v" gencodec:"required"`
+		R       *math.HexOrDecimal256 `json:"r" gencodec:"required"`
+		S       *math.HexOrDecimal256 `json:"s" gencodec:"required"`
+	}
+	var dec stAuthorization
+	if err := json.Unmarshal(input, &dec); err != nil {
+		return err
+	}
+	if dec.ChainID == nil {
+		return errors.New("missing required field 'chainId' for stAuthorization")
+	}
+	s.ChainID = (*big.Int)(dec.ChainID)
+	if dec.Address == nil {
+		return errors.New("missing required field 'address' for stAuthorization")
+	}
+	s.Address = *dec.Address
+	if dec.Nonce == nil {
+		return errors.New("missing required field 'nonce' for stAuthorization")
+	}
+	s.Nonce = uint64(*dec.Nonce)
+	if dec.V == nil {
+		return errors.New("missing required field 'v' for stAuthorization")
+	}
+	s.V = uint8(*dec.V)
+	if dec.R == nil {
+		return errors.New("missing required field 'r' for stAuthorization")
+	}
+	s.R = (*big.Int)(dec.R)
+	if dec.S == nil {
+		return errors.New("missing required field 's' for stAuthorization")
+	}
+	s.S = (*big.Int)(dec.S)
+	return nil
 }
 
 func (tx *stTransaction) toMessage(ps stPost, baseFee *BigInt) (*core.Message, error) {
@@ -120,6 +194,20 @@ func (tx *stTransaction) toMessage(ps stPost, baseFee *BigInt) (*core.Message, e
 	}
 	if gasPrice == nil {
 		return nil, fmt.Errorf("no gas price provided")
+	}
+	var authList []types.SetCodeAuthorization
+	if tx.AuthorizationList != nil {
+		authList = make([]types.SetCodeAuthorization, len(tx.AuthorizationList))
+		for i, auth := range tx.AuthorizationList {
+			authList[i] = types.SetCodeAuthorization{
+				ChainID: *uint256.MustFromBig(auth.ChainID),
+				Address: auth.Address,
+				Nonce:   auth.Nonce,
+				V:       auth.V,
+				R:       *uint256.MustFromBig(auth.R),
+				S:       *uint256.MustFromBig(auth.S),
+			}
+		}
 	}
 
 	msg := &core.Message{
