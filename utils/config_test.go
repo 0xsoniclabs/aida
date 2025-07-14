@@ -889,7 +889,7 @@ func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
 	require.Equal(t, last, cfg.Last, "Last block not set correctly")
 	require.True(t, cfg.Validate, "Validate not set correctly")
 	require.True(t, cfg.ValidateTxState, "ValidateTxState not set correctly")
-	require.NotNil(t, cfg.chainCfg, "chainCfg should be set")
+	require.NotNil(t, cfg.ChainCfg, "ChainCfg should be set")
 	require.Equal(t, "Critical", cfg.LogLevel, "LogLevel should be Critical")
 	require.True(t, cfg.SkipPriming, "SkipPriming should be true")
 	require.True(t, cfg.VmCfg.NoBaseFee, "VmCfg.NoBaseFee should be true")

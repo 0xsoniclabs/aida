@@ -370,7 +370,7 @@ type Config struct {
 	Workers                  int                       // number of worker threads
 
 	// -- cached results --
-	chainCfg           *params.ChainConfig   // cached chain configuration
+	ChainCfg           *params.ChainConfig   // cached chain configuration
 	interpreterFactory vm.InterpreterFactory // cached interpreter factory to facilitate reuse in interpreter instances
 	VmCfg              vm.Config
 }
@@ -406,7 +406,7 @@ func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate b
 		ChainID:         chainId,
 		First:           first,
 		Last:            last,
-		chainCfg:        chainCfg,
+		ChainCfg:        chainCfg,
 		LogLevel:        "Critical",
 		SkipPriming:     true,
 		Validate:        validate,
@@ -471,8 +471,8 @@ func NewConfig(ctx *cli.Context, mode ArgumentMode) (*Config, error) {
 }
 
 func (cfg *Config) GetChainConfig(fork string) (*params.ChainConfig, error) {
-	if cfg.chainCfg != nil && fork == "" {
-		return cfg.chainCfg, nil
+	if cfg.ChainCfg != nil && fork == "" {
+		return cfg.ChainCfg, nil
 	}
 	return getChainConfig(cfg.ChainID, fork)
 }
@@ -785,8 +785,7 @@ func (cc *configContext) setChainId() error {
 		}
 
 		if cc.cfg.ChainID == 0 {
-			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
-			cc.cfg.ChainID = MainnetChainID
+			return fmt.Errorf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
 		} else {
 			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
 		}
@@ -967,7 +966,7 @@ func (cc *configContext) setChainConfig() (err error) {
 	if cc.cfg.ChainID == EthTestsChainID {
 		return nil
 	}
-	cc.cfg.chainCfg, err = getChainConfig(cc.cfg.ChainID, "")
+	cc.cfg.ChainCfg, err = getChainConfig(cc.cfg.ChainID, "")
 	return err
 }
 
