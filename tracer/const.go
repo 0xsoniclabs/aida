@@ -26,3 +26,41 @@ const (
 
 	NumClasses
 )
+
+const (
+	AddBalanceID = iota
+	BeginBlockID
+	BeginSyncPeriodID
+	BeginTransactionID
+	CreateAccountID
+	EmptyID
+	EndBlockID
+	EndSyncPeriodID
+	EndTransactionID
+	ExistID
+	GetBalanceID
+	GetCodeHashID
+	GetCodeID
+	GetCodeSizeID
+	GetCommittedStateID
+	GetNonceID
+	GetStateID
+	HasSelfDestructedID
+	RevertToSnapshotID
+	SetCodeID
+	SetNonceID
+	SetStateID
+	SnapshotID
+	SubBalanceID
+	SelfDestructID
+	CreateContractID
+	GetStorageRootID
+	GetTransientStateID
+	SetTransientStateID
+	SelfDestruct6780ID
+	SubRefundID
+	GetRefundID
+	// Add new operations below this line
+
+	NumOps
+)

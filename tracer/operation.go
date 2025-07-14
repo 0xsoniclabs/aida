@@ -24,43 +24,6 @@ import (
 )
 
 // IDs of StateDB Operations
-const (
-	AddBalanceID = iota
-	BeginBlockID
-	BeginSyncPeriodID
-	BeginTransactionID
-	CreateAccountID
-	EmptyID
-	EndBlockID
-	EndSyncPeriodID
-	EndTransactionID
-	ExistID
-	GetBalanceID
-	GetCodeHashID
-	GetCodeID
-	GetCodeSizeID
-	GetCommittedStateID
-	GetNonceID
-	GetStateID
-	HasSelfDestructedID
-	RevertToSnapshotID
-	SetCodeID
-	SetNonceID
-	SetStateID
-	SnapshotID
-	SubBalanceID
-	SelfDestructID
-	CreateContractID
-	GetStorageRootID
-	GetTransientStateID
-	SetTransientStateID
-	SelfDestruct6780ID
-	SubRefundID
-	GetRefundID
-	// Add new operations below this line
-
-	NumOps
-)
 
 // numArgOps gives the number of operations with encoded argument classes
 const numArgOps = NumOps * statistics.NumClasses * statistics.NumClasses * statistics.NumClasses
@@ -97,6 +60,8 @@ var opText = map[int]string{
 	SnapshotID:          "Snapshot",
 	SubBalanceID:        "SubBalance",
 	SetTransientStateID: "SetTransientState",
+	GetRefundID:         "GetRefundID",
+	SubRefundID:         "SubRefundID",
 }
 
 // opMnemo is a mnemonics table for operations.
@@ -131,6 +96,8 @@ var opMnemo = map[uint16]string{
 	SnapshotID:          "SN",
 	SubBalanceID:        "SB",
 	SetTransientStateID: "ST",
+	GetRefundID:         "GF",
+	SubRefundID:         "SF",
 }
 
 // opNumArgs is an argument number table for operations.
@@ -140,7 +107,6 @@ var opNumArgs = map[uint16]int{
 	BeginSyncPeriodID:   0,
 	BeginTransactionID:  0,
 	CreateAccountID:     1,
-	CreateContractID:    1,
 	EmptyID:             1,
 	EndBlockID:          0,
 	EndSyncPeriodID:     0,
@@ -153,18 +119,21 @@ var opNumArgs = map[uint16]int{
 	GetCommittedStateID: 2,
 	GetNonceID:          1,
 	GetStateID:          2,
-	GetStorageRootID:    1,
-	GetTransientStateID: 2,
 	HasSelfDestructedID: 1,
 	RevertToSnapshotID:  0,
-	SelfDestructID:      1,
-	SelfDestruct6780ID:  1,
 	SetCodeID:           1,
 	SetNonceID:          1,
 	SetStateID:          3,
 	SnapshotID:          0,
 	SubBalanceID:        1,
+	SelfDestructID:      1,
+	CreateContractID:    1,
+	GetStorageRootID:    1,
+	GetTransientStateID: 2,
 	SetTransientStateID: 3,
+	SelfDestruct6780ID:  1,
+	SubRefundID:         1,
+	GetRefundID:         0,
 }
 
 // opId is an operation ID table.
@@ -174,7 +143,6 @@ var opId = map[string]uint16{
 	"BS": BeginSyncPeriodID,
 	"BT": BeginTransactionID,
 	"CA": CreateAccountID,
-	"CC": CreateContractID,
 	"EM": EmptyID,
 	"EB": EndBlockID,
 	"ES": EndSyncPeriodID,
@@ -187,18 +155,21 @@ var opId = map[string]uint16{
 	"GM": GetCommittedStateID,
 	"GN": GetNonceID,
 	"GS": GetStateID,
-	"GR": GetStorageRootID,
-	"GT": GetTransientStateID,
 	"HS": HasSelfDestructedID,
 	"RS": RevertToSnapshotID,
-	"SU": SelfDestructID,
-	"S6": SelfDestruct6780ID,
 	"SC": SetCodeID,
 	"SO": SetNonceID,
+	"SS": SetStateID,
 	"SN": SnapshotID,
 	"SB": SubBalanceID,
-	"SS": SetStateID,
+	"SU": SelfDestructID,
+	"CC": CreateContractID,
+	"GR": GetStorageRootID,
+	"GT": GetTransientStateID,
+	"S6": SelfDestruct6780ID,
 	"ST": SetTransientStateID,
+	"GF": GetRefundID,
+	"SF": SubRefundID,
 }
 
 // argMnemo is the argument-class mnemonics table.
@@ -300,15 +271,15 @@ func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8) {
 }
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
-func EncodeOpcode(op uint16, addr uint8, key uint8, value uint8) string {
+func EncodeOpcode(op uint16, addr uint8, key uint8, value uint8) (string, error) {
 	if !checkArgOp(op, addr, key, value) {
-		log.Fatalf("EncodeOpcode: invalid operation/arguments")
+		return "", fmt.Errorf("EncodeOpcode: invalid operation/arguments")
 	}
 	code := fmt.Sprintf("%v%v%v%v", opMnemo[op], argMnemo[addr], argMnemo[key], argMnemo[value])
 	if len(code) != 2+opNumArgs[op] {
-		log.Fatalf("EncodeOpcode: wrong opcode length for opcode %v", code)
+		return "", fmt.Errorf("EncodeOpcode: wrong opcode length for opcode %v", code)
 	}
-	return code
+	return code, nil
 }
 
 // validateArg checks whether argument mnemonics exists.
