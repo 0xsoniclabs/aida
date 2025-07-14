@@ -785,7 +785,8 @@ func (cc *configContext) setChainId() error {
 		}
 
 		if cc.cfg.ChainID == 0 {
-			return fmt.Errorf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
+			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
+			cc.cfg.ChainID = MainnetChainID
 		} else {
 			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
 		}

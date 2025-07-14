@@ -38,6 +38,7 @@ import (
 func prepareMockCliContext() *cli.Context {
 	flagSet := flag.NewFlagSet("utils_config_test", 0)
 	flagSet.Uint64(SyncPeriodLengthFlag.Name, 1000, "Number of blocks")
+	flagSet.Int(ChainIDFlag.Name, int(SonicMainnetChainID), "Chain ID.")
 	flagSet.Bool(ValidateFlag.Name, true, "enables validation")
 	flagSet.Bool(ValidateTxStateFlag.Name, true, "enables transaction state validation")
 	flagSet.Bool(ContinueOnFailureFlag.Name, true, "continue execute after validation failure detected")
@@ -370,13 +371,10 @@ func TestUtilsConfig_VmImplsAreRegistered(t *testing.T) {
 func TestUtilsConfig_setChainIdFromDB(t *testing.T) {
 	// prepare components
 	// create new leveldb
-	var (
-		logLevel = "NOTICE"
-		chainId  = MainnetChainID
-	)
+	var logLevel = "NOTICE"
 
 	// prepare mock config
-	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel}
+	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel, ChainID: SonicMainnetChainID}
 
 	// prepare config context
 	cc := NewConfigContext(cfg, &cli.Context{Command: &cli.Command{Name: "fake-name"}})
@@ -400,8 +398,8 @@ func TestUtilsConfig_setChainIdFromDB(t *testing.T) {
 		t.Fatalf("cannot get chain ID; %v", err)
 	}
 
-	if cfg.ChainID != chainId {
-		t.Fatalf("failed to get chainId correctly from AidaDB; got: %v; expected: %v", cfg.ChainID, chainId)
+	if cfg.ChainID != SonicMainnetChainID {
+		t.Fatalf("failed to get chainId correctly from AidaDB; got: %v; expected: %v", cfg.ChainID, SonicMainnetChainID)
 	}
 }
 
@@ -433,28 +431,52 @@ func TestUtilsConfig_setChainIdFromFlag(t *testing.T) {
 
 // TestUtilsConfig_getDefaultChainId tests if unknown chainID will be replaced with the mainnet chainID
 func TestUtilsConfig_setDefaultChainId(t *testing.T) {
-	// prepare components
-	var (
-		err      error
-		logLevel = "NOTICE"
-		chainId  = MainnetChainID
-	)
+	// create fake AidaDb for test suite
+	aidaDbPath := t.TempDir()
+	err := createFakeAidaDb(&Config{AidaDb: aidaDbPath, ChainID: EthereumChainID, LogLevel: "CRITICAL"})
+	assert.NoError(t, err)
 
-	// prepare mock config
-	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel}
-
-	// create config context
-	cc := NewConfigContext(cfg, &cli.Context{Command: &cli.Command{Name: "fake-name"}})
-
-	// test getChainId function
-	err = cc.setChainId()
-	if err != nil {
-		t.Fatalf("cannot get chain ID; %v", err)
+	tests := []struct {
+		name        string
+		setChainID  ChainID
+		wantChainID ChainID
+		aidaDbPath  string
+	}{
+		{
+			name:        "No ChainID",
+			setChainID:  UnknownChainID,
+			wantChainID: MainnetChainID,
+			aidaDbPath:  "",
+		},
+		{
+			name:        "Set using Flag",
+			setChainID:  SonicMainnetChainID,
+			wantChainID: SonicMainnetChainID,
+			aidaDbPath:  "",
+		},
+		{
+			name:        "Set using AidaDB",
+			setChainID:  UnknownChainID,
+			wantChainID: EthereumChainID,
+			aidaDbPath:  aidaDbPath,
+		},
 	}
 
-	if cfg.ChainID != chainId {
-		t.Fatalf("failed to get chainId correctly from AidaDB; got: %v; expected: %v", cfg.ChainID, chainId)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// prepare mock config
+			cfg := &Config{AidaDb: test.aidaDbPath, LogLevel: "Critical", ChainID: test.setChainID}
+
+			// create config context
+			cc := NewConfigContext(cfg, &cli.Context{Command: &cli.Command{Name: "fake-name"}})
+
+			// test getChainId function
+			err = cc.setChainId()
+			require.NoError(t, err)
+			require.Equal(t, test.wantChainID, cc.cfg.ChainID)
+		})
 	}
+
 }
 
 // TestUtilsConfig_updateConfigBlockRangeBlockRange tests correct parsing of cli arguments for block range
