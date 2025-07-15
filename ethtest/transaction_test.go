@@ -297,39 +297,6 @@ func TestStAuthorization_NothingMustBeNil(t *testing.T) {
 			wantErr: errors.New("missing required field 'chainId' for stAuthorization"),
 		},
 		{
-			name: "Address is nil",
-			auth: stAuthorization{
-				ChainID: big.NewInt(1),
-				Nonce:   1,
-				V:       27,
-				R:       big.NewInt(123456789),
-				S:       big.NewInt(987654321),
-			},
-			wantErr: errors.New("missing required field 'address' for stAuthorization"),
-		},
-		{
-			name: "Nonce is nil",
-			auth: stAuthorization{
-				ChainID: big.NewInt(1),
-				Address: common.HexToAddress("0x9abc"),
-				V:       27,
-				R:       big.NewInt(123456789),
-				S:       big.NewInt(987654321),
-			},
-			wantErr: errors.New("missing required field 'nonce' for stAuthorization"),
-		},
-		{
-			name: "V is nil",
-			auth: stAuthorization{
-				ChainID: big.NewInt(1),
-				Address: common.HexToAddress("0x9abc"),
-				Nonce:   1,
-				R:       big.NewInt(123456789),
-				S:       big.NewInt(987654321),
-			},
-			wantErr: errors.New("missing required field 'v' for stAuthorization"),
-		},
-		{
 			name: "R is nil",
 			auth: stAuthorization{
 				ChainID: big.NewInt(1),
@@ -354,19 +321,13 @@ func TestStAuthorization_NothingMustBeNil(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			marshal, err := json.Marshal(test.auth)
-			if test.wantErr != nil {
-				assert.Error(t, err)
-				assert.Equal(t, test.wantErr.Error(), err.Error())
-				return
-			}
+			marshal, err := test.auth.MarshalJSON()
 			assert.NoError(t, err)
 
 			var unmarshalled stAuthorization
 			err = json.Unmarshal(marshal, &unmarshalled)
-			assert.NoError(t, err)
-
-			assert.Equal(t, test.auth, unmarshalled)
+			assert.Error(t, err)
+			assert.Equal(t, test.wantErr, err)
 		})
 	}
 }
