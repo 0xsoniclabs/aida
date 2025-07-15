@@ -58,6 +58,8 @@ func main() {
 			&utils.StateDbLoggingFlag,
 			&utils.CacheFlag,
 			&utils.SubstateEncodingFlag,
+			&utils.ContinueOnFailureFlag,
+			&utils.MaxNumErrorsFlag,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
