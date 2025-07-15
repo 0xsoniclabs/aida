@@ -1,6 +1,8 @@
 package ethtest
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/goccy/go-json"
 	"math/big"
 	"testing"
 
@@ -216,4 +218,50 @@ func TestEthTest_bigMin(t *testing.T) {
 	assert.Equal(t, a, bigMin(a, b))
 	assert.Equal(t, a, bigMin(b, a))
 	assert.Equal(t, b, bigMin(b, b))
+}
+
+func TestStTransaction_MarshallAndUnmarshall(t *testing.T) {
+	sender := common.HexToAddress("0x5678")
+	st := stTransaction{
+		Data:                 []string{"0x1234"},
+		Value:                []string{"1234"},
+		GasLimit:             []*BigInt{newBigInt(1000000)},
+		GasPrice:             newBigInt(1),
+		Nonce:                newBigInt(2),
+		MaxFeePerGas:         newBigInt(3),
+		MaxPriorityFeePerGas: newBigInt(4),
+		BlobGasFeeCap:        newBigInt(5),
+		To:                   "0x1234",
+		AccessLists: []*types.AccessList{
+			{
+				{
+					Address:     common.HexToAddress("0x1234"),
+					StorageKeys: []common.Hash{common.HexToHash("0x5678")},
+				},
+			},
+		},
+		PrivateKey: hexutil.MustDecode("0x1234"),
+		Sender:     &sender,
+		AuthorizationList: []*stAuthorization{
+			{
+				ChainID: big.NewInt(1),
+				Address: common.HexToAddress("0x9abc"),
+				Nonce:   1,
+				V:       27,
+				R:       big.NewInt(123456789),
+				S:       big.NewInt(987654321),
+			},
+		},
+		BlobHashes: []common.Hash{
+			common.HexToHash("0xabcdef"),
+		},
+	}
+
+	marshal, err := json.Marshal(st)
+	assert.NoError(t, err)
+	var unmarshalled stTransaction
+	err = json.Unmarshal(marshal, &unmarshalled)
+	assert.NoError(t, err)
+
+	assert.Equal(t, st, unmarshalled)
 }
