@@ -168,6 +168,7 @@ pipeline {
                                 --vm-impl geth \
                                 --db-impl geth \
                                 ${TMPDB} \
+                                --chainid 1337 \
                                 --fork Cancun \
                                 ${env.WORKSPACE}/eth-test-package/GeneralStateTests/stTransactionTest"""
                         }

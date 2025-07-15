@@ -18,7 +18,10 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"strings"
 	"testing"
 
@@ -286,4 +289,17 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 	if !strings.Contains(err.Error(), "pre alloc validation failed") {
 		t.Fatalf("unexpected error\ngot: %v\n want: %v", err, "pre alloc validation failed")
 	}
+}
+
+func TestVmSdb_EthTest_FailsWhenChainIDIsNotSet(t *testing.T) {
+	flagSet := flag.NewFlagSet("utils_config_test", 0)
+	flagSet.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "Chain ID.")
+	err := flagSet.Parse([]string{t.TempDir()})
+	require.NoError(t, err)
+
+	ctx := cli.NewContext(cli.NewApp(), flagSet, nil)
+	ctx.Command = &cli.Command{Name: "test_command"}
+
+	err = RunEthereumTest(ctx)
+	require.ErrorContains(t, err, fmt.Sprintf("please specify chain ID using --%s flag (1337 for most cases for this tool)", utils.ChainIDFlag.Name))
 }
