@@ -40,6 +40,8 @@ type Receipt interface {
 	// GetStatus returns the status code indicating the success or failure of the transaction or execution.
 	GetStatus() uint64
 
+	GetError() error
+
 	// GetBloom returns the Bloom filter associated with the transaction or execution result.
 	GetBloom() types.Bloom
 
@@ -74,10 +76,15 @@ type result struct {
 	logs            []*types.Log
 	contractAddress common.Address
 	gasUsed         uint64
+	error           error
 }
 
 func (r result) GetStatus() uint64 {
 	return r.status
+}
+
+func (r result) GetError() error {
+	return r.error
 }
 
 func (r result) GetBloom() types.Bloom {

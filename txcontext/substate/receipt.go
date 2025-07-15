@@ -47,6 +47,10 @@ func (r *result) GetStatus() uint64 {
 	return r.Status
 }
 
+func (r *result) GetError() error {
+	return nil
+}
+
 func (r *result) GetBloom() types.Bloom {
 	return types.Bloom(r.Bloom)
 }

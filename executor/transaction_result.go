@@ -17,6 +17,7 @@
 package executor
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -51,6 +52,10 @@ func (r transactionResult) GetGasUsed() uint64 {
 
 func (r transactionResult) GetStatus() uint64 {
 	return r.status
+}
+
+func (r transactionResult) GetError() error {
+	return r.err
 }
 
 func (r transactionResult) GetBloom() types.Bloom {
@@ -93,6 +98,7 @@ func newTransactionResult(logs []*types.Log, msg *core.Message, msgResult execut
 		} else {
 			status = types.ReceiptStatusSuccessful
 		}
+		err = errors.Join(err, msgResult.GetError())
 	}
 
 	bloom := types.CreateBloom(&types.Receipt{Logs: logs})

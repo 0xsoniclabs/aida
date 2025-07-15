@@ -168,6 +168,10 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumNetwork(v.cfg.ChainID)
 	}
 
+	if res != nil && res.GetReceipt() != nil && res.GetReceipt().GetError() != nil && res.GetReceipt().GetError().Error() == "internal interpreter error: failed to convert code: max code size exceeded" {
+		fmt.Printf("max-code-size-exceeded:%d-%d\n", state.Block, state.Transaction)
+	}
+
 	// TODO remove state.Transaction < 99999 after patch aida-db
 	if v.target.Receipt && state.Transaction < utils.PseudoTx && !skipEthereumException {
 		if err := v.validateReceipt(res.GetReceipt(), state.Data.GetResult().GetReceipt()); err != nil {
