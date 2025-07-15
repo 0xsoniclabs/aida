@@ -200,3 +200,10 @@ func CreateTransactionThatFailsSenderValidation(t *testing.T) txcontext.TxContex
 		env:     &stBlockEnvironment{fork: "Shanghai"}, // FORK MUST BE Shanghai
 	}
 }
+
+func CreateTestTransactionWithUnknownFork(*testing.T) txcontext.TxContext {
+	return &StateTestContext{
+		env:  &stBlockEnvironment{fork: "unknown"},
+		fork: "unknown",
+	}
+}

@@ -17,6 +17,7 @@
 package statedb
 
 import (
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -78,4 +79,16 @@ func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
 	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
 		t.Fatalf("tmp dir not removed")
 	}
+}
+
+func Test_ethStateTestDbPrepper_PreBlock_FailsWithUnknownFork(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID:  utils.EthTestsChainID,
+		LogLevel: "critical",
+	}
+	ext := ethStateTestDbPrepper{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrepper")}
+	testData := ethtest.CreateTestTransactionWithUnknownFork(t)
+
+	err := ext.PreBlock(executor.State[txcontext.TxContext]{Data: testData}, new(executor.Context))
+	require.ErrorContains(t, err, "cannot init chain config")
 }
