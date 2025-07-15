@@ -1,8 +1,8 @@
 package ethtest
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/goccy/go-json"
 	"math/big"
 	"testing"
 
@@ -19,6 +19,14 @@ func TestStTransaction_ToMessage(t *testing.T) {
 		ExpectException: "err",
 		Indexes:         Index{Data: 0, Gas: 0, Value: 0},
 	}
+	stAuth := stAuthorization{
+		ChainID: big.NewInt(1),
+		Address: common.HexToAddress("0x9abc"),
+		Nonce:   1,
+		V:       27,
+		R:       big.NewInt(123456789),
+		S:       big.NewInt(987654321),
+	}
 	to := common.HexToAddress("0x1234")
 	bytesTo, err := to.MarshalText()
 	if err != nil {
@@ -33,6 +41,9 @@ func TestStTransaction_ToMessage(t *testing.T) {
 		MaxPriorityFeePerGas: newBigInt(1),
 		BlobGasFeeCap:        newBigInt(1),
 		To:                   string(bytesTo),
+		AuthorizationList: []*stAuthorization{
+			&stAuth,
+		},
 	}
 	msg, err := st.toMessage(post, newBigInt(1))
 	assert.NoError(t, err)
@@ -41,6 +52,7 @@ func TestStTransaction_ToMessage(t *testing.T) {
 	assert.Equal(t, st.BlobGasFeeCap.Convert(), msg.BlobGasFeeCap)
 	assert.Equal(t, []byte{0x12, 0x34}, msg.Data)
 	assert.Equal(t, st.Value[0], msg.Value.String())
+	assert.Equal(t, *st.AuthorizationList[0], stAuth)
 }
 
 func TestStTransaction_ToMessageError(t *testing.T) {
