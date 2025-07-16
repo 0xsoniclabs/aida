@@ -17,11 +17,12 @@
 package proxy
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	geth_state "github.com/ethereum/go-ethereum/core/state"
@@ -199,8 +200,10 @@ func (p *TracerProxy) Snapshot() int {
 }
 
 func (p *TracerProxy) AddLog(log *types.Log) {
-	bloom := utils.RlpHash(log)
-	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(tracer.AddLogID, bloom.Bytes()))
+	b := bytes.NewBuffer([]byte{})
+	err := log.EncodeRLP(b)
+	p.writeErr = errors.Join(p.writeErr, fmt.Errorf("cannot encode log: %w", err))
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(tracer.AddLogID, b.Bytes()))
 	p.db.AddLog(log)
 }
 
