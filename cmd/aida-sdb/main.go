@@ -21,6 +21,8 @@ import (
 	"os"
 
 	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
+	"os"
+
 	"github.com/urfave/cli/v2"
 )
 
