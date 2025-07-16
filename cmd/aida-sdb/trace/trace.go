@@ -22,6 +22,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// todo: will be handled in upcoming PR
+
 // TraceReplayCommand data structure for the replay app
 var TraceReplayCommand = cli.Command{
 	Action:    ReplayTrace,
