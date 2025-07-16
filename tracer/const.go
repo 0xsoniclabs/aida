@@ -60,6 +60,26 @@ const (
 	SelfDestruct6780ID
 	SubRefundID
 	GetRefundID
+	AddRefundID
+	PrepareID
+	AddAddressToAccessListID
+	AddressInAccessListID
+	SlotInAccessListID
+	AddSlotToAccessListID
+	AddLogID
+	GetLogsID
+	PointCacheID
+	WitnessID
+	AddPreimageID
+	SetTxContextID
+	FinaliseID
+	IntermediateRootID
+	CommitID
+	CloseID
+	AccessEventsID
+	GetHashID
+	GetSubstatePostAllocID
+	PrepareSubstateID
 	// Add new operations below this line
 
 	NumOps

@@ -21,23 +21,30 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// ArgumentContext keeps track of previously used arguments in StateDB operations
-type ArgumentContext struct {
+//go:generate mockgen -source argument_context.go -destination argument_context_mock.go -package tracer
+
+type ArgumentContext interface {
+	WriteOp(op uint16, data []byte) error
+	WriteAddressOp(op uint16, address *common.Address, data []byte) error
+	WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error
+	WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error
+	Close() error
+}
+
+// argumentContext keeps track of previously used arguments in StateDB operations
+type argumentContext struct {
 	// Contract-address queue
 	contracts Queue[common.Address]
-
 	// Storage-key queue
 	keys Queue[common.Hash]
-
 	// Storage-value queue
 	values Queue[common.Hash]
-
-	file FileHandler
+	file   FileHandler
 }
 
 // NewArgumentContext creates a new event registry.
 func NewArgumentContext(file FileHandler) ArgumentContext {
-	return ArgumentContext{
+	return &argumentContext{
 		contracts: NewQueue[common.Address](),
 		keys:      NewQueue[common.Hash](),
 		values:    NewQueue[common.Hash](),
@@ -46,7 +53,7 @@ func NewArgumentContext(file FileHandler) ArgumentContext {
 }
 
 // WriteOp registers an operation with no simulation arguments
-func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) error {
+func (ctx *argumentContext) WriteOp(op uint16, data []byte) error {
 	argOp, err := EncodeArgOp(op, NoArgID, NoArgID, NoArgID)
 	if err != nil {
 		return err
@@ -61,7 +68,7 @@ func (ctx *ArgumentContext) WriteOp(op uint16, data []byte) error {
 }
 
 // WriteAddressOp registers an operation with a contract-address argument
-func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
+func (ctx *argumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address) // zero, previous, recent, address
 
 	argOp, err := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
@@ -86,7 +93,7 @@ func (ctx *ArgumentContext) WriteAddressOp(op uint16, address *common.Address, d
 }
 
 // WriteKeyOp registers an operation with a contract-address and a storage-key arguments.
-func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
+func (ctx *argumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 
@@ -115,7 +122,7 @@ func (ctx *ArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *
 }
 
 // WriteValueOp registers an operation with a contract-address, a storage-key and storage-value arguments.
-func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error {
+func (ctx *argumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 	valueClass, valueIdx := ctx.values.Classify(*value)
@@ -141,11 +148,11 @@ func (ctx *ArgumentContext) WriteValueOp(op uint16, address *common.Address, key
 	return nil
 }
 
-func (ctx *ArgumentContext) Close() error {
+func (ctx *argumentContext) Close() error {
 	return ctx.file.Close()
 }
 
-func (ctx *ArgumentContext) writeClassifiedOp(class uint8, idx int, data Byter) error {
+func (ctx *argumentContext) writeClassifiedOp(class uint8, idx int, data Byter) error {
 	switch class {
 	case ZeroValueID:
 	case PreviousValueID:
