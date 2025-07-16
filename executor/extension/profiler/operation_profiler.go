@@ -17,13 +17,13 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/tracer"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -118,31 +118,28 @@ const (
 
 // MakeOperationProfiler creates a executor.Extension that records Operation profiling
 func MakeOperationProfiler[T any](cfg *utils.Config) executor.Extension[T] {
-
 	if !cfg.Profile {
 		return extension.NilExtension[T]{}
 	}
 
 	var (
 		depth ProfileDepth
-		ops   map[byte]string
 		anlts []*analytics.IncrementalAnalytics
 		ps    []*utils.Printers
 	)
 
 	depth = ProfileDepth(cfg.ProfileDepth)
-	ops = operation.CreateIdLabelMap()
 
 	// analytics are created for each depth level
 	for i := 0; i < cfg.ProfileDepth+1; i++ {
-		anlts = append(anlts, analytics.NewIncrementalAnalytics(len(ops)))
+		anlts = append(anlts, analytics.NewIncrementalAnalytics(tracer.NumOps))
 		ps = append(ps, utils.NewPrinters())
 	}
 
 	p := &operationProfiler[T]{
 		cfg:      cfg,
 		depth:    depth,
-		ops:      ops,
+		ops:      tracer.OpText,
 		anlts:    anlts,
 		ps:       ps,
 		interval: utils.NewInterval(cfg.First, cfg.Last, cfg.ProfileInterval),
@@ -175,7 +172,7 @@ type operationProfiler[T any] struct {
 	depth ProfileDepth
 
 	// analytics/printing
-	ops   map[byte]string
+	ops   map[uint16]string
 	anlts []*analytics.IncrementalAnalytics
 	ps    []*utils.Printers
 
@@ -256,7 +253,7 @@ func (p *operationProfiler[T]) prettyTable() table.Writer {
 		totalSum += stat.GetSum()
 
 		t.AppendRow(table.Row{
-			p.ops[byte(opId)],
+			p.ops[uint16(opId)],
 			p.interval.Start(),
 			p.interval.End(),
 			stat.GetCount(),
@@ -287,7 +284,7 @@ func (p *operationProfiler[T]) sqlite3(conn string, depth ProfileDepth) (string,
 						p.interval.Start(),
 						p.interval.End(),
 						opId,
-						p.ops[byte(opId)],
+						p.ops[uint16(opId)],
 						stat.GetCount(),
 						stat.GetSum() / float64(time.Microsecond),
 						stat.GetMean() / float64(time.Microsecond),
@@ -314,7 +311,7 @@ func (p *operationProfiler[T]) sqlite3(conn string, depth ProfileDepth) (string,
 					values = append(values, []any{
 						p.lastProcessedBlock,
 						opId,
-						p.ops[byte(opId)],
+						p.ops[uint16(opId)],
 						stat.GetCount(),
 						stat.GetSum() / float64(time.Microsecond),
 						stat.GetMean() / float64(time.Microsecond),
@@ -342,7 +339,7 @@ func (p *operationProfiler[T]) sqlite3(conn string, depth ProfileDepth) (string,
 						p.lastProcessedBlock,
 						p.lastProcessedTransaction,
 						opId,
-						p.ops[byte(opId)],
+						p.ops[uint16(opId)],
 						stat.GetCount(),
 						stat.GetSum() / float64(time.Microsecond),
 						stat.GetMean() / float64(time.Microsecond),
