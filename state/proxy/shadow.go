@@ -383,7 +383,7 @@ func (s *shadowStateDb) Commit(block uint64, deleteEmptyObjects bool) (common.Ha
 
 // GetError returns an error then reset it.
 func (s *shadowVmStateDb) Error() error {
-	err := errors.Join(s.err)
+	err := s.err
 	// reset error message
 	s.err = nil
 	return err
