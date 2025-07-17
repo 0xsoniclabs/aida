@@ -24,9 +24,9 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-// ethereumLfvmBlocksExceptions LFVM uses a uint16 program counter with a range from 0 to 65535.
+// ethereumLfvmBlockExceptions LFVM uses a uint16 program counter with a range from 0 to 65535.
 // Starting with the Shanghai revision and eip-3860 this was fixed
-// only post alloc is diverging for these ethereum block exceptions, so it needs to be overwritten
+// only post alloc is diverging for these block exceptions, so it needs to be overwritten
 var ethereumLfvmBlockExceptions = map[utils.ChainID]map[int]struct{}{
 	utils.EthereumChainID: {
 		10880015: {}, 10880604: {}, 10880608: {}, 13142297: {}, 13163624: {}, 13163650: {}, 13656943: {}, 13658320: {},
@@ -66,7 +66,13 @@ func MakeEthereumDbPostTransactionUpdater(cfg *utils.Config) executor.Extension[
 }
 
 func makeEthereumDbPostTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
-	if !utils.IsEthereumNetwork(cfg.ChainID) || cfg.VmImpl != "lfvm" {
+	if cfg.VmImpl != "lfvm" {
+		return extension.NilExtension[txcontext.TxContext]{}
+	}
+
+	// check if the chainID has at least one exception - this is mainly to avoid unnecessary extension creation for sonic mainnet
+	_, ok := ethereumLfvmBlockExceptions[cfg.ChainID]
+	if !ok {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 
