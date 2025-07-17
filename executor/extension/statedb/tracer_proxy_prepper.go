@@ -45,7 +45,7 @@ type tracerProxyPrepper[T any] struct {
 
 func (p *tracerProxyPrepper[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
 	var err error
-	fh, err := tracer.NewFileHandler(p.cfg.TraceFile)
+	fh, err := tracer.NewFileWriter(p.cfg.TraceFile)
 	if err != nil {
 		return err
 	}

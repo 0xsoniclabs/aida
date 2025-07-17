@@ -11,7 +11,7 @@ import (
 
 func TestNewFileHandler(t *testing.T) {
 	fp := t.TempDir() + "test_record.gz"
-	fh, err := NewFileHandler(fp)
+	fh, err := NewFileWriter(fp)
 	assert.NoError(t, err)
 	assert.NotNil(t, fh)
 	_, ok := fh.(*fileHandler)
@@ -20,7 +20,7 @@ func TestNewFileHandler(t *testing.T) {
 
 func TestFileHandler_WritesDataIntoFile(t *testing.T) {
 	fp := t.TempDir() + "test_record.gz"
-	fh, err := NewFileHandler(fp)
+	fh, err := NewFileWriter(fp)
 	assert.NoError(t, err)
 	err = fh.WriteData([]byte("hello world"))
 	assert.NoError(t, err)

@@ -27,7 +27,7 @@ import (
 
 func TestArgumentContext_WriteOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 
 	fh.EXPECT().WriteUint16(uint16(125))
@@ -38,7 +38,7 @@ func TestArgumentContext_WriteOp(t *testing.T) {
 
 func TestArgumentContext_WriteAddressOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
@@ -76,7 +76,7 @@ func TestArgumentContext_WriteAddressOp(t *testing.T) {
 
 func TestArgumentContext_WriteKeyOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
@@ -128,7 +128,7 @@ func TestArgumentContext_WriteKeyOp(t *testing.T) {
 
 func TestArgumentContext_WriteValueOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
@@ -176,7 +176,7 @@ func TestArgumentContext_WriteValueOp(t *testing.T) {
 
 func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 	fh.EXPECT().Close().Return(nil)
 
@@ -186,7 +186,7 @@ func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
 
 func TestArgumentContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fh := NewMockFileHandler(ctrl)
+	fh := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fh)
 	err := ctx.(*argumentContext).writeClassifiedOp(NumOps+1, 0, nil)
 	assert.Error(t, err)

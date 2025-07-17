@@ -11,8 +11,8 @@ import (
 	"os"
 )
 
-// NewFileHandler creates a new FileHandler that writes to a gzip-compressed file using a buffer.
-func NewFileHandler(filename string) (FileHandler, error) {
+// NewFileWriter creates a new FileWriter that writes to a gzip-compressed file using a buffer.
+func NewFileWriter(filename string) (FileWriter, error) {
 	file, err := os.Create(filename)
 	if err != nil {
 		return nil, err
@@ -24,9 +24,9 @@ func NewFileHandler(filename string) (FileHandler, error) {
 	}, nil
 }
 
-//go:generate mockgen -source file_handler.go -destination file_handler_mock.go -package tracer
+//go:generate mockgen -source file_writer.go -destination file_writer_mock.go -package tracer
 
-type FileHandler interface {
+type FileWriter interface {
 	// WriteData writes a byte slice of any size to the file.
 	WriteData(data []byte) error
 	// WriteUint16 writes a big-endian encoded uint16 value to the file.
