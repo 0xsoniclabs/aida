@@ -188,7 +188,7 @@ func TestArgumentContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fh := NewMockFileHandler(ctrl)
 	ctx := NewArgumentContext(fh)
-	err := ctx.writeClassifiedOp(NumOps+1, 0, nil)
+	err := ctx.(*argumentContext).writeClassifiedOp(NumOps+1, 0, nil)
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf("unexpected argument classification: %d", NumOps+1), err.Error())
 }
