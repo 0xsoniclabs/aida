@@ -16,41 +16,44 @@
 
 package trace
 
+import "github.com/urfave/cli/v2"
+
 // todo: will be handled in upcoming PR
-//
-//func ReplayTrace(ctx *cli.Context) error {
-//	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
-//	if err != nil {
-//		return err
-//	}
-//
-//	operationProvider, err := executor.OpenOperations(cfg)
-//	if err != nil {
-//
-//	}
-//
-//	defer operationProvider.Close()
-//
-//	rCtx := context.NewReplay()
-//
-//	processor := operationProcessor{cfg, rCtx}
-//
-//	var extra = []executor.Extension[[]operation.Operation]{
-//		profiler.MakeReplayProfiler[[]operation.Operation](cfg, rCtx),
-//	}
-//
-//	var aidaDb db.BaseDB
-//	// we need to open substate if we are priming
-//	if cfg.First > 0 && !cfg.SkipPriming {
-//		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
-//		if err != nil {
-//			return fmt.Errorf("cannot open aida-db; %w", err)
-//		}
-//		defer aidaDb.Close()
-//	}
-//
-//	return replay(cfg, operationProvider, processor, extra, aidaDb)
-//}
+func ReplayTrace(ctx *cli.Context) error {
+	//	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	operationProvider, err := executor.OpenOperations(cfg)
+	//	if err != nil {
+	//
+	//	}
+	//
+	//	defer operationProvider.Close()
+	//
+	//	rCtx := context.NewReplay()
+	//
+	//	processor := operationProcessor{cfg, rCtx}
+	//
+	//	var extra = []executor.Extension[[]operation.Operation]{
+	//		profiler.MakeReplayProfiler[[]operation.Operation](cfg, rCtx),
+	//	}
+	//
+	//	var aidaDb db.BaseDB
+	//	// we need to open substate if we are priming
+	//	if cfg.First > 0 && !cfg.SkipPriming {
+	//		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
+	//		if err != nil {
+	//			return fmt.Errorf("cannot open aida-db; %w", err)
+	//		}
+	//		defer aidaDb.Close()
+	//	}
+	//
+	//	return replay(cfg, operationProvider, processor, extra, aidaDb)
+	return nil
+}
+
 //
 //type operationProcessor struct {
 //	cfg  *utils.Config

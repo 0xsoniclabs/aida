@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -34,7 +35,7 @@ func initTraceApp() *cli.App {
 		Commands: []*cli.Command{
 			&RecordCommand,
 			// todo: will be handled in upcoming PR
-			//&trace.TraceReplayCommand,
+			&trace.TraceReplayCommand,
 			//&trace.TraceReplaySubstateCommand,
 		},
 	}

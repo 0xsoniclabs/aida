@@ -16,43 +16,46 @@
 
 package trace
 
+import "github.com/urfave/cli/v2"
+
 // todo: will be handled in upcoming PR
-//
-//func ReplaySubstate(ctx *cli.Context) error {
-//	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
-//	if err != nil {
-//		return err
-//	}
-//
-//	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
-//	if err != nil {
-//		return fmt.Errorf("cannot open aida-db; %w", err)
-//	}
-//	defer aidaDb.Close()
-//
-//	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
-//	if err != nil {
-//		return fmt.Errorf("cannot open substate provider; %w", err)
-//	}
-//	defer substateIterator.Close()
-//
-//	operationProvider, err := executor.OpenOperations(cfg)
-//	if err != nil {
-//		return err
-//	}
-//
-//	defer substateIterator.Close()
-//
-//	rCtx := context.NewReplay()
-//
-//	processor := makeSubstateProcessor(cfg, rCtx, operationProvider)
-//
-//	var extra = []executor.Extension[txcontext.TxContext]{
-//		profiler.MakeReplayProfiler[txcontext.TxContext](cfg, rCtx),
-//	}
-//
-//	return replaySubstate(cfg, substateIterator, processor, nil, extra)
-//}
+func ReplaySubstate(ctx *cli.Context) error {
+	//	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	//	if err != nil {
+	//		return fmt.Errorf("cannot open aida-db; %w", err)
+	//	}
+	//	defer aidaDb.Close()
+	//
+	//	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	//	if err != nil {
+	//		return fmt.Errorf("cannot open substate provider; %w", err)
+	//	}
+	//	defer substateIterator.Close()
+	//
+	//	operationProvider, err := executor.OpenOperations(cfg)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	defer substateIterator.Close()
+	//
+	//	rCtx := context.NewReplay()
+	//
+	//	processor := makeSubstateProcessor(cfg, rCtx, operationProvider)
+	//
+	//	var extra = []executor.Extension[txcontext.TxContext]{
+	//		profiler.MakeReplayProfiler[txcontext.TxContext](cfg, rCtx),
+	//	}
+	//
+	//	return replaySubstate(cfg, substateIterator, processor, nil, extra)
+	return nil
+}
+
 //
 //func makeSubstateProcessor(cfg *utils.Config, rCtx *context.Replay, operationProvider executor.Provider[[]operation.Operation]) *substateProcessor {
 //	return &substateProcessor{
