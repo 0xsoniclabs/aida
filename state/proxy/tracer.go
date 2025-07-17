@@ -140,7 +140,7 @@ func (p *TracerProxy) SetTransientState(addr common.Address, key common.Hash, va
 
 func (p *TracerProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
 	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteKeyOp(tracer.GetTransientStateID, &addr, &key, []byte{}))
-	return p.db.GetState(addr, key)
+	return p.db.GetTransientState(addr, key)
 }
 
 func (p *TracerProxy) SelfDestruct(address common.Address) uint256.Int {
