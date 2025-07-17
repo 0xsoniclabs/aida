@@ -48,7 +48,7 @@ func toRPCConsumer(c RPCReqConsumer) Consumer[*rpc.RequestAndResults] {
 	}
 }
 
-// todo: will be handler in upcoming PR
+// todo: will be handled in upcoming PR
 //
 //type OperationConsumer interface {
 //	Consume(block int, transaction int, operations []operation.Operation) error

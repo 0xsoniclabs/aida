@@ -16,7 +16,7 @@
 
 package executor
 
-// todo: will be handler in upcoming PR
+// todo: will be handled in upcoming PR
 //
 //func TestOperationProvider_OpeningANonExistingTraceFilesResultsInAnError(t *testing.T) {
 //	cfg := utils.Config{}

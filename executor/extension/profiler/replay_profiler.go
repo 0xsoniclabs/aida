@@ -16,7 +16,7 @@
 
 package profiler
 
-// todo: will be handler in upcoming PR
+// todo: will be handled in upcoming PR
 //
 //// MakeReplayProfiler creates executor.Extension that prints profile statistics
 //func MakeReplayProfiler[T any](cfg *utils.Config, rCtx *context.Replay) executor.Extension[T] {

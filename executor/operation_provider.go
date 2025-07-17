@@ -18,7 +18,7 @@ package executor
 
 //go:generate mockgen -source operation_provider.go -destination operation_provider_mocks.go -package executor
 
-// todo: will be handler in upcoming PR
+// todo: will be handled in upcoming PR
 //
 //type operationProvider struct {
 //	traceFiles []string
