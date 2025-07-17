@@ -75,3 +75,17 @@ func TestFileHandler_WriteUint8(t *testing.T) {
 	err := fh.WriteUint8(data)
 	assert.NoError(t, err)
 }
+
+func TestReplay_EncodeDecode(t *testing.T) {
+	data := bigendian.Uint64ToBytes(64)
+
+	argOp, err := EncodeArgOp(AddRefundID, NoArgID, NoArgID, NoArgID)
+	assert.NoError(t, err)
+	fh, err := NewFileWriter(t.TempDir())
+	assert.NoError(t, err)
+	err = fh.WriteUint16(argOp)
+	assert.NoError(t, err)
+	err = fh.WriteData(data)
+	assert.NoError(t, err)
+	decodedOp, decodedData, err := DecodeArgOp(fh)
+}
