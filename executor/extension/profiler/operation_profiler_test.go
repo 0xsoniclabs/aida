@@ -18,6 +18,8 @@ package profiler
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -26,7 +28,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
@@ -120,17 +121,17 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 				continue
 			}
 			for depth := IntervalLevel; depth <= ext.depth; depth++ {
-				c := ext.anlts[int(depth)].GetCount(op)
+				c := ext.anlts[depth].GetCount(byte(op))
 				if c != 1 {
-					t.Errorf("Op %d:%s occurs %d times, expecting exactly 1", op, ops[op], c)
+					t.Errorf("Op %d:%s occurs %d times, expecting exactly 1", op, tracer.OpText[op], c)
 				}
 				totalOpCount[depth] += int(c)
 			}
 		}
 
 		for depth := IntervalLevel; depth <= ext.depth; depth++ {
-			if totalOpCount[int(depth)] != len(funcs) {
-				t.Errorf("Seen %d ops even though we have %d", totalOpCount[int(depth)], len(funcs))
+			if totalOpCount[depth] != len(funcs) {
+				t.Errorf("Seen %d ops even though we have %d", totalOpCount[depth], len(funcs))
 			}
 		}
 
@@ -303,6 +304,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 	mockAddress := common.HexToAddress("0x00000F1")
 	mockHash := common.BigToHash(big.NewInt(0))
 	mockTimestamp := uint64(0)
+	mockWs := txcontext.NewWorldState(make(map[common.Address]txcontext.Account))
 	return []func(){
 		func() { db.CreateAccount(mockAddress) },
 		func() { db.CreateContract(mockAddress) },
@@ -329,6 +331,11 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.HasSelfDestructed(mockAddress) },
 		func() { db.Exist(mockAddress) },
 		func() { db.Empty(mockAddress) },
+		func() { db.GetHash() },
+		func() { db.GetSubstatePostAlloc() },
+		func() { db.PrepareSubstate(mockWs, 1) },
+		func() { db.AccessEvents() },
+
 		func() {
 			db.Prepare(
 				params.Rules{},
@@ -415,6 +422,10 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().IntermediateRoot(gomock.Any()).AnyTimes()
 	m.EXPECT().Commit(gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().Close().AnyTimes()
+	m.EXPECT().GetHash().AnyTimes()
+	m.EXPECT().GetSubstatePostAlloc().AnyTimes()
+	m.EXPECT().PrepareSubstate(gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().AccessEvents().AnyTimes()
 }
 
 // MockStateDB must be prepared before used (it needs to know how many time each function will be called.
@@ -468,6 +479,10 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().IntermediateRoot(gomock.Any())
 	m.EXPECT().Commit(gomock.Any(), gomock.Any())
 	m.EXPECT().Close()
+	m.EXPECT().GetHash()
+	m.EXPECT().GetSubstatePostAlloc()
+	m.EXPECT().PrepareSubstate(gomock.Any(), gomock.Any())
+	m.EXPECT().AccessEvents()
 }
 
 // Helper function to randomize an operation to be called
