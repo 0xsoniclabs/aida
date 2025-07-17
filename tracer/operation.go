@@ -19,14 +19,12 @@ package tracer
 import (
 	"fmt"
 	"log"
-
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // IDs of StateDB Operations
 
 // numArgOps gives the number of operations with encoded argument classes
-const numArgOps = NumOps * statistics.NumClasses * statistics.NumClasses * statistics.NumClasses
+const numArgOps = uint16(NumOps * NumClasses * NumClasses * NumClasses)
 
 // OpText translates IDs to operation's text
 var OpText = map[uint16]string{
@@ -311,15 +309,6 @@ func checkArgOp(op uint16, contract uint8, key uint8, value uint8) bool {
 	default:
 		return false
 	}
-}
-
-// IsValidArgOp returns true if the encoding is valid.
-func IsValidArgOp(argop uint16) bool {
-	if argop < 0 || argop >= numArgOps {
-		return false
-	}
-	op, contract, key, value := DecodeArgOp(argop)
-	return checkArgOp(op, contract, key, value)
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.

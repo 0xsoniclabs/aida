@@ -17,6 +17,7 @@
 package tracer
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -82,4 +83,28 @@ func TestOperationOpcode(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestOpMnemo(t *testing.T) {
+	for op := range NumOps {
+		require.Equal(t, OpMnemo(op), opMnemo[op])
+	}
+}
+
+func TestOpMnemo_OverflowPanicks(t *testing.T) {
+	defer func() {
+		r := recover()
+		require.NotNil(t, r)
+	}()
+	OpMnemo(NumOps)
+}
+func Test_EncodeArgOp_OverflowError(t *testing.T) {
+	_, err := EncodeArgOp(NumOps, 0, 0, 0)
+	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	_, err = EncodeArgOp(0, NumClasses, 0, 0)
+	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	_, err = EncodeArgOp(0, 0, NumClasses, 0)
+	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	_, err = EncodeArgOp(0, 0, 0, NumClasses)
+	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
 }

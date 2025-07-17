@@ -192,3 +192,33 @@ func TestArgumentContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf("unexpected argument classification: %d", NumOps+1), err.Error())
 }
+
+func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	fh := NewMockFileWriter(ctrl)
+	ctx := NewArgumentContext(fh)
+
+	// Test WriteOp error
+	fh.EXPECT().WriteUint16(gomock.Any()).Return(fmt.Errorf("write op error"))
+	err := ctx.WriteOp(BeginBlockID, []byte{})
+	assert.Error(t, err)
+	assert.Equal(t, "failed to write value encoded arg operation: write op error", err.Error())
+
+	// Test WriteAddressOp error
+	fh.EXPECT().WriteUint16(gomock.Any()).Return(fmt.Errorf("write address op error"))
+	err = ctx.WriteAddressOp(AddBalanceID, &common.Address{}, []byte{})
+	assert.Error(t, err)
+	assert.Equal(t, "failed to write addr operation: write address op error", err.Error())
+
+	// Test WriteKeyOp error
+	fh.EXPECT().WriteUint16(gomock.Any()).Return(fmt.Errorf("write key op error"))
+	err = ctx.WriteKeyOp(GetStateID, &common.Address{}, &common.Hash{}, []byte{})
+	assert.Error(t, err)
+	assert.Equal(t, "failed to write key operation: write key op error", err.Error())
+
+	// Test WriteValueOp error
+	fh.EXPECT().WriteUint16(gomock.Any()).Return(fmt.Errorf("write value op error"))
+	err = ctx.WriteValueOp(SetStateID, &common.Address{}, &common.Hash{}, &common.Hash{})
+	assert.Error(t, err)
+	assert.Equal(t, "failed to write value operation: write value op error", err.Error())
+}
