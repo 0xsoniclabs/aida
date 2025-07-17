@@ -9,22 +9,22 @@ import (
 	"testing"
 )
 
-func TestNewFileHandler(t *testing.T) {
+func TestNewFileWriter(t *testing.T) {
 	fp := t.TempDir() + "test_record.gz"
-	fh, err := NewFileWriter(fp)
+	fw, err := NewFileWriter(fp)
 	assert.NoError(t, err)
-	assert.NotNil(t, fh)
-	_, ok := fh.(*fileHandler)
+	assert.NotNil(t, fw)
+	_, ok := fw.(*fileWriter)
 	assert.True(t, ok)
 }
 
-func TestFileHandler_WritesDataIntoFile(t *testing.T) {
+func TestFileWriter_WritesDataIntoFile(t *testing.T) {
 	fp := t.TempDir() + "test_record.gz"
-	fh, err := NewFileWriter(fp)
+	fw, err := NewFileWriter(fp)
 	assert.NoError(t, err)
-	err = fh.WriteData([]byte("hello world"))
+	err = fw.WriteData([]byte("hello world"))
 	assert.NoError(t, err)
-	err = fh.Close()
+	err = fw.Close()
 	assert.NoError(t, err)
 	file, err := os.Open(fp)
 	assert.NoError(t, err)
@@ -33,45 +33,45 @@ func TestFileHandler_WritesDataIntoFile(t *testing.T) {
 	assert.NotZero(t, stats.Size())
 }
 
-func createNewFileHandler(t *testing.T, buffer *MockBuffer, filepath string) *fileHandler {
+func createNewFileWriter(t *testing.T, buffer *MockBuffer, filepath string) *fileWriter {
 	file, err := os.Create(filepath)
 	assert.NoError(t, err)
 
-	return &fileHandler{
+	return &fileWriter{
 		file:   gzip.NewWriter(file),
 		buffer: buffer,
 	}
 }
 
-func TestFileHandler_WriteData(t *testing.T) {
+func TestFileWriter_WriteData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fh := createNewFileHandler(t, buffer, fp)
+	fw := createNewFileWriter(t, buffer, fp)
 	data := []byte("hello world")
 	buffer.EXPECT().Write(data)
-	err := fh.WriteData(data)
+	err := fw.WriteData(data)
 	assert.NoError(t, err)
 }
 
-func TestFileHandler_WriteUint16(t *testing.T) {
+func TestFileWriter_WriteUint16(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fh := createNewFileHandler(t, buffer, fp)
+	fw := createNewFileWriter(t, buffer, fp)
 	data := uint16(1234)
 	buffer.EXPECT().Write(bigendian.Uint16ToBytes(data))
-	err := fh.WriteUint16(data)
+	err := fw.WriteUint16(data)
 	assert.NoError(t, err)
 }
 
-func TestFileHandler_WriteUint8(t *testing.T) {
+func TestFileWriter_WriteUint8(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fh := createNewFileHandler(t, buffer, fp)
+	fw := createNewFileWriter(t, buffer, fp)
 	data := uint8(11)
 	buffer.EXPECT().WriteByte(data)
-	err := fh.WriteUint8(data)
+	err := fw.WriteUint8(data)
 	assert.NoError(t, err)
 }
