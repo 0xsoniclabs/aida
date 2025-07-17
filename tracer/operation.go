@@ -80,6 +80,8 @@ var OpText = map[uint16]string{
 	CloseID:                  "Close",
 	AccessEventsID:           "AccessEvents",
 	GetHashID:                "GetHash",
+	GetSubstatePostAllocID:   "GetSubstatePostAllocID",
+	PrepareSubstateID:        "PrepareSubstateID",
 }
 
 // opMnemo is a mnemonics table for operations.
