@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/tracer"
 	"io"
 	"os"
 	"sort"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/scripts/analytics/html"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils"
 	xmath "github.com/0xsoniclabs/aida/utils/math"
 
@@ -316,11 +316,10 @@ func main() {
 	oWg.Wait()
 
 	// get opIds, opNameByOpId
-	ops := operation.CreateIdLabelMap() //byte->string
 	for opId, count := range countByOpId {
 		if count > 0 {
 			opIds = append(opIds, opId)
-			opNameByOpId[opId] = ops[byte(opId)]
+			opNameByOpId[opId] = tracer.OpText[uint16(opId)]
 		}
 	}
 
