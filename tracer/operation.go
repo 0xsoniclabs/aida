@@ -24,7 +24,7 @@ import (
 // IDs of StateDB Operations
 
 // numArgOps gives the number of operations with encoded argument classes
-const numArgOps = uint16(NumOps * NumClasses * NumClasses * NumClasses)
+const numArgOps = uint16(NumOps) * uint16(NumClasses) * uint16(NumClasses) * uint16(NumClasses)
 
 // OpText translates IDs to operation's text
 var OpText = map[uint16]string{

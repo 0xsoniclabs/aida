@@ -18,7 +18,7 @@ func NewFileWriter(filename string) (FileWriter, error) {
 		return nil, err
 	}
 
-	return &fileHandler{
+	return &fileWriter{
 		file:   gzip.NewWriter(file),
 		buffer: bufio.NewWriter(file),
 	}, nil
@@ -44,12 +44,12 @@ type WriteBuffer interface {
 	common.Flusher
 }
 
-type fileHandler struct {
+type fileWriter struct {
 	buffer WriteBuffer
 	file   io.Closer
 }
 
-func (f *fileHandler) WriteData(data []byte) error {
+func (f *fileWriter) WriteData(data []byte) error {
 	_, err := f.buffer.Write(data)
 	if err != nil {
 		return fmt.Errorf("error writing []byte to buffer: %v", err)
@@ -57,7 +57,7 @@ func (f *fileHandler) WriteData(data []byte) error {
 	return nil
 }
 
-func (f *fileHandler) WriteUint16(data uint16) error {
+func (f *fileWriter) WriteUint16(data uint16) error {
 	_, err := f.buffer.Write(bigendian.Uint16ToBytes(data))
 	if err != nil {
 		return fmt.Errorf("error writing uint16 to buffer: %v", err)
@@ -65,7 +65,7 @@ func (f *fileHandler) WriteUint16(data uint16) error {
 	return nil
 }
 
-func (f *fileHandler) WriteUint8(idx uint8) error {
+func (f *fileWriter) WriteUint8(idx uint8) error {
 	err := f.buffer.WriteByte(idx)
 	if err != nil {
 		return fmt.Errorf("error writing uint8 to buffer: %v", err)
@@ -73,7 +73,7 @@ func (f *fileHandler) WriteUint8(idx uint8) error {
 	return nil
 }
 
-func (f *fileHandler) Close() error {
+func (f *fileWriter) Close() error {
 	// Flush the buffer to ensure all data is written to the file
 	// then close the file
 	return errors.Join(f.buffer.Flush(), f.file.Close())

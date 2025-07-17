@@ -86,7 +86,7 @@ func TestOperationOpcode(t *testing.T) {
 }
 
 func TestOpMnemo(t *testing.T) {
-	for op := range NumOps {
+	for op := range uint16(NumOps) {
 		require.Equal(t, OpMnemo(op), opMnemo[op])
 	}
 }
