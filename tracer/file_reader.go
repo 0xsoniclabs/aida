@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/cockroachdb/errors"
+	"github.com/klauspost/compress/gzip"
 	"io"
 	"os"
 )
@@ -24,9 +25,13 @@ func NewFileReader(filename string) (FileReader, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open trace file: %s, %w", filename, err)
 	}
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, fmt.Errorf("could not create gzip reader for trace file: %s, %w", filename, err)
+	}
 	return &fileReader{
-		buffer: bufio.NewReader(file),
-		file:   file,
+		reader: bufio.NewReader(gzipReader),
+		closer: gzipReader,
 	}, nil
 }
 
@@ -50,8 +55,8 @@ type ReadBuffer interface {
 }
 
 type fileReader struct {
-	buffer ReadBuffer
-	file   io.Closer
+	reader ReadBuffer
+	closer io.Closer
 }
 
 func (f *fileReader) ReadData(size int) ([]byte, error) {
@@ -61,7 +66,7 @@ func (f *fileReader) ReadData(size int) ([]byte, error) {
 		data = make([]byte, size)
 	)
 	for n >= size {
-		n, err = f.buffer.Read(data)
+		n, err = f.reader.Read(data)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +81,7 @@ func (f *fileReader) ReadUint16() (uint16, error) {
 		err  error
 	)
 	for n < 2 {
-		n, err = f.buffer.Read(data[n:])
+		n, err = f.reader.Read(data[n:])
 		if err != nil {
 			return 0, err
 		}
@@ -85,9 +90,9 @@ func (f *fileReader) ReadUint16() (uint16, error) {
 }
 
 func (f *fileReader) ReadUint8() (uint8, error) {
-	return f.buffer.ReadByte()
+	return f.reader.ReadByte()
 }
 
 func (f *fileReader) Close() error {
-	return f.file.Close()
+	return f.closer.Close()
 }
