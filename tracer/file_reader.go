@@ -61,15 +61,11 @@ type fileReader struct {
 
 func (f *fileReader) ReadData(size int) ([]byte, error) {
 	var (
-		n    int
 		err  error
 		data = make([]byte, size)
 	)
-	for n >= size {
-		n, err = f.reader.Read(data)
-		if err != nil {
-			return nil, err
-		}
+	if _, err = io.ReadFull(f.reader, data); err != nil {
+		return nil, err
 	}
 	return data, nil
 }
@@ -77,14 +73,10 @@ func (f *fileReader) ReadData(size int) ([]byte, error) {
 func (f *fileReader) ReadUint16() (uint16, error) {
 	var (
 		data = make([]byte, 2)
-		n    int
 		err  error
 	)
-	for n < 2 {
-		n, err = f.reader.Read(data[n:])
-		if err != nil {
-			return 0, err
-		}
+	if _, err = io.ReadFull(f.reader, data); err != nil {
+		return 0, err
 	}
 	return bigendian.BytesToUint16(data), nil
 }
