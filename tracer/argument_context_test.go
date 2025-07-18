@@ -223,43 +223,77 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 		err := ctx.WriteAddressOp(AddBalanceID, &common.Address{0x1}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
-		fw.EXPECT().WriteUint16(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any()).Return(mockErr)
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
 		err = ctx.WriteAddressOp(AddBalanceID, &common.Address{0x2}, []byte{})
+
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteAddressOp(AddBalanceID, &common.Address{0x3}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 	}
 	{
 		// Test WriteKeyOp error
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteKeyOp(GetStateID, &common.Address{0x3}, &common.Hash{0x1}, []byte{})
+		err := ctx.WriteKeyOp(GetStateID, &common.Address{0x4}, &common.Hash{0x1}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
-		fw.EXPECT().WriteUint16(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any()).Return(mockErr)
-		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x4}, &common.Hash{0x2}, []byte{})
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x5}, &common.Hash{0x2}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
-		fw.EXPECT().WriteUint16(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any()).Return(mockErr)
-		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x5}, &common.Hash{0x3}, []byte{})
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x6}, &common.Hash{0x3}, []byte{})
+		assert.ErrorIs(t, err, mockErr)
+
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x7}, &common.Hash{0x4}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 	}
 	{
 		// Test WriteValueOp error
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteValueOp(SetStateID, &common.Address{0x6}, &common.Hash{0x4}, &common.Hash{0x5})
+		err := ctx.WriteValueOp(SetStateID, &common.Address{0x8}, &common.Hash{0x6}, &common.Hash{0x5})
 		assert.ErrorIs(t, err, mockErr)
 
-		fw.EXPECT().WriteUint16(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any()).Return(mockErr)
-		err = ctx.WriteValueOp(SetStateID, &common.Address{0x7}, &common.Hash{0x6}, &common.Hash{0x7})
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteValueOp(SetStateID, &common.Address{0x9}, &common.Hash{0x8}, &common.Hash{0x7})
 		assert.ErrorIs(t, err, mockErr)
 
-		fw.EXPECT().WriteUint16(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any())
-		fw.EXPECT().WriteData(gomock.Any()).Return(mockErr)
-		err = ctx.WriteValueOp(SetStateID, &common.Address{0x8}, &common.Hash{0x8}, &common.Hash{0x9})
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteValueOp(SetStateID, &common.Address{0x10}, &common.Hash{0x10}, &common.Hash{0x9})
+		assert.ErrorIs(t, err, mockErr)
+		gomock.InOrder(
+			fw.EXPECT().WriteUint16(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()),
+			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
+		)
+		err = ctx.WriteValueOp(SetStateID, &common.Address{0x11}, &common.Hash{0x12}, &common.Hash{0x11})
 		assert.ErrorIs(t, err, mockErr)
 	}
 }
