@@ -13,6 +13,11 @@ import (
 
 // NewFileWriter creates a new FileWriter that writes to a gzip-compressed file using a buffer.
 func NewFileWriter(filename string) (FileWriter, error) {
+	_, err := os.Stat(filename)
+	if err == nil {
+		return nil, fmt.Errorf("file %s already exists", filename)
+	}
+
 	file, err := os.Create(filename)
 	if err != nil {
 		return nil, err

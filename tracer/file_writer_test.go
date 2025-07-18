@@ -5,6 +5,7 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"os"
 	"testing"
@@ -17,6 +18,10 @@ func TestNewFileWriter(t *testing.T) {
 	assert.NotNil(t, fw)
 	_, ok := fw.(*fileWriter)
 	assert.True(t, ok)
+	require.NoError(t, fw.Close())
+	// file exists - factory func should fail
+	fw, err = NewFileWriter(fp)
+	assert.ErrorContains(t, err, "already exists")
 }
 
 func TestFileWriter_WritesDataIntoFile(t *testing.T) {
