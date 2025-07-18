@@ -84,6 +84,14 @@ func TestProxies_AllCalls(t *testing.T) {
 		})
 	}
 
+	// CreateAccount(
+	base.EXPECT().CreateAccount(addr).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_CreateAccount(", func(t *testing.T) {
+			proxy.CreateAccount(addr)
+		})
+	}
+
 	// SubBalance
 	base.EXPECT().SubBalance(addr, amount, balanceReason).Times(len(proxies) + 1)
 	// LoggerProxy calls GetBalance to log current balance
