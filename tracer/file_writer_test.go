@@ -1,8 +1,8 @@
 package tracer
 
 import (
-	"compress/gzip"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"os"
@@ -38,8 +38,8 @@ func createNewFileWriter(t *testing.T, buffer *MockBuffer, filepath string) *fil
 	assert.NoError(t, err)
 
 	return &fileWriter{
-		file:   gzip.NewWriter(file),
 		buffer: buffer,
+		closer: gzip.NewWriter(file),
 	}
 }
 

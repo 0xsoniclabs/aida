@@ -2,11 +2,11 @@ package tracer
 
 import (
 	"bufio"
-	"compress/gzip"
 	"errors"
 	"fmt"
 	"github.com/0xsoniclabs/carmen/go/common"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/klauspost/compress/gzip"
 	"io"
 	"os"
 )
@@ -18,9 +18,10 @@ func NewFileWriter(filename string) (FileWriter, error) {
 		return nil, err
 	}
 
+	gzipWriter := gzip.NewWriter(file)
 	return &fileWriter{
-		file:   gzip.NewWriter(file),
-		buffer: bufio.NewWriter(file),
+		buffer: bufio.NewWriter(gzipWriter),
+		closer: gzipWriter,
 	}, nil
 }
 
@@ -46,7 +47,7 @@ type Buffer interface {
 
 type fileWriter struct {
 	buffer Buffer
-	file   io.Closer
+	closer io.Closer
 }
 
 func (f *fileWriter) WriteData(data []byte) error {
@@ -76,5 +77,5 @@ func (f *fileWriter) WriteUint8(idx uint8) error {
 func (f *fileWriter) Close() error {
 	// Flush the buffer to ensure all data is written to the file
 	// then close the file
-	return errors.Join(f.buffer.Flush(), f.file.Close())
+	return errors.Join(f.buffer.Flush(), f.closer.Close())
 }
