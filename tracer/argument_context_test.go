@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
 )
@@ -41,6 +42,7 @@ func TestArgumentContext_WriteAddressOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	ctx := NewArgumentContext(fw)
+
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
 	byteData := uint256.NewInt(123).Bytes()
@@ -207,9 +209,12 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	mockErr := errors.New("mock err")
 
 	{
-		// Test WriteOp error
+		// Overflow the number of operations to ensure it is handled correctly
+		err := ctx.WriteOp(NumOps, []byte{})
+		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteOp(BeginBlockID, []byte{})
+		err = ctx.WriteOp(BeginBlockID, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
 		fw.EXPECT().WriteUint16(gomock.Any())
@@ -218,9 +223,12 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 		assert.ErrorIs(t, err, mockErr)
 	}
 	{
-		// Test WriteAddressOp error
+		// Overflow the number of operations to ensure it is handled correctly
+		err := ctx.WriteAddressOp(NumOps, &common.Address{0x20}, []byte{})
+		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteAddressOp(AddBalanceID, &common.Address{0x1}, []byte{})
+		err = ctx.WriteAddressOp(AddBalanceID, &common.Address{0x1}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
 		gomock.InOrder(
@@ -238,9 +246,12 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 		assert.ErrorIs(t, err, mockErr)
 	}
 	{
-		// Test WriteKeyOp error
+		// Overflow the number of operations to ensure it is handled correctly
+		err := ctx.WriteKeyOp(NumOps, &common.Address{0x21}, &common.Hash{0x21}, []byte{})
+		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteKeyOp(GetStateID, &common.Address{0x4}, &common.Hash{0x1}, []byte{})
+		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x4}, &common.Hash{0x1}, []byte{})
 		assert.ErrorIs(t, err, mockErr)
 
 		gomock.InOrder(
@@ -268,9 +279,12 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 		assert.ErrorIs(t, err, mockErr)
 	}
 	{
-		// Test WriteValueOp error
+		// Overflow the number of operations to ensure it is handled correctly
+		err := ctx.WriteKeyOp(NumOps, &common.Address{0x22}, &common.Hash{0x22}, []byte{})
+		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
-		err := ctx.WriteValueOp(SetStateID, &common.Address{0x8}, &common.Hash{0x6}, &common.Hash{0x5})
+		err = ctx.WriteValueOp(SetStateID, &common.Address{0x8}, &common.Hash{0x6}, &common.Hash{0x5})
 		assert.ErrorIs(t, err, mockErr)
 
 		gomock.InOrder(
