@@ -14,39 +14,36 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package statedb
 
 import (
-	"fmt"
-	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
-	"os"
+	"github.com/stretchr/testify/assert"
+	"testing"
 
-	"github.com/urfave/cli/v2"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/state/proxy"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
-// initTraceApp initializes a trace-cli app. This function is called by the main
-// function and unit tests.
-func initTraceApp() *cli.App {
-	return &cli.App{
-		Name:      "Aida Storage Trace Manager",
-		HelpName:  "trace",
-		Copyright: "(c) 2022 Fantom Foundation",
-		Flags:     []cli.Flag{},
-		Commands: []*cli.Command{
-			&RecordCommand,
-			// todo: will be handled in upcoming PR
-			&trace.TraceReplayCommand,
-			//&trace.TraceReplaySubstateCommand,
-		},
+func TestTemporaryProxyRecorderPrepper_PreRunCreatesProxy(t *testing.T) {
+	cfg := &utils.Config{
+		TraceFile: t.TempDir() + "test_trace",
 	}
-}
 
-// main implements "trace" cli traceApplication.
-func main() {
-	app := initTraceApp()
-	if err := app.Run(os.Args); err != nil {
-		code := 1
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(code)
+	p := MakeTracerProxyPrepper[any](cfg)
+
+	ctx := &executor.Context{}
+
+	err := p.PreRun(executor.State[any]{}, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
 	}
+
+	err = p.PreTransaction(executor.State[any]{}, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error; %v", err)
+	}
+
+	_, ok := ctx.State.(*proxy.TracerProxy)
+	assert.True(t, ok, "Proxy was not created in PreRun")
 }
