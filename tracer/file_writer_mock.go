@@ -95,7 +95,7 @@ func (mr *MockFileWriterMockRecorder) WriteUint8(idx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint8", reflect.TypeOf((*MockFileWriter)(nil).WriteUint8), idx)
 }
 
-// MockBuffer is a mock of Buffer interface.
+// MockBuffer is a mock of WriteBuffer interface.
 type MockBuffer struct {
 	ctrl     *gomock.Controller
 	recorder *MockBufferMockRecorder
