@@ -77,7 +77,7 @@ func TestFileWriter_WriteData(t *testing.T) {
 			fw := createNewFileWriter(t, buffer, fp)
 			err := fw.WriteData(data)
 			if test.wantErr != nil {
-				assert.ErrorIs(t, test.wantErr, err)
+				assert.ErrorIs(t, err, test.wantErr)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -118,7 +118,7 @@ func TestFileWriter_WriteUint16(t *testing.T) {
 			fw := createNewFileWriter(t, buffer, fp)
 			err := fw.WriteUint16(data)
 			if test.wantErr != nil {
-				assert.ErrorIs(t, test.wantErr, err)
+				assert.ErrorIs(t, err, test.wantErr)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -138,14 +138,14 @@ func TestFileWriter_WriteUint8(t *testing.T) {
 		{
 			name: "Success",
 			setup: func(m *MockWriteBuffer) {
-				m.EXPECT().WriteByte(data).Return(1, nil)
+				m.EXPECT().WriteByte(data).Return(nil)
 			},
 			wantErr: nil,
 		},
 		{
 			name: "WriteError",
 			setup: func(m *MockWriteBuffer) {
-				m.EXPECT().WriteByte(data).Return(0, mockErr)
+				m.EXPECT().WriteByte(data).Return(mockErr)
 			},
 			wantErr: mockErr,
 		},
@@ -159,7 +159,7 @@ func TestFileWriter_WriteUint8(t *testing.T) {
 			fw := createNewFileWriter(t, buffer, fp)
 			err := fw.WriteUint8(data)
 			if test.wantErr != nil {
-				assert.ErrorIs(t, test.wantErr, err)
+				assert.ErrorIs(t, err, test.wantErr)
 			} else {
 				assert.NoError(t, err)
 			}

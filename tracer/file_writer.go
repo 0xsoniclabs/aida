@@ -53,7 +53,7 @@ type fileWriter struct {
 func (f *fileWriter) WriteData(data []byte) error {
 	_, err := f.buffer.Write(data)
 	if err != nil {
-		return fmt.Errorf("error writing []byte to buffer: %v", err)
+		return fmt.Errorf("error writing []byte to buffer: %w", err)
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func (f *fileWriter) WriteData(data []byte) error {
 func (f *fileWriter) WriteUint16(data uint16) error {
 	_, err := f.buffer.Write(bigendian.Uint16ToBytes(data))
 	if err != nil {
-		return fmt.Errorf("error writing uint16 to buffer: %v", err)
+		return fmt.Errorf("error writing uint16 to buffer: %w", err)
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (f *fileWriter) WriteUint16(data uint16) error {
 func (f *fileWriter) WriteUint8(idx uint8) error {
 	err := f.buffer.WriteByte(idx)
 	if err != nil {
-		return fmt.Errorf("error writing uint8 to buffer: %v", err)
+		return fmt.Errorf("error writing uint8 to buffer: %w", err)
 	}
 	return nil
 }

@@ -280,7 +280,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	}
 	{
 		// Overflow the number of operations to ensure it is handled correctly
-		err := ctx.WriteKeyOp(NumOps, &common.Address{0x22}, &common.Hash{0x22}, []byte{})
+		err := ctx.WriteValueOp(NumOps, &common.Address{0x22}, &common.Hash{0x22}, &common.Hash{0x23})
 		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
 
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
@@ -309,5 +309,82 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 		)
 		err = ctx.WriteValueOp(SetStateID, &common.Address{0x11}, &common.Hash{0x12}, &common.Hash{0x11})
 		assert.ErrorIs(t, err, mockErr)
+	}
+}
+
+func Test_writeClassifiedOp(t *testing.T) {
+	mockErr := errors.New("mock err")
+	data := common.Hash{0x23}
+	tests := []struct {
+		name    string
+		class   uint8
+		setup   func(m *MockFileWriter)
+		wantErr error
+	}{
+		{
+			name:  "ZeroValueID",
+			class: ZeroValueID,
+			setup: func(m *MockFileWriter) {
+				// nothing happens
+			},
+			wantErr: nil,
+		},
+		{
+			name:  "PreviousValueID",
+			class: PreviousValueID,
+			setup: func(m *MockFileWriter) {
+				// nothing happens
+			},
+			wantErr: nil,
+		},
+		{
+			name:  "RecentValueID_Success",
+			class: RecentValueID,
+			setup: func(m *MockFileWriter) {
+				m.EXPECT().WriteUint8(uint8(1)).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name:  "RecentValueID_Error",
+			class: RecentValueID,
+			setup: func(m *MockFileWriter) {
+				m.EXPECT().WriteUint8(uint8(1)).Return(mockErr)
+			},
+			wantErr: mockErr,
+		},
+		{
+			name:  "NewValueID_Success",
+			class: NewValueID,
+			setup: func(m *MockFileWriter) {
+				m.EXPECT().WriteData(data.Bytes()).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name:  "NewValueID_Error",
+			class: NewValueID,
+			setup: func(m *MockFileWriter) {
+				m.EXPECT().WriteData(data.Bytes()).Return(mockErr)
+			},
+			wantErr: mockErr,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			fw := NewMockFileWriter(ctrl)
+			ctx := &argumentContext{
+				file: fw,
+			}
+			test.setup(fw)
+			err := ctx.writeClassifiedOp(test.class, 1, data)
+			if test.wantErr != nil {
+				assert.ErrorIs(t, err, test.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }
