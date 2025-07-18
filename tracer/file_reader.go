@@ -1,9 +1,34 @@
 package tracer
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/cockroachdb/errors"
 	"io"
+	"os"
 )
+
+func NewFileReader(filename string) (FileReader, error) {
+	stat, err := os.Stat(filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not stat file: %s, does it exist? %w", filename, err)
+	}
+	if stat.IsDir() {
+		return nil, errors.New("given path to trace file is a directory")
+	}
+	if stat.Size() == 0 {
+		return nil, errors.New("given trace file is empty")
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not open trace file: %s, %w", filename, err)
+	}
+	return &fileReader{
+		buffer: bufio.NewReader(file),
+		file:   file,
+	}, nil
+}
 
 //go:generate mockgen -source file_reader.go -destination file_reader_mock.go -package tracer
 
