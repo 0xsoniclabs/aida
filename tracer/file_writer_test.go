@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"errors"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestFileWriter_WritesDataIntoFile(t *testing.T) {
 	assert.NotZero(t, stats.Size())
 }
 
-func createNewFileWriter(t *testing.T, buffer *MockBuffer, filepath string) *fileWriter {
+func createNewFileWriter(t *testing.T, buffer *MockWriteBuffer, filepath string) *fileWriter {
 	file, err := os.Create(filepath)
 	assert.NoError(t, err)
 
@@ -44,34 +45,124 @@ func createNewFileWriter(t *testing.T, buffer *MockBuffer, filepath string) *fil
 }
 
 func TestFileWriter_WriteData(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fw := createNewFileWriter(t, buffer, fp)
 	data := []byte("hello world")
-	buffer.EXPECT().Write(data)
-	err := fw.WriteData(data)
-	assert.NoError(t, err)
+	mockErr := errors.New("mock error")
+	tests := []struct {
+		name    string
+		setup   func(*MockWriteBuffer)
+		wantErr error
+	}{
+		{
+			name: "Success",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().Write(data).Return(len(data), nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "WriteError",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().Write(data).Return(0, mockErr)
+			},
+			wantErr: mockErr,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			buffer := NewMockWriteBuffer(ctrl)
+			test.setup(buffer)
+
+			fw := createNewFileWriter(t, buffer, fp)
+			err := fw.WriteData(data)
+			if test.wantErr != nil {
+				assert.ErrorIs(t, test.wantErr, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestFileWriter_WriteUint16(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fw := createNewFileWriter(t, buffer, fp)
-	data := uint16(1234)
-	buffer.EXPECT().Write(bigendian.Uint16ToBytes(data))
-	err := fw.WriteUint16(data)
-	assert.NoError(t, err)
+	data := uint16(10)
+	mockErr := errors.New("mock error")
+	tests := []struct {
+		name    string
+		setup   func(*MockWriteBuffer)
+		wantErr error
+	}{
+		{
+			name: "Success",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().Write(bigendian.Uint16ToBytes(data)).Return(len(bigendian.Uint16ToBytes(data)), nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "WriteError",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().Write(bigendian.Uint16ToBytes(data)).Return(0, mockErr)
+			},
+			wantErr: mockErr,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			buffer := NewMockWriteBuffer(ctrl)
+			test.setup(buffer)
+
+			fw := createNewFileWriter(t, buffer, fp)
+			err := fw.WriteUint16(data)
+			if test.wantErr != nil {
+				assert.ErrorIs(t, test.wantErr, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestFileWriter_WriteUint8(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	buffer := NewMockBuffer(ctrl)
 	fp := t.TempDir() + "test_record.gz"
-	fw := createNewFileWriter(t, buffer, fp)
 	data := uint8(11)
-	buffer.EXPECT().WriteByte(data)
-	err := fw.WriteUint8(data)
-	assert.NoError(t, err)
+	mockErr := errors.New("mock error")
+	tests := []struct {
+		name    string
+		setup   func(*MockWriteBuffer)
+		wantErr error
+	}{
+		{
+			name: "Success",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().WriteByte(data).Return(1, nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "WriteError",
+			setup: func(m *MockWriteBuffer) {
+				m.EXPECT().WriteByte(data).Return(0, mockErr)
+			},
+			wantErr: mockErr,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			buffer := NewMockWriteBuffer(ctrl)
+			test.setup(buffer)
+
+			fw := createNewFileWriter(t, buffer, fp)
+			err := fw.WriteUint8(data)
+			if test.wantErr != nil {
+				assert.ErrorIs(t, test.wantErr, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

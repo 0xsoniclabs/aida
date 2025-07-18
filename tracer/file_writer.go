@@ -38,15 +38,15 @@ type FileWriter interface {
 	Close() error
 }
 
-// Buffer is a wrapper around necessary interfaces for writing data to a file for mocking purposes.
-type Buffer interface {
+// WriteBuffer is a wrapper around necessary interfaces for writing data to a file for mocking purposes.
+type WriteBuffer interface {
 	io.Writer
 	io.ByteWriter
 	common.Flusher
 }
 
 type fileWriter struct {
-	buffer Buffer
+	buffer WriteBuffer
 	closer io.Closer
 }
 

@@ -95,32 +95,32 @@ func (mr *MockFileWriterMockRecorder) WriteUint8(idx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint8", reflect.TypeOf((*MockFileWriter)(nil).WriteUint8), idx)
 }
 
-// MockBuffer is a mock of Buffer interface.
-type MockBuffer struct {
+// MockWriteBuffer is a mock of WriteBuffer interface.
+type MockWriteBuffer struct {
 	ctrl     *gomock.Controller
-	recorder *MockBufferMockRecorder
+	recorder *MockWriteBufferMockRecorder
 	isgomock struct{}
 }
 
-// MockBufferMockRecorder is the mock recorder for MockBuffer.
-type MockBufferMockRecorder struct {
-	mock *MockBuffer
+// MockWriteBufferMockRecorder is the mock recorder for MockWriteBuffer.
+type MockWriteBufferMockRecorder struct {
+	mock *MockWriteBuffer
 }
 
-// NewMockBuffer creates a new mock instance.
-func NewMockBuffer(ctrl *gomock.Controller) *MockBuffer {
-	mock := &MockBuffer{ctrl: ctrl}
-	mock.recorder = &MockBufferMockRecorder{mock}
+// NewMockWriteBuffer creates a new mock instance.
+func NewMockWriteBuffer(ctrl *gomock.Controller) *MockWriteBuffer {
+	mock := &MockWriteBuffer{ctrl: ctrl}
+	mock.recorder = &MockWriteBufferMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockBuffer) EXPECT() *MockBufferMockRecorder {
+func (m *MockWriteBuffer) EXPECT() *MockWriteBufferMockRecorder {
 	return m.recorder
 }
 
 // Flush mocks base method.
-func (m *MockBuffer) Flush() error {
+func (m *MockWriteBuffer) Flush() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Flush")
 	ret0, _ := ret[0].(error)
@@ -128,13 +128,13 @@ func (m *MockBuffer) Flush() error {
 }
 
 // Flush indicates an expected call of Flush.
-func (mr *MockBufferMockRecorder) Flush() *gomock.Call {
+func (mr *MockWriteBufferMockRecorder) Flush() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockBuffer)(nil).Flush))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockWriteBuffer)(nil).Flush))
 }
 
 // Write mocks base method.
-func (m *MockBuffer) Write(p []byte) (int, error) {
+func (m *MockWriteBuffer) Write(p []byte) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", p)
 	ret0, _ := ret[0].(int)
@@ -143,13 +143,13 @@ func (m *MockBuffer) Write(p []byte) (int, error) {
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockBufferMockRecorder) Write(p any) *gomock.Call {
+func (mr *MockWriteBufferMockRecorder) Write(p any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockBuffer)(nil).Write), p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockWriteBuffer)(nil).Write), p)
 }
 
 // WriteByte mocks base method.
-func (m *MockBuffer) WriteByte(c byte) error {
+func (m *MockWriteBuffer) WriteByte(c byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteByte", c)
 	ret0, _ := ret[0].(error)
@@ -157,7 +157,7 @@ func (m *MockBuffer) WriteByte(c byte) error {
 }
 
 // WriteByte indicates an expected call of WriteByte.
-func (mr *MockBufferMockRecorder) WriteByte(c any) *gomock.Call {
+func (mr *MockWriteBufferMockRecorder) WriteByte(c any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteByte", reflect.TypeOf((*MockBuffer)(nil).WriteByte), c)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteByte", reflect.TypeOf((*MockWriteBuffer)(nil).WriteByte), c)
 }
