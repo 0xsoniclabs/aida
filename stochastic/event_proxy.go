@@ -452,16 +452,19 @@ func (p *EventProxy) GetShadowDB() state.StateDB {
 }
 
 func (p *EventProxy) CreateContract(addr common.Address) {
+	// TODO maybe bug, always error
 	p.registry.RegisterOp(CreateContractID)
 	p.db.CreateContract(addr)
 }
 
 func (p *EventProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+	// TODO maybe bug, always error
 	p.registry.RegisterOp(SelfDestruct6780ID)
 	return p.db.SelfDestruct6780(addr)
 }
 
 func (p *EventProxy) GetStorageRoot(addr common.Address) common.Hash {
+	// TODO maybe bug, always error
 	p.registry.RegisterOp(CreateContractID)
 	return p.db.GetStorageRoot(addr)
 }
