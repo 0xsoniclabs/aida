@@ -23,12 +23,11 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/stochastic/generator"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-
-	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/stochastic/generator"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"gonum.org/v1/gonum/stat/distuv"

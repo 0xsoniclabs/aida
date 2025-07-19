@@ -5,9 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
-
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 )

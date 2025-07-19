@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"gonum.org/v1/gonum/stat/distuv"
 )
 

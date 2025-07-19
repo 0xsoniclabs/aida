@@ -21,10 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEventRegistryUpdateFreq checks some operation labels with their argument classes.
