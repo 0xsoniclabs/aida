@@ -850,8 +850,8 @@ func TestShadowState_GetHash_FailWithValidate(t *testing.T) {
 	sdb.EXPECT().GetHash().Return(shadowHash, nil)
 
 	_, err := db.GetHash()
-	if err != nil {
-		t.Fatalf("Failed to execute GetHash; %v", err)
+	if err == nil {
+		t.Fatal("Expect a mistach of state hashes")
 	}
 	if err := db.Error(); err == nil {
 		t.Fatal("Expect a mistach of state hashes")
@@ -1531,7 +1531,7 @@ func TestShadowNonCommittableStateDb_getHash(t *testing.T) {
 	}
 	expectedHash := common.Hash{0x01, 0x02, 0x03}
 	hash, err := shadow.getHash("test", mockOp)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, expectedHash, hash)
 }
 
