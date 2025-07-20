@@ -438,8 +438,7 @@ func (s *loggingNonCommittableStateDb) GetHash() (common.Hash, error) {
 
 func (s *loggingNonCommittableStateDb) Release() error {
 	s.writeLog("Release")
-	s.nonCommittableStateDB.Release()
-	return nil
+	return s.nonCommittableStateDB.Release()
 }
 
 func (l *loggingBulkLoad) CreateAccount(addr common.Address) {
