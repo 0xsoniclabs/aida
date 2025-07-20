@@ -2,6 +2,9 @@ package proxy
 
 import (
 	"errors"
+	"sync"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -15,8 +18,6 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"sync"
-	"testing"
 )
 
 func TestProxy_NewLoggerProxy(t *testing.T) {

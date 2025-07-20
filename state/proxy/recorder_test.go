@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
@@ -15,7 +17,6 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestProxy_NewRecorderProxy(t *testing.T) {
