@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"sync"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer/context"
@@ -14,8 +17,6 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"sync"
-	"testing"
 )
 
 func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB {

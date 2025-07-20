@@ -381,26 +381,22 @@ func (r *RecorderProxy) PrepareSubstate(substate txcontext.WorldState, block uin
 
 func (r *RecorderProxy) BeginTransaction(number uint32) error {
 	r.write(operation.NewBeginTransaction(number))
-	r.db.BeginTransaction(number)
-	return nil
+	return r.db.BeginTransaction(number)
 }
 
 func (r *RecorderProxy) EndTransaction() error {
 	r.write(operation.NewEndTransaction())
-	r.db.EndTransaction()
-	return nil
+	return r.db.EndTransaction()
 }
 
 func (r *RecorderProxy) BeginBlock(number uint64) error {
 	r.write(operation.NewBeginBlock(number))
-	r.db.BeginBlock(number)
-	return nil
+	return r.db.BeginBlock(number)
 }
 
 func (r *RecorderProxy) EndBlock() error {
 	r.write(operation.NewEndBlock())
-	r.db.EndBlock()
-	return nil
+	return r.db.EndBlock()
 }
 
 func (r *RecorderProxy) BeginSyncPeriod(number uint64) {

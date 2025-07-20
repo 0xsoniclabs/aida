@@ -225,7 +225,7 @@ func TestShadowState_CodeOperations(t *testing.T) {
 
 			shadowDB.SetCode(addr, code)
 
-			if bytes.Compare(shadowDB.GetCode(addr), code) != 0 {
+			if !bytes.Equal(shadowDB.GetCode(addr), code) {
 				t.Fatal("failed to update account code; wrong value")
 			}
 
@@ -620,7 +620,7 @@ func TestShadowState_SetCodeUsingBulkInsertion(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if bytes.Compare(shadowDB.GetCode(addr), code) != 0 {
+			if !bytes.Equal(shadowDB.GetCode(addr), code) {
 				t.Fatal("failed to update account code")
 			}
 		})
@@ -658,24 +658,24 @@ func TestShadowState_BulkloadOperations(t *testing.T) {
 				// randomized operation
 				operationType := state.GetRandom(t, 0, 4)
 
-				switch {
-				case operationType == 1:
+				switch operationType {
+				case 1:
 					// set balance
 					newBalance := uint256.NewInt(uint64(state.GetRandom(t, 0, 5_000_000)))
 
 					cbl.SetBalance(account, newBalance)
-				case operationType == 2:
+				case 2:
 					// set code
 					code := state.MakeRandomByteSlice(t, 2048)
 
 					cbl.SetCode(account, code)
-				case operationType == 3:
+				case 3:
 					// set state
 					key := common.BytesToHash(state.MakeRandomByteSlice(t, 32))
 					value := common.BytesToHash(state.MakeRandomByteSlice(t, 32))
 
 					cbl.SetState(account, key, value)
-				case operationType == 4:
+				case 4:
 					// set nonce
 					newNonce := uint64(state.GetRandom(t, 0, 5_000_000))
 
@@ -810,7 +810,10 @@ func TestShadowState_GetHash_SuccessWithValidate(t *testing.T) {
 	pdb.EXPECT().GetHash().Return(expectedHash, nil)
 	sdb.EXPECT().GetHash().Return(expectedHash, nil)
 
-	db.GetHash()
+	_, err := db.GetHash()
+	if err != nil {
+		t.Fatalf("Failed to execute GetHash; %v", err)
+	}
 	if err := db.Error(); err != nil {
 		t.Fatalf("Failed to execute GetHash; %v", err)
 	}
@@ -826,7 +829,10 @@ func TestShadowState_GetHash_SuccessWithoutValidate(t *testing.T) {
 	// hash of shadow is not called
 	pdb.EXPECT().GetHash().Return(primeHash, nil)
 
-	db.GetHash()
+	_, err := db.GetHash()
+	if err != nil {
+		t.Fatalf("Failed to execute GetHash; %v", err)
+	}
 	if err := db.Error(); err != nil {
 		t.Fatalf("Failed to execute GetHash; %v", err)
 	}
@@ -843,7 +849,10 @@ func TestShadowState_GetHash_FailWithValidate(t *testing.T) {
 	pdb.EXPECT().GetHash().Return(primeHash, nil)
 	sdb.EXPECT().GetHash().Return(shadowHash, nil)
 
-	db.GetHash()
+	_, err := db.GetHash()
+	if err != nil {
+		t.Fatalf("Failed to execute GetHash; %v", err)
+	}
 	if err := db.Error(); err == nil {
 		t.Fatal("Expect a mistach of state hashes")
 	}
