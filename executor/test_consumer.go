@@ -18,6 +18,7 @@ package executor
 
 import (
 	"github.com/0xsoniclabs/aida/rpc"
+	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/txcontext"
 )
 
@@ -48,14 +49,12 @@ func toRPCConsumer(c RPCReqConsumer) Consumer[*rpc.RequestAndResults] {
 	}
 }
 
-// todo: will be handled in upcoming PR
-//
-//type OperationConsumer interface {
-//	Consume(block int, transaction int, operations []operation.Operation) error
-//}
-//
-//func toOperationConsumer(c OperationConsumer) Consumer[[]operation.Operation] {
-//	return func(info TransactionInfo[[]operation.Operation]) error {
-//		return c.Consume(info.Block, info.Transaction, info.Data)
-//	}
-//}
+type OperationConsumer interface {
+	Consume(block int, transaction int, operations tracer.Operation) error
+}
+
+func toOperationConsumer(c OperationConsumer) Consumer[tracer.Operation] {
+	return func(info TransactionInfo[tracer.Operation]) error {
+		return c.Consume(info.Block, info.Transaction, info.Data)
+	}
+}
