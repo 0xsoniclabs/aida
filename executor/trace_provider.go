@@ -2,18 +2,25 @@ package executor
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+func NewTraceProvider(file tracer.FileReader) Provider[tracer.Operation] {
+	return &traceProvider{
+		file:      file,
+		contracts: tracer.NewQueue[common.Address](),
+		keys:      tracer.NewQueue[common.Hash](),
+		values:    tracer.NewQueue[common.Hash](),
+	}
+}
 
 type traceProvider struct {
 	file      tracer.FileReader
 	contracts tracer.Queue[common.Address]
 	keys      tracer.Queue[common.Hash]
 	values    tracer.Queue[common.Hash]
-	db        state.StateDB
 }
 
 func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation]) (err error) {
@@ -171,4 +178,8 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		Key:   key,
 		Value: val,
 	}, nil
+}
+
+func (p *traceProvider) Close() {
+	// ignored
 }
