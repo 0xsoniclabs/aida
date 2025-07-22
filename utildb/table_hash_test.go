@@ -552,8 +552,13 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 	tests := []struct {
 		name        string
-		getHashFunc func(cfg *utils.Config, db db.BaseDB, log logger.Logger) ([]byte, uint64, error)
-		logMsg      string
+		getHashFunc func(
+			cfg *utils.Config,
+			db db.BaseDB,
+			progressLoggerFrequency time.Duration,
+			log logger.Logger,
+		) ([]byte, uint64, error)
+		logMsg string
 	}{
 		{
 			name:        "StateRootHashes",
@@ -579,13 +584,13 @@ func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 			}
 
 			aidaDb.EXPECT().Get(gomock.Any()).DoAndReturn(func(key []byte) ([]byte, error) {
-				time.Sleep(60 * time.Second) // Simulate a delay
+				time.Sleep(2 * time.Millisecond) // Simulate a delay
 				return []byte("12345678123456781234567812345678"), nil
 			})
 			aidaDb.EXPECT().Get(gomock.Any()).Return([]byte("12345678123456781234567812345678"), nil)
 			log.EXPECT().Infof(tc.logMsg, uint64(1), uint64(1))
 
-			_, count, err := tc.getHashFunc(cfg, aidaDb, log)
+			_, count, err := tc.getHashFunc(cfg, aidaDb, time.Millisecond, log)
 			assert.NoError(t, err)
 			assert.Equal(t, uint64(2), count, "Expected count to be 2")
 		})
@@ -621,13 +626,13 @@ func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
 	iter := iterator.NewArrayIterator(kv)
 
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).DoAndReturn(func(r *util.Range, ro *opt.ReadOptions) iterator.Iterator {
-		time.Sleep(60 * time.Second) // Simulate a delay - works, because timer starts before creating iterator
+		time.Sleep(2 * time.Millisecond) // Simulate a delay - works, because timer starts before creating iterator
 		return iter
 	})
 
 	log.EXPECT().Infof("Exception hash progress: %v/%v", 1, uint64(1))
 
-	_, count, err := GetExceptionDbHash(cfg, aidaDb, log)
+	_, count, err := GetExceptionDbHash(cfg, aidaDb, time.Millisecond, log)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count, "Expected count to be 2")
 }
@@ -664,7 +669,7 @@ func TestTableHash_GetExceptionDbHash_OnlyGivenRange(t *testing.T) {
 
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
 
-	_, count, err := GetExceptionDbHash(cfg, aidaDb, log)
+	_, count, err := GetExceptionDbHash(cfg, aidaDb, time.Second, log)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count, "Expected count to be 2")
 }
@@ -690,7 +695,7 @@ func TestTableHash_GetExceptionDbHash_InvalidData(t *testing.T) {
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
 
 	errWant := "invalid length of exception key: 1"
-	_, _, err := GetExceptionDbHash(cfg, aidaDb, log)
+	_, _, err := GetExceptionDbHash(cfg, aidaDb, time.Second, log)
 	if err == nil {
 		t.Fatalf("expected an error: %v, but got nil", errWant)
 	}
