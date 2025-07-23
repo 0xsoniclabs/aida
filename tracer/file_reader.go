@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,6 +37,13 @@ func NewFileReader(filename string) (FileReader, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create gzip reader for trace file: %s, %w", filename, err)
 	}
+
+	// Register the types we will be decoding from the trace file.
+	gob.Register(txcontext.NewNilAccount())
+	gob.Register(params.Rules{})
+	gob.Register(types.AccessList{})
+	gob.Register(types.Log{})
+
 	return &fileReader{
 		reader: bufio.NewReader(gzipReader),
 		closer: gzipReader,
@@ -71,6 +79,10 @@ type FileReader interface {
 	ReadRules() (params.Rules, error)
 	// ReadAccessList reads an access list from the file.
 	ReadAccessList() (types.AccessList, error)
+	// ReadWorldState reads the world state from the file.
+	ReadWorldState() (txcontext.WorldState, error)
+	// ReadLog reads a log entry from the file.
+	ReadLog() (*types.Log, error)
 	// Close closes the file reader.
 	Close() error
 }
@@ -207,16 +219,51 @@ func (f *fileReader) ReadAccessList() (types.AccessList, error) {
 	if err != nil {
 		return types.AccessList{}, err
 	}
+
+	var accessList types.AccessList
 	// If the data is empty, we return an empty access list.
 	if len(data) == 0 {
-		return types.AccessList{}, nil
+		return accessList, nil
 	}
-	var accessList types.AccessList
 	err = decodeGob[*types.AccessList](&accessList, data)
 	if err != nil {
 		return nil, err
 	}
 	return accessList, nil
+}
+
+func (f *fileReader) ReadWorldState() (txcontext.WorldState, error) {
+	data, err := f.ReadVariableSizeData()
+	if err != nil {
+		return nil, err
+	}
+	// If the data is empty, we return an empty substate.
+	if len(data) == 0 {
+		return txcontext.AidaWorldState{}, nil
+	}
+	var ws txcontext.AidaWorldState
+	err = decodeGob[*txcontext.AidaWorldState](&ws, data)
+	if err != nil {
+		return nil, err
+	}
+	return ws, nil
+}
+
+func (f *fileReader) ReadLog() (*types.Log, error) {
+	data, err := f.ReadVariableSizeData()
+	if err != nil {
+		return nil, err
+	}
+	log := new(types.Log)
+	// If the data is empty, we return an empty log.
+	if len(data) == 0 {
+		return log, nil
+	}
+	err = decodeGob[*types.Log](log, data)
+	if err != nil {
+		return nil, err
+	}
+	return log, nil
 }
 
 func (f *fileReader) Close() error {

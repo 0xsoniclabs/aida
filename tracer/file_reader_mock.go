@@ -12,6 +12,7 @@ package tracer
 import (
 	reflect "reflect"
 
+	txcontext "github.com/0xsoniclabs/aida/txcontext"
 	common "github.com/ethereum/go-ethereum/common"
 	tracing "github.com/ethereum/go-ethereum/core/tracing"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -149,6 +150,21 @@ func (mr *MockFileReaderMockRecorder) ReadHash() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadHash", reflect.TypeOf((*MockFileReader)(nil).ReadHash))
 }
 
+// ReadLog mocks base method.
+func (m *MockFileReader) ReadLog() (*types.Log, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadLog")
+	ret0, _ := ret[0].(*types.Log)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadLog indicates an expected call of ReadLog.
+func (mr *MockFileReaderMockRecorder) ReadLog() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadLog", reflect.TypeOf((*MockFileReader)(nil).ReadLog))
+}
+
 // ReadNonceChange mocks base method.
 func (m *MockFileReader) ReadNonceChange() (uint64, tracing.NonceChangeReason, error) {
 	m.ctrl.T.Helper()
@@ -253,6 +269,21 @@ func (m *MockFileReader) ReadVariableSizeData() ([]byte, error) {
 func (mr *MockFileReaderMockRecorder) ReadVariableSizeData() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadVariableSizeData", reflect.TypeOf((*MockFileReader)(nil).ReadVariableSizeData))
+}
+
+// ReadWorldState mocks base method.
+func (m *MockFileReader) ReadWorldState() (txcontext.WorldState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadWorldState")
+	ret0, _ := ret[0].(txcontext.WorldState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadWorldState indicates an expected call of ReadWorldState.
+func (mr *MockFileReaderMockRecorder) ReadWorldState() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadWorldState", reflect.TypeOf((*MockFileReader)(nil).ReadWorldState))
 }
 
 // MockReadBuffer is a mock of ReadBuffer interface.

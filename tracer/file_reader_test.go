@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -438,6 +439,64 @@ func TestFileReader_ReadAccessList(t *testing.T) {
 		reader: buf,
 	}
 	got, err := fr.ReadAccessList()
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestFileReader_ReadWorldState(t *testing.T) {
+	buf := &bytes.Buffer{}
+	enc := gob.NewEncoder(buf)
+	gob.Register(txcontext.NewNilAccount())
+	want := txcontext.NewWorldState(map[common.Address]txcontext.Account{
+		common.Address{0x1}: txcontext.NewAccount(
+			[]byte{0x22},
+			map[common.Hash]common.Hash{{0x1}: {0x3}},
+			big.NewInt(22),
+			12,
+		),
+	})
+	err := enc.Encode(want)
+	require.NoError(t, err)
+	encodedSize := bigendian.Uint32ToBytes(uint32(buf.Len()))
+	// Append size of rules and rules
+	data := append(encodedSize, buf.Bytes()...)
+	// reset the buffer and add the data in correct order
+	buf.Reset()
+	buf = bytes.NewBuffer(data)
+	fr := &fileReader{
+		reader: buf,
+	}
+	got, err := fr.ReadWorldState()
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestFileReader_ReadLog(t *testing.T) {
+	buf := &bytes.Buffer{}
+	enc := gob.NewEncoder(buf)
+	gob.Register(types.Log{})
+	want := &types.Log{
+		Address:        common.Address{0x2},
+		BlockNumber:    12,
+		TxHash:         common.Hash{0x3},
+		TxIndex:        13,
+		BlockHash:      common.Hash{0x4},
+		BlockTimestamp: 14,
+		Index:          15,
+		Removed:        true,
+	}
+	err := enc.Encode(want)
+	require.NoError(t, err)
+	encodedSize := bigendian.Uint32ToBytes(uint32(buf.Len()))
+	// Append size of rules and rules
+	data := append(encodedSize, buf.Bytes()...)
+	// reset the buffer and add the data in correct order
+	buf.Reset()
+	buf = bytes.NewBuffer(data)
+	fr := &fileReader{
+		reader: buf,
+	}
+	got, err := fr.ReadLog()
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
