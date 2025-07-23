@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -52,6 +53,7 @@ type stateHashValidator[T any] struct {
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
 	hashProvider            utils.HashProvider
+	excDb                   db.ExceptionDB
 }
 
 func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
@@ -68,6 +70,7 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	}
 
 	e.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
+	e.excDb = db.MakeDefaultExceptionDBFromBaseDB(ctx.AidaDb)
 	return nil
 }
 
@@ -131,7 +134,6 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 
 	cur := uint64(e.nextArchiveBlockToCheck)
 	for !empty && cur <= height {
-
 		want, err := e.getStateHash(int(cur))
 		if err != nil {
 			return err
@@ -150,7 +152,20 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 			return fmt.Errorf("cannot GetHash; %w", err)
 		}
 		if want != got {
-			return fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
+			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
+			// verify that this block is not an exception
+			exc, errExc := e.excDb.GetException(cur)
+			if errExc != nil {
+				return fmt.Errorf("cannot get exception for archive block %d; %v; archive-hash-error: %w", cur, errExc, unexpectedHashErr)
+			}
+			if exc == nil {
+				// this is not an exception, so we return the error
+				return unexpectedHashErr
+			}
+			// we need to skip the whole range of checking loop, because the exception could have following blank blocks,
+			// which would not have the exception in them, but would still contain wrong state hash
+			// cur still needs to be set to height-1 to check the currently processed block
+			cur = height - 1
 		}
 
 		cur++
