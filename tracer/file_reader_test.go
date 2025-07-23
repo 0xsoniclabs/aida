@@ -448,7 +448,7 @@ func TestFileReader_ReadWorldState(t *testing.T) {
 	enc := gob.NewEncoder(buf)
 	gob.Register(txcontext.NewNilAccount())
 	want := txcontext.NewWorldState(map[common.Address]txcontext.Account{
-		common.Address{0x1}: txcontext.NewAccount(
+		{0x1}: txcontext.NewAccount(
 			[]byte{0x22},
 			map[common.Hash]common.Hash{{0x1}: {0x3}},
 			big.NewInt(22),
