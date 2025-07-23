@@ -44,11 +44,6 @@ type TracerProxy struct {
 
 // NewTracerProxy creates a new StateDB proxy for recording and writing events.
 func NewTracerProxy(db state.StateDB, ctx tracer.ArgumentContext) *TracerProxy {
-	// Register all necessary types to gob
-	gob.Register(txcontext.NewNilAccount())
-	gob.Register(params.Rules{})
-	gob.Register(types.AccessList{})
-	gob.Register(types.Log{})
 	return &TracerProxy{
 		db:  db,
 		ctx: ctx,
