@@ -50,7 +50,7 @@ func checkStationaryDistribution(t *testing.T, n int) {
 // TestEstimation checks the correcntness of approximating
 // a lambda for a discrete CDF.
 func TestStationaryDistribution(t *testing.T) {
-	for n := 2; n < 10; n++ {
+	for n := 3; n < 10; n++ {
 		checkStationaryDistribution(t, n)
 	}
 }

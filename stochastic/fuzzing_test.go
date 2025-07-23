@@ -19,6 +19,7 @@ package stochastic
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"log"
 	"math/rand"
 	"os"
@@ -67,10 +68,10 @@ func FuzzStochastic(f *testing.F) {
 
 	// create corpus
 	testcases := []int{8 * 512, 8 * 1024}
-	rand.Seed(1)
+	r := rand.New(rand.NewSource(1))
 	for _, n := range testcases {
 		randomStr := make([]byte, n)
-		if _, err := rand.Read(randomStr); err != nil {
+		if _, err := r.Read(randomStr); err != nil {
 			log.Fatalf("error producing a random byte slice. Error: %v", err)
 		}
 		f.Add(randomStr)
@@ -100,7 +101,9 @@ func FuzzStochastic(f *testing.F) {
 		if err != nil {
 			f.Errorf("failed opening StateDB. Error: %v", err)
 		}
-		defer os.RemoveAll(dbPath)
+		defer func(path string) {
+			err = errors.Join(os.RemoveAll(path))
+		}(dbPath)
 
 		// generate uniform events
 		events := GenerateUniformRegistry(&cfg, logger.NewLogger(cfg.LogLevel, "FuzzingTest")).NewEventRegistryJSON()
