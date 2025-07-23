@@ -74,7 +74,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		}
 		ctx.State.RevertToSnapshot(int(value))
 	case tracer.SetCodeID:
-		code, err := p.file.ReadUnknownSizeData()
+		code, err := p.file.ReadVariableSizeData()
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		}
 		accessList, err := p.file.ReadAccessList()
 		if err != nil {
-
+			return err
 		}
 		ctx.State.Prepare(rules, sender, coinbase, &dest, precompiles, accessList)
 	case tracer.AddAddressToAccessListID:
@@ -191,7 +191,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		if err != nil {
 			return err
 		}
-		image, err := p.file.ReadUnknownSizeData()
+		image, err := p.file.ReadVariableSizeData()
 		if err != nil {
 			return err
 		}

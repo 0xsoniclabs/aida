@@ -14,6 +14,8 @@ import (
 
 	common "github.com/ethereum/go-ethereum/common"
 	tracing "github.com/ethereum/go-ethereum/core/tracing"
+	types "github.com/ethereum/go-ethereum/core/types"
+	params "github.com/ethereum/go-ethereum/params"
 	uint256 "github.com/holiman/uint256"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -54,6 +56,21 @@ func (m *MockFileReader) Close() error {
 func (mr *MockFileReaderMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockFileReader)(nil).Close))
+}
+
+// ReadAccessList mocks base method.
+func (m *MockFileReader) ReadAccessList() (types.AccessList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadAccessList")
+	ret0, _ := ret[0].(types.AccessList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadAccessList indicates an expected call of ReadAccessList.
+func (mr *MockFileReaderMockRecorder) ReadAccessList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAccessList", reflect.TypeOf((*MockFileReader)(nil).ReadAccessList))
 }
 
 // ReadAddr mocks base method.
@@ -102,19 +119,19 @@ func (mr *MockFileReaderMockRecorder) ReadBool() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadBool", reflect.TypeOf((*MockFileReader)(nil).ReadBool))
 }
 
-// ReadData mocks base method.
-func (m *MockFileReader) ReadData(size int) ([]byte, error) {
+// ReadFixedSizeData mocks base method.
+func (m *MockFileReader) ReadFixedSizeData(size int) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadData", size)
+	ret := m.ctrl.Call(m, "ReadFixedSizeData", size)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReadData indicates an expected call of ReadData.
-func (mr *MockFileReaderMockRecorder) ReadData(size any) *gomock.Call {
+// ReadFixedSizeData indicates an expected call of ReadFixedSizeData.
+func (mr *MockFileReaderMockRecorder) ReadFixedSizeData(size any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadData", reflect.TypeOf((*MockFileReader)(nil).ReadData), size)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadFixedSizeData", reflect.TypeOf((*MockFileReader)(nil).ReadFixedSizeData), size)
 }
 
 // ReadHash mocks base method.
@@ -146,6 +163,21 @@ func (m *MockFileReader) ReadNonceChange() (uint64, tracing.NonceChangeReason, e
 func (mr *MockFileReaderMockRecorder) ReadNonceChange() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadNonceChange", reflect.TypeOf((*MockFileReader)(nil).ReadNonceChange))
+}
+
+// ReadRules mocks base method.
+func (m *MockFileReader) ReadRules() (params.Rules, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadRules")
+	ret0, _ := ret[0].(params.Rules)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadRules indicates an expected call of ReadRules.
+func (mr *MockFileReaderMockRecorder) ReadRules() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadRules", reflect.TypeOf((*MockFileReader)(nil).ReadRules))
 }
 
 // ReadUint16 mocks base method.
@@ -208,19 +240,19 @@ func (mr *MockFileReaderMockRecorder) ReadUint8() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadUint8", reflect.TypeOf((*MockFileReader)(nil).ReadUint8))
 }
 
-// ReadUnknownSizeData mocks base method.
-func (m *MockFileReader) ReadUnknownSizeData() ([]byte, error) {
+// ReadVariableSizeData mocks base method.
+func (m *MockFileReader) ReadVariableSizeData() ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadUnknownSizeData")
+	ret := m.ctrl.Call(m, "ReadVariableSizeData")
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReadUnknownSizeData indicates an expected call of ReadUnknownSizeData.
-func (mr *MockFileReaderMockRecorder) ReadUnknownSizeData() *gomock.Call {
+// ReadVariableSizeData indicates an expected call of ReadVariableSizeData.
+func (mr *MockFileReaderMockRecorder) ReadVariableSizeData() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadUnknownSizeData", reflect.TypeOf((*MockFileReader)(nil).ReadUnknownSizeData))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadVariableSizeData", reflect.TypeOf((*MockFileReader)(nil).ReadVariableSizeData))
 }
 
 // MockReadBuffer is a mock of ReadBuffer interface.
