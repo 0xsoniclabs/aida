@@ -118,7 +118,7 @@ func TestExponential_mle(t *testing.T) {
 	result, err = mle(1e-10, 0.3)
 	assert.NoError(t, err)
 
-	// Test zero lambda (should cause division by zero)
+	// Test zero lambda
 	// TODO maybe bug
 	result, err = mle(0.0, 0.3)
 	assert.NoError(t, err)
