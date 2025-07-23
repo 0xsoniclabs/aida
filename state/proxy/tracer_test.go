@@ -35,7 +35,6 @@ func TestTracerProxy_PrepareSubstate(t *testing.T) {
 	err := gob.NewEncoder(&buf).Encode(ws)
 	require.NoError(t, err)
 	wantData := append(bigendian.Uint32ToBytes(uint32(buf.Len())), buf.Bytes()...)
-	wantData = append(wantData, bigendian.Uint64ToBytes(blk)...)
 
 	ctx.EXPECT().WriteOp(uint16(tracer.PrepareSubstateID), wantData)
 	base.EXPECT().PrepareSubstate(ws, blk)
