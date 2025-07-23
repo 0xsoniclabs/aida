@@ -246,6 +246,7 @@ func TestFileReader_Read(t *testing.T) {
 			},
 			setup: func(m *MockReadBuffer) {
 				m.EXPECT().Read(gomock.Any()).MinTimes(1).Return(1, nil)
+				m.EXPECT().ReadByte().Return(byte(1), nil)
 			},
 		},
 		{
