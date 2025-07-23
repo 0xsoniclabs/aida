@@ -1,6 +1,8 @@
 package tracer
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
@@ -85,7 +87,7 @@ func TestFileReader_Read(t *testing.T) {
 			name:    "ReadData_Success",
 			wantErr: nil,
 			Read: func(fr *fileReader) error {
-				_, err := fr.ReadData(1)
+				_, err := fr.ReadFixedSizeData(1)
 				return err
 			},
 			setup: func(m *MockReadBuffer) {
@@ -96,7 +98,7 @@ func TestFileReader_Read(t *testing.T) {
 			name:    "ReadData_Error",
 			wantErr: mockErr,
 			Read: func(fr *fileReader) error {
-				_, err := fr.ReadData(1)
+				_, err := fr.ReadFixedSizeData(1)
 				return err
 			},
 			setup: func(m *MockReadBuffer) {
@@ -261,7 +263,7 @@ func TestFileReader_Read(t *testing.T) {
 			name:    "ReadUnknownSizeData_Success",
 			wantErr: nil,
 			Read: func(fr *fileReader) error {
-				_, err := fr.ReadUnknownSizeData()
+				_, err := fr.ReadVariableSizeData()
 				return err
 			},
 			setup: func(m *MockReadBuffer) {
@@ -273,7 +275,7 @@ func TestFileReader_Read(t *testing.T) {
 			name:    "ReadUnknownSizeData_Error",
 			wantErr: mockErr,
 			Read: func(fr *fileReader) error {
-				_, err := fr.ReadUnknownSizeData()
+				_, err := fr.ReadVariableSizeData()
 				return err
 			},
 			setup: func(m *MockReadBuffer) {
