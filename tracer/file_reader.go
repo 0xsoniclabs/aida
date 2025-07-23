@@ -2,6 +2,8 @@ package tracer
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/cockroachdb/errors"
@@ -43,25 +45,34 @@ func NewFileReader(filename string) (FileReader, error) {
 //go:generate mockgen -source file_reader.go -destination file_reader_mock.go -package tracer
 
 type FileReader interface {
+	// ReadAddr reads an Ethereum address (20 bytes) from the file.
 	ReadAddr() (common.Address, error)
+	// ReadHash reads a 32-byte hash from the file.
 	ReadHash() (common.Hash, error)
-	ReadBalanceChange() (*uint256.Int, tracing.BalanceChangeReason, error)
+	// ReadUint64 reads a big-endian encoded uint64 value from the file.
 	ReadUint64() (uint64, error)
+	// ReadUint32 reads a big-endian encoded uint32 value from the file.
 	ReadUint32() (uint32, error)
-	ReadUnknownSizeData() ([]byte, error)
-	ReadNonceChange() (uint64, tracing.NonceChangeReason, error)
-	ReadBool() (bool, error)
-	// ReadData reads a byte slice of given size from the file.
-	ReadData(size int) ([]byte, error)
 	// ReadUint16 reads a big-endian encoded uint16 value from the file.
 	ReadUint16() (uint16, error)
 	// ReadUint8 reads a single byte (uint8) from the file.
 	ReadUint8() (uint8, error)
-
-	// todo add write code hash
-	Close() error
-	ReadAccessList() (types.AccessList, error)
+	// ReadFixedSizeData reads a byte slice of given size from the file.
+	ReadFixedSizeData(size int) ([]byte, error)
+	// ReadVariableSizeData reads a byte slice of a variable size from the file.
+	ReadVariableSizeData() ([]byte, error)
+	// ReadBalanceChange reads a balance change from the file.
+	ReadBalanceChange() (*uint256.Int, tracing.BalanceChangeReason, error)
+	// ReadNonceChange reads a nonce change from the file.
+	ReadNonceChange() (uint64, tracing.NonceChangeReason, error)
+	// ReadBool reads a boolean value from the file.
+	ReadBool() (bool, error)
+	// ReadRules reads the rules from the file.
 	ReadRules() (params.Rules, error)
+	// ReadAccessList reads an access list from the file.
+	ReadAccessList() (types.AccessList, error)
+	// Close closes the file reader.
+	Close() error
 }
 
 // ReadBuffer is a wrapper around necessary interfaces for reading data to a file for mocking purposes.
@@ -75,29 +86,68 @@ type fileReader struct {
 	closer io.Closer
 }
 
-func (f *fileReader) ReadAccessList() (types.AccessList, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *fileReader) ReadRules() (params.Rules, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *fileReader) ReadBool() (bool, error) {
-	b, err := f.reader.ReadByte()
+func (f *fileReader) ReadAddr() (common.Address, error) {
+	data, err := f.ReadFixedSizeData(common.AddressLength)
 	if err != nil {
-		return false, err
+		return common.Address{}, err
 	}
-	return b != 0, nil
+	return common.Address(data), nil
 }
 
-func (f *fileReader) ReadUnknownSizeData() ([]byte, error) {
+func (f *fileReader) ReadHash() (common.Hash, error) {
+	data, err := f.ReadFixedSizeData(common.HashLength)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return common.Hash(data), nil
+}
+
+func (f *fileReader) ReadUint64() (uint64, error) {
+	data, err := f.ReadFixedSizeData(8)
+	if err != nil {
+		return 0, err
+	}
+	return bigendian.BytesToUint64(data), nil
+}
+
+func (f *fileReader) ReadUint32() (uint32, error) {
+	data, err := f.ReadFixedSizeData(4)
+	if err != nil {
+		return 0, err
+	}
+	return bigendian.BytesToUint32(data), nil
+}
+func (f *fileReader) ReadUint16() (uint16, error) {
+	data, err := f.ReadFixedSizeData(2)
+	if err != nil {
+		return 0, err
+	}
+	return bigendian.BytesToUint16(data), nil
+}
+
+func (f *fileReader) ReadUint8() (uint8, error) {
+	return f.reader.ReadByte()
+}
+
+func (f *fileReader) ReadFixedSizeData(size int) ([]byte, error) {
+	var (
+		err  error
+		data = make([]byte, size)
+	)
+	if _, err = io.ReadFull(f.reader, data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (f *fileReader) ReadVariableSizeData() ([]byte, error) {
 	// We first need to read the size
 	size, err := f.ReadUint32()
 	if err != nil {
 		return nil, fmt.Errorf("cannot read size: %w", err)
+	}
+	if size == 0 {
+		return []byte{}, nil
 	}
 	data := make([]byte, size)
 	if _, err = io.ReadFull(f.reader, data); err != nil {
@@ -121,7 +171,7 @@ func (f *fileReader) ReadBalanceChange() (*uint256.Int, tracing.BalanceChangeRea
 
 func (f *fileReader) ReadNonceChange() (uint64, tracing.NonceChangeReason, error) {
 	// 8 bytes for uint64, 1 byte for reason
-	data, err := f.ReadData(9)
+	data, err := f.ReadFixedSizeData(9)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -131,61 +181,56 @@ func (f *fileReader) ReadNonceChange() (uint64, tracing.NonceChangeReason, error
 	return bigendian.BytesToUint64(uintData), tracing.NonceChangeReason(data[len(data)-1]), nil
 }
 
-func (f *fileReader) ReadAddr() (common.Address, error) {
-	data, err := f.ReadData(common.AddressLength)
+func (f *fileReader) ReadBool() (bool, error) {
+	b, err := f.reader.ReadByte()
 	if err != nil {
-		return common.Address{}, err
+		return false, err
 	}
-	return common.Address(data), nil
+	return b != 0, nil
 }
 
-func (f *fileReader) ReadHash() (common.Hash, error) {
-	data, err := f.ReadData(common.HashLength)
+func (f *fileReader) ReadRules() (params.Rules, error) {
+	data, err := f.ReadVariableSizeData()
 	if err != nil {
-		return common.Hash{}, err
+		return params.Rules{}, err
 	}
-	return common.Hash(data), nil
+	var rules params.Rules
+	err = decodeGob[*params.Rules](&rules, data)
+	if err != nil {
+		return params.Rules{}, err
+	}
+	return rules, nil
 }
 
-func (f *fileReader) ReadUint64() (uint64, error) {
-	data, err := f.ReadData(8)
+func (f *fileReader) ReadAccessList() (types.AccessList, error) {
+	data, err := f.ReadVariableSizeData()
 	if err != nil {
-		return 0, err
+		return types.AccessList{}, err
 	}
-	return bigendian.BytesToUint64(data), nil
-}
-
-func (f *fileReader) ReadUint32() (uint32, error) {
-	data, err := f.ReadData(4)
+	// If the data is empty, we return an empty access list.
+	if len(data) == 0 {
+		return types.AccessList{}, nil
+	}
+	var accessList types.AccessList
+	err = decodeGob[*types.AccessList](&accessList, data)
 	if err != nil {
-		return 0, err
-	}
-	return bigendian.BytesToUint32(data), nil
-}
-
-func (f *fileReader) ReadData(size int) ([]byte, error) {
-	var (
-		err  error
-		data = make([]byte, size)
-	)
-	if _, err = io.ReadFull(f.reader, data); err != nil {
 		return nil, err
 	}
-	return data, nil
-}
-
-func (f *fileReader) ReadUint16() (uint16, error) {
-	data, err := f.ReadData(2)
-	if err != nil {
-		return 0, err
-	}
-	return bigendian.BytesToUint16(data), nil
-}
-
-func (f *fileReader) ReadUint8() (uint8, error) {
-	return f.reader.ReadByte()
+	return accessList, nil
 }
 
 func (f *fileReader) Close() error {
 	return f.closer.Close()
+}
+
+// decodeGob decodes a gob-encoded byte slice into the specified type T and returns it.
+func decodeGob[T any](e T, data []byte) error {
+	buf := bytes.NewBuffer(data)
+	// No need to hold the buffer open after decoding, so we reset it.
+	defer buf.Reset()
+	err := gob.NewDecoder(buf).Decode(&e)
+	if err != nil {
+		return fmt.Errorf("error decoding gob data: %w", err)
+	}
+	return nil
 }
