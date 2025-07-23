@@ -4,12 +4,10 @@ import (
 	"errors"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/tracer"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type traceProcessor struct {
-	cfg  *utils.Config
 	file tracer.FileReader
 }
 
@@ -164,6 +162,11 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 	case tracer.AddSlotToAccessListID:
 		ctx.State.AddSlotToAccessList(state.Data.Addr, state.Data.Key)
 	case tracer.AddLogID:
+		log, err := p.file.ReadLog()
+		if err != nil {
+			return err
+		}
+		ctx.State.AddLog(log)
 	case tracer.GetLogsID:
 		hash, err := p.file.ReadHash()
 		if err != nil {
@@ -243,8 +246,11 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 	case tracer.GetSubstatePostAllocID:
 		ctx.State.GetSubstatePostAlloc()
 	case tracer.PrepareSubstateID:
-		// ignored
-		ctx.State.PrepareSubstate(nil, 0)
+		ws, err := p.file.ReadWorldState()
+		if err != nil {
+			return err
+		}
+		ctx.State.PrepareSubstate(ws, uint64(state.Block))
 	default:
 		return errors.New("invalid operation")
 	}
