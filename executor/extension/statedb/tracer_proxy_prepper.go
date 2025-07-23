@@ -17,11 +17,15 @@
 package statedb
 
 import (
+	"encoding/gob"
+	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
-	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
@@ -40,6 +44,7 @@ func makeTracerProxyPrepper[T any](cfg *utils.Config) *tracerProxyPrepper[T] {
 type tracerProxyPrepper[T any] struct {
 	extension.NilExtension[T]
 	cfg        *utils.Config
+	ctx        tracer.ArgumentContext
 	syncPeriod uint64
 }
 
@@ -49,6 +54,15 @@ func (p *tracerProxyPrepper[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	if err != nil {
 		return err
 	}
-	ctx.State = proxy.NewTracerProxy(ctx.State, tracer.NewArgumentContext(fh))
+	p.ctx = tracer.NewArgumentContext(fh)
+	// Register all necessary types to gob
+	gob.Register(txcontext.NewNilAccount())
+	gob.Register(params.Rules{})
+	gob.Register(types.AccessList{})
+	gob.Register(types.Log{})
+	return nil
+}
+func (p *tracerProxyPrepper[T]) PreTransaction(_ executor.State[T], ctx *executor.Context) error {
+	ctx.State = proxy.NewTracerProxy(ctx.State, p.ctx)
 	return nil
 }
