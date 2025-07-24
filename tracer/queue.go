@@ -16,8 +16,6 @@
 
 package tracer
 
-import "errors"
-
 const QueueLen = 257
 
 // Queue data structure for a generic FIFO queue.
@@ -85,10 +83,6 @@ func (q *Queue[T]) Find(item T) int {
 }
 
 func (q *Queue[T]) Get(idx int) (T, error) {
-	if idx < q.rear || idx > q.top {
-		var zero T
-		return zero, errors.New("idx out of range")
-	}
 	return q.data[idx], nil
 }
 
