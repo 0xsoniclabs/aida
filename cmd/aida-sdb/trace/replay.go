@@ -53,9 +53,7 @@ func ReplayTrace(ctx *cli.Context) error {
 	}
 
 	provider := executor.NewTraceProvider(file)
-	processor := &traceProcessor{file: file}
-
-	return replay(cfg, provider, nil, processor, extra, aidaDb)
+	return replay(cfg, provider, nil, &traceProcessor{}, extra, aidaDb)
 }
 
 func replay(
