@@ -17,9 +17,17 @@
 package tracer
 
 import (
+	"errors"
 	"fmt"
-	"log"
+	"github.com/ethereum/go-ethereum/common"
 )
+
+type Operation struct {
+	Op    uint16
+	Addr  common.Address
+	Key   common.Hash
+	Value common.Hash
+}
 
 // IDs of StateDB Operations
 
@@ -183,11 +191,11 @@ var opNumArgs = map[uint16]int{
 	SlotInAccessListID:       2,
 	AddSlotToAccessListID:    2,
 	AddLogID:                 1,
-	GetLogsID:                2,
+	GetLogsID:                0,
 	PointCacheID:             0,
 	WitnessID:                0,
 	AddPreimageID:            2,
-	SetTxContextID:           2,
+	SetTxContextID:           0,
 	FinaliseID:               1,
 	IntermediateRootID:       1,
 	CommitID:                 1,
@@ -328,9 +336,9 @@ func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) (uint16, error) 
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
-func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8) {
+func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8, error) {
 	if argop < 0 || argop >= numArgOps {
-		log.Fatalf("DecodeArgOp: invalid op range")
+		return 0, 0, 0, 0, errors.New("DecodeArgOp: invalid op range")
 	}
 
 	value := argop % uint16(NumClasses)
@@ -344,7 +352,7 @@ func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8) {
 
 	op := argop
 
-	return op, uint8(addr), uint8(key), uint8(value)
+	return op, uint8(addr), uint8(key), uint8(value), nil
 }
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
