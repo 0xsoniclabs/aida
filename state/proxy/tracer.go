@@ -262,9 +262,12 @@ func (p *TracerProxy) AddLog(log *types.Log) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(log)
+	if err != nil {
+		p.writeErr = errors.Join(p.writeErr, fmt.Errorf("cannot encode log: %w", err))
+		return
+	}
 	size := bigendian.Uint32ToBytes(uint32(buf.Len()))
 	data := append(size, buf.Bytes()...)
-	p.writeErr = errors.Join(p.writeErr, fmt.Errorf("cannot encode log: %w", err))
 	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteOp(tracer.AddLogID, data))
 	p.db.AddLog(log)
 }
