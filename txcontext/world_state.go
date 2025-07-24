@@ -17,7 +17,9 @@
 package txcontext
 
 import (
+	"bytes"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"sort"
 	"strings"
 
@@ -86,8 +88,13 @@ func (a AidaWorldState) Get(addr common.Address) Account {
 }
 
 func (a AidaWorldState) ForEachAccount(h AccountHandler) {
-	for addr, acc := range a {
-		h(addr, acc)
+	keys := maps.Keys(a)
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
+	})
+
+	for _, k := range keys {
+		h(k, a[k])
 	}
 }
 

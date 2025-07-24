@@ -19,6 +19,7 @@ package txcontext
 import (
 	"bytes"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"math/big"
 	"sort"
 	"strings"
@@ -98,8 +99,13 @@ func (a *account) GetStorageSize() int {
 }
 
 func (a *account) ForEachStorage(h StorageHandler) {
-	for k, v := range a.Storage {
-		h(k, v)
+	keys := maps.Keys(a.Storage)
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
+	})
+
+	for _, k := range keys {
+		h(k, a.Storage[k])
 	}
 }
 

@@ -17,11 +17,14 @@
 package substate
 
 import (
+	"bytes"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"golang.org/x/exp/maps"
+	"sort"
 )
 
 func NewAccount(acc *substate.Account) txcontext.Account {
@@ -58,8 +61,13 @@ func (a *account) GetStorageSize() int {
 }
 
 func (a *account) ForEachStorage(h txcontext.StorageHandler) {
-	for keyHash, valueHash := range a.Storage {
-		h(common.Hash(keyHash), common.Hash(valueHash))
+	keys := maps.Keys(a.Storage)
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
+	})
+
+	for _, k := range keys {
+		h(common.Hash(k), common.Hash(a.Storage[k]))
 	}
 }
 
