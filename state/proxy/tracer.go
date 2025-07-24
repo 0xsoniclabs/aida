@@ -343,7 +343,7 @@ func (p *TracerProxy) GetHash() (common.Hash, error) {
 }
 
 func (p *TracerProxy) Error() error {
-	return errors.Join(errors.Unwrap(p.writeErr), p.db.Error())
+	return errors.Join(p.writeErr, p.db.Error())
 }
 
 func (p *TracerProxy) GetSubstatePostAlloc() txcontext.WorldState {
