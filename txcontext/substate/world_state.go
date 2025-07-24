@@ -17,13 +17,10 @@
 package substate
 
 import (
-	"bytes"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/exp/maps"
-	"sort"
 )
 
 func NewWorldState(alloc substate.WorldState) txcontext.WorldState {
@@ -53,13 +50,8 @@ func (a worldState) Get(addr common.Address) txcontext.Account {
 }
 
 func (a worldState) ForEachAccount(h txcontext.AccountHandler) {
-	keys := maps.Keys(a.alloc)
-	sort.Slice(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
-	})
-
-	for _, k := range keys {
-		h(common.Address(k), NewAccount(a.alloc[k]))
+	for k, v := range a.alloc {
+		h(common.Address(k), NewAccount(v))
 	}
 }
 
