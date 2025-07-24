@@ -158,7 +158,6 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 	hashProvider := utils.NewMockHashProvider(ctrl)
-	excDb := substateDb.NewMockExceptionDB(ctrl)
 
 	db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil)
 	hashProvider.EXPECT().GetStateRootHash(2).Return(common.Hash([]byte(exampleHashA)), nil)
@@ -186,7 +185,6 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 		db.EXPECT().GetArchiveState(uint64(2)).Return(archive2, nil),
 		archive2.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
 		archive2.EXPECT().Release(),
-		excDb.EXPECT().GetException(uint64(2)).Return(nil, nil),
 	)
 
 	cfg := &utils.Config{}
@@ -198,7 +196,6 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 
 	ext := makeStateHashValidator[any](cfg, log)
 	ext.hashProvider = hashProvider
-	ext.excDb = excDb
 	ctx := &executor.Context{State: db}
 
 	// A PostBlock run should check the LiveDB and the ArchiveDB up to block 0.
