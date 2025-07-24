@@ -93,6 +93,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 
 	switch addrCl {
 	case tracer.NoArgID:
+	case tracer.ZeroValueID:
 	case tracer.NewValueID:
 		addr, err = p.file.ReadAddr()
 		if err != nil {
@@ -100,7 +101,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		}
 		p.contracts.Place(addr)
 	case tracer.PreviousValueID:
-		addr, err = p.contracts.Get(1)
+		addr, err = p.contracts.Get(0)
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get previous address from contracts queue: %w", err)
 		}
@@ -120,6 +121,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 
 	switch keyCl {
 	case tracer.NoArgID:
+	case tracer.ZeroValueID:
 	case tracer.NewValueID:
 		key, err = p.file.ReadHash()
 		if err != nil {
@@ -127,7 +129,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		}
 		p.keys.Place(key)
 	case tracer.PreviousValueID:
-		key, err = p.keys.Get(1)
+		key, err = p.keys.Get(0)
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get previous key hash from contracts queue: %w", err)
 		}
@@ -147,6 +149,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 
 	switch valueCl {
 	case tracer.NoArgID:
+	case tracer.ZeroValueID:
 	case tracer.NewValueID:
 		val, err = p.file.ReadHash()
 		if err != nil {
@@ -154,7 +157,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		}
 		p.values.Place(val)
 	case tracer.PreviousValueID:
-		val, err = p.values.Get(1)
+		val, err = p.values.Get(0)
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get previous val hash from contracts queue: %w", err)
 		}
