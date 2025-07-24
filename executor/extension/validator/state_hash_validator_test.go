@@ -470,3 +470,52 @@ func TestStateHashValidator_CheckArchiveHashesExceptionDbErrorIsHandled(t *testi
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
+
+func TestStateHashValidator_CheckArchiveHashesExceptionAtCurrentlyProcessedBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	db := state.NewMockStateDB(ctrl)
+	hashProvider := utils.NewMockHashProvider(ctrl)
+	excDb := substateDb.NewMockExceptionDB(ctrl)
+
+	blockNumber := 1
+
+	cfg := &utils.Config{}
+	cfg.DbImpl = "carmen"
+	cfg.CarmenSchema = 5
+	cfg.ArchiveMode = true
+	cfg.ArchiveVariant = "s5"
+
+	ext := makeStateHashValidator[any](cfg, log)
+	ext.hashProvider = hashProvider
+	ext.excDb = excDb
+
+	archive := state.NewMockNonCommittableStateDB(ctrl)
+
+	gomock.InOrder(
+		// live state check goes through
+		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveBlockHeight().Return(uint64(blockNumber), false, nil),
+
+		// archive state check goes through
+		hashProvider.EXPECT().GetStateRootHash(0).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(0)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		archive.EXPECT().Release(),
+
+		// archive state check fails
+		hashProvider.EXPECT().GetStateRootHash(1).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(1)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashB)), nil),
+		archive.EXPECT().Release(),
+		excDb.EXPECT().GetException(uint64(1)).Return(&substate.Exception{Block: 0}, nil),
+	)
+
+	ctx := &executor.Context{State: db}
+
+	err := ext.PostBlock(executor.State[any]{Block: blockNumber}, ctx)
+	if err != nil {
+		t.Errorf("post block must not return error, got %v", err)
+	}
+}
