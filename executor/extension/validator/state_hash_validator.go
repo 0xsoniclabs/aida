@@ -153,6 +153,13 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 		}
 		if want != got {
 			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
+
+			if cur == height {
+				// this if currently processed block has exception, we need to throw an error as well,
+				// because any inconsistencies should have been fixed in exception extension
+				return unexpectedHashErr
+			}
+
 			// verify that this block is not an exception
 			exc, errExc := e.excDb.GetException(cur)
 			if errExc != nil {
@@ -163,15 +170,10 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 				return unexpectedHashErr
 			}
 
-			// this is already the last block of a loop - the block that is currently being processed
-			if cur == height {
-				break
-			} else {
-				// we need to skip the whole range of checking loop, because the exception could have following blank blocks,
-				// which would not have the exception in them, but would still contain wrong state hash
-				// cur still needs to be set to height-1 to check the currently processed block
-				cur = height - 1
-			}
+			// we need to skip the whole range of checking loop, because the exception could have following blank blocks,
+			// which would not have the exception in them, but would still contain wrong state hash
+			// cur still needs to be set to height-1 to check the currently processed block
+			cur = height - 1
 		}
 
 		cur++

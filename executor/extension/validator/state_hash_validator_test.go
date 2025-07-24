@@ -509,13 +509,16 @@ func TestStateHashValidator_CheckArchiveHashesExceptionAtCurrentlyProcessedBlock
 		db.EXPECT().GetArchiveState(uint64(1)).Return(archive, nil),
 		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashB)), nil),
 		archive.EXPECT().Release(),
-		excDb.EXPECT().GetException(uint64(1)).Return(&substate.Exception{Block: 0}, nil),
 	)
 
 	ctx := &executor.Context{State: db}
 
+	errWant := fmt.Errorf("unexpected hash for archive block 1")
 	err := ext.PostBlock(executor.State[any]{Block: blockNumber}, ctx)
-	if err != nil {
-		t.Errorf("post block must not return error, got %v", err)
+	if err == nil {
+		t.Fatal("post block must return error, got nil")
+	}
+	if !strings.Contains(err.Error(), errWant.Error()) {
+		t.Fatalf("unexpected error message: %v", err)
 	}
 }
