@@ -96,6 +96,7 @@ func record(
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
 		statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""),
+		statedb.MakeBlockEventEmitter[txcontext.TxContext](),
 		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
