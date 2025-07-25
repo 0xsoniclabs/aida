@@ -41,7 +41,8 @@ func TestOperationDecoding(t *testing.T) {
 						require.NoError(t, err)
 
 						// decode argument-encoded operation
-						dop, daddr, dkey, dvalue := DecodeArgOp(argop)
+						dop, daddr, dkey, dvalue, err := DecodeArgOp(argop)
+						require.NoError(t, err)
 
 						if op != dop || addr != daddr || key != dkey || value != dvalue {
 							t.Fatalf("Encoding/decoding failed")
