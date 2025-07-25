@@ -62,6 +62,7 @@ func (p *tracerProxyPrepper[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	gob.Register(types.Log{})
 	return nil
 }
+
 func (p *tracerProxyPrepper[T]) PreTransaction(_ executor.State[T], ctx *executor.Context) error {
 	ctx.State = proxy.NewTracerProxy(ctx.State, p.ctx)
 	return nil
@@ -71,6 +72,9 @@ func (p *tracerProxyPrepper[T]) PostTransaction(_ executor.State[T], ctx *execut
 	return ctx.State.Error()
 }
 
-func (p *tracerProxyPrepper[T]) PostRun(_ executor.State[T], ctx *executor.Context, _ error) error {
+func (p *tracerProxyPrepper[T]) PostRun(_ executor.State[T], _ *executor.Context, _ error) error {
+	if p.ctx == nil {
+		return nil
+	}
 	return p.ctx.Close()
 }
