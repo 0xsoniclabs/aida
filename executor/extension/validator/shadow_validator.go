@@ -19,7 +19,6 @@ package validator
 import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
-	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
@@ -42,7 +41,7 @@ type shadowDbValidator[T any] struct {
 	cfg *utils.Config
 }
 
-func (e *shadowDbValidator[T]) PostBlock(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
+func (e *shadowDbValidator[T]) PostBlock(_ executor.State[T], ctx *executor.Context) error {
 	// Retrieve hash from the state, if this there is mismatch between prime and shadow db error is returned
 	_, err := ctx.State.GetHash()
 	if err != nil {
