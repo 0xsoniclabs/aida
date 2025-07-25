@@ -19,8 +19,13 @@ package trace
 import (
 	"fmt"
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
+	"github.com/0xsoniclabs/aida/executor/extension/profiler"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -67,19 +72,19 @@ func replay(
 	// order of extensionList has to be maintained
 	var extensionList = []executor.Extension[tracer.Operation]{
 		// todo extensions
-		//profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
-		//profiler.MakeDiagnosticServer[txcontext.TxContext](cfg),
+		profiler.MakeCpuProfiler[tracer.Operation](cfg),
+		profiler.MakeDiagnosticServer[tracer.Operation](cfg),
 	}
-	//
-	//if stateDb == nil {
-	//	extensionList = append(
-	//		extensionList,
-	//		statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""),
-	//		statedb.MakeLiveDbBlockChecker[txcontext.TxContext](cfg),
-	//		validator.MakeShadowDbValidator(cfg),
-	//		logger.MakeDbLogger[txcontext.TxContext](cfg),
-	//	)
-	//}
+
+	if stateDb == nil {
+		extensionList = append(
+			extensionList,
+			statedb.MakeStateDbManager[tracer.Operation](cfg, ""),
+			statedb.MakeLiveDbBlockChecker[tracer.Operation](cfg),
+			validator.MakeShadowDbValidator(cfg),
+			logger.MakeDbLogger[tracer.Operation](cfg),
+		)
+	}
 	//
 	//archiveInquirer, err := statedb.MakeArchiveInquirer(cfg)
 	//if err != nil {
@@ -88,7 +93,7 @@ func replay(
 	//
 	extensionList = append(extensionList, extra...)
 	//
-	//extensionList = append(extensionList, []executor.Extension[txcontext.TxContext]{
+	//extensionList = append(extensionList, []executor.Extension[tracer.Operation]{
 	//	register.MakeRegisterProgress(cfg,
 	//		substateDefaultProgressReportFrequency,
 	//		register.OnPreBlock,
@@ -96,25 +101,25 @@ func replay(
 	//	// RegisterProgress should be the as top-most as possible on the list
 	//	// In this case, after StateDb is created.
 	//	// Any error that happen in extension above it will not be correctly recorded.
-	//	profiler.MakeThreadLocker[txcontext.TxContext](),
-	//	profiler.MakeVirtualMachineStatisticsPrinter[txcontext.TxContext](cfg),
-	//	logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
-	//	logger.MakeErrorLogger[txcontext.TxContext](cfg),
+	//	profiler.MakeThreadLocker[tracer.Operation](),
+	//	profiler.MakeVirtualMachineStatisticsPrinter[tracer.Operation](cfg),
+	//	logger.MakeProgressLogger[tracer.Operation](cfg, 15*time.Second),
+	//	logger.MakeErrorLogger[tracer.Operation](cfg),
 	//	tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
-	//	primer.MakeStateDbPrimer[txcontext.TxContext](cfg),
-	//	profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
-	//	profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
+	//	primer.MakeStateDbPrimer[tracer.Operation](cfg),
+	//	profiler.MakeMemoryUsagePrinter[tracer.Operation](cfg),
+	//	profiler.MakeMemoryProfiler[tracer.Operation](cfg),
 	//	statedb.MakeStateDbPrepper(),
 	//	archiveInquirer,
-	//	validator.MakeStateHashValidator[txcontext.TxContext](cfg),
-	//	statedb.MakeBlockEventEmitter[txcontext.TxContext](),
+	//	validator.MakeStateHashValidator[tracer.Operation](cfg),
+	//	statedb.MakeBlockEventEmitter[tracer.Operation](),
 	//	statedb.NewParentBlockHashProcessor(cfg),
-	//	statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
+	//	statedb.MakeTransactionEventEmitter[tracer.Operation](),
 	//	validator.MakeEthereumDbPreTransactionUpdater(cfg),
 	//	statedb.MakeStateDbCorrector(cfg),
 	//	validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 	//	validator.MakeEthereumDbPostTransactionUpdater(cfg),
-	//	profiler.MakeOperationProfiler[txcontext.TxContext](cfg),
+	//	profiler.MakeOperationProfiler[tracer.Operation](cfg),
 	//
 	//	// block profile extension should be always last because:
 	//	// 1) Pre-Func are called forwards so this is called last and
