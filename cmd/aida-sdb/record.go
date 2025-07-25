@@ -95,7 +95,7 @@ func record(
 	var extensions = []executor.Extension[txcontext.TxContext]{
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
-		statedb.MakeTemporaryStatePrepper(cfg),
+		statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""),
 		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
