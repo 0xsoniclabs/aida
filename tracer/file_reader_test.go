@@ -410,37 +410,80 @@ func TestFileReader_ReadRules(t *testing.T) {
 }
 
 func TestFileReader_ReadAccessList(t *testing.T) {
-	buf := &bytes.Buffer{}
-	enc := gob.NewEncoder(buf)
-	gob.Register(types.AccessList{})
-	want := types.AccessList{
+	tests := []struct {
+		name     string
+		toEncode types.AccessList
+		want     types.AccessList
+	}{
 		{
-			Address: common.Address{0x1},
-			StorageKeys: []common.Hash{
-				{0x2},
-			},
+			name:     "Empty",
+			toEncode: types.AccessList{},
+			want:     types.AccessList{},
 		},
 		{
-			Address: common.Address{0x2},
-			StorageKeys: []common.Hash{
-				{0x3},
+			name:     "Nil",
+			toEncode: nil,
+			want:     types.AccessList{},
+		},
+		{
+			name: "NotEmpty",
+			toEncode: types.AccessList{
+				{
+					Address: common.Address{0x1},
+					StorageKeys: []common.Hash{
+						{0x2},
+					},
+				},
+				{
+					Address: common.Address{0x2},
+					StorageKeys: []common.Hash{
+						{0x3},
+					},
+				},
+			},
+			want: types.AccessList{
+				{
+					Address: common.Address{0x1},
+					StorageKeys: []common.Hash{
+						{0x2},
+					},
+				},
+				{
+					Address: common.Address{0x2},
+					StorageKeys: []common.Hash{
+						{0x3},
+					},
+				},
 			},
 		},
 	}
-	err := enc.Encode(want)
-	require.NoError(t, err)
-	encodedSize := bigendian.Uint32ToBytes(uint32(buf.Len()))
-	// Append size of rules and rules
-	data := append(encodedSize, buf.Bytes()...)
-	// reset the buffer and add the data in correct order
-	buf.Reset()
-	buf = bytes.NewBuffer(data)
-	fr := &fileReader{
-		reader: buf,
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			enc := gob.NewEncoder(buf)
+			gob.Register(types.AccessList{})
+			err := enc.Encode(test.toEncode)
+			require.NoError(t, err)
+			var size []byte
+			if len(test.toEncode) != 0 {
+				size = bigendian.Uint32ToBytes(uint32(buf.Len()))
+			} else {
+				size = bigendian.Uint32ToBytes(0)
+			}
+			// Append size of rules and rules
+			data := append(size, buf.Bytes()...)
+			// reset the buffer and add the data in correct order
+			buf.Reset()
+			buf = bytes.NewBuffer(data)
+			fr := &fileReader{
+				reader: buf,
+			}
+			got, err := fr.ReadAccessList()
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		})
 	}
-	got, err := fr.ReadAccessList()
-	require.NoError(t, err)
-	require.Equal(t, want, got)
+
 }
 
 func TestFileReader_ReadWorldState(t *testing.T) {
