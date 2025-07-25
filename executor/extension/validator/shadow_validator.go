@@ -23,26 +23,26 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeShadowDbValidator[T any](cfg *utils.Config) executor.Extension[T] {
 	if cfg.ShadowDb {
-		return makeShadowDbValidator(cfg)
+		return makeShadowDbValidator[T](cfg)
 	}
 
-	return extension.NilExtension[txcontext.TxContext]{}
+	return extension.NilExtension[T]{}
 }
 
-func makeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
-	return &shadowDbValidator{
+func makeShadowDbValidator[T any](cfg *utils.Config) *shadowDbValidator[T] {
+	return &shadowDbValidator[T]{
 		cfg: cfg,
 	}
 }
 
-type shadowDbValidator struct {
-	extension.NilExtension[txcontext.TxContext]
+type shadowDbValidator[T any] struct {
+	extension.NilExtension[T]
 	cfg *utils.Config
 }
 
-func (e *shadowDbValidator) PostBlock(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
+func (e *shadowDbValidator[T]) PostBlock(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	// Retrieve hash from the state, if this there is mismatch between prime and shadow db error is returned
 	_, err := ctx.State.GetHash()
 	if err != nil {
