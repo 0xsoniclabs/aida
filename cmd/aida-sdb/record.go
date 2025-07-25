@@ -94,7 +94,7 @@ func record(
 ) error {
 	var extensions = []executor.Extension[txcontext.TxContext]{
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
-		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
+		tracker.MakeBlockProgressTracker[txcontext.TxContext](cfg, cfg.TrackerGranularity),
 		statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""),
 		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
 		statedb.MakeBlockEventEmitter[txcontext.TxContext](),

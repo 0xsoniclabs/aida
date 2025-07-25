@@ -20,15 +20,17 @@ import (
 	"fmt"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
+	"github.com/0xsoniclabs/aida/executor/extension/primer"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/tracker"
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
-	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
+	"time"
 )
 
 func ReplayTrace(ctx *cli.Context) error {
@@ -71,7 +73,6 @@ func replay(
 ) error {
 	// order of extensionList has to be maintained
 	var extensionList = []executor.Extension[tracer.Operation]{
-		// todo extensions
 		profiler.MakeCpuProfiler[tracer.Operation](cfg),
 		profiler.MakeDiagnosticServer[tracer.Operation](cfg),
 	}
@@ -81,53 +82,30 @@ func replay(
 			extensionList,
 			statedb.MakeStateDbManager[tracer.Operation](cfg, ""),
 			statedb.MakeLiveDbBlockChecker[tracer.Operation](cfg),
-			validator.MakeShadowDbValidator(cfg),
+			validator.MakeShadowDbValidator[tracer.Operation](cfg),
 			logger.MakeDbLogger[tracer.Operation](cfg),
 		)
 	}
-	//
-	//archiveInquirer, err := statedb.MakeArchiveInquirer(cfg)
-	//if err != nil {
-	//	return err
-	//}
-	//
 	extensionList = append(extensionList, extra...)
-	//
-	//extensionList = append(extensionList, []executor.Extension[tracer.Operation]{
-	//	register.MakeRegisterProgress(cfg,
-	//		substateDefaultProgressReportFrequency,
-	//		register.OnPreBlock,
-	//	),
-	//	// RegisterProgress should be the as top-most as possible on the list
-	//	// In this case, after StateDb is created.
-	//	// Any error that happen in extension above it will not be correctly recorded.
-	//	profiler.MakeThreadLocker[tracer.Operation](),
-	//	profiler.MakeVirtualMachineStatisticsPrinter[tracer.Operation](cfg),
-	//	logger.MakeProgressLogger[tracer.Operation](cfg, 15*time.Second),
-	//	logger.MakeErrorLogger[tracer.Operation](cfg),
-	//	tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
-	//	primer.MakeStateDbPrimer[tracer.Operation](cfg),
-	//	profiler.MakeMemoryUsagePrinter[tracer.Operation](cfg),
-	//	profiler.MakeMemoryProfiler[tracer.Operation](cfg),
-	//	statedb.MakeStateDbPrepper(),
-	//	archiveInquirer,
-	//	validator.MakeStateHashValidator[tracer.Operation](cfg),
-	//	statedb.MakeBlockEventEmitter[tracer.Operation](),
-	//	statedb.NewParentBlockHashProcessor(cfg),
-	//	statedb.MakeTransactionEventEmitter[tracer.Operation](),
-	//	validator.MakeEthereumDbPreTransactionUpdater(cfg),
-	//	statedb.MakeStateDbCorrector(cfg),
-	//	validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
-	//	validator.MakeEthereumDbPostTransactionUpdater(cfg),
-	//	profiler.MakeOperationProfiler[tracer.Operation](cfg),
-	//
-	//	// block profile extension should be always last because:
-	//	// 1) Pre-Func are called forwards so this is called last and
-	//	// 2) Post-Func are called backwards so this is called first
-	//	// that means the gap between time measurements will be as small as possible
-	//	profiler.MakeBlockRuntimeAndGasCollector(cfg),
-	//}...,
-	//)
+
+	extensionList = append(extensionList, []executor.Extension[tracer.Operation]{
+		// RegisterProgress should be the as top-most as possible on the list
+		// In this case, after StateDb is created.
+		// Any error that happen in extension above it will not be correctly recorded.
+		profiler.MakeThreadLocker[tracer.Operation](),
+		profiler.MakeVirtualMachineStatisticsPrinter[tracer.Operation](cfg),
+		logger.MakeProgressLogger[tracer.Operation](cfg, 15*time.Second),
+		logger.MakeErrorLogger[tracer.Operation](cfg),
+		tracker.MakeBlockProgressTracker[tracer.Operation](cfg, cfg.TrackerGranularity),
+		primer.MakeStateDbPrimer[tracer.Operation](cfg),
+		profiler.MakeMemoryUsagePrinter[tracer.Operation](cfg),
+		profiler.MakeMemoryProfiler[tracer.Operation](cfg),
+		validator.MakeStateHashValidator[tracer.Operation](cfg),
+		statedb.MakeBlockEventEmitter[tracer.Operation](),
+		statedb.MakeTransactionEventEmitter[tracer.Operation](),
+		profiler.MakeOperationProfiler[tracer.Operation](cfg),
+	}...,
+	)
 
 	return executor.NewExecutor(provider, cfg.LogLevel).Run(
 		executor.Params{

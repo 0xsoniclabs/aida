@@ -77,7 +77,7 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 			extensionList,
 			statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""),
 			statedb.MakeLiveDbBlockChecker[txcontext.TxContext](cfg),
-			validator.MakeShadowDbValidator(cfg),
+			validator.MakeShadowDbValidator[txcontext.TxContext](cfg),
 			logger.MakeDbLogger[txcontext.TxContext](cfg),
 		)
 	}
@@ -101,7 +101,7 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 		profiler.MakeVirtualMachineStatisticsPrinter[txcontext.TxContext](cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
-		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
+		tracker.MakeBlockProgressTracker[txcontext.TxContext](cfg, cfg.TrackerGranularity),
 		primer.MakeStateDbPrimer[txcontext.TxContext](cfg),
 		profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
 		profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
