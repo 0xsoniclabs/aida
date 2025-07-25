@@ -34,7 +34,7 @@ func createTestUpdateDB(dbPath string) (substateDb.UpdateDB, error) {
 	return db, nil
 }
 
-func getTestSubstate(encoding string) *substate.Substate {
+func GetTestSubstate(encoding string) *substate.Substate {
 	txType := int32(substate.SetCodeTxType)
 	ss := &substate.Substate{
 		InputSubstate:  substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),

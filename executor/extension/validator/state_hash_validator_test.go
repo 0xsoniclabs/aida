@@ -26,8 +26,12 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
+	substateDb "github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/protobuf"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
 )
 
@@ -114,6 +118,8 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 	hashProvider := utils.NewMockHashProvider(ctrl)
+	baseDb := substateDb.NewMockBaseDB(ctrl)
+	mockDb := substateDb.NewMockDbAdapter(ctrl)
 
 	blockNumber := 1
 
@@ -128,6 +134,20 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
+	input := utils.GetTestSubstate("default")
+	input.Block = 0
+	input.Transaction = 1
+	encoded, err := protobuf.Encode(input, input.Block, input.Transaction)
+	if err != nil {
+		t.Fatalf("Failed to encode substate: %v", err)
+	}
+
+	kv := &testutil.KeyValue{}
+	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
+	iter := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+
 	gomock.InOrder(
 		// live state check goes through
 		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash([]byte(exampleHashA)), nil),
@@ -139,9 +159,10 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 		db.EXPECT().GetArchiveState(uint64(blockNumber-1)).Return(archive, nil),
 		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashB)), nil),
 		archive.EXPECT().Release(),
+		baseDb.EXPECT().GetBackend().Return(mockDb),
 	)
 
-	ctx := &executor.Context{State: db}
+	ctx := &executor.Context{State: db, AidaDb: baseDb}
 
 	if err := ext.PostBlock(executor.State[any]{Block: blockNumber}, ctx); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("unexpected hash for archive block %d", blockNumber-1)) {
 		t.Errorf("failed to detect incorrect hash, err %v", err)
@@ -153,6 +174,22 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 	hashProvider := utils.NewMockHashProvider(ctrl)
+	baseDb := substateDb.NewMockBaseDB(ctrl)
+	mockDb := substateDb.NewMockDbAdapter(ctrl)
+
+	input := utils.GetTestSubstate("default")
+	input.Block = 0
+	input.Transaction = 1
+	encoded, err := protobuf.Encode(input, input.Block, input.Transaction)
+	if err != nil {
+		t.Fatalf("Failed to encode substate: %v", err)
+	}
+
+	kv := &testutil.KeyValue{}
+	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
+	iter := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
 
 	db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil)
 	hashProvider.EXPECT().GetStateRootHash(2).Return(common.Hash([]byte(exampleHashA)), nil)
@@ -180,6 +217,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 		db.EXPECT().GetArchiveState(uint64(2)).Return(archive2, nil),
 		archive2.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
 		archive2.EXPECT().Release(),
+		baseDb.EXPECT().GetBackend().Return(mockDb),
 	)
 
 	cfg := &utils.Config{}
@@ -191,7 +229,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 
 	ext := makeStateHashValidator[any](cfg, log)
 	ext.hashProvider = hashProvider
-	ctx := &executor.Context{State: db}
+	ctx := &executor.Context{State: db, AidaDb: baseDb}
 
 	// A PostBlock run should check the LiveDB and the ArchiveDB up to block 0.
 	if err := ext.PostBlock(executor.State[any]{Block: 2}, ctx); err != nil {
@@ -354,5 +392,128 @@ func TestStateHashValidator_PreRunReturnsErrorIfArchiveIsEnabledAndWrongVariantI
 
 	if strings.Compare(err.Error(), "archive state-hash-validation only works with archive variant s5") != 0 {
 		t.Fatalf("unexpected err")
+	}
+}
+
+func TestStateHashValidator_CheckArchiveHashesBlocksErrorSkippedAtEmptyBlocks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	db := state.NewMockStateDB(ctrl)
+	hashProvider := utils.NewMockHashProvider(ctrl)
+	baseDb := substateDb.NewMockBaseDB(ctrl)
+	mockDb := substateDb.NewMockDbAdapter(ctrl)
+
+	blockNumber := 1
+
+	kv := &testutil.KeyValue{}
+	iter := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+
+	cfg := &utils.Config{}
+	cfg.DbImpl = "carmen"
+	cfg.CarmenSchema = 5
+	cfg.ArchiveMode = true
+	cfg.ArchiveVariant = "s5"
+
+	ext := makeStateHashValidator[any](cfg, log)
+	ext.hashProvider = hashProvider
+
+	archive := state.NewMockNonCommittableStateDB(ctrl)
+
+	gomock.InOrder(
+		// live state check goes through
+		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveBlockHeight().Return(uint64(blockNumber), false, nil),
+
+		// archive state check goes through
+		hashProvider.EXPECT().GetStateRootHash(0).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(0)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		archive.EXPECT().Release(),
+
+		// archive state check fails
+		hashProvider.EXPECT().GetStateRootHash(1).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(1)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashB)), nil),
+		archive.EXPECT().Release(),
+		baseDb.EXPECT().GetBackend().Return(mockDb),
+		log.EXPECT().Warningf("Empty block %d has mismatch hash; %v", uint64(1), gomock.Any()),
+	)
+
+	ctx := &executor.Context{State: db, AidaDb: baseDb}
+
+	err := ext.PostBlock(executor.State[any]{Block: blockNumber}, ctx)
+	if err != nil {
+		t.Errorf("post block must not return error, got %v", err)
+	}
+}
+
+func TestStateHashValidator_CheckArchiveHashesErrorHandled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	db := state.NewMockStateDB(ctrl)
+	hashProvider := utils.NewMockHashProvider(ctrl)
+	baseDb := substateDb.NewMockBaseDB(ctrl)
+	mockDb := substateDb.NewMockDbAdapter(ctrl)
+
+	blockNumber := 1
+
+	input := utils.GetTestSubstate("default")
+	input.Block = 1
+	input.Transaction = 1
+	encoded, err := protobuf.Encode(input, input.Block, input.Transaction)
+	if err != nil {
+		t.Fatalf("Failed to encode substate: %v", err)
+	}
+
+	kv := &testutil.KeyValue{}
+	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
+	iter := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+
+	cfg := &utils.Config{}
+	cfg.DbImpl = "carmen"
+	cfg.CarmenSchema = 5
+	cfg.ArchiveMode = true
+	cfg.ArchiveVariant = "s5"
+
+	ext := makeStateHashValidator[any](cfg, log)
+	ext.hashProvider = hashProvider
+
+	archive := state.NewMockNonCommittableStateDB(ctrl)
+
+	gomock.InOrder(
+		// live state check goes through
+		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveBlockHeight().Return(uint64(blockNumber), false, nil),
+
+		// archive state check goes through
+		hashProvider.EXPECT().GetStateRootHash(0).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(0)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil),
+		archive.EXPECT().Release(),
+
+		// archive state check fails
+		hashProvider.EXPECT().GetStateRootHash(1).Return(common.Hash([]byte(exampleHashA)), nil),
+		db.EXPECT().GetArchiveState(uint64(1)).Return(archive, nil),
+		archive.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashB)), nil),
+		archive.EXPECT().Release(),
+		baseDb.EXPECT().GetBackend().Return(mockDb),
+	)
+
+	ctx := &executor.Context{State: db, AidaDb: baseDb}
+
+	errWant := fmt.Errorf("unexpected hash for archive block %d", blockNumber)
+	err = ext.PostBlock(executor.State[any]{Block: blockNumber}, ctx)
+	if err == nil {
+		t.Fatal("post block must return error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), errWant.Error()) {
+		t.Fatalf("unexpected error message: %v", err)
 	}
 }
