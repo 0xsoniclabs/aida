@@ -333,14 +333,11 @@ func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) (uint16, error) 
 	if !checkArgOp(op, addr, key, value) {
 		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments\naddr: %d, key: %d, value: %d, op: %d", addr, key, value, op)
 	}
-	r := (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value)
-	fmt.Println(r)
-	return r, nil
+	return (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value), nil
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
 func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8, error) {
-	fmt.Println(argop)
 	if argop < 0 || argop >= numArgOps {
 		return 0, 0, 0, 0, errors.New("DecodeArgOp: invalid op range")
 	}
