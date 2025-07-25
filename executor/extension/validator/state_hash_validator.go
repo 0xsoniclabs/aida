@@ -53,7 +53,6 @@ type stateHashValidator[T any] struct {
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
 	hashProvider            utils.HashProvider
-	excDb                   db.ExceptionDB
 }
 
 func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
@@ -70,7 +69,6 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	}
 
 	e.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
-	e.excDb = db.MakeDefaultExceptionDBFromBaseDB(ctx.AidaDb)
 	return nil
 }
 
@@ -97,7 +95,7 @@ func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor
 	// Check the ArchiveDB
 	if e.cfg.ArchiveMode {
 		e.lastProcessedBlock = state.Block
-		if err = e.checkArchiveHashes(ctx.State); err != nil {
+		if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 			return err
 		}
 	}
@@ -113,7 +111,7 @@ func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Conte
 	// Complete processing remaining archive blocks.
 	if e.cfg.ArchiveMode {
 		for e.nextArchiveBlockToCheck < e.lastProcessedBlock {
-			if err = e.checkArchiveHashes(ctx.State); err != nil {
+			if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 				return err
 			}
 			if e.nextArchiveBlockToCheck < e.lastProcessedBlock {
@@ -124,9 +122,10 @@ func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Conte
 	return nil
 }
 
-func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
+func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb db.BaseDB) error {
 	// Note: the archive may be lagging behind the life DB, so block hashes need
 	// to be checked as they become available.
+
 	height, empty, err := state.GetArchiveBlockHeight()
 	if err != nil {
 		return fmt.Errorf("failed to get archive block height: %v", err)
@@ -154,26 +153,17 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 		if want != got {
 			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
 
-			if cur == height {
-				// this if currently processed block has exception, we need to throw an error as well,
-				// because any inconsistencies should have been fixed in exception extension
+			sDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+			block, blockErr := sDb.GetBlockSubstates(cur)
+			if blockErr != nil {
+				return fmt.Errorf("cannot get substates for block %d; %v; archive-hash-error: %w", cur, blockErr, unexpectedHashErr)
+			}
+			// skip check if block is empty, because it could have been trailing an exception block
+			if len(block) > 0 {
 				return unexpectedHashErr
 			}
+			e.log.Warningf("Empty block %d has mismatch hash; %v", cur, unexpectedHashErr)
 
-			// verify that this block is not an exception
-			exc, errExc := e.excDb.GetException(cur)
-			if errExc != nil {
-				return fmt.Errorf("cannot get exception for archive block %d; %v; archive-hash-error: %w", cur, errExc, unexpectedHashErr)
-			}
-			if exc == nil {
-				// this is not an exception, so we return the error
-				return unexpectedHashErr
-			}
-
-			// we need to skip the whole range of checking loop, because the exception could have following blank blocks,
-			// which would not have the exception in them, but would still contain wrong state hash
-			// cur still needs to be set to height-1 to check the currently processed block
-			cur = height - 1
 		}
 
 		cur++
