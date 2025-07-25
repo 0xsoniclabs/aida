@@ -19,7 +19,6 @@ func NewTraceProvider(file tracer.FileReader) Provider[tracer.Operation] {
 
 type traceProvider struct {
 	file      tracer.FileReader
-	numOps    int
 	contracts tracer.Queue[common.Address]
 	keys      tracer.Queue[common.Hash]
 	values    tracer.Queue[common.Hash]
@@ -34,7 +33,6 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 		tx  uint32
 	)
 	for {
-		p.numOps++
 		// read 16-bit operation number
 		argOp, err := p.file.ReadUint16()
 		if err != nil {
