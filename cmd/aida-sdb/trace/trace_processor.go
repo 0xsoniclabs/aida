@@ -84,7 +84,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 	case tracer.GetTransientStateID:
 		ctx.State.GetTransientState(state.Data.Addr, state.Data.Key)
 	case tracer.SetTransientStateID:
-		ctx.State.GetTransientState(state.Data.Addr, state.Data.Value)
+		ctx.State.SetTransientState(state.Data.Addr, state.Data.Key, state.Data.Value)
 	case tracer.SelfDestruct6780ID:
 		ctx.State.SelfDestruct6780(state.Data.Addr)
 	case tracer.SubRefundID:
@@ -99,10 +99,10 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		rules := state.Data.Data[0].(params.Rules)
 		sender := state.Data.Data[1].(common.Address)
 		coinbase := state.Data.Data[2].(common.Address)
-		dest := state.Data.Data[3].(common.Address)
+		dest := state.Data.Data[3].(*common.Address)
 		precompiles := state.Data.Data[4].([]common.Address)
 		accessList := state.Data.Data[5].(types.AccessList)
-		ctx.State.Prepare(rules, sender, coinbase, &dest, precompiles, accessList)
+		ctx.State.Prepare(rules, sender, coinbase, dest, precompiles, accessList)
 	case tracer.AddAddressToAccessListID:
 		ctx.State.AddAddressToAccessList(state.Data.Addr)
 	case tracer.AddressInAccessListID:
@@ -135,7 +135,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		b := state.Data.Data[0].(bool)
 		ctx.State.IntermediateRoot(b)
 	case tracer.CommitID:
-		b, blkNum := state.Data.Data[0].(bool), state.Data.Data[1].(uint64)
+		blkNum, b := state.Data.Data[0].(uint64), state.Data.Data[1].(bool)
 		if _, err := ctx.State.Commit(blkNum, b); err != nil {
 			return err
 		}
@@ -154,6 +154,17 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 	case tracer.PrepareSubstateID:
 		ws := state.Data.Data[0].(txcontext.AidaWorldState)
 		ctx.State.PrepareSubstate(ws, uint64(state.Block))
+	case tracer.GetArchiveStateID:
+		blkNum := state.Data.Data[0].(uint64)
+		_, err := ctx.State.GetArchiveState(blkNum)
+		if err != nil {
+			return err
+		}
+	case tracer.GetArchiveBlockHeightID:
+		_, _, err := ctx.State.GetArchiveBlockHeight()
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("invalid operation")
 	}

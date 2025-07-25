@@ -5,6 +5,7 @@ import (
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
+	"io"
 )
 
 func NewTraceProvider(file tracer.FileReader) Provider[tracer.Operation] {
@@ -37,6 +38,9 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 		// read 16-bit operation number
 		argOp, err := p.file.ReadUint16()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
 			return fmt.Errorf("cannot read operation from file: %w", err)
 		}
 		operation, err := p.readOperation(argOp)
@@ -117,6 +121,7 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			operation.Data = []any{value, reason}
 		case tracer.SelfDestructID:
 		case tracer.CreateContractID:
+			fmt.Printf("")
 		case tracer.GetStorageRootID:
 		case tracer.GetTransientStateID:
 		case tracer.SetTransientStateID:
@@ -147,11 +152,19 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			if err != nil {
 				return err
 			}
-			dest, err := p.file.ReadAddr()
+			isDestPresent, err := p.file.ReadBool()
 			if err != nil {
 				return err
 			}
-			numAddr, err := p.file.ReadUint32()
+			var dest *common.Address
+			if isDestPresent {
+				a, err := p.file.ReadAddr()
+				if err != nil {
+					return err
+				}
+				dest = &a
+			}
+			numAddr, err := p.file.ReadUint16()
 			if err != nil {
 				return err
 			}
@@ -167,7 +180,7 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			if err != nil {
 				return err
 			}
-			operation.Data = []any{rules, sender, coinbase, &dest, precompiles, accessList}
+			operation.Data = []any{rules, sender, coinbase, dest, precompiles, accessList}
 		case tracer.AddAddressToAccessListID:
 		case tracer.AddressInAccessListID:
 		case tracer.SlotInAccessListID:
@@ -217,7 +230,7 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			if err != nil {
 				return err
 			}
-			operation.Data = []any{hash, int(txIndex)}
+			operation.Data = []any{hash, txIndex}
 		case tracer.FinaliseID:
 			b, err := p.file.ReadBool()
 			if err != nil {
@@ -250,8 +263,15 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 				return err
 			}
 			operation.Data = []any{ws}
+		case tracer.GetArchiveStateID:
+			blkNum, err := p.file.ReadUint64()
+			if err != nil {
+				return err
+			}
+			operation.Data = []any{blkNum}
+		case tracer.GetArchiveBlockHeightID:
 		default:
-			return errors.New("invalid operation")
+			return fmt.Errorf("invalid operation %d/%s", operation.Op, tracer.OpText[operation.Op])
 		}
 
 		err = consumer(TransactionInfo[tracer.Operation]{
