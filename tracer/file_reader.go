@@ -220,11 +220,11 @@ func (f *fileReader) ReadAccessList() (types.AccessList, error) {
 		return types.AccessList{}, err
 	}
 
-	var accessList types.AccessList
 	// If the data is empty, we return an empty access list.
 	if len(data) == 0 {
-		return accessList, nil
+		return types.AccessList{}, nil
 	}
+	var accessList types.AccessList
 	err = decodeGob[*types.AccessList](&accessList, data)
 	if err != nil {
 		return nil, err
