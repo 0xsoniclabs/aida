@@ -33,17 +33,12 @@ func TestTemporaryProxyRecorderPrepper_PreTransaction_CreatesProxy(t *testing.T)
 	cfg := &utils.Config{
 		TraceFile: t.TempDir() + "test_trace",
 	}
-
 	p := MakeTracerProxyPrepper[any](cfg)
-
 	ctx := &executor.Context{}
-
 	err := p.PreRun(executor.State[any]{}, ctx)
 	require.NoError(t, err)
-
 	err = p.PreTransaction(executor.State[any]{}, ctx)
 	require.NoError(t, err)
-
 	_, ok := ctx.State.(*proxy.TracerProxy)
 	assert.True(t, ok, "Proxy was not created in PreRun")
 }
@@ -52,13 +47,10 @@ func TestTemporaryProxyRecorderPrepper_PostTransaction_ChecksForErrors(t *testin
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 	db.EXPECT().Error()
-
 	cfg := &utils.Config{
 		TraceFile: t.TempDir() + "test_trace",
 	}
-
 	p := MakeTracerProxyPrepper[any](cfg)
-
 	ctx := &executor.Context{
 		State: db,
 	}
@@ -70,14 +62,11 @@ func TestTemporaryProxyRecorderPrepper_PostRun_ClosesCtx(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	argCtx := tracer.NewMockArgumentContext(ctrl)
 	argCtx.EXPECT().Close()
-
 	cfg := &utils.Config{
 		TraceFile: t.TempDir() + "test_trace",
 	}
-
 	p := makeTracerProxyPrepper[any](cfg)
 	p.ctx = argCtx
-
 	ctx := &executor.Context{}
 	err := p.PostRun(executor.State[any]{}, ctx, nil)
 	require.NoError(t, err)
