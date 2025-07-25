@@ -81,6 +81,7 @@ func (p *tracerProxyPrepper[T]) PreTransaction(_ executor.State[T], ctx *executo
 	ctx.State = proxy.NewTracerProxy(ctx.State, p.ctx)
 	return nil
 }
+
 func (p *tracerProxyPrepper[T]) PostTransaction(_ executor.State[T], ctx *executor.Context) error {
 	// Check if the proxy produced any errors
 	return ctx.State.Error()
