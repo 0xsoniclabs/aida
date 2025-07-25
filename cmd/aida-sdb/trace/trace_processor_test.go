@@ -3,6 +3,7 @@ package trace
 import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,459 +12,196 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	big "math/big"
+	"math/big"
 	"testing"
+	"time"
 )
 
-func TestTraceProcessor_Process_AllCases(t *testing.T) {
-	addr := common.HexToAddress("0x1")
-	key := common.HexToHash("0x2")
-	value := common.HexToHash("0x3")
-	uint64Data := uint64(125)
-	uint32Data := uint32(42)
-	boolData := true
-	hash := common.HexToHash("0xabc")
-	code := []byte{0x1, 0x2}
+func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
+	file := t.TempDir() + "/test_trace"
+	writer, err := tracer.NewFileWriter(file)
+	require.NoError(t, err)
+	ctrl := gomock.NewController(t)
+	mockState := state.NewMockStateDB(ctrl)
+	proxy := proxy.NewTracerProxy(mockState, tracer.NewArgumentContext(writer))
 
-	tests := []struct {
-		name  string
-		op    tracer.Operation
-		setup func(reader *tracer.MockFileReader, state *state.MockStateDB)
-	}{
-		{
-			name: "AddBalance",
-			op:   tracer.Operation{Op: tracer.AddBalanceID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				balance := uint256.NewInt(100)
-				reader.EXPECT().ReadBalanceChange().Return(balance, tracing.BalanceChangeTransfer, nil)
-				state.EXPECT().AddBalance(addr, balance, tracing.BalanceChangeTransfer)
-			},
-		},
-		{
-			name: "BeginBlock",
-			op:   tracer.Operation{Op: tracer.BeginBlockID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().BeginBlock(uint64Data).Return(nil)
-			},
-		},
-		{
-			name: "BeginSyncPeriod",
-			op:   tracer.Operation{Op: tracer.BeginSyncPeriodID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				state.EXPECT().BeginSyncPeriod(uint64Data)
-			},
-		},
-		{
-			name: "BeginTransaction",
-			op:   tracer.Operation{Op: tracer.BeginTransactionID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().BeginTransaction(uint32Data).Return(nil)
-			},
-		},
-		{
-			name: "CreateAccount",
-			op:   tracer.Operation{Op: tracer.CreateAccountID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().CreateAccount(addr)
-			},
-		},
-		{
-			name: "Empty",
-			op:   tracer.Operation{Op: tracer.EmptyID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().Empty(addr)
-			},
-		},
-		{
-			name: "EndBlock",
-			op:   tracer.Operation{Op: tracer.EndBlockID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().EndBlock().Return(nil)
-			},
-		},
-		{
-			name: "EndSyncPeriod",
-			op:   tracer.Operation{Op: tracer.EndSyncPeriodID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().EndSyncPeriod()
-			},
-		},
-		{
-			name: "EndTransaction",
-			op:   tracer.Operation{Op: tracer.EndTransactionID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().EndTransaction().Return(nil)
-			},
-		},
-		{
-			name: "Exist",
-			op:   tracer.Operation{Op: tracer.ExistID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().Exist(addr)
-			},
-		},
-		{
-			name: "GetBalance",
-			op:   tracer.Operation{Op: tracer.GetBalanceID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetBalance(addr)
-			},
-		},
-		{
-			name: "GetCodeHash",
-			op:   tracer.Operation{Op: tracer.GetCodeHashID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetCodeHash(addr)
-			},
-		},
-		{
-			name: "GetCode",
-			op:   tracer.Operation{Op: tracer.GetCodeID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetCode(addr)
-			},
-		},
-		{
-			name: "GetCodeSize",
-			op:   tracer.Operation{Op: tracer.GetCodeSizeID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetCodeSize(addr)
-			},
-		},
-		{
-			name: "GetCommittedState",
-			op:   tracer.Operation{Op: tracer.GetCommittedStateID, Addr: addr, Key: key},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetCommittedState(addr, key)
-			},
-		},
-		{
-			name: "GetNonce",
-			op:   tracer.Operation{Op: tracer.GetNonceID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetNonce(addr)
-			},
-		},
-		{
-			name: "GetState",
-			op:   tracer.Operation{Op: tracer.GetStateID, Addr: addr, Key: key},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetState(addr, key)
-			},
-		},
-		{
-			name: "HasSelfDestructed",
-			op:   tracer.Operation{Op: tracer.HasSelfDestructedID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().HasSelfDestructed(addr)
-			},
-		},
-		{
-			name: "RevertToSnapshot",
-			op:   tracer.Operation{Op: tracer.RevertToSnapshotID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadUint32().Return(uint32Data, nil)
-				state.EXPECT().RevertToSnapshot(int(uint32Data))
-			},
-		},
-		{
-			name: "SetCode",
-			op:   tracer.Operation{Op: tracer.SetCodeID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadVariableSizeData().Return(code, nil)
-				state.EXPECT().SetCode(addr, code)
-			},
-		},
-		{
-			name: "SetNonce",
-			op:   tracer.Operation{Op: tracer.SetNonceID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadNonceChange().Return(uint64Data, tracing.NonceChangeRevert, nil)
-				state.EXPECT().SetNonce(addr, uint64Data, tracing.NonceChangeRevert)
-			},
-		},
-		{
-			name: "SetState",
-			op:   tracer.Operation{Op: tracer.SetStateID, Addr: addr, Key: key, Value: value},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().SetState(addr, key, value)
-			},
-		},
-		{
-			name: "Snapshot",
-			op:   tracer.Operation{Op: tracer.SnapshotID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().Snapshot()
-			},
-		},
-		{
-			name: "SubBalance",
-			op:   tracer.Operation{Op: tracer.SubBalanceID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				balance := uint256.NewInt(50)
-				reader.EXPECT().ReadBalanceChange().Return(balance, tracing.BalanceChangeRevert, nil)
-				state.EXPECT().SubBalance(addr, balance, tracing.BalanceChangeRevert)
-			},
-		},
-		{
-			name: "SelfDestruct",
-			op:   tracer.Operation{Op: tracer.SelfDestructID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().SelfDestruct(addr)
-			},
-		},
-		{
-			name: "CreateContract",
-			op:   tracer.Operation{Op: tracer.CreateContractID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().CreateContract(addr)
-			},
-		},
-		{
-			name: "GetStorageRoot",
-			op:   tracer.Operation{Op: tracer.GetStorageRootID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetStorageRoot(addr)
-			},
-		},
-		{
-			name: "GetTransientState",
-			op:   tracer.Operation{Op: tracer.GetTransientStateID, Addr: addr, Key: key},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetTransientState(addr, key)
-			},
-		},
-		{
-			name: "SetTransientState",
-			op:   tracer.Operation{Op: tracer.SetTransientStateID, Addr: addr, Value: value},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetTransientState(addr, value)
-			},
-		},
-		{
-			name: "SelfDestruct6780",
-			op:   tracer.Operation{Op: tracer.SelfDestruct6780ID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().SelfDestruct6780(addr)
-			},
-		},
-		{
-			name: "SubRefund",
-			op:   tracer.Operation{Op: tracer.SubRefundID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				state.EXPECT().SubRefund(uint64Data)
-			},
-		},
-		{
-			name: "GetRefund",
-			op:   tracer.Operation{Op: tracer.GetRefundID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetRefund()
-			},
-		},
-		{
-			name: "AddRefund",
-			op:   tracer.Operation{Op: tracer.AddRefundID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				state.EXPECT().AddRefund(uint64Data)
-			},
-		},
-		{
-			name: "Prepare",
-			op:   tracer.Operation{Op: tracer.PrepareID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				rules := params.Rules{
-					IsPrague: true,
-				}
-				accessList := types.AccessList{
-					{
-						Address:     addr,
-						StorageKeys: []common.Hash{key},
-					},
-				}
+	addr := common.Address{0x1}
+	key := common.Hash{0x2}
+	val := common.Hash{0x3}
+	balance := uint256.NewInt(123)
+	reason := tracing.BalanceChangeTransfer
+	nonce := uint64(42)
+	code := []byte{0xAA, 0xBB}
+	rules := params.Rules{ChainID: big.NewInt(146), IsPrague: true}
+	accessList := types.AccessList{{Address: addr, StorageKeys: []common.Hash{key}}}
+	logEntry := &types.Log{Address: addr, BlockNumber: 1}
+	image := []byte{0xCC, 0xDD}
+	precompiles := []common.Address{addr}
+	block := uint64(100)
+	tx := uint32(33)
+	snapshot := 1
+	txIndex := 2
+	boolVal := true
+	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{addr: nil})
 
-				reader.EXPECT().ReadRules().Return(rules, nil)
-				reader.EXPECT().ReadAddr().Return(addr, nil).Times(3)
-				reader.EXPECT().ReadUint32().Return(uint32Data, nil)
-				reader.EXPECT().ReadAddr().Return(addr, nil).Times(int(uint32Data))
-				reader.EXPECT().ReadAccessList().Return(accessList, nil)
-				state.EXPECT().Prepare(rules, addr, addr, &addr, gomock.Any(), accessList)
-			},
-		},
-		{
-			name: "AddAddressToAccessList",
-			op:   tracer.Operation{Op: tracer.AddAddressToAccessListID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().AddAddressToAccessList(addr)
-			},
-		},
-		{
-			name: "AddressInAccessList",
-			op:   tracer.Operation{Op: tracer.AddressInAccessListID, Addr: addr},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().AddressInAccessList(addr)
-			},
-		},
-		{
-			name: "SlotInAccessList",
-			op:   tracer.Operation{Op: tracer.SlotInAccessListID, Addr: addr, Key: key},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().SlotInAccessList(addr, key)
-			},
-		},
-		{
-			name: "AddSlotToAccessList",
-			op:   tracer.Operation{Op: tracer.AddSlotToAccessListID, Addr: addr, Key: key},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().AddSlotToAccessList(addr, key)
-			},
-		},
-		{
-			name: "AddLog",
-			op:   tracer.Operation{Op: tracer.AddLogID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				log := &types.Log{
-					Address: addr,
-					Topics:  []common.Hash{key},
-					Data:    code,
-				}
-				reader.EXPECT().ReadLog().Return(log, nil)
-				state.EXPECT().AddLog(log)
-			},
-		},
-		{
-			name: "GetLogs",
-			op:   tracer.Operation{Op: tracer.GetLogsID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadHash().Return(hash, nil)
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				reader.EXPECT().ReadHash().Return(hash, nil)
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				state.EXPECT().GetLogs(hash, uint64Data, hash, uint64Data)
-			},
-		},
-		{
-			name: "PointCache",
-			op:   tracer.Operation{Op: tracer.PointCacheID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().PointCache()
-			},
-		},
-		{
-			name: "Witness",
-			op:   tracer.Operation{Op: tracer.WitnessID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().Witness()
-			},
-		},
-		{
-			name: "AddPreimage",
-			op:   tracer.Operation{Op: tracer.AddPreimageID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadHash().Return(hash, nil)
-				reader.EXPECT().ReadVariableSizeData().Return(code, nil)
-				state.EXPECT().AddPreimage(hash, code)
-			},
-		},
-		{
-			name: "SetTxContext",
-			op:   tracer.Operation{Op: tracer.SetTxContextID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadHash().Return(hash, nil)
-				reader.EXPECT().ReadUint32().Return(uint32Data, nil)
-				state.EXPECT().SetTxContext(hash, int(uint32Data))
-			},
-		},
-		{
-			name: "Finalise",
-			op:   tracer.Operation{Op: tracer.FinaliseID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadBool().Return(boolData, nil)
-				state.EXPECT().Finalise(boolData)
-			},
-		},
-		{
-			name: "IntermediateRoot",
-			op:   tracer.Operation{Op: tracer.IntermediateRootID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadBool().Return(boolData, nil)
-				state.EXPECT().IntermediateRoot(boolData)
-			},
-		},
-		{
-			name: "Commit",
-			op:   tracer.Operation{Op: tracer.CommitID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				reader.EXPECT().ReadBool().Return(boolData, nil)
-				reader.EXPECT().ReadUint64().Return(uint64Data, nil)
-				state.EXPECT().Commit(uint64Data, boolData).Return(common.Hash{0x23}, nil)
-			},
-		},
-		{
-			name: "Close",
-			op:   tracer.Operation{Op: tracer.CloseID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().Close().Return(nil)
-			},
-		},
-		{
-			name: "AccessEvents",
-			op:   tracer.Operation{Op: tracer.AccessEventsID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().AccessEvents()
-			},
-		},
-		{
-			name: "GetHash",
-			op:   tracer.Operation{Op: tracer.GetHashID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetHash().Return(common.Hash{0x12}, nil)
-			},
-		},
-		{
-			name: "GetSubstatePostAlloc",
-			op:   tracer.Operation{Op: tracer.GetSubstatePostAllocID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				state.EXPECT().GetSubstatePostAlloc()
-			},
-		},
-		{
-			name: "PrepareSubstate",
-			op:   tracer.Operation{Op: tracer.PrepareSubstateID},
-			setup: func(reader *tracer.MockFileReader, state *state.MockStateDB) {
-				ws := txcontext.AidaWorldState{
-					addr: txcontext.NewAccount(
-						[]byte{0x22},
-						map[common.Hash]common.Hash{{0x1}: {0x3}},
-						big.NewInt(22),
-						12,
-					),
-				}
-				reader.EXPECT().ReadWorldState().Return(ws, nil)
-				state.EXPECT().PrepareSubstate(ws, uint64Data)
-			},
-		},
+	mockState.EXPECT().CreateAccount(addr).Times(2)
+	mockState.EXPECT().SubBalance(addr, balance, reason).Times(2)
+	mockState.EXPECT().AddBalance(addr, balance, reason).Times(2)
+	mockState.EXPECT().GetBalance(addr).Times(2)
+	mockState.EXPECT().GetNonce(addr).Times(2)
+	mockState.EXPECT().SetNonce(addr, nonce, tracing.NonceChangeNewContract).Times(2)
+	mockState.EXPECT().GetCodeHash(addr).Times(2)
+	mockState.EXPECT().GetCode(addr).Times(2)
+	mockState.EXPECT().SetCode(addr, code).Times(2)
+	mockState.EXPECT().GetCodeSize(addr).Times(2)
+	mockState.EXPECT().AddRefund(uint64(100)).Times(2)
+	mockState.EXPECT().SubRefund(uint64(50)).Times(2)
+	mockState.EXPECT().GetRefund().Times(2)
+	mockState.EXPECT().GetCommittedState(addr, key).Times(2)
+	mockState.EXPECT().GetState(addr, key).Times(2)
+	mockState.EXPECT().SetState(addr, key, val).Times(2)
+	mockState.EXPECT().SetTransientState(addr, key, val).Times(2)
+	mockState.EXPECT().GetTransientState(addr, key).Times(2)
+	mockState.EXPECT().SelfDestruct(addr).Times(2)
+	mockState.EXPECT().HasSelfDestructed(addr).Times(2)
+	mockState.EXPECT().Exist(addr).Times(2)
+	mockState.EXPECT().Empty(addr).Times(2)
+	mockState.EXPECT().Prepare(rules, addr, addr, nil, precompiles, accessList).Times(2)
+	mockState.EXPECT().AddAddressToAccessList(addr).Times(2)
+	mockState.EXPECT().AddressInAccessList(addr).Times(2)
+	mockState.EXPECT().SlotInAccessList(addr, key).Times(2)
+	mockState.EXPECT().AddSlotToAccessList(addr, key).Times(2)
+	mockState.EXPECT().RevertToSnapshot(snapshot).Times(2)
+	mockState.EXPECT().Snapshot().Times(2)
+	mockState.EXPECT().AddLog(logEntry).Times(2)
+	mockState.EXPECT().GetLogs(key, block, key, block).Times(2)
+	mockState.EXPECT().PointCache().Times(2)
+	mockState.EXPECT().Witness().Times(2)
+	mockState.EXPECT().AddPreimage(key, image).Times(2)
+	mockState.EXPECT().AccessEvents().Times(2)
+	mockState.EXPECT().SetTxContext(key, txIndex).Times(2)
+	mockState.EXPECT().Finalise(boolVal).Times(2)
+	mockState.EXPECT().IntermediateRoot(boolVal).Times(2)
+	mockState.EXPECT().Commit(block, boolVal).Times(2)
+	mockState.EXPECT().GetHash().Times(2)
+	mockState.EXPECT().GetSubstatePostAlloc().Times(2)
+	mockState.EXPECT().PrepareSubstate(ws, block).Times(2)
+	mockState.EXPECT().BeginTransaction(tx).Times(2)
+	mockState.EXPECT().EndTransaction().Times(2)
+	mockState.EXPECT().BeginBlock(block).Times(2)
+	mockState.EXPECT().EndBlock().Times(2)
+	mockState.EXPECT().BeginSyncPeriod(block).Times(2)
+	mockState.EXPECT().EndSyncPeriod().Times(2)
+	mockState.EXPECT().CreateContract(addr).Times(2)
+	mockState.EXPECT().SelfDestruct6780(addr).Times(2)
+	mockState.EXPECT().GetStorageRoot(addr).Times(2)
+	mockState.EXPECT().GetArchiveState(block).Times(2)
+	mockState.EXPECT().GetArchiveBlockHeight().Times(2)
+	mockState.EXPECT().Error()
+	mockState.EXPECT().Close().Times(2)
+
+	// Call every proxy method
+	err = proxy.BeginBlock(block)
+	require.NoError(t, err)
+	err = proxy.BeginTransaction(tx)
+	require.NoError(t, err)
+	proxy.CreateAccount(addr)
+	proxy.SubBalance(addr, balance, reason)
+	proxy.AddBalance(addr, balance, reason)
+	proxy.GetBalance(addr)
+	proxy.GetNonce(addr)
+	proxy.SetNonce(addr, nonce, tracing.NonceChangeNewContract)
+	proxy.GetCodeHash(addr)
+	proxy.GetCode(addr)
+	proxy.SetCode(addr, code)
+	proxy.GetCodeSize(addr)
+	proxy.AddRefund(100)
+	proxy.SubRefund(50)
+	proxy.GetRefund()
+	proxy.GetCommittedState(addr, key)
+	proxy.GetState(addr, key)
+	proxy.SetState(addr, key, val)
+	proxy.SetTransientState(addr, key, val)
+	proxy.GetTransientState(addr, key)
+	proxy.SelfDestruct(addr)
+	proxy.HasSelfDestructed(addr)
+	proxy.Exist(addr)
+	proxy.Empty(addr)
+	proxy.Prepare(rules, addr, addr, nil, precompiles, accessList)
+	proxy.AddAddressToAccessList(addr)
+	proxy.AddressInAccessList(addr)
+	proxy.SlotInAccessList(addr, key)
+	proxy.AddSlotToAccessList(addr, key)
+	proxy.RevertToSnapshot(snapshot)
+	proxy.Snapshot()
+	proxy.AddLog(logEntry)
+	proxy.GetLogs(key, block, key, block)
+	proxy.PointCache()
+	proxy.Witness()
+	proxy.AddPreimage(key, image)
+	proxy.AccessEvents()
+	proxy.SetTxContext(key, txIndex)
+	proxy.Finalise(boolVal)
+	proxy.IntermediateRoot(boolVal)
+	_, err = proxy.Commit(block, boolVal)
+	require.NoError(t, err)
+	proxy.GetHash()
+	proxy.GetSubstatePostAlloc()
+	proxy.PrepareSubstate(ws, block)
+
+	proxy.BeginSyncPeriod(block)
+	proxy.EndSyncPeriod()
+
+	proxy.CreateContract(addr)
+	proxy.SelfDestruct6780(addr)
+	proxy.GetStorageRoot(addr)
+	_, err = proxy.GetArchiveState(block)
+	require.NoError(t, err)
+	_, _, err = proxy.GetArchiveBlockHeight()
+	require.NoError(t, err)
+	err = proxy.Error()
+	require.NoError(t, err)
+	err = proxy.EndTransaction()
+	require.NoError(t, err)
+	err = proxy.EndBlock()
+	require.NoError(t, err)
+
+	// Close must be last
+	err = proxy.Close()
+	require.NoError(t, err)
+
+	reader, err := tracer.NewFileReader(file)
+	require.NoError(t, err)
+
+	tp := &traceProcessor{}
+	ctx := &executor.Context{
+		State: mockState,
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			fr := tracer.NewMockFileReader(ctrl)
-			stateDb := state.NewMockStateDB(ctrl)
-			tp := traceProcessor{fr}
+	provider := executor.NewTraceProvider(reader)
 
-			test.setup(fr, stateDb)
+	// provider.Run might deadlock - we must ensure the test fails if that happens
+	done := make(chan struct{}, 1)
+	go func() {
+		select {
+		case <-done:
+			return
+		case <-time.After(10 * time.Second):
+			t.Fail()
+		}
+	}()
 
-			err := tp.Process(executor.State[tracer.Operation]{
-				Data:        test.op,
-				Block:       int(uint64Data),
-				Transaction: int(uint32Data),
-			}, &executor.Context{State: stateDb})
-			assert.NoError(t, err)
-		})
-	}
+	err = provider.Run(0, 101, func(info executor.TransactionInfo[tracer.Operation]) error {
+		err = tp.Process(executor.State[tracer.Operation]{
+			Block:       info.Block,
+			Transaction: info.Transaction,
+			Data:        info.Data,
+		}, ctx)
+		assert.NoErrorf(t, err, "%s failed", tracer.OpText[info.Data.Op])
+		return nil
+	})
+	close(done)
+	require.NoError(t, err)
 }
