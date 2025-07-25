@@ -56,11 +56,10 @@ func (p *TracerProxy) CreateAccount(address common.Address) {
 }
 
 func (p *TracerProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	data, err := amount.MarshalSSZ()
-	if err != nil {
-		p.writeErr = errors.Join(p.writeErr, fmt.Errorf("cannot marshal amount: %w", err))
-	}
+	size := uint32(amount.ByteLen())
+	data := append(bigendian.Uint32ToBytes(size), amount.Bytes()...)
 	data = append(data, byte(reason))
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(tracer.SubBalanceID, &address, data))
 	return p.db.SubBalance(address, amount, reason)
 }
 
@@ -69,7 +68,6 @@ func (p *TracerProxy) AddBalance(address common.Address, amount *uint256.Int, re
 	data := append(bigendian.Uint32ToBytes(size), amount.Bytes()...)
 	data = append(data, byte(reason))
 	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(tracer.AddBalanceID, &address, data))
-
 	return p.db.AddBalance(address, amount, reason)
 }
 
@@ -445,6 +443,6 @@ func (p *TracerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) 
 }
 
 func (p *TracerProxy) GetStorageRoot(addr common.Address) common.Hash {
-	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(tracer.CreateContractID, &addr, []byte{}))
+	p.writeErr = errors.Join(p.writeErr, p.ctx.WriteAddressOp(tracer.GetStorageRootID, &addr, []byte{}))
 	return p.db.GetStorageRoot(addr)
 }
