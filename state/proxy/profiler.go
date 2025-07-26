@@ -18,11 +18,11 @@ package proxy
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/tracer"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,13 +48,20 @@ func NewProfilerProxy(db state.StateDB, anlt *analytics.IncrementalAnalytics, lo
 	p := new(ProfilerProxy)
 	p.db = db
 	p.anlt = anlt
-	p.log = logger.NewLogger(logLevel, "Proxy Profiler")
+	p.log = logger.NewLogger(logLevel, "TracerProxy Profiler")
 	return p
+}
+
+func (p *ProfilerProxy) do(opId byte, op func()) {
+	start := time.Now()
+	op()
+	elapsed := time.Since(start)
+	p.anlt.Update(opId, float64(elapsed))
 }
 
 // CreateAccount creates a new account.
 func (p *ProfilerProxy) CreateAccount(addr common.Address) {
-	p.do(operation.CreateAccountID, func() {
+	p.do(tracer.CreateAccountID, func() {
 		p.db.CreateAccount(addr)
 	})
 }
@@ -62,7 +69,7 @@ func (p *ProfilerProxy) CreateAccount(addr common.Address) {
 // SubBalance subtracts amount from a contract address.
 func (p *ProfilerProxy) SubBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	var res uint256.Int
-	p.do(operation.SubBalanceID, func() {
+	p.do(tracer.SubBalanceID, func() {
 		res = p.db.SubBalance(addr, amount, reason)
 	})
 	return res
@@ -71,7 +78,7 @@ func (p *ProfilerProxy) SubBalance(addr common.Address, amount *uint256.Int, rea
 // AddBalance adds amount to a contract address.
 func (p *ProfilerProxy) AddBalance(addr common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	var res uint256.Int
-	p.do(operation.AddBalanceID, func() {
+	p.do(tracer.AddBalanceID, func() {
 		res = p.db.AddBalance(addr, amount, reason)
 	})
 	return res
@@ -80,7 +87,7 @@ func (p *ProfilerProxy) AddBalance(addr common.Address, amount *uint256.Int, rea
 // GetBalance retrieves the amount of a contract address.
 func (p *ProfilerProxy) GetBalance(addr common.Address) *uint256.Int {
 	var res *uint256.Int
-	p.do(operation.GetBalanceID, func() {
+	p.do(tracer.GetBalanceID, func() {
 		res = p.db.GetBalance(addr)
 	})
 	return res
@@ -89,7 +96,7 @@ func (p *ProfilerProxy) GetBalance(addr common.Address) *uint256.Int {
 // GetNonce retrieves the nonce of a contract address.
 func (p *ProfilerProxy) GetNonce(addr common.Address) uint64 {
 	var res uint64
-	p.do(operation.GetNonceID, func() {
+	p.do(tracer.GetNonceID, func() {
 		res = p.db.GetNonce(addr)
 	})
 	return res
@@ -97,7 +104,7 @@ func (p *ProfilerProxy) GetNonce(addr common.Address) uint64 {
 
 // SetNonce sets the nonce of a contract address.
 func (p *ProfilerProxy) SetNonce(addr common.Address, nonce uint64, reason tracing.NonceChangeReason) {
-	p.do(operation.SetNonceID, func() {
+	p.do(tracer.SetNonceID, func() {
 		p.db.SetNonce(addr, nonce, reason)
 	})
 }
@@ -105,7 +112,7 @@ func (p *ProfilerProxy) SetNonce(addr common.Address, nonce uint64, reason traci
 // GetCodeHash returns the hash of the EVM bytecode.
 func (p *ProfilerProxy) GetCodeHash(addr common.Address) common.Hash {
 	var res common.Hash
-	p.do(operation.GetCodeHashID, func() {
+	p.do(tracer.GetCodeHashID, func() {
 		res = p.db.GetCodeHash(addr)
 	})
 	return res
@@ -114,7 +121,7 @@ func (p *ProfilerProxy) GetCodeHash(addr common.Address) common.Hash {
 // GetCode returns the EVM bytecode of a contract.
 func (p *ProfilerProxy) GetCode(addr common.Address) []byte {
 	var res []byte
-	p.do(operation.GetCodeID, func() {
+	p.do(tracer.GetCodeID, func() {
 		res = p.db.GetCode(addr)
 	})
 	return res
@@ -123,7 +130,7 @@ func (p *ProfilerProxy) GetCode(addr common.Address) []byte {
 // SetCode sets the EVM bytecode of a contract.
 func (p *ProfilerProxy) SetCode(addr common.Address, code []byte) []byte {
 	var res []byte
-	p.do(operation.SetCodeID, func() {
+	p.do(tracer.SetCodeID, func() {
 		res = p.db.SetCode(addr, code)
 	})
 	return res
@@ -132,7 +139,7 @@ func (p *ProfilerProxy) SetCode(addr common.Address, code []byte) []byte {
 // GetCodeSize returns the EVM bytecode's size.
 func (p *ProfilerProxy) GetCodeSize(addr common.Address) int {
 	var res int
-	p.do(operation.GetCodeSizeID, func() {
+	p.do(tracer.GetCodeSizeID, func() {
 		res = p.db.GetCodeSize(addr)
 	})
 	return res
@@ -140,14 +147,14 @@ func (p *ProfilerProxy) GetCodeSize(addr common.Address) int {
 
 // AddRefund adds gas to the refund counter.
 func (p *ProfilerProxy) AddRefund(gas uint64) {
-	p.do(operation.AddRefundID, func() {
+	p.do(tracer.AddRefundID, func() {
 		p.db.AddRefund(gas)
 	})
 }
 
 // SubRefund subtracts gas to the refund counter.
 func (p *ProfilerProxy) SubRefund(gas uint64) {
-	p.do(operation.SubRefundID, func() {
+	p.do(tracer.SubRefundID, func() {
 		p.db.SubRefund(gas)
 	})
 }
@@ -155,7 +162,7 @@ func (p *ProfilerProxy) SubRefund(gas uint64) {
 // GetRefund returns the current value of the refund counter.
 func (p *ProfilerProxy) GetRefund() uint64 {
 	var res uint64
-	p.do(operation.GetRefundID, func() {
+	p.do(tracer.GetRefundID, func() {
 		res = p.db.GetRefund()
 	})
 	return res
@@ -164,7 +171,7 @@ func (p *ProfilerProxy) GetRefund() uint64 {
 // GetCommittedState retrieves a value that is already committed.
 func (p *ProfilerProxy) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
 	var res common.Hash
-	p.do(operation.GetCommittedStateID, func() {
+	p.do(tracer.GetCommittedStateID, func() {
 		res = p.db.GetCommittedState(addr, key)
 	})
 	return res
@@ -173,7 +180,7 @@ func (p *ProfilerProxy) GetCommittedState(addr common.Address, key common.Hash) 
 // GetState retrieves a value from the StateDB.
 func (p *ProfilerProxy) GetState(addr common.Address, key common.Hash) common.Hash {
 	var res common.Hash
-	p.do(operation.GetStateID, func() {
+	p.do(tracer.GetStateID, func() {
 		res = p.db.GetState(addr, key)
 	})
 	return res
@@ -182,21 +189,21 @@ func (p *ProfilerProxy) GetState(addr common.Address, key common.Hash) common.Ha
 // SetState sets a value in the StateDB.
 func (p *ProfilerProxy) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
 	var res common.Hash
-	p.do(operation.SetStateID, func() {
+	p.do(tracer.SetStateID, func() {
 		res = p.db.SetState(addr, key, value)
 	})
 	return res
 }
 
 func (p *ProfilerProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.do(operation.SetTransientStateID, func() {
+	p.do(tracer.SetTransientStateID, func() {
 		p.db.SetTransientState(addr, key, value)
 	})
 }
 
 func (p *ProfilerProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
 	var res common.Hash
-	p.do(operation.GetTransientStateID, func() {
+	p.do(tracer.GetTransientStateID, func() {
 		res = p.db.GetTransientState(addr, key)
 	})
 	return res
@@ -207,7 +214,7 @@ func (p *ProfilerProxy) GetTransientState(addr common.Address, key common.Hash) 
 // return a non-nil account after SelfDestruct.
 func (p *ProfilerProxy) SelfDestruct(addr common.Address) uint256.Int {
 	var res uint256.Int
-	p.do(operation.SelfDestructID, func() {
+	p.do(tracer.SelfDestructID, func() {
 		res = p.db.SelfDestruct(addr)
 	})
 	return res
@@ -216,7 +223,7 @@ func (p *ProfilerProxy) SelfDestruct(addr common.Address) uint256.Int {
 // HasSelfDestructed checks whether a contract has been suicided.
 func (p *ProfilerProxy) HasSelfDestructed(addr common.Address) bool {
 	var res bool
-	p.do(operation.HasSelfDestructedID, func() {
+	p.do(tracer.HasSelfDestructedID, func() {
 		res = p.db.HasSelfDestructed(addr)
 	})
 	return res
@@ -226,7 +233,7 @@ func (p *ProfilerProxy) HasSelfDestructed(addr common.Address) bool {
 // Notably this also returns true for suicided accounts.
 func (p *ProfilerProxy) Exist(addr common.Address) bool {
 	var res bool
-	p.do(operation.ExistID, func() {
+	p.do(tracer.ExistID, func() {
 		res = p.db.Exist(addr)
 	})
 	return res
@@ -236,7 +243,7 @@ func (p *ProfilerProxy) Exist(addr common.Address) bool {
 // or empty according to the EIP161 specification (balance = nonce = code = 0).
 func (p *ProfilerProxy) Empty(addr common.Address) bool {
 	var empty bool
-	p.do(operation.EmptyID, func() {
+	p.do(tracer.EmptyID, func() {
 		empty = p.db.Empty(addr)
 	})
 	return empty
@@ -252,14 +259,14 @@ func (p *ProfilerProxy) Empty(addr common.Address) bool {
 //
 // This method should only be called if Berlin/2929+2930 is applicable at the current number.
 func (p *ProfilerProxy) Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList) {
-	p.do(operation.PrepareID, func() {
+	p.do(tracer.PrepareID, func() {
 		p.db.Prepare(rules, sender, coinbase, dest, precompiles, txAccesses)
 	})
 }
 
 // AddAddressToAccessList adds an address to the access list.
 func (p *ProfilerProxy) AddAddressToAccessList(addr common.Address) {
-	p.do(operation.AddAddressToAccessListID, func() {
+	p.do(tracer.AddAddressToAccessListID, func() {
 		p.db.AddAddressToAccessList(addr)
 	})
 }
@@ -267,7 +274,7 @@ func (p *ProfilerProxy) AddAddressToAccessList(addr common.Address) {
 // AddressInAccessList checks whether an address is in the access list.
 func (p *ProfilerProxy) AddressInAccessList(addr common.Address) bool {
 	var res bool
-	p.do(operation.AddressInAccessListID, func() {
+	p.do(tracer.AddressInAccessListID, func() {
 		res = p.db.AddressInAccessList(addr)
 	})
 	return res
@@ -276,7 +283,7 @@ func (p *ProfilerProxy) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList checks whether the (address, slot)-tuple is in the access list.
 func (p *ProfilerProxy) SlotInAccessList(addr common.Address, slot common.Hash) (bool, bool) {
 	var addressOk, slotOk bool
-	p.do(operation.SlotInAccessListID, func() {
+	p.do(tracer.SlotInAccessListID, func() {
 		addressOk, slotOk = p.db.SlotInAccessList(addr, slot)
 	})
 	return addressOk, slotOk
@@ -284,7 +291,7 @@ func (p *ProfilerProxy) SlotInAccessList(addr common.Address, slot common.Hash) 
 
 // AddSlotToAccessList adds the given (address, slot)-tuple to the access list
 func (p *ProfilerProxy) AddSlotToAccessList(addr common.Address, slot common.Hash) {
-	p.do(operation.AddSlotToAccessListID, func() {
+	p.do(tracer.AddSlotToAccessListID, func() {
 		p.db.AddSlotToAccessList(addr, slot)
 	})
 }
@@ -292,7 +299,7 @@ func (p *ProfilerProxy) AddSlotToAccessList(addr common.Address, slot common.Has
 // Snapshot returns an identifier for the current revision of the state.
 func (p *ProfilerProxy) Snapshot() int {
 	var res int
-	p.do(operation.SnapshotID, func() {
+	p.do(tracer.SnapshotID, func() {
 		res = p.db.Snapshot()
 	})
 	return res
@@ -300,7 +307,7 @@ func (p *ProfilerProxy) Snapshot() int {
 
 // RevertToSnapshot reverts all state changes from a given revision.
 func (p *ProfilerProxy) RevertToSnapshot(snapshot int) {
-	p.do(operation.RevertToSnapshotID, func() {
+	p.do(tracer.RevertToSnapshotID, func() {
 		p.db.RevertToSnapshot(snapshot)
 	})
 }
@@ -309,16 +316,9 @@ func (p *ProfilerProxy) Error() error {
 	return p.db.Error()
 }
 
-func (p *ProfilerProxy) do(opId byte, op func()) {
-	start := time.Now()
-	op()
-	elapsed := time.Since(start)
-	p.anlt.Update(opId, float64(elapsed))
-}
-
 func (p *ProfilerProxy) BeginTransaction(number uint32) error {
 	var err error
-	p.do(operation.BeginTransactionID, func() {
+	p.do(tracer.BeginTransactionID, func() {
 		err = p.db.BeginTransaction(number)
 	})
 	return err
@@ -326,7 +326,7 @@ func (p *ProfilerProxy) BeginTransaction(number uint32) error {
 
 func (p *ProfilerProxy) EndTransaction() error {
 	var err error
-	p.do(operation.EndTransactionID, func() {
+	p.do(tracer.EndTransactionID, func() {
 		err = p.db.EndTransaction()
 	})
 	return err
@@ -334,7 +334,7 @@ func (p *ProfilerProxy) EndTransaction() error {
 
 func (p *ProfilerProxy) BeginBlock(number uint64) error {
 	var err error
-	p.do(operation.BeginBlockID, func() {
+	p.do(tracer.BeginBlockID, func() {
 		err = p.db.BeginBlock(number)
 	})
 	return err
@@ -342,32 +342,38 @@ func (p *ProfilerProxy) BeginBlock(number uint64) error {
 
 func (p *ProfilerProxy) EndBlock() error {
 	var err error
-	p.do(operation.EndBlockID, func() {
+	p.do(tracer.EndBlockID, func() {
 		err = p.db.EndBlock()
 	})
 	return err
 }
 
 func (p *ProfilerProxy) BeginSyncPeriod(number uint64) {
-	p.do(operation.BeginSyncPeriodID, func() {
+	p.do(tracer.BeginSyncPeriodID, func() {
 		p.db.BeginSyncPeriod(number)
 	})
 }
 
 func (p *ProfilerProxy) EndSyncPeriod() {
-	p.do(operation.EndSyncPeriodID, func() {
+	p.do(tracer.EndSyncPeriodID, func() {
 		p.db.EndSyncPeriod()
 	})
 }
 
 func (p *ProfilerProxy) GetHash() (common.Hash, error) {
-	// TODO: add profiling for this operation
-	return p.db.GetHash()
+	var (
+		h   common.Hash
+		err error
+	)
+	p.do(tracer.GetHashID, func() {
+		h, err = p.db.GetHash()
+	})
+	return h, err
 }
 
 // AddLog adds a log entry.
 func (p *ProfilerProxy) AddLog(log *types.Log) {
-	p.do(operation.AddLogID, func() {
+	p.do(tracer.AddLogID, func() {
 		p.db.AddLog(log)
 	})
 }
@@ -375,7 +381,7 @@ func (p *ProfilerProxy) AddLog(log *types.Log) {
 // GetLogs retrieves log entries.
 func (p *ProfilerProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	var logs []*types.Log
-	p.do(operation.GetLogsID, func() {
+	p.do(tracer.GetLogsID, func() {
 		logs = p.db.GetLogs(hash, block, blockHash, blkTimestamp)
 	})
 	return logs
@@ -384,7 +390,7 @@ func (p *ProfilerProxy) GetLogs(hash common.Hash, block uint64, blockHash common
 // PointCache returns the point cache used in computations.
 func (p *ProfilerProxy) PointCache() *utils.PointCache {
 	var res *utils.PointCache
-	p.do(operation.PointCacheID, func() {
+	p.do(tracer.PointCacheID, func() {
 		res = p.db.PointCache()
 	})
 	return res
@@ -393,7 +399,7 @@ func (p *ProfilerProxy) PointCache() *utils.PointCache {
 // Witness retrieves the current state witness.
 func (p *ProfilerProxy) Witness() *stateless.Witness {
 	var res *stateless.Witness
-	p.do(operation.WitnessID, func() {
+	p.do(tracer.WitnessID, func() {
 		res = p.db.Witness()
 	})
 	return res
@@ -401,25 +407,29 @@ func (p *ProfilerProxy) Witness() *stateless.Witness {
 
 // AddPreimage adds a SHA3 preimage.
 func (p *ProfilerProxy) AddPreimage(addr common.Hash, image []byte) {
-	p.do(operation.AddPreimageID, func() {
+	p.do(tracer.AddPreimageID, func() {
 		p.db.AddPreimage(addr, image)
 	})
 }
 
 func (p *ProfilerProxy) AccessEvents() *geth.AccessEvents {
-	return p.db.AccessEvents()
+	var events *geth.AccessEvents
+	p.do(tracer.AccessEventsID, func() {
+		events = p.db.AccessEvents()
+	})
+	return events
 }
 
-// Prepare sets the current transaction hash and index.
+// SetTxContext sets the current transaction hash and index.
 func (p *ProfilerProxy) SetTxContext(thash common.Hash, ti int) {
-	p.do(operation.SetTxContextID, func() {
+	p.do(tracer.SetTxContextID, func() {
 		p.db.SetTxContext(thash, ti)
 	})
 }
 
 // Finalise the state in StateDB.
 func (p *ProfilerProxy) Finalise(deleteEmptyObjects bool) {
-	p.do(operation.FinaliseID, func() {
+	p.do(tracer.FinaliseID, func() {
 		p.db.Finalise(deleteEmptyObjects)
 	})
 }
@@ -429,7 +439,7 @@ func (p *ProfilerProxy) Finalise(deleteEmptyObjects bool) {
 // goes into transaction receipts.
 func (p *ProfilerProxy) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	var hash common.Hash
-	p.do(operation.IntermediateRootID, func() {
+	p.do(tracer.IntermediateRootID, func() {
 		hash = p.db.IntermediateRoot(deleteEmptyObjects)
 	})
 	return hash
@@ -438,7 +448,7 @@ func (p *ProfilerProxy) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 func (p *ProfilerProxy) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
 	var hash common.Hash
 	var err error
-	p.do(operation.CommitID, func() {
+	p.do(tracer.CommitID, func() {
 		hash, err = p.db.Commit(block, deleteEmptyObjects)
 	})
 	return hash, err
@@ -446,16 +456,22 @@ func (p *ProfilerProxy) Commit(block uint64, deleteEmptyObjects bool) (common.Ha
 
 // GetSubstatePostAlloc gets substate post allocation.
 func (p *ProfilerProxy) GetSubstatePostAlloc() txcontext.WorldState {
-	return p.db.GetSubstatePostAlloc()
+	var ws txcontext.WorldState
+	p.do(tracer.GetSubstatePostAllocID, func() {
+		ws = p.db.GetSubstatePostAlloc()
+	})
+	return ws
 }
 
 func (p *ProfilerProxy) PrepareSubstate(substate txcontext.WorldState, block uint64) {
-	p.db.PrepareSubstate(substate, block)
+	p.do(tracer.PrepareSubstateID, func() {
+		p.db.PrepareSubstate(substate, block)
+	})
 }
 
 func (p *ProfilerProxy) Close() error {
 	var err error
-	p.do(operation.CloseID, func() {
+	p.do(tracer.CloseID, func() {
 		err = p.db.Close()
 	})
 	return err
@@ -483,7 +499,7 @@ func (p *ProfilerProxy) GetShadowDB() state.StateDB {
 }
 
 func (p *ProfilerProxy) CreateContract(addr common.Address) {
-	p.do(operation.CreateContractID, func() {
+	p.do(tracer.CreateContractID, func() {
 		p.db.CreateContract(addr)
 	})
 }
@@ -491,7 +507,7 @@ func (p *ProfilerProxy) CreateContract(addr common.Address) {
 func (p *ProfilerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
 	var balance uint256.Int
 	var deleted bool
-	p.do(operation.SelfDestruct6780ID, func() {
+	p.do(tracer.SelfDestruct6780ID, func() {
 		balance, deleted = p.db.SelfDestruct6780(addr)
 	})
 	return balance, deleted
@@ -499,7 +515,7 @@ func (p *ProfilerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool
 
 func (p *ProfilerProxy) GetStorageRoot(addr common.Address) common.Hash {
 	var res common.Hash
-	p.do(operation.GetStorageRootID, func() {
+	p.do(tracer.GetStorageRootID, func() {
 		res = p.db.GetStorageRoot(addr)
 	})
 	return res
