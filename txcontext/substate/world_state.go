@@ -50,8 +50,8 @@ func (a worldState) Get(addr common.Address) txcontext.Account {
 }
 
 func (a worldState) ForEachAccount(h txcontext.AccountHandler) {
-	for addr, acc := range a.alloc {
-		h(common.Address(addr), NewAccount(acc))
+	for k, v := range a.alloc {
+		h(common.Address(k), NewAccount(v))
 	}
 }
 

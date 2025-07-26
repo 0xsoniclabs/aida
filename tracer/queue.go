@@ -81,6 +81,10 @@ func (q *Queue[T]) Find(item T) int {
 	}
 }
 
+func (q *Queue[T]) Get(idx int) (T, error) {
+	return q.data[idx], nil
+}
+
 func (q *Queue[T]) Classify(item T) (uint8, int) {
 	var zero T
 	if item == zero {
