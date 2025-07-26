@@ -29,7 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-func TestTemporaryProxyRecorderPrepper_PreRun_CreatesProxy(t *testing.T) {
+func TestTemporaryProxyRecorderPrepper_PreTransaction_CreatesProxy(t *testing.T) {
 	cfg := &utils.Config{
 		TraceFile: t.TempDir() + "test_trace",
 	}
