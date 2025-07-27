@@ -765,7 +765,8 @@ func TestDeletionProxy_EndSyncPeriod(t *testing.T) {
 
 	mockDb.EXPECT().EndSyncPeriod().Times(1)
 
-	proxy.EndSyncPeriod()
+	err := proxy.EndSyncPeriod()
+	assert.NoError(t, err)
 }
 func TestDeletionProxy_GetArchiveState(t *testing.T) {
 	ctrl := gomock.NewController(t)

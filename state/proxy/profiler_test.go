@@ -688,7 +688,8 @@ func TestProfilerProxy_EndSyncPeriod(t *testing.T) {
 	}
 
 	mockDb.EXPECT().EndSyncPeriod()
-	p.EndSyncPeriod()
+	err := p.EndSyncPeriod()
+	assert.NoError(t, err)
 }
 
 func TestProfilerProxy_GetHash(t *testing.T) {

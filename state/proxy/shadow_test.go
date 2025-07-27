@@ -311,7 +311,10 @@ func TestShadowState_TrxBlockSyncPeriodOperations(t *testing.T) {
 					}
 				}
 
-				shadowDB.EndSyncPeriod()
+				err := shadowDB.EndSyncPeriod()
+				if err != nil {
+					t.Fatalf("cannot end sync period; %v", err)
+				}
 			}
 		})
 	}
@@ -1455,7 +1458,8 @@ func TestShadowStateDb_EndSyncPeriod(t *testing.T) {
 		shadow: mockDb,
 	}
 	mockDb.EXPECT().EndSyncPeriod().Times(2)
-	shadow.EndSyncPeriod()
+	err := shadow.EndSyncPeriod()
+	assert.NoError(t, err)
 }
 
 func TestShadowStateDb_GetHash(t *testing.T) {

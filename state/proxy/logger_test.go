@@ -139,7 +139,8 @@ func TestLoggingStateDb_EndSyncPeriod(t *testing.T) {
 	}
 	mockDb.EXPECT().EndSyncPeriod()
 
-	proxy.EndSyncPeriod()
+	err := proxy.EndSyncPeriod()
+	assert.NoError(t, err)
 }
 func TestLoggingStateDb_GetHash(t *testing.T) {
 	ctrl := gomock.NewController(t)

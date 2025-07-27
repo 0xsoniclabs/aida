@@ -1110,7 +1110,8 @@ func TestRecorderProxy_EndSyncPeriod(t *testing.T) {
 
 	mockDb.EXPECT().EndSyncPeriod().Times(1)
 
-	proxy.EndSyncPeriod()
+	err = proxy.EndSyncPeriod()
+	assert.NoError(t, err)
 }
 
 func TestRecorderProxy_GetHash(t *testing.T) {
