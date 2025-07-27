@@ -848,8 +848,8 @@ func TestCarmenState_GetShadowDB(t *testing.T) {
 func TestCarmenStateDB_CreateAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -862,8 +862,8 @@ func TestCarmenStateDB_CreateAccount(t *testing.T) {
 func TestCarmenStateDB_CreateContract(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -876,8 +876,8 @@ func TestCarmenStateDB_CreateContract(t *testing.T) {
 func TestCarmenStateDB_Exist(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -891,8 +891,8 @@ func TestCarmenStateDB_Exist(t *testing.T) {
 func TestCarmenStateDB_Empty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -906,8 +906,8 @@ func TestCarmenStateDB_Empty(t *testing.T) {
 func TestCarmenStateDB_SelfDestruct(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -922,8 +922,8 @@ func TestCarmenStateDB_SelfDestruct(t *testing.T) {
 func TestCarmenStateDB_SelfDestruct6780(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -939,8 +939,8 @@ func TestCarmenStateDB_SelfDestruct6780(t *testing.T) {
 func TestCarmenStateDB_HasSelfDestructed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -954,8 +954,8 @@ func TestCarmenStateDB_HasSelfDestructed(t *testing.T) {
 func TestCarmenStateDB_GetBalance(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -970,8 +970,8 @@ func TestCarmenStateDB_GetBalance(t *testing.T) {
 func TestCarmenStateDB_AddBalance(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -987,8 +987,8 @@ func TestCarmenStateDB_AddBalance(t *testing.T) {
 func TestCarmenStateDB_SubBalance(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1004,8 +1004,8 @@ func TestCarmenStateDB_SubBalance(t *testing.T) {
 func TestCarmenStateDB_GetNonce(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1020,8 +1020,8 @@ func TestCarmenStateDB_GetNonce(t *testing.T) {
 func TestCarmenStateDB_SetNonce(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1035,8 +1035,8 @@ func TestCarmenStateDB_SetNonce(t *testing.T) {
 func TestCarmenStateDB_GetCommittedState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1052,8 +1052,8 @@ func TestCarmenStateDB_GetCommittedState(t *testing.T) {
 func TestCarmenStateDB_GetState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1069,8 +1069,8 @@ func TestCarmenStateDB_GetState(t *testing.T) {
 func TestCarmenStateDB_SetState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1087,8 +1087,8 @@ func TestCarmenStateDB_SetState(t *testing.T) {
 func TestCarmenStateDB_GetStorageRoot(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1102,8 +1102,8 @@ func TestCarmenStateDB_GetStorageRoot(t *testing.T) {
 func TestCarmenStateDB_SetTransientState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1118,8 +1118,8 @@ func TestCarmenStateDB_SetTransientState(t *testing.T) {
 func TestCarmenStateDB_GetTransientState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1135,8 +1135,8 @@ func TestCarmenStateDB_GetTransientState(t *testing.T) {
 func TestCarmenStateDB_GetCode(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1151,8 +1151,8 @@ func TestCarmenStateDB_GetCode(t *testing.T) {
 func TestCarmenStateDB_GetCodeSize(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1167,8 +1167,8 @@ func TestCarmenStateDB_GetCodeSize(t *testing.T) {
 func TestCarmenStateDB_GetCodeHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1185,8 +1185,8 @@ func TestCarmenStateDB_GetCodeHash(t *testing.T) {
 func TestCarmenStateDB_SetCode(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1201,8 +1201,8 @@ func TestCarmenStateDB_SetCode(t *testing.T) {
 func TestCarmenStateDB_Snapshot(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1216,8 +1216,8 @@ func TestCarmenStateDB_Snapshot(t *testing.T) {
 func TestCarmenStateDB_RevertToSnapshot(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1230,8 +1230,8 @@ func TestCarmenStateDB_RevertToSnapshot(t *testing.T) {
 func TestCarmenStateDB_EndTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1244,9 +1244,9 @@ func TestCarmenStateDB_EndTransaction(t *testing.T) {
 func TestCarmenStateDB_GetHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	mockQueryCtx := carmen.NewMockQueryContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockQueryCtx := NewMockproxyQueryContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1264,8 +1264,8 @@ func TestCarmenStateDB_GetHash(t *testing.T) {
 func TestCarmenStateDB_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1278,8 +1278,8 @@ func TestCarmenStateDB_Close(t *testing.T) {
 func TestCarmenStateDB_AddRefund(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1291,8 +1291,8 @@ func TestCarmenStateDB_AddRefund(t *testing.T) {
 func TestCarmenStateDB_SubRefund(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1304,8 +1304,8 @@ func TestCarmenStateDB_SubRefund(t *testing.T) {
 func TestCarmenStateDB_GetRefund(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1319,8 +1319,8 @@ func TestCarmenStateDB_GetRefund(t *testing.T) {
 func TestCarmenStateDB_Prepare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1336,8 +1336,8 @@ func TestCarmenStateDB_Prepare(t *testing.T) {
 func TestCarmenStateDB_AddressInAccessList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1351,8 +1351,8 @@ func TestCarmenStateDB_AddressInAccessList(t *testing.T) {
 func TestCarmenStateDB_SlotInAccessList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1368,8 +1368,8 @@ func TestCarmenStateDB_SlotInAccessList(t *testing.T) {
 func TestCarmenStateDB_AddAddressToAccessList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1382,8 +1382,8 @@ func TestCarmenStateDB_AddAddressToAccessList(t *testing.T) {
 func TestCarmenStateDB_AddSlotToAccessList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1397,8 +1397,8 @@ func TestCarmenStateDB_AddSlotToAccessList(t *testing.T) {
 func TestCarmenStateDB_AddLog(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1417,8 +1417,8 @@ func TestCarmenStateDB_AddLog(t *testing.T) {
 func TestCarmenStateDB_GetLogs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1432,8 +1432,8 @@ func TestCarmenStateDB_GetLogs(t *testing.T) {
 func TestCarmenStateDB_PointCache(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1446,8 +1446,8 @@ func TestCarmenStateDB_PointCache(t *testing.T) {
 func TestCarmenStateDB_Witness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1459,8 +1459,8 @@ func TestCarmenStateDB_Witness(t *testing.T) {
 func TestCarmenStateDB_Finalise(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1473,8 +1473,8 @@ func TestCarmenStateDB_Finalise(t *testing.T) {
 func TestCarmenStateDB_IntermediateRoot(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1486,8 +1486,8 @@ func TestCarmenStateDB_IntermediateRoot(t *testing.T) {
 func TestCarmenStateDB_Commit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1500,8 +1500,8 @@ func TestCarmenStateDB_Commit(t *testing.T) {
 func TestCarmenStateDB_SetTxContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1514,8 +1514,8 @@ func TestCarmenStateDB_SetTxContext(t *testing.T) {
 func TestCarmenStateDB_PrepareSubstate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1528,8 +1528,8 @@ func TestCarmenStateDB_PrepareSubstate(t *testing.T) {
 func TestCarmenStateDB_GetSubstatePostAlloc(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1541,8 +1541,8 @@ func TestCarmenStateDB_GetSubstatePostAlloc(t *testing.T) {
 func TestCarmenStateDB_AddPreimage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1555,8 +1555,8 @@ func TestCarmenStateDB_AddPreimage(t *testing.T) {
 func TestCarmenStateDB_AccessEvents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1568,8 +1568,8 @@ func TestCarmenStateDB_AccessEvents(t *testing.T) {
 func TestCarmenStateDB_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1581,8 +1581,8 @@ func TestCarmenStateDB_Error(t *testing.T) {
 func TestCarmenStateDB_StartBulkLoad(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1596,9 +1596,9 @@ func TestCarmenStateDB_StartBulkLoad(t *testing.T) {
 func TestCarmenStateDB_GetMemoryUsage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	mockMem := carmen.NewMockMemoryFootprint(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockMem := NewMockproxyMemoryFootprint(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1612,8 +1612,8 @@ func TestCarmenStateDB_GetMemoryUsage(t *testing.T) {
 func TestCarmenStateDB_GetShadowDB(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenStateDB{
 		db:    mockDb,
 		txCtx: mockTxCtx,
@@ -1626,8 +1626,8 @@ func TestCarmenStateDB_GetShadowDB(t *testing.T) {
 func TestCarmenHeadStateBeginBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1644,8 +1644,8 @@ func TestCarmenHeadStateBeginBlock(t *testing.T) {
 func TestCarmenHeadStateBeginTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1662,8 +1662,8 @@ func TestCarmenHeadStateBeginTransaction(t *testing.T) {
 func TestCarmenHeadStateEndBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1680,8 +1680,8 @@ func TestCarmenHeadStateEndBlock(t *testing.T) {
 func TestCarmenHeadStateBeginSyncPeriod(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1698,8 +1698,8 @@ func TestCarmenHeadStateBeginSyncPeriod(t *testing.T) {
 func TestCarmenHeadStateEndSyncPeriod(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1716,8 +1716,8 @@ func TestCarmenHeadStateEndSyncPeriod(t *testing.T) {
 func TestCarmenHeadStateGetArchiveState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1735,8 +1735,8 @@ func TestCarmenHeadStateGetArchiveState(t *testing.T) {
 func TestCarmenHeadStateGetArchiveBlockHeight(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
 	c := &carmenHeadState{
 		carmenStateDB: carmenStateDB{
@@ -1756,9 +1756,9 @@ func TestCarmenHeadStateGetArchiveBlockHeight(t *testing.T) {
 func TestCarmenHistoricState_BeginTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	mockBlkCtx := carmen.NewMockHistoricBlockContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := NewMockproxyHistoricBlockContext(ctrl)
 	c := &carmenHistoricState{
 		carmenStateDB: carmenStateDB{
 			db:    mockDb,
@@ -1774,8 +1774,8 @@ func TestCarmenHistoricState_BeginTransaction(t *testing.T) {
 func TestCarmenHistoricState_GetHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
 	c := &carmenHistoricState{
 		carmenStateDB: carmenStateDB{
 			db:    mockDb,
@@ -1792,9 +1792,9 @@ func TestCarmenHistoricState_GetHash(t *testing.T) {
 func TestCarmenHistoricState_Release(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	mockBlkCtx := carmen.NewMockHistoricBlockContext(ctrl)
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := NewMockproxyHistoricBlockContext(ctrl)
 	c := &carmenHistoricState{
 		carmenStateDB: carmenStateDB{
 			db:    mockDb,
