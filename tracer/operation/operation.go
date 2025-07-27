@@ -27,7 +27,6 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
-//go:generate mockgen -source operation.go -destination operation_mock.go -package operatio
 //go:generate mockgen -source operation.go -destination operation_mock.go -package operation
 
 // Operation IDs of the StateDB interface
