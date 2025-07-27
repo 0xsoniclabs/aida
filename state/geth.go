@@ -19,6 +19,7 @@ package state
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
@@ -91,6 +92,7 @@ type gethStateDB struct {
 	block         uint64
 	backend       *leveldb.Database
 	accessEvents  *geth.AccessEvents
+	logger        logger.Logger
 }
 
 func (s *gethStateDB) CreateAccount(addr common.Address) {
@@ -235,7 +237,10 @@ func (s *gethStateDB) EndBlock() error {
 		if err = s.trieCommit(); err != nil {
 			return fmt.Errorf("cannot commit trie; %w", err)
 		}
-		s.trieCap()
+		err = s.trieCap()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -247,8 +252,14 @@ func (s *gethStateDB) BeginSyncPeriod(number uint64) {
 func (s *gethStateDB) EndSyncPeriod() {
 	// if not archival node, flush trie to disk after each sync-period
 	if s.evmState != nil && !s.isArchiveMode {
-		s.trieCleanCommit()
-		s.trieCap()
+		err := s.trieCleanCommit()
+		if err != nil {
+			s.logger.Errorf(err.Error())
+		}
+		err = s.trieCap()
+		if err != nil {
+			s.logger.Errorf(err.Error())
+		}
 	}
 }
 
@@ -257,6 +268,7 @@ func (s *gethStateDB) GetHash() (common.Hash, error) {
 }
 
 func (s *gethStateDB) Finalise(deleteEmptyObjects bool) {
+	// TODO why
 	if db, ok := s.db.(*geth.StateDB); ok {
 		db.Finalise(deleteEmptyObjects)
 	}
@@ -280,7 +292,6 @@ func (s *gethStateDB) SetTxContext(thash common.Hash, ti int) {
 	if db, ok := s.db.(*geth.StateDB); ok {
 		db.SetTxContext(thash, ti)
 	}
-	return
 }
 
 func (s *gethStateDB) PrepareSubstate(substate txcontext.WorldState, block uint64) {
@@ -356,8 +367,9 @@ func (s *gethStateDB) AddLog(log *types.Log) {
 	s.db.AddLog(log)
 }
 func (s *gethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
+	// TODO why
 	panic("Add Preimage")
-	s.db.AddPreimage(hash, preimage)
+	// s.db.AddPreimage(hash, preimage)
 }
 
 func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
@@ -430,9 +442,15 @@ func (l *gethBulkLoad) SetCode(addr common.Address, code []byte) {
 }
 
 func (l *gethBulkLoad) Close() error {
-	l.db.EndTransaction()
-	l.db.EndBlock()
-	_, err := l.db.Commit(l.block, false)
+	err := l.db.EndTransaction()
+	if err != nil {
+		return err
+	}
+	err = l.db.EndBlock()
+	if err != nil {
+		return err
+	}
+	_, err = l.db.Commit(l.block, false)
 	l.block++
 	return err
 }
@@ -443,16 +461,22 @@ func (s *gethStateDB) trieCommit() error {
 	// If we're applying genesis or running an archive node, always flush
 	if s.isArchiveMode {
 		if err := triedb.Commit(s.stateRoot, false); err != nil {
-			return fmt.Errorf("Failed to flush trie DB into main DB. %v", err)
+			return fmt.Errorf("failed to flush trie DB into main DB. %v", err)
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
-		triedb.Reference(s.stateRoot, common.Hash{}) // metadata reference to keep trie alive
+		err := triedb.Reference(s.stateRoot, common.Hash{})
+		if err != nil {
+			return err
+		} // metadata reference to keep trie alive
 		s.triegc.Push(s.stateRoot, s.block)
 
 		if current := s.block; current > triesInMemory {
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
-			s.trieCap()
+			err := s.trieCap()
+			if err != nil {
+				return err
+			}
 
 			// Find the next state trie we need to commit
 			chosen := current - triesInMemory
@@ -464,7 +488,10 @@ func (s *gethStateDB) trieCommit() error {
 					s.triegc.Push(root, number)
 					break
 				}
-				triedb.Dereference(root)
+				err := triedb.Dereference(root)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -486,7 +513,10 @@ func (s *gethStateDB) trieCleanCommit() error {
 				s.triegc.Push(root, number)
 				break
 			}
-			triedb.Dereference(root)
+			err := triedb.Dereference(root)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	// commit the state trie after clean up
@@ -495,13 +525,17 @@ func (s *gethStateDB) trieCleanCommit() error {
 }
 
 // trieCap flushes matured singleton nodes to disk.
-func (s *gethStateDB) trieCap() {
+func (s *gethStateDB) trieCap() error {
 	triedb := s.evmState.TrieDB()
 	_, nodes, imgs := triedb.Size()
 	if nodes > memoryUpperLimit+ethdb.IdealBatchSize || imgs > imgUpperLimit {
 		//If we exceeded our memory allowance, flush matured singleton nodes to disk
-		triedb.Cap(memoryUpperLimit)
+		err := triedb.Cap(memoryUpperLimit)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (s *gethStateDB) GetShadowDB() StateDB {
