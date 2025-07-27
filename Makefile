@@ -116,10 +116,11 @@ help: Makefile
 install-dev-tools:
 	@go install golang.org/x/tools/cmd/goimports@v0.30.0
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+	@go install go.uber.org/mock/mockgen@latest
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate
+	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate /state
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate /state
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate /state
