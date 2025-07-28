@@ -22,7 +22,7 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	baseDb := db.NewMockBaseDB(ctrl)
 	mockDb := db.NewMockDbAdapter(ctrl)
 
-	input := getTestSubstate("default")
+	input := GetTestSubstate("default")
 	input.Block = 0
 	input.Transaction = 1
 	encoded, err := trlp.EncodeToBytes(rlp.NewRLP(input))
