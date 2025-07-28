@@ -48,7 +48,7 @@ func TestShadowDbValidator_PostBlockPass(t *testing.T) {
 		db.EXPECT().Error().Return(nil),
 	)
 
-	ext := makeShadowDbValidator(cfg)
+	ext := makeShadowDbValidator[txcontext.TxContext](cfg)
 
 	err := ext.PostBlock(st, ctx)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestShadowDbValidator_PostBlockReturnsError(t *testing.T) {
 		db.EXPECT().Error().Return(expectedErr),
 	)
 
-	ext := makeShadowDbValidator(cfg)
+	ext := makeShadowDbValidator[txcontext.TxContext](cfg)
 
 	err := ext.PostBlock(st, ctx)
 	if err == nil {

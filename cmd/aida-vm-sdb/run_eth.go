@@ -129,7 +129,7 @@ func runEth(
 	extensionList = append(
 		extensionList,
 		logger.MakeEthStateTestLogger(cfg, 0),
-		validator.MakeShadowDbValidator(cfg),
+		validator.MakeShadowDbValidator[txcontext.TxContext](cfg),
 		validator.MakeEthStateTestStateHashValidator(cfg),
 		statedb.MakeEthStateScopeTestEventEmitter(),
 		validator.MakeEthStateTestErrorValidator(cfg),
