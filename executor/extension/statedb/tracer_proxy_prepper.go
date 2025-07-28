@@ -18,9 +18,11 @@ package statedb
 
 import (
 	"encoding/gob"
+	"fmt"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -63,6 +65,13 @@ func (p *tracerProxyPrepper[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	return nil
 }
 
+func (p *tracerProxyPrepper[T]) PreBlock(st executor.State[T], _ *executor.Context) error {
+	if err := p.ctx.WriteOp(tracer.BeginBlockID, bigendian.Uint64ToBytes(uint64(st.Block))); err != nil {
+		return fmt.Errorf("cannot write BeginBlockID: %w", err)
+	}
+	return nil
+}
+
 func (p *tracerProxyPrepper[T]) PreTransaction(_ executor.State[T], ctx *executor.Context) error {
 	ctx.State = proxy.NewTracerProxy(ctx.State, p.ctx)
 	return nil
@@ -70,6 +79,13 @@ func (p *tracerProxyPrepper[T]) PreTransaction(_ executor.State[T], ctx *executo
 func (p *tracerProxyPrepper[T]) PostTransaction(_ executor.State[T], ctx *executor.Context) error {
 	// Check if the proxy produced any errors
 	return ctx.State.Error()
+}
+
+func (p *tracerProxyPrepper[T]) PostBlock(executor.State[T], *executor.Context) error {
+	if err := p.ctx.WriteOp(tracer.EndBlockID, []byte{}); err != nil {
+		return fmt.Errorf("cannot write BeginBlockID: %w", err)
+	}
+	return nil
 }
 
 func (p *tracerProxyPrepper[T]) PostRun(_ executor.State[T], _ *executor.Context, _ error) error {
