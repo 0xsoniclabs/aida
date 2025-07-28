@@ -40,6 +40,16 @@ func ReplayTrace(ctx *cli.Context) error {
 		return err
 	}
 
+	var aidaDb db.BaseDB
+	// we need to open substate if we are priming
+	if cfg.First > 0 && !cfg.SkipPriming {
+		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
+		if err != nil {
+			return fmt.Errorf("cannot open aida-db; %w", err)
+		}
+		defer aidaDb.Close()
+	}
+
 	var files []string
 	if cfg.TraceDirectory != "" {
 		entries, err := os.ReadDir(cfg.TraceDirectory)
@@ -65,7 +75,7 @@ func ReplayTrace(ctx *cli.Context) error {
 		}
 
 		provider := executor.NewTraceProvider(file)
-		err = replay(cfg, provider, nil, &traceProcessor{}, nil, nil)
+		err = replay(cfg, provider, nil, &traceProcessor{}, nil, aidaDb)
 		if err != nil {
 			return err
 		}
