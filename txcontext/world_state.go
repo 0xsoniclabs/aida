@@ -86,8 +86,8 @@ func (a AidaWorldState) Get(addr common.Address) Account {
 }
 
 func (a AidaWorldState) ForEachAccount(h AccountHandler) {
-	for k, v := range a {
-		h(k, v)
+	for addr, acc := range a {
+		h(addr, acc)
 	}
 }
 
