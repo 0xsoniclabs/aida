@@ -65,7 +65,7 @@ func ReplayTrace(ctx *cli.Context) error {
 	} else if cfg.TraceFile != "" {
 		files = append(files, cfg.TraceFile)
 	} else {
-		return fmt.Errorf("no trace file (--%s) or directory (--%s_ provided", utils.TraceFileFlag.Name, utils.TraceDirectoryFlag.Name)
+		return fmt.Errorf("no trace file (--%s) or directory (--%s) provided", utils.TraceFileFlag.Name, utils.TraceDirectoryFlag.Name)
 	}
 
 	for _, filename := range files {
