@@ -30,6 +30,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
+	"os"
 	"time"
 )
 
@@ -39,28 +40,38 @@ func ReplayTrace(ctx *cli.Context) error {
 		return err
 	}
 
-	file, err := tracer.NewFileReader(cfg.TraceFile)
-	if err != nil {
-		return err
-	}
-
-	var extra = []executor.Extension[tracer.Operation]{
-		// todo extra extensions
-		//profiler.MakeReplayProfiler[[]operation.Operation](cfg, rCtx),
-	}
-
-	var aidaDb db.BaseDB
-	// we need to open substate if we are priming
-	if cfg.First > 0 && !cfg.SkipPriming {
-		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
+	var files []string
+	if cfg.TraceDirectory != "" {
+		entries, err := os.ReadDir(cfg.TraceDirectory)
 		if err != nil {
-			return fmt.Errorf("cannot open aida-db; %w", err)
+			return err
 		}
-		defer aidaDb.Close()
+		for _, entry := range entries {
+			if entry.IsDir() {
+				return fmt.Errorf("given dir %s contains subdirectories, please provide a single trace file or a directory with trace files", cfg.TraceDirectory)
+			}
+			files = append(files, entry.Name())
+		}
+	} else if cfg.TraceFile != "" {
+		files = append(files, cfg.TraceFile)
+	} else {
+		return fmt.Errorf("no trace file (--%s) or directory (--%s_ provided", utils.TraceFileFlag.Name, utils.TraceDirectoryFlag.Name)
 	}
 
-	provider := executor.NewTraceProvider(file)
-	return replay(cfg, provider, nil, &traceProcessor{}, extra, aidaDb)
+	for _, filename := range files {
+		file, err := tracer.NewFileReader(filename)
+		if err != nil {
+			return err
+		}
+
+		provider := executor.NewTraceProvider(file)
+		err = replay(cfg, provider, nil, &traceProcessor{}, nil, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func replay(
