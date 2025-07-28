@@ -122,7 +122,6 @@ func replay(
 		profiler.MakeMemoryUsagePrinter[tracer.Operation](cfg),
 		profiler.MakeMemoryProfiler[tracer.Operation](cfg),
 		validator.MakeStateHashValidator[tracer.Operation](cfg),
-		statedb.MakeTransactionEventEmitter[tracer.Operation](),
 		profiler.MakeOperationProfiler[tracer.Operation](cfg),
 	}...,
 	)
