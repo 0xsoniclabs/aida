@@ -58,8 +58,8 @@ func (a *account) GetStorageSize() int {
 }
 
 func (a *account) ForEachStorage(h txcontext.StorageHandler) {
-	for k, v := range a.Storage {
-		h(common.Hash(k), common.Hash(v))
+	for keyHash, valueHash := range a.Storage {
+		h(common.Hash(keyHash), common.Hash(valueHash))
 	}
 }
 

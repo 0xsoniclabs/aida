@@ -17,12 +17,9 @@
 package ethtest
 
 import (
-	"bytes"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"golang.org/x/exp/maps"
-	"sort"
 )
 
 func NewWorldState(alloc types.GenesisAlloc) txcontext.WorldState {
@@ -47,14 +44,8 @@ func (w worldStateAlloc) Has(addr common.Address) bool {
 }
 
 func (w worldStateAlloc) ForEachAccount(h txcontext.AccountHandler) {
-	keys := maps.Keys(w.alloc)
-	sort.Slice(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) < 0
-	})
-
-	for _, k := range keys {
-		acc := w.alloc[k]
-		h(k, txcontext.NewAccount(acc.Code, acc.Storage, acc.Balance, acc.Nonce))
+	for addr, acc := range w.alloc {
+		h(addr, txcontext.NewAccount(acc.Code, acc.Storage, acc.Balance, acc.Nonce))
 	}
 }
 
