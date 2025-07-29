@@ -44,7 +44,7 @@ func (p operationProvider) Run(from int, to int, consumer Consumer[[]operation.O
 	fmt.Println("operation provider run")
 	for iter.Next() {
 		op := iter.Value()
-		fmt.Println("op is run")
+		panic("op is run")
 
 		// if next operation after operation.EndTransaction is operation.EndBlock append as well
 		if lastOperation {
