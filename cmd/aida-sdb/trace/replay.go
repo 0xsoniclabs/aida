@@ -40,7 +40,7 @@ func ReplayTrace(ctx *cli.Context) error {
 
 	operationProvider, err := executor.OpenOperations(cfg)
 	if err != nil {
-
+		return err
 	}
 
 	defer operationProvider.Close()
