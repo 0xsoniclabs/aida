@@ -151,9 +151,9 @@ func TestTraceProvider_readOperation(t *testing.T) {
 					m.EXPECT().ReadHash().Return(key2, nil),
 					m.EXPECT().ReadHash().Return(val2, nil),
 					// Lastly indexes for the addresses, keys, and values are read
-					m.EXPECT().ReadUint8().Return(uint8(0), nil), // addr1
-					m.EXPECT().ReadUint8().Return(uint8(0), nil), // key1
-					m.EXPECT().ReadUint8().Return(uint8(0), nil), // val1
+					m.EXPECT().ReadUint8().Return(uint8(1), nil), // addr1
+					m.EXPECT().ReadUint8().Return(uint8(1), nil), // key1
+					m.EXPECT().ReadUint8().Return(uint8(1), nil), // val1
 				)
 			},
 		},

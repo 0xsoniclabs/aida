@@ -18,10 +18,11 @@ func NewTraceProvider(file tracer.FileReader) Provider[tracer.Operation] {
 }
 
 type traceProvider struct {
-	file      tracer.FileReader
-	contracts tracer.Queue[common.Address]
-	keys      tracer.Queue[common.Hash]
-	values    tracer.Queue[common.Hash]
+	file                                tracer.FileReader
+	contracts                           tracer.Queue[common.Address]
+	keys                                tracer.Queue[common.Hash]
+	values                              tracer.Queue[common.Hash]
+	prevAddrIdx, prevKeyIdx, prevValIdx int
 }
 
 func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation]) (err error) {
@@ -306,8 +307,9 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 			return tracer.Operation{}, fmt.Errorf("cannot read address from file: %w", err)
 		}
 		p.contracts.Place(addr)
+		p.prevAddrIdx = p.contracts.Find(addr)
 	case tracer.PreviousValueID:
-		addr, err = p.contracts.Get(0)
+		addr, err = p.contracts.Get(p.prevAddrIdx)
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get previous address from contracts queue: %w", err)
 		}
@@ -320,7 +322,6 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get recent address from contracts queue: %w", err)
 		}
-		p.contracts.Place(addr)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong address class: %d", addrCl)
 	}
@@ -334,21 +335,21 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 			return tracer.Operation{}, fmt.Errorf("cannot read key hash from file: %w", err)
 		}
 		p.keys.Place(key)
+		p.prevKeyIdx = p.keys.Find(key)
 	case tracer.PreviousValueID:
-		key, err = p.keys.Get(0)
+		key, err = p.keys.Get(p.prevKeyIdx)
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot get previous key hash from contracts queue: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot get previous key from keys queue: %w", err)
 		}
 	case tracer.RecentValueID:
 		idx, err := p.file.ReadUint8()
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot read addrekey hash idx from file: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot read key idx from file: %w", err)
 		}
 		key, err = p.keys.Get(int(idx))
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot get recent key hash from contracts queue: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot get recent key from keys queue: %w", err)
 		}
-		p.keys.Place(key)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong key class: %d", keyCl)
 	}
@@ -359,24 +360,24 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 	case tracer.NewValueID:
 		val, err = p.file.ReadHash()
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot read val hash from file: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot read value hash from file: %w", err)
 		}
 		p.values.Place(val)
+		p.prevValIdx = p.values.Find(val)
 	case tracer.PreviousValueID:
-		val, err = p.values.Get(0)
+		val, err = p.values.Get(p.prevValIdx)
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot get previous val hash from contracts queue: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot get previous value hash from values queue: %w", err)
 		}
 	case tracer.RecentValueID:
 		idx, err := p.file.ReadUint8()
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot read addrekey val idx from file: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot read value val idx from file: %w", err)
 		}
 		val, err = p.values.Get(int(idx))
 		if err != nil {
-			return tracer.Operation{}, fmt.Errorf("cannot get recent key val from contracts queue: %w", err)
+			return tracer.Operation{}, fmt.Errorf("cannot get recent value from values queue: %w", err)
 		}
-		p.values.Place(val)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong value class: %d", valueCl)
 	}

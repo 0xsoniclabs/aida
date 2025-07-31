@@ -113,13 +113,13 @@ func (s *shadowVmStateDb) GetBalance(addr common.Address) *uint256.Int {
 func (s *shadowVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	return s.getUint256("AddBalance", func(s state.VmStateDB) uint256.Int {
 		return s.AddBalance(addr, value, reason)
-	})
+	}, addr)
 }
 
 func (s *shadowVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	return s.getUint256("SubBalance", func(s state.VmStateDB) uint256.Int {
 		return s.SubBalance(addr, value, reason)
-	})
+	}, addr)
 }
 
 func (s *shadowVmStateDb) GetNonce(addr common.Address) uint64 {

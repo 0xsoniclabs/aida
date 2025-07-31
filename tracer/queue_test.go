@@ -18,6 +18,8 @@ package tracer
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueue_PlaceAndFind(t *testing.T) {
@@ -137,4 +139,74 @@ func TestQueue_IsCircularBuffer(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestQueue_Get_Errors(t *testing.T) {
+	queue := NewQueue[int]()
+	_, err := queue.Get(0)
+	require.ErrorContains(t, err, "queue is empty")
+	queue.Place(1)
+	_, err = queue.Get(1)
+	require.ErrorContains(t, err, "index out of bounds")
+}
+
+func TestQueue_ClassifyGet(t *testing.T) {
+	const m = 10
+
+	queue := NewQueue[int]()
+	item1 := 1
+	item2 := 3
+	item3 := 5
+	item4 := 7
+	item5 := 9
+	item6 := 11
+	// first place the items
+	cl, _ := queue.Classify(item1)
+	require.Equal(t, NewValueID, cl)
+	cl, _ = queue.Classify(item2)
+	require.Equal(t, NewValueID, cl)
+	cl, _ = queue.Classify(item3)
+	require.Equal(t, NewValueID, cl)
+	cl, _ = queue.Classify(item4)
+	require.Equal(t, NewValueID, cl)
+	cl, _ = queue.Classify(item5)
+	require.Equal(t, NewValueID, cl)
+	cl, _ = queue.Classify(item6)
+	require.Equal(t, NewValueID, cl)
+
+	//idxFind := queue.Find(item1)
+	//require.Equal(t, 0, idxFind)
+
+	// then find the indexes
+	cl, idx1 := queue.Classify(item1)
+	require.Equal(t, RecentValueID, cl)
+	cl, idx2 := queue.Classify(item2)
+	require.Equal(t, RecentValueID, cl)
+	cl, idx3 := queue.Classify(item3)
+	require.Equal(t, RecentValueID, cl)
+	cl, idx4 := queue.Classify(item4)
+	require.Equal(t, RecentValueID, cl)
+	cl, idx5 := queue.Classify(item5)
+	require.Equal(t, RecentValueID, cl)
+
+	item, err := queue.Get(idx1)
+	require.NoError(t, err)
+	require.Equal(t, item1, item)
+
+	item, err = queue.Get(idx2)
+	require.NoError(t, err)
+	require.Equal(t, item2, item)
+
+	item, err = queue.Get(idx3)
+	require.NoError(t, err)
+	require.Equal(t, item3, item)
+
+	item, err = queue.Get(idx4)
+	require.NoError(t, err)
+	require.Equal(t, item4, item)
+
+	item, err = queue.Get(idx5)
+	require.NoError(t, err)
+	require.Equal(t, item5, item)
+
 }
