@@ -28,7 +28,7 @@ const (
 )
 
 const (
-	AddBalanceID = iota
+	AddBalanceID uint8 = iota
 	BeginBlockID
 	BeginSyncPeriodID
 	BeginTransactionID

@@ -31,9 +31,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// RecordCommand data structure for the record app
-var RecordCommand = cli.Command{
-	Action:    RecordStateDbTrace,
+// RunRecordCmd data structure for the record app
+var RunRecordCmd = cli.Command{
+	Action:    RunRecord,
 	Name:      "record",
 	Usage:     "captures and records StateDB operations while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
@@ -60,7 +60,7 @@ The trace record command requires two arguments:
 last block of the inclusive range of blocks to trace transactions.`,
 }
 
-func RecordStateDbTrace(ctx *cli.Context) error {
+func RunRecord(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err

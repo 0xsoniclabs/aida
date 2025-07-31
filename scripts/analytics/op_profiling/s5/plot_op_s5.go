@@ -20,7 +20,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/tracer"
+
 	"io"
 	"os"
 	"sort"
@@ -29,9 +29,9 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/scripts/analytics/html"
+	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/utils"
 	xmath "github.com/0xsoniclabs/aida/utils/math"
-
 	// db
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -319,7 +319,7 @@ func main() {
 	for opId, count := range countByOpId {
 		if count > 0 {
 			opIds = append(opIds, opId)
-			opNameByOpId[opId] = tracer.OpText[uint16(opId)]
+			opNameByOpId[opId] = tracer.OpText[uint8(opId)]
 		}
 	}
 
