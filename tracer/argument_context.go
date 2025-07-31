@@ -18,16 +18,17 @@ package tracer
 
 import (
 	"fmt"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 //go:generate mockgen -source argument_context.go -destination argument_context_mock.go -package tracer
 
 type ArgumentContext interface {
-	WriteOp(op uint16, data []byte) error
-	WriteAddressOp(op uint16, address *common.Address, data []byte) error
-	WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error
-	WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error
+	WriteOp(op uint8, data []byte) error
+	WriteAddressOp(op uint8, address *common.Address, data []byte) error
+	WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error
+	WriteValueOp(op uint8, address *common.Address, key *common.Hash, value *common.Hash) error
 	Close() error
 }
 
@@ -43,17 +44,24 @@ type argumentContext struct {
 }
 
 // NewArgumentContext creates a new event registry.
-func NewArgumentContext(file FileWriter) ArgumentContext {
-	return &argumentContext{
+func NewArgumentContext(file FileWriter, first uint64, last uint64) (ArgumentContext, error) {
+	ctx := &argumentContext{
 		contracts: NewQueue[common.Address](),
 		keys:      NewQueue[common.Hash](),
 		values:    NewQueue[common.Hash](),
 		file:      file,
 	}
+
+	err := ctx.writeMetadata(first, last)
+	if err != nil {
+		return nil, err
+	}
+
+	return ctx, nil
 }
 
 // WriteOp registers an operation with no simulation arguments
-func (ctx *argumentContext) WriteOp(op uint16, data []byte) error {
+func (ctx *argumentContext) WriteOp(op uint8, data []byte) error {
 	argOp, err := EncodeArgOp(op, NoArgID, NoArgID, NoArgID)
 	if err != nil {
 		return err
@@ -68,7 +76,7 @@ func (ctx *argumentContext) WriteOp(op uint16, data []byte) error {
 }
 
 // WriteAddressOp registers an operation with a contract-address argument
-func (ctx *argumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
+func (ctx *argumentContext) WriteAddressOp(op uint8, address *common.Address, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address) // zero, previous, recent, address
 
 	argOp, err := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
@@ -93,7 +101,7 @@ func (ctx *argumentContext) WriteAddressOp(op uint16, address *common.Address, d
 }
 
 // WriteKeyOp registers an operation with a contract-address and a storage-key arguments.
-func (ctx *argumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
+func (ctx *argumentContext) WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 
@@ -122,7 +130,7 @@ func (ctx *argumentContext) WriteKeyOp(op uint16, address *common.Address, key *
 }
 
 // WriteValueOp registers an operation with a contract-address, a storage-key and storage-value arguments.
-func (ctx *argumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error {
+func (ctx *argumentContext) WriteValueOp(op uint8, address *common.Address, key *common.Hash, value *common.Hash) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 	valueClass, valueIdx := ctx.values.Classify(*value)
@@ -168,6 +176,12 @@ func (ctx *argumentContext) writeClassifiedOp(class uint8, idx int, data Byter) 
 		return fmt.Errorf("unexpected argument classification: %d", class)
 	}
 	return nil
+}
+
+// writeMetadata writes the metadata into the file. This should be called once and only at the beginning of the file.
+func (ctx *argumentContext) writeMetadata(first uint64, last uint64) error {
+	data := append(bigendian.Uint64ToBytes(first), bigendian.Uint64ToBytes(last)...)
+	return ctx.file.WriteData(data)
 }
 
 type Byter interface {

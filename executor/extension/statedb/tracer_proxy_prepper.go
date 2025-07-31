@@ -50,13 +50,16 @@ type tracerProxyPrepper[T any] struct {
 	syncPeriod uint64
 }
 
-func (p *tracerProxyPrepper[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
+func (p *tracerProxyPrepper[T]) PreRun(executor.State[T], *executor.Context) error {
 	var err error
-	fh, err := tracer.NewFileWriter(p.cfg.TraceFile)
+	writer, err := tracer.NewFileWriter(p.cfg.TraceFile)
 	if err != nil {
 		return err
 	}
-	p.ctx = tracer.NewArgumentContext(fh)
+	p.ctx, err = tracer.NewArgumentContext(writer, p.cfg.First, p.cfg.Last)
+	if err != nil {
+		return fmt.Errorf("cannot create argument context: %w", err)
+	}
 	// Register all necessary types to gob
 	gob.Register(txcontext.NewNilAccount())
 	gob.Register(params.Rules{})
@@ -83,7 +86,7 @@ func (p *tracerProxyPrepper[T]) PostTransaction(_ executor.State[T], ctx *execut
 
 func (p *tracerProxyPrepper[T]) PostBlock(executor.State[T], *executor.Context) error {
 	if err := p.ctx.WriteOp(tracer.EndBlockID, []byte{}); err != nil {
-		return fmt.Errorf("cannot write BeginBlockID: %w", err)
+		return fmt.Errorf("cannot write EndBlockID: %w", err)
 	}
 	return nil
 }

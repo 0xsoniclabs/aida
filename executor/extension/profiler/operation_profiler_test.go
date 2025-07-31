@@ -18,8 +18,7 @@ package profiler
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/tracer"
-	"github.com/0xsoniclabs/aida/txcontext"
+
 	"math/big"
 	"math/rand"
 	"testing"
@@ -28,6 +27,8 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
