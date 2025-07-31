@@ -23,7 +23,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
@@ -31,29 +30,29 @@ const substateProgressTrackerReportFormat = "Track: block %d, memory %d, disk %d
 
 // MakeBlockProgressTracker creates a blockProgressTracker that depends on the
 // PostBlock event and is only useful as part of a sequential evaluation.
-func MakeBlockProgressTracker(cfg *utils.Config, reportFrequency int) executor.Extension[txcontext.TxContext] {
+func MakeBlockProgressTracker[T any](cfg *utils.Config, reportFrequency int) executor.Extension[T] {
 	if !cfg.TrackProgress {
-		return extension.NilExtension[txcontext.TxContext]{}
+		return extension.NilExtension[T]{}
 	}
 
 	if reportFrequency == 0 {
 		reportFrequency = ProgressTrackerDefaultReportFrequency
 	}
 
-	return makeBlockProgressTracker(cfg, reportFrequency, logger.NewLogger(cfg.LogLevel, "ProgressTracker"))
+	return makeBlockProgressTracker[T](cfg, reportFrequency, logger.NewLogger(cfg.LogLevel, "ProgressTracker"))
 }
 
-func makeBlockProgressTracker(cfg *utils.Config, reportFrequency int, log logger.Logger) *blockProgressTracker {
-	return &blockProgressTracker{
-		progressTracker:   newProgressTracker[txcontext.TxContext](cfg, reportFrequency, log),
+func makeBlockProgressTracker[T any](cfg *utils.Config, reportFrequency int, log logger.Logger) *blockProgressTracker[T] {
+	return &blockProgressTracker[T]{
+		progressTracker:   newProgressTracker[T](cfg, reportFrequency, log),
 		lastReportedBlock: int(cfg.First) - (int(cfg.First) % reportFrequency),
 	}
 }
 
 // blockProgressTracker logs progress every XXX blocks depending on reportFrequency.
 // Default is 100_000 blocks. This is mainly used for gathering information about process.
-type blockProgressTracker struct {
-	*progressTracker[txcontext.TxContext]
+type blockProgressTracker[T any] struct {
+	*progressTracker[T]
 	overallInfo       substateProcessInfo
 	lastIntervalInfo  substateProcessInfo
 	lastReportedBlock int
@@ -65,7 +64,7 @@ type substateProcessInfo struct {
 }
 
 // PostTransaction increments number of transactions and saves gas used in last substate.
-func (t *blockProgressTracker) PostTransaction(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+func (t *blockProgressTracker[T]) PostTransaction(_ executor.State[T], ctx *executor.Context) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -78,7 +77,7 @@ func (t *blockProgressTracker) PostTransaction(state executor.State[txcontext.Tx
 }
 
 // PostBlock registers the completed block and may trigger the logging of an update.
-func (t *blockProgressTracker) PostBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+func (t *blockProgressTracker[T]) PostBlock(state executor.State[T], ctx *executor.Context) error {
 	boundary := state.Block - (state.Block % t.reportFrequency)
 
 	if state.Block-t.lastReportedBlock < t.reportFrequency {
