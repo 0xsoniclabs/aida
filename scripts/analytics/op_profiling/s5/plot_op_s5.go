@@ -319,7 +319,7 @@ func main() {
 	for opId, count := range countByOpId {
 		if count > 0 {
 			opIds = append(opIds, opId)
-			opNameByOpId[opId] = tracer.OpText[uint16(opId)]
+			opNameByOpId[opId] = tracer.OpText[uint8(opId)]
 		}
 	}
 
