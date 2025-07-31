@@ -100,7 +100,7 @@ func record(
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
 		statedb.MakeTemporaryStatePrepper(cfg),
-		statedb.MakeProxyRecorderPrepper[txcontext.TxContext](cfg),
+		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 	}
@@ -111,7 +111,7 @@ func record(
 		executor.Params{
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last) + 1,
-			ParallelismGranularity: executor.TransactionLevel,
+			ParallelismGranularity: executor.BlockLevel,
 		},
 		processor,
 		extensions,

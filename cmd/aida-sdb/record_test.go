@@ -25,11 +25,8 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
-	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
 )
-
-var testingAddress = common.Address{1}
 
 func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -56,15 +53,18 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		ext.EXPECT().PreRun(executor.AtBlock[txcontext.TxContext](10), gomock.Any()),
 
 		// block 10
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](10), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](10, 3), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](10, 3), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](10, 3), gomock.Any()),
-
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
+
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](10), gomock.Any()),
 
 		// block 11
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](11), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
@@ -72,6 +72,7 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](11), gomock.Any()),
 
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](12), gomock.Any(), nil),
 	)
