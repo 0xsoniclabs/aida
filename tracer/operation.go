@@ -35,7 +35,7 @@ type Operation struct {
 const numArgOps = uint16(NumOps) * uint16(NumClasses) * uint16(NumClasses) * uint16(NumClasses)
 
 // OpText translates IDs to operation's text
-var OpText = map[uint16]string{
+var OpText = map[uint8]string{
 	AddBalanceID:             "AddBalance",
 	BeginBlockID:             "BeginBlock",
 	BeginSyncPeriodID:        "BeginSyncPeriod",
@@ -93,7 +93,7 @@ var OpText = map[uint16]string{
 }
 
 // opMnemo is a mnemonics table for operations.
-var opMnemo = map[uint16]string{
+var opMnemo = map[uint8]string{
 	AddBalanceID:             "AB",
 	BeginBlockID:             "BB",
 	BeginSyncPeriodID:        "BS",
@@ -151,7 +151,7 @@ var opMnemo = map[uint16]string{
 }
 
 // opNumArgs is an argument number table for operations.
-var opNumArgs = map[uint16]int{
+var opNumArgs = map[uint8]int{
 	AddBalanceID:             1,
 	BeginBlockID:             0,
 	BeginSyncPeriodID:        0,
@@ -209,7 +209,7 @@ var opNumArgs = map[uint16]int{
 }
 
 // opId is an operation ID table.
-var opId = map[string]uint16{
+var opId = map[string]uint8{
 	"AB": AddBalanceID,
 	"BB": BeginBlockID,
 	"BS": BeginSyncPeriodID,
@@ -284,7 +284,7 @@ var argId = map[byte]uint8{
 }
 
 // OpMnemo returns the mnemonic code for an operation.
-func OpMnemo(op uint16) string {
+func OpMnemo(op uint8) string {
 	if op < 0 || op >= NumOps {
 		panic("opcode is out of range")
 	}
@@ -292,7 +292,7 @@ func OpMnemo(op uint16) string {
 }
 
 // checkArgOp checks whether op/argument combination is valid.
-func checkArgOp(op uint16, contract uint8, key uint8, value uint8) bool {
+func checkArgOp(op uint8, contract uint8, key uint8, value uint8) bool {
 	if op < 0 || op >= NumOps {
 		return false
 	}
@@ -328,15 +328,16 @@ func checkArgOp(op uint16, contract uint8, key uint8, value uint8) bool {
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.
-func EncodeArgOp(op uint16, addr uint8, key uint8, value uint8) (uint16, error) {
+func EncodeArgOp(op uint8, addr uint8, key uint8, value uint8) (uint16, error) {
 	if !checkArgOp(op, addr, key, value) {
 		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments\naddr: %d, key: %d, value: %d, op: %d", addr, key, value, op)
 	}
-	return (((op*uint16(NumClasses))+uint16(addr))*uint16(NumClasses)+uint16(key))*uint16(NumClasses) + uint16(value), nil
+	numClasses := uint16(NumClasses)
+	return (((uint16(op)*numClasses)+uint16(addr))*numClasses+uint16(key))*numClasses + uint16(value), nil
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
-func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8, error) {
+func DecodeArgOp(argop uint16) (uint8, uint8, uint8, uint8, error) {
 	if argop < 0 || argop >= numArgOps {
 		return 0, 0, 0, 0, errors.New("DecodeArgOp: invalid op range")
 	}
@@ -352,11 +353,11 @@ func DecodeArgOp(argop uint16) (uint16, uint8, uint8, uint8, error) {
 
 	op := argop
 
-	return op, uint8(addr), uint8(key), uint8(value), nil
+	return uint8(op), uint8(addr), uint8(key), uint8(value), nil
 }
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
-func EncodeOpcode(op uint16, addr uint8, key uint8, value uint8) (string, error) {
+func EncodeOpcode(op uint8, addr uint8, key uint8, value uint8) (string, error) {
 	if !checkArgOp(op, addr, key, value) {
 		return "", fmt.Errorf("EncodeOpcode: invalid operation/arguments")
 	}
@@ -374,7 +375,7 @@ func validateArg(argMnemo byte) bool {
 }
 
 // DecodeOpcode decodes opcode producing the operation id and its argument classes
-func DecodeOpcode(opc string) (uint16, uint8, uint8, uint8, error) {
+func DecodeOpcode(opc string) (uint8, uint8, uint8, uint8, error) {
 	mnemo := opc[:2]
 	op, ok := opId[mnemo]
 	if !ok {

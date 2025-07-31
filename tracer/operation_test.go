@@ -26,7 +26,7 @@ import (
 func TestOperationDecoding(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
-	for op := uint16(0); op < NumOps; op++ {
+	for op := uint8(0); op < NumOps; op++ {
 		for addr := uint8(0); addr < NumClasses; addr++ {
 			for key := uint8(0); key < NumClasses; key++ {
 				for value := uint8(0); value < NumClasses; value++ {
@@ -58,7 +58,7 @@ func TestOperationDecoding(t *testing.T) {
 func TestOperationOpcode(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
-	for op := uint16(0); op < NumOps; op++ {
+	for op := uint8(0); op < NumOps; op++ {
 		for addr := uint8(0); addr < NumClasses; addr++ {
 			for key := uint8(0); key < NumClasses; key++ {
 				for value := uint8(0); value < NumClasses; value++ {
@@ -87,7 +87,7 @@ func TestOperationOpcode(t *testing.T) {
 }
 
 func TestOpMnemo(t *testing.T) {
-	for op := range uint16(NumOps) {
+	for op := range uint8(NumOps) {
 		require.Equal(t, OpMnemo(op), opMnemo[op])
 	}
 }

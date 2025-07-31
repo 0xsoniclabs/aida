@@ -17,6 +17,8 @@
 package main
 
 import (
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"testing"
 
@@ -27,6 +29,21 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunSubstate(t *testing.T) {
+	_, _, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunRecord
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.TraceFileFlag,
+	}
+
+	traceFile := t.TempDir() + "/trace-file"
+	err := app.Run([]string{RunRecordCmd.Name, "--aida-db", path, "--trace-file", traceFile, "--substate-encoding", "pb", "first", "last"})
+	require.ErrorContains(t, err, "intrinsic gas too low")
+}
 
 func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)

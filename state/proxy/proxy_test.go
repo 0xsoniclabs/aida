@@ -37,13 +37,11 @@ func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.ArgumentConte
 	proxies["Deletion"] = NewDeletionProxy(base, delChan, "CRITICAL")
 	wg := new(sync.WaitGroup)
 	proxies["Logger"] = NewLoggerProxy(base, logger.NewLogger("CRITICAL", "Proxy Logger"), logChan, wg)
-	proxies["Profiler"] = NewProfilerProxy(base, analytics.NewIncrementalAnalytics(len(operation.CreateIdLabelMap())), "info")
+	proxies["Profiler"] = NewProfilerProxy(base, analytics.NewIncrementalAnalytics(int(tracer.NumOps)), "CRITICAL")
 	proxies["Tracer"] = NewTracerProxy(base, ctx)
 	proxies["Shadow"] = NewShadowProxy(base, base, true)
 	return proxies
 }
-
-// TODO test all proxy calls
 
 func TestProxies_AllCalls(t *testing.T) {
 	t.Parallel()

@@ -36,7 +36,7 @@ func TestTracerProxy_PrepareSubstate(t *testing.T) {
 	require.NoError(t, err)
 	wantData := append(bigendian.Uint32ToBytes(uint32(buf.Len())), buf.Bytes()...)
 
-	ctx.EXPECT().WriteOp(uint16(tracer.PrepareSubstateID), wantData)
+	ctx.EXPECT().WriteOp(tracer.PrepareSubstateID, wantData)
 	base.EXPECT().PrepareSubstate(ws, blk)
 
 	proxy.PrepareSubstate(ws, blk)
@@ -93,7 +93,7 @@ func TestTracerProxy_Prepare(t *testing.T) {
 	wantData = append(wantData, bigendian.Uint32ToBytes(uint32(buf.Len()))...)
 	wantData = append(wantData, buf.Bytes()...)
 
-	ctx.EXPECT().WriteOp(uint16(tracer.PrepareID), wantData)
+	ctx.EXPECT().WriteOp(tracer.PrepareID, wantData)
 	base.EXPECT().Prepare(rules, sender, coinbase, nil, precompiles, txAccess)
 
 	proxy.Prepare(rules, sender, coinbase, nil, precompiles, txAccess)
@@ -122,7 +122,7 @@ func TestTracerProxy_AddLog(t *testing.T) {
 	err := gob.NewEncoder(&buf).Encode(log)
 	require.NoError(t, err)
 	wantData := append(bigendian.Uint32ToBytes(uint32(buf.Len())), buf.Bytes()...)
-	ctx.EXPECT().WriteOp(uint16(tracer.AddLogID), wantData)
+	ctx.EXPECT().WriteOp(tracer.AddLogID, wantData)
 	base.EXPECT().AddLog(&log)
 
 	proxy.AddLog(&log)
