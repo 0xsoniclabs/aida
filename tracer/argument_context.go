@@ -24,10 +24,10 @@ import (
 //go:generate mockgen -source argument_context.go -destination argument_context_mock.go -package tracer
 
 type ArgumentContext interface {
-	WriteOp(op uint16, data []byte) error
-	WriteAddressOp(op uint16, address *common.Address, data []byte) error
-	WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error
-	WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error
+	WriteOp(op uint8, data []byte) error
+	WriteAddressOp(op uint8, address *common.Address, data []byte) error
+	WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error
+	WriteValueOp(op uint8, address *common.Address, key *common.Hash, value *common.Hash) error
 	Close() error
 }
 
@@ -53,7 +53,7 @@ func NewArgumentContext(file FileWriter) ArgumentContext {
 }
 
 // WriteOp registers an operation with no simulation arguments
-func (ctx *argumentContext) WriteOp(op uint16, data []byte) error {
+func (ctx *argumentContext) WriteOp(op uint8, data []byte) error {
 	argOp, err := EncodeArgOp(op, NoArgID, NoArgID, NoArgID)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (ctx *argumentContext) WriteOp(op uint16, data []byte) error {
 }
 
 // WriteAddressOp registers an operation with a contract-address argument
-func (ctx *argumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
+func (ctx *argumentContext) WriteAddressOp(op uint8, address *common.Address, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address) // zero, previous, recent, address
 
 	argOp, err := EncodeArgOp(op, addrClass, NoArgID, NoArgID)
@@ -93,7 +93,7 @@ func (ctx *argumentContext) WriteAddressOp(op uint16, address *common.Address, d
 }
 
 // WriteKeyOp registers an operation with a contract-address and a storage-key arguments.
-func (ctx *argumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
+func (ctx *argumentContext) WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 
@@ -122,7 +122,7 @@ func (ctx *argumentContext) WriteKeyOp(op uint16, address *common.Address, key *
 }
 
 // WriteValueOp registers an operation with a contract-address, a storage-key and storage-value arguments.
-func (ctx *argumentContext) WriteValueOp(op uint16, address *common.Address, key *common.Hash, value *common.Hash) error {
+func (ctx *argumentContext) WriteValueOp(op uint8, address *common.Address, key *common.Hash, value *common.Hash) error {
 	addrClass, addrIdx := ctx.contracts.Classify(*address)
 	keyClass, keyIdx := ctx.keys.Classify(*key)
 	valueClass, valueIdx := ctx.values.Classify(*value)
