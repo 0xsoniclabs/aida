@@ -17,14 +17,16 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"github.com/urfave/cli/v2"
-	"os"
 )
 
-// initTraceApp initializes a trace-cli app. This function is called by the main
+// traceApp initializes a trace-cli app. This function is called by the main
 // function and unit tests.
-func initTraceApp() *cli.App {
+func traceApp() *cli.App {
 	return &cli.App{
 		Name:      "Aida Storage Trace Manager",
 		HelpName:  "trace",

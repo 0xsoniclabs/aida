@@ -55,7 +55,7 @@ func (mr *MockArgumentContextMockRecorder) Close() *gomock.Call {
 }
 
 // WriteAddressOp mocks base method.
-func (m *MockArgumentContext) WriteAddressOp(op uint16, address *common.Address, data []byte) error {
+func (m *MockArgumentContext) WriteAddressOp(op uint8, address *common.Address, data []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteAddressOp", op, address, data)
 	ret0, _ := ret[0].(error)
@@ -69,7 +69,7 @@ func (mr *MockArgumentContextMockRecorder) WriteAddressOp(op, address, data any)
 }
 
 // WriteKeyOp mocks base method.
-func (m *MockArgumentContext) WriteKeyOp(op uint16, address *common.Address, key *common.Hash, data []byte) error {
+func (m *MockArgumentContext) WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteKeyOp", op, address, key, data)
 	ret0, _ := ret[0].(error)
@@ -83,7 +83,7 @@ func (mr *MockArgumentContextMockRecorder) WriteKeyOp(op, address, key, data any
 }
 
 // WriteOp mocks base method.
-func (m *MockArgumentContext) WriteOp(op uint16, data []byte) error {
+func (m *MockArgumentContext) WriteOp(op uint8, data []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteOp", op, data)
 	ret0, _ := ret[0].(error)
@@ -97,7 +97,7 @@ func (mr *MockArgumentContextMockRecorder) WriteOp(op, data any) *gomock.Call {
 }
 
 // WriteValueOp mocks base method.
-func (m *MockArgumentContext) WriteValueOp(op uint16, address *common.Address, key, value *common.Hash) error {
+func (m *MockArgumentContext) WriteValueOp(op uint8, address *common.Address, key, value *common.Hash) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteValueOp", op, address, key, value)
 	ret0, _ := ret[0].(error)
