@@ -120,7 +120,6 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			operation.Data = []any{value, reason}
 		case tracer.SelfDestructID:
 		case tracer.CreateContractID:
-			fmt.Printf("")
 		case tracer.GetStorageRootID:
 		case tracer.GetTransientStateID:
 		case tracer.SetTransientStateID:
@@ -324,10 +323,6 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		}
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong address class: %d", addrCl)
-	}
-
-	if addrCl != tracer.NoArgID {
-		fmt.Printf("%s: %s\n", tracer.OpText[op], addr)
 	}
 
 	switch keyCl {
