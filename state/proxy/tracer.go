@@ -56,6 +56,11 @@ func (p *TracerProxy) CreateAccount(address common.Address) {
 }
 
 func (p *TracerProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
+	if address.Cmp(common.HexToAddress("0x6fc240cb0cb82a0323b92a8053f7b6d1329f4075")) == 0 {
+		b := p.db.GetBalance(address)
+		fmt.Println(b.Uint64())
+	}
+
 	size := uint32(amount.ByteLen())
 	data := append(bigendian.Uint32ToBytes(size), amount.Bytes()...)
 	data = append(data, byte(reason))

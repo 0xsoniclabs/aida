@@ -120,7 +120,6 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			operation.Data = []any{value, reason}
 		case tracer.SelfDestructID:
 		case tracer.CreateContractID:
-			fmt.Printf("")
 		case tracer.GetStorageRootID:
 		case tracer.GetTransientStateID:
 		case tracer.SetTransientStateID:

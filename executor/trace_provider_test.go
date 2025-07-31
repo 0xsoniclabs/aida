@@ -53,7 +53,7 @@ func TestTraceProvider_Run(t *testing.T) {
 
 func TestTraceProvider_readOperation(t *testing.T) {
 	type operation struct {
-		op                   uint16
+		op                   uint8
 		addrCl, keyCl, valCl uint8
 	}
 	addr1 := common.Address{0x1}

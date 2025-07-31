@@ -18,8 +18,10 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
 	"github.com/0xsoniclabs/aida/executor/extension/tracker"
@@ -93,6 +95,7 @@ func record(
 	extra []executor.Extension[txcontext.TxContext],
 ) error {
 	var extensions = []executor.Extension[txcontext.TxContext]{
+		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker[txcontext.TxContext](cfg, cfg.TrackerGranularity),
 		statedb.MakeTemporaryStatePrepper(cfg),
