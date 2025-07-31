@@ -326,6 +326,10 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		return tracer.Operation{}, fmt.Errorf("wrong address class: %d", addrCl)
 	}
 
+	if addrCl != tracer.NoArgID {
+		fmt.Printf("%s: %s\n", tracer.OpText[op], addr)
+	}
+
 	switch keyCl {
 	case tracer.NoArgID:
 	case tracer.ZeroValueID:
