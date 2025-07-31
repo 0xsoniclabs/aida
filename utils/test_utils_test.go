@@ -25,6 +25,6 @@ func TestUtils_createTestUpdateDB(t *testing.T) {
 }
 
 func TestUtils_getTestSubstate(t *testing.T) {
-	ss := getTestSubstate("default")
+	ss := GetTestSubstate("default")
 	assert.NotNil(t, ss)
 }
