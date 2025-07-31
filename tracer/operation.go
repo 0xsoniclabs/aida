@@ -24,7 +24,7 @@ import (
 )
 
 type Operation struct {
-	Op    uint16
+	Op    uint8
 	Addr  common.Address
 	Key   common.Hash
 	Value common.Hash
