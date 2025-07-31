@@ -18,9 +18,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"os"
 
+	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"github.com/urfave/cli/v2"
 )
 
