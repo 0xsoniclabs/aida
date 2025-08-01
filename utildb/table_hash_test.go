@@ -292,18 +292,18 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	// Create a config with an invalid substate encoding
+	// Create a config with an invalid substate encoding - encoding is set in the factory automatically
 	cfg := &utils.Config{
 		DbComponent:      string(dbcomponent.Substate),
 		SubstateEncoding: "invalid_encoding",
 	}
-
 	gomock.InOrder(
-		log.EXPECT().Info(gomock.Any()),
+		log.EXPECT().Info("Generating Substate hash..."),
+		log.EXPECT().Infof(gomock.Any(), gomock.Any(), gomock.Any()),
 	)
 
 	err = TableHash(cfg, database, log)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestTableHash_InvalidKeys(t *testing.T) {

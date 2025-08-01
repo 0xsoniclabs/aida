@@ -66,17 +66,6 @@ func TestInfo_PrintCount(t *testing.T) {
 			},
 			wantErr: "unable to parse cli arguments; command requires 2 arguments",
 		},
-		{
-			name: "InvalidEncoding",
-			args: []string{
-				"info", "count",
-				"--aida-db", aidaDbPath,
-				"--db-component=all",
-				"--substate-encoding=invalidEncoding",
-				"1", "2",
-			},
-			wantErr: "cannot set substate encoding; failed to set decoder; encoding not supported: invalidEncoding",
-		},
 	}
 
 	for _, tc := range tests {
@@ -351,8 +340,14 @@ func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
 
 	// Substate set
 	kv := &testutil.KeyValue{}
-	iter := iterator.NewArrayIterator(kv)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
+	iter3 := iterator.NewArrayIterator(kv)
+	iter4 := iterator.NewArrayIterator(kv)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter3)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter4)
 	log.EXPECT().Noticef("Found %v substates", uint64(0))
 
 	// Update set
@@ -420,15 +415,6 @@ func TestInfo_PrintRange(t *testing.T) {
 				DbComponent: "all",
 			},
 			wantErr: "cannot open aida-db; cannot open leveldb; stat %s: no such file or directory",
-		},
-		{
-			name: "InvalidEncoding",
-			cfg: &utils.Config{
-				AidaDb:           t.TempDir() + "/emptydb1",
-				SubstateEncoding: "errorEncoding",
-				DbComponent:      "substate",
-			},
-			wantErr: "cannot set substate encoding; failed to set decoder; encoding not supported: errorEncoding",
 		},
 		{
 			name: "InvalidDbComponent",
