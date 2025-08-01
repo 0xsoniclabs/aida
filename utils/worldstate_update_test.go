@@ -39,7 +39,7 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	kv.PutU(db.SubstateDBKey(input.Block, input.Transaction), encoded)
 	iter := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).MinTimes(2).Return(iter)
 	baseDb.EXPECT().GetBackend().Return(mockDb)
 	baseDb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
 
