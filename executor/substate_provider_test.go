@@ -156,13 +156,7 @@ func openSubstateDb(path string, t *testing.T) Provider[txcontext.TxContext] {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	iterator, err := OpenSubstateProvider(&cfg, nil, aidaDb)
-	if err != nil {
-		t.Errorf("fail to open substate provide; %v", err)
-	}
-
-	return iterator
+	return OpenSubstateProvider(&cfg, nil, aidaDb)
 }
 
 func createSubstateDb(t *testing.T, path string) error {
