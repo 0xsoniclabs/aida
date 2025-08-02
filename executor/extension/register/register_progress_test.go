@@ -34,11 +34,8 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
-
-	//db
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-
 	"go.uber.org/mock/gomock"
 )
 

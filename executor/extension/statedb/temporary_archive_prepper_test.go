@@ -18,11 +18,13 @@ package statedb
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -75,4 +77,19 @@ var data = &rpc.RequestAndResults{
 		Timestamp: 10,
 	},
 	SkipValidation: false,
+}
+
+func TestTemporaryArchivePrepper_PreTransactionError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := state.NewMockStateDB(ctrl)
+	ext := MakeTemporaryArchivePrepper()
+	mockErr := errors.New("mock error")
+	gomock.InOrder(
+		db.EXPECT().GetArchiveState(uint64(10)).Return(nil, mockErr),
+	)
+
+	st := executor.State[*rpc.RequestAndResults]{Block: 10, Transaction: 0, Data: data}
+	ctx := &executor.Context{State: db}
+	err := ext.PreTransaction(st, ctx)
+	assert.Equal(t, mockErr, err)
 }
