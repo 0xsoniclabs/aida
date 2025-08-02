@@ -18,8 +18,9 @@ package stochastic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -77,8 +78,10 @@ func ReadSimulation(filename string) (*EstimationModelJSON, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed opening simulation file; %v", err)
 	}
-	defer file.Close()
-	contents, err := ioutil.ReadAll(file)
+	defer func(file *os.File) {
+		err = errors.Join(err, file.Close())
+	}(file)
+	contents, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading simulation file; %v", err)
 	}
@@ -94,19 +97,21 @@ func ReadSimulation(filename string) (*EstimationModelJSON, error) {
 }
 
 // WriteJSON writes an simulation file in JSON format.
-func (m *EstimationModelJSON) WriteJSON(filename string) error {
+func (m *EstimationModelJSON) WriteJSON(filename string) (err error) {
 	f, fErr := os.Create(filename)
 	if fErr != nil {
 		return fmt.Errorf("cannot open JSON file; %v", fErr)
 	}
-	defer f.Close()
-	jOut, jErr := json.MarshalIndent(m, "", "    ")
-	if jErr != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", jErr)
+	defer func(f *os.File) {
+		err = errors.Join(err, f.Close())
+	}(f)
+	jOut, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to convert JSON file; %v", err)
 	}
-	_, pErr := fmt.Fprintln(f, string(jOut))
-	if pErr != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", pErr)
+	_, err = fmt.Fprintln(f, string(jOut))
+	if err != nil {
+		return fmt.Errorf("failed to convert JSON file; %v", err)
 	}
 	return nil
 }
