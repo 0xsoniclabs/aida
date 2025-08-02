@@ -815,7 +815,7 @@ func TestToscaTxContext_GetLogs(t *testing.T) {
 		},
 	}
 
-	mockStateDB.EXPECT().GetLogs(common.Hash{}, uint64(0), common.Hash{}).Return(ethLogs)
+	mockStateDB.EXPECT().GetLogs(common.Hash{}, uint64(0), common.Hash{}, uint64(0)).Return(ethLogs)
 
 	ctx := &toscaTxContext{
 		blockEnvironment: mockBlockEnv,
@@ -1813,7 +1813,7 @@ func TestAidaProcessor_processRegularTx(t *testing.T) {
 		mockStateDB.EXPECT().SetTxContext(txHash, tx).Times(1)
 		mockStateDB.EXPECT().Snapshot().Return(snapshot).AnyTimes()
 		mockStateDB.EXPECT().GetBalance(sender).Return(uint256.NewInt(10510000)).AnyTimes()
-		mockStateDB.EXPECT().GetLogs(txHash, uint64(block), blockHash).Return([]*types.Log{}).Times(1)
+		mockStateDB.EXPECT().GetLogs(txHash, uint64(block), blockHash, uint64(1700000000)).Return([]*types.Log{}).Times(1)
 		mockStateDB.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
 		mockStateDB.EXPECT().Prepare(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 		mockStateDB.EXPECT().GetNonce(sender).Return(uint64(10)).Times(1)
