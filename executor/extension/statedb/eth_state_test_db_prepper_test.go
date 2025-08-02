@@ -17,7 +17,6 @@
 package statedb
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
