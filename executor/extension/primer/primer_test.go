@@ -20,11 +20,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -35,7 +30,12 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 

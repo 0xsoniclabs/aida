@@ -1885,7 +1885,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R:       common.Big1,
 			S:       common.Big1,
 		})
-		mockTxContext := ethtest.NewMockStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1920,7 +1920,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R:       common.Big1,
 			S:       common.Big1,
 		})
-		mockTxContext := ethtest.NewMockStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1955,7 +1955,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 
 	t.Run("failed_unmarshal", func(t *testing.T) {
 
-		mockTxContext := ethtest.NewMockStateTestContext(message, mockBlockEnv, hexutil.Bytes{1, 2, 3})
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, hexutil.Bytes{1, 2, 3})
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1979,7 +1979,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R: common.Big1,
 			S: common.Big1,
 		})
-		mockTxContext := ethtest.NewMockStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
