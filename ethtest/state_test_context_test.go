@@ -1,8 +1,8 @@
 package ethtest
 
 import (
-	"math/big"
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -42,7 +42,7 @@ func TestEthTest_NewMockStateTestContext(t *testing.T) {
 		S:       common.Big1,
 	})
 	mockBytes := utils.Must(mockTx.MarshalBinary())
-	mockTxContext := NewMockStateTestContext(message, mockBlockEnv, mockBytes)
+	mockTxContext := NewStateTestContext(message, mockBlockEnv, mockBytes)
 	assert.Equal(t, mockBlockEnv, mockTxContext.env)
 	assert.Equal(t, message, mockTxContext.msg)
 	assert.Len(t, mockTxContext.txBytes, len(mockBytes))
@@ -50,7 +50,6 @@ func TestEthTest_NewMockStateTestContext(t *testing.T) {
 		assert.Equal(t, mockBytes[i], txBytes)
 	}
 }
-
 
 func newTestStateTestContext() *StateTestContext {
 	msg := &core.Message{}

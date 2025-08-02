@@ -51,7 +51,7 @@ func newStateTestTxContext(
 	}
 }
 
-func NewMockStateTestContext(msg *core.Message, env txcontext.BlockEnvironment, txBytes hexutil.Bytes) *StateTestContext {
+func NewStateTestContext(msg *core.Message, env txcontext.BlockEnvironment, txBytes hexutil.Bytes) *StateTestContext {
 	return &StateTestContext{
 		env:     env,
 		msg:     msg,
