@@ -524,6 +524,9 @@ func TestGetLastBlockHash_InvalidKey(t *testing.T) {
 
 	// Save an invalid block hash key
 	err = database.Put([]byte(BlockHashPrefix+"inv"), []byte("someValue"))
+	if err != nil {
+		t.Fatalf("error saving invalid block hash key: %v", err)
+	}
 
 	defer func() {
 		err := database.Close()

@@ -337,7 +337,7 @@ func OverwriteStateDB(patch txcontext.WorldState, db state.VmStateDB) {
 			db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 
 		}
-		if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
+		if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
 			db.SetCode(addr, acc.GetCode())
 		}
 
