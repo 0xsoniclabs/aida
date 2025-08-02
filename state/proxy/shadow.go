@@ -84,7 +84,7 @@ func (s *shadowVmStateDb) CreateAccount(addr common.Address) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -132,7 +132,7 @@ func (s *shadowVmStateDb) SetNonce(addr common.Address, value uint64, reason tra
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -212,7 +212,7 @@ func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -230,7 +230,7 @@ func (s *shadowStateDb) BeginSyncPeriod(number uint64) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -240,7 +240,7 @@ func (s *shadowStateDb) EndSyncPeriod() {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -279,7 +279,7 @@ func (s *shadowVmStateDb) AddRefund(amount uint64) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 	// check that the update value is the same
 	s.getUint64("AddRefund", func(s state.VmStateDB) uint64 { return s.GetRefund() })
@@ -291,7 +291,7 @@ func (s *shadowVmStateDb) SubRefund(amount uint64) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 	// check that the update value is the same
 	s.getUint64("SubRefund", func(s state.VmStateDB) uint64 { return s.GetRefund() })
@@ -307,7 +307,7 @@ func (s *shadowVmStateDb) Prepare(rules params.Rules, sender, coinbase common.Ad
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -325,7 +325,7 @@ func (s *shadowVmStateDb) AddAddressToAccessList(addr common.Address) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -335,7 +335,7 @@ func (s *shadowVmStateDb) AddSlotToAccessList(addr common.Address, slot common.H
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -345,7 +345,7 @@ func (s *shadowVmStateDb) AddLog(log *types.Log) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -382,7 +382,7 @@ func (s *shadowVmStateDb) CreateContract(addr common.Address) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -406,7 +406,7 @@ func (s *shadowStateDb) Finalise(deleteEmptyObjects bool) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -439,7 +439,7 @@ func (s *shadowVmStateDb) SetTxContext(thash common.Hash, ti int) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -449,7 +449,7 @@ func (s *shadowStateDb) PrepareSubstate(substate txcontext.WorldState, block uin
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
@@ -465,7 +465,7 @@ func (s *shadowVmStateDb) AddPreimage(hash common.Hash, plain []byte) {
 		return nil
 	})
 	if err != nil {
-		s.log.Errorf("Finalise failed: %v", err)
+		s.log.Errorf("failed: %v", err)
 	}
 }
 
