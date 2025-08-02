@@ -479,8 +479,6 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, int, tx int, st tx
 		failed:     !receipt.Success,
 	}
 
-	// TODO bug err never used
-	// TODO bug final error never used
 	return newTransactionResult(log, msg, result, finalError, msg.From), nil
 }
 

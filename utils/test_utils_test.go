@@ -3,9 +3,8 @@ package utils
 import (
 	"testing"
 
-	"github.com/pkg/errors"
-
 	substateDb "github.com/0xsoniclabs/substate/db"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
