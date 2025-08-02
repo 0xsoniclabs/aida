@@ -125,7 +125,7 @@ func TestStochastic_checkArgOp(t *testing.T) {
 }
 
 func TestStochastic_IsValidArgOp(t *testing.T) {
-	valid := IsValidArgOp(4752)
+	valid := IsValidArgOp(1044)
 	assert.True(t, valid)
 
 	invalid := IsValidArgOp(-1)
