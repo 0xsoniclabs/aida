@@ -19,11 +19,15 @@ package executor
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -73,4 +77,77 @@ func createTestDataFile(t *testing.T) string {
 		t.Errorf("WriteFile() error = %v, wantErr %v", err, nil)
 	}
 	return pathFile
+}
+
+func TestExecutor_NewEthStateTestProvider(t *testing.T) {
+	cfg := &utils.Config{ArgPath: "somepath"}
+	provider := NewEthStateTestProvider(cfg)
+	require.NotNil(t, provider)
+
+	_, ok := provider.(ethTestProvider)
+	assert.True(t, ok, "NewEthStateTestProvider should return an ethTestProvider")
+
+}
+
+func TestEthTestProvider_Close(t *testing.T) {
+	provider := NewEthStateTestProvider(&utils.Config{})
+
+	assert.NotPanics(t, func() { provider.Close() })
+}
+
+func TestEthTestProvider_Run_NewSplitterFails_NonExistentFile(t *testing.T) {
+	cfg := &utils.Config{
+		ArgPath: filepath.Join(t.TempDir(), "non_existent_test_file.json"),
+		Fork:    "all",
+	}
+	provider := NewEthStateTestProvider(cfg)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConsumer := NewMockTxConsumer(ctrl)
+
+	err := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
+	require.Error(t, err)
+
+	assert.Contains(t, err.Error(), "no such file or directory")
+}
+
+func TestEthTestProvider_Run_ConsumerError(t *testing.T) {
+	pathFile := createTestDataFile(t)
+	cfg := &utils.Config{
+		ArgPath: pathFile,
+		Fork:    "all",
+	}
+	provider := NewEthStateTestProvider(cfg)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConsumer := NewMockTxConsumer(ctrl)
+
+	expectedErr := errors.New("consumer failed")
+
+	mockConsumer.EXPECT().Consume(2, 0, gomock.Any()).Return(expectedErr)
+
+	runErr := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
+	require.Error(t, runErr)
+	assert.True(t, errors.Is(runErr, expectedErr))
+	assert.Contains(t, runErr.Error(), "transaction failed")
+}
+
+func TestEthTestProvider_Run_NoTestsFromSplitter(t *testing.T) {
+	emptyTestFilePath := filepath.Join(t.TempDir(), "empty_tests.json")
+
+	emptyTestData := `{"test": {}}`
+	err := os.WriteFile(emptyTestFilePath, []byte(emptyTestData), 0644)
+	require.NoError(t, err)
+
+	cfg := &utils.Config{
+		ArgPath: emptyTestFilePath,
+		Fork:    "all",
+	}
+	provider := NewEthStateTestProvider(cfg)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockConsumer := NewMockTxConsumer(ctrl)
+
+	runErr := provider.Run(0, 0, toSubstateConsumer(mockConsumer))
+	assert.NoError(t, runErr)
 }
