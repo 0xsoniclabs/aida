@@ -21,6 +21,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -48,4 +49,60 @@ func TestArchivePrepper_ArchiveGetsReleasedInPostBlock(t *testing.T) {
 	if err := ext.PostBlock(state, ctx); err != nil {
 		t.Fatalf("failed to to run post-block: %v", err)
 	}
+}
+
+func TestArchivePrepper_MakeArchivePrepper(t *testing.T) {
+	ext := MakeArchivePrepper[any]()
+	assert.NotNil(t, ext)
+}
+
+func TestArchivePrepper_PreBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := state.NewMockStateDB(ctrl)
+	mockDb.EXPECT().GetArchiveState(gomock.Any()).Return(nil, nil)
+	a := archivePrepper[string]{}
+	err := a.PreBlock(executor.State[string]{}, &executor.Context{
+		State: mockDb,
+	})
+	assert.Nil(t, err)
+}
+
+func TestArchivePrepper_PreTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := state.NewMockNonCommittableStateDB(ctrl)
+	mockDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+	a := archivePrepper[string]{}
+	err := a.PreTransaction(executor.State[string]{}, &executor.Context{
+		Archive: mockDb,
+	})
+	assert.Nil(t, err)
+}
+
+func TestArchivePrepper_PostTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := state.NewMockNonCommittableStateDB(ctrl)
+	mockDb.EXPECT().EndTransaction().Return(nil)
+	a := archivePrepper[string]{}
+	err := a.PostTransaction(executor.State[string]{}, &executor.Context{
+		Archive: mockDb,
+	})
+	assert.Nil(t, err)
+}
+func TestArchivePrepper_PostBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := state.NewMockNonCommittableStateDB(ctrl)
+	mockDb.EXPECT().Release().Return(nil)
+	a := archivePrepper[string]{}
+	err := a.PostBlock(executor.State[string]{}, &executor.Context{
+		Archive: mockDb,
+	})
+	assert.Nil(t, err)
 }

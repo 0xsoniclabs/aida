@@ -26,6 +26,7 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -133,4 +134,12 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
 	ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+}
+
+func TestProgressLoggerExtension_MakeProgressLogger(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeProgressLogger[any](cfg, -1)
+
+	_, ok := ext.(*progressLogger[any])
+	assert.True(t, ok)
 }
