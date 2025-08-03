@@ -271,10 +271,6 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			}
 
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
-			err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-			if err != nil {
-				return nil, err
-			}
 			md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
 				md.log.Warningf("Cannot find blocks in substate; is substate present in given database? %v", paths[i])
@@ -346,10 +342,6 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 			return nil, fmt.Errorf("cannot close targetDb; %v", err)
 		}
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(targetMD.Db)
-		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			return nil, err
-		}
 		targetMD.FirstBlock, targetMD.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 		if !ok {
 			targetMD.log.Warningf("Cannot find block range in substate of AidaDb (%v); this will in corrupted metadata but will not affect data itself", cfg.AidaDb)

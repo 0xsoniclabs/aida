@@ -149,10 +149,6 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			return fmt.Errorf("cannot set substate encoding; %w", err)
-		}
 		count := utildb.GetSubstateCount(cfg, sdb)
 		log.Noticef("Found %v substates", count)
 	}
@@ -241,11 +237,6 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
-		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			return fmt.Errorf("cannot set substate encoding; %w", err)
-		}
-
 		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			log.Warning("No substate found")
