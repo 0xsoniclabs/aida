@@ -15,32 +15,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockIProfileDB is a mock of IProfileDB interface.
-type MockIProfileDB struct {
+// MockProfileDB is a mock of ProfileDB interface.
+type MockProfileDB struct {
 	ctrl     *gomock.Controller
-	recorder *MockIProfileDBMockRecorder
+	recorder *MockProfileDBMockRecorder
 	isgomock struct{}
 }
 
-// MockIProfileDBMockRecorder is the mock recorder for MockIProfileDB.
-type MockIProfileDBMockRecorder struct {
-	mock *MockIProfileDB
+// MockProfileDBMockRecorder is the mock recorder for MockProfileDB.
+type MockProfileDBMockRecorder struct {
+	mock *MockProfileDB
 }
 
-// NewMockIProfileDB creates a new mock instance.
-func NewMockIProfileDB(ctrl *gomock.Controller) *MockIProfileDB {
-	mock := &MockIProfileDB{ctrl: ctrl}
-	mock.recorder = &MockIProfileDBMockRecorder{mock}
+// NewMockProfileDB creates a new mock instance.
+func NewMockProfileDB(ctrl *gomock.Controller) *MockProfileDB {
+	mock := &MockProfileDB{ctrl: ctrl}
+	mock.recorder = &MockProfileDBMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockIProfileDB) EXPECT() *MockIProfileDBMockRecorder {
+func (m *MockProfileDB) EXPECT() *MockProfileDBMockRecorder {
 	return m.recorder
 }
 
 // Add mocks base method.
-func (m *MockIProfileDB) Add(data ProfileData) error {
+func (m *MockProfileDB) Add(data ProfileData) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", data)
 	ret0, _ := ret[0].(error)
@@ -48,13 +48,13 @@ func (m *MockIProfileDB) Add(data ProfileData) error {
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockIProfileDBMockRecorder) Add(data any) *gomock.Call {
+func (mr *MockProfileDBMockRecorder) Add(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockIProfileDB)(nil).Add), data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockProfileDB)(nil).Add), data)
 }
 
 // Close mocks base method.
-func (m *MockIProfileDB) Close() error {
+func (m *MockProfileDB) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
@@ -62,13 +62,13 @@ func (m *MockIProfileDB) Close() error {
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockIProfileDBMockRecorder) Close() *gomock.Call {
+func (mr *MockProfileDBMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockIProfileDB)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockProfileDB)(nil).Close))
 }
 
 // DeleteByBlockRange mocks base method.
-func (m *MockIProfileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error) {
+func (m *MockProfileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteByBlockRange", firstBlock, lastBlock)
 	ret0, _ := ret[0].(int64)
@@ -77,13 +77,13 @@ func (m *MockIProfileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64
 }
 
 // DeleteByBlockRange indicates an expected call of DeleteByBlockRange.
-func (mr *MockIProfileDBMockRecorder) DeleteByBlockRange(firstBlock, lastBlock any) *gomock.Call {
+func (mr *MockProfileDBMockRecorder) DeleteByBlockRange(firstBlock, lastBlock any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByBlockRange", reflect.TypeOf((*MockIProfileDB)(nil).DeleteByBlockRange), firstBlock, lastBlock)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByBlockRange", reflect.TypeOf((*MockProfileDB)(nil).DeleteByBlockRange), firstBlock, lastBlock)
 }
 
 // Flush mocks base method.
-func (m *MockIProfileDB) Flush() error {
+func (m *MockProfileDB) Flush() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Flush")
 	ret0, _ := ret[0].(error)
@@ -91,7 +91,7 @@ func (m *MockIProfileDB) Flush() error {
 }
 
 // Flush indicates an expected call of Flush.
-func (mr *MockIProfileDBMockRecorder) Flush() *gomock.Call {
+func (mr *MockProfileDBMockRecorder) Flush() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockIProfileDB)(nil).Flush))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockProfileDB)(nil).Flush))
 }

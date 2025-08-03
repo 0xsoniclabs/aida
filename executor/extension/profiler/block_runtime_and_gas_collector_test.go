@@ -71,8 +71,8 @@ func TestBlockRuntimeAndGasCollector_PreTransaction(t *testing.T) {
 func TestBlockRuntimeAndGasCollector_PostTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
-	mockContext := blockprofile.NewMockIContext(ctrl)
+	mockProfileDB := blockprofile.NewMockProfileDB(ctrl)
+	mockContext := blockprofile.NewMockContext(ctrl)
 	b := &BlockRuntimeAndGasCollector{
 		profileDb: mockProfileDB,
 		ctx:       mockContext,
@@ -97,8 +97,8 @@ func TestBlockRuntimeAndGasCollector_PostBlock(t *testing.T) {
 	defer ctrl.Finish()
 
 	t.Run("case success", func(t *testing.T) {
-		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
-		mockContext := blockprofile.NewMockIContext(ctrl)
+		mockProfileDB := blockprofile.NewMockProfileDB(ctrl)
+		mockContext := blockprofile.NewMockContext(ctrl)
 		b := &BlockRuntimeAndGasCollector{
 			profileDb: mockProfileDB,
 			ctx:       mockContext,
@@ -111,8 +111,8 @@ func TestBlockRuntimeAndGasCollector_PostBlock(t *testing.T) {
 		assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 60)
 	})
 	t.Run("case error", func(t *testing.T) {
-		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
-		mockContext := blockprofile.NewMockIContext(ctrl)
+		mockProfileDB := blockprofile.NewMockProfileDB(ctrl)
+		mockContext := blockprofile.NewMockContext(ctrl)
 		b := &BlockRuntimeAndGasCollector{
 			profileDb: mockProfileDB,
 			ctx:       mockContext,
@@ -126,8 +126,8 @@ func TestBlockRuntimeAndGasCollector_PostBlock(t *testing.T) {
 		assert.InDelta(t, time.Now().Second(), b.blockTimer.Second(), 60)
 	})
 	t.Run("case error 2", func(t *testing.T) {
-		mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
-		mockContext := blockprofile.NewMockIContext(ctrl)
+		mockProfileDB := blockprofile.NewMockProfileDB(ctrl)
+		mockContext := blockprofile.NewMockContext(ctrl)
 		b := &BlockRuntimeAndGasCollector{
 			profileDb: mockProfileDB,
 			ctx:       mockContext,
@@ -146,8 +146,8 @@ func TestBlockRuntimeAndGasCollector_PostBlock(t *testing.T) {
 func TestBlockRuntimeAndGasCollector_PostRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockProfileDB := blockprofile.NewMockIProfileDB(ctrl)
-	mockContext := blockprofile.NewMockIContext(ctrl)
+	mockProfileDB := blockprofile.NewMockProfileDB(ctrl)
+	mockContext := blockprofile.NewMockContext(ctrl)
 	b := &BlockRuntimeAndGasCollector{
 		profileDb: mockProfileDB,
 		ctx:       mockContext,

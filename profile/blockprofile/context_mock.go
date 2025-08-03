@@ -19,32 +19,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockIContext is a mock of IContext interface.
-type MockIContext struct {
+// MockContext is a mock of Context interface.
+type MockContext struct {
 	ctrl     *gomock.Controller
-	recorder *MockIContextMockRecorder
+	recorder *MockContextMockRecorder
 	isgomock struct{}
 }
 
-// MockIContextMockRecorder is the mock recorder for MockIContext.
-type MockIContextMockRecorder struct {
-	mock *MockIContext
+// MockContextMockRecorder is the mock recorder for MockContext.
+type MockContextMockRecorder struct {
+	mock *MockContext
 }
 
-// NewMockIContext creates a new mock instance.
-func NewMockIContext(ctrl *gomock.Controller) *MockIContext {
-	mock := &MockIContext{ctrl: ctrl}
-	mock.recorder = &MockIContextMockRecorder{mock}
+// NewMockContext creates a new mock instance.
+func NewMockContext(ctrl *gomock.Controller) *MockContext {
+	mock := &MockContext{ctrl: ctrl}
+	mock.recorder = &MockContextMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockIContext) EXPECT() *MockIContextMockRecorder {
+func (m *MockContext) EXPECT() *MockContextMockRecorder {
 	return m.recorder
 }
 
 // GetProfileData mocks base method.
-func (m *MockIContext) GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error) {
+func (m *MockContext) GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProfileData", curBlock, tBlock)
 	ret0, _ := ret[0].(*ProfileData)
@@ -53,13 +53,13 @@ func (m *MockIContext) GetProfileData(curBlock uint64, tBlock time.Duration) (*P
 }
 
 // GetProfileData indicates an expected call of GetProfileData.
-func (mr *MockIContextMockRecorder) GetProfileData(curBlock, tBlock any) *gomock.Call {
+func (mr *MockContextMockRecorder) GetProfileData(curBlock, tBlock any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfileData", reflect.TypeOf((*MockIContext)(nil).GetProfileData), curBlock, tBlock)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfileData", reflect.TypeOf((*MockContext)(nil).GetProfileData), curBlock, tBlock)
 }
 
 // RecordTransaction mocks base method.
-func (m *MockIContext) RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error {
+func (m *MockContext) RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecordTransaction", state, tTransaction)
 	ret0, _ := ret[0].(error)
@@ -67,13 +67,13 @@ func (m *MockIContext) RecordTransaction(state executor.State[txcontext.TxContex
 }
 
 // RecordTransaction indicates an expected call of RecordTransaction.
-func (mr *MockIContextMockRecorder) RecordTransaction(state, tTransaction any) *gomock.Call {
+func (mr *MockContextMockRecorder) RecordTransaction(state, tTransaction any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordTransaction", reflect.TypeOf((*MockIContext)(nil).RecordTransaction), state, tTransaction)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordTransaction", reflect.TypeOf((*MockContext)(nil).RecordTransaction), state, tTransaction)
 }
 
 // dependencies mocks base method.
-func (m *MockIContext) dependencies(addresses AddressSet) graphutil.OrdinalSet {
+func (m *MockContext) dependencies(addresses AddressSet) graphutil.OrdinalSet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "dependencies", addresses)
 	ret0, _ := ret[0].(graphutil.OrdinalSet)
@@ -81,13 +81,13 @@ func (m *MockIContext) dependencies(addresses AddressSet) graphutil.OrdinalSet {
 }
 
 // dependencies indicates an expected call of dependencies.
-func (mr *MockIContextMockRecorder) dependencies(addresses any) *gomock.Call {
+func (mr *MockContextMockRecorder) dependencies(addresses any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "dependencies", reflect.TypeOf((*MockIContext)(nil).dependencies), addresses)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "dependencies", reflect.TypeOf((*MockContext)(nil).dependencies), addresses)
 }
 
 // earliestTimeToRun mocks base method.
-func (m *MockIContext) earliestTimeToRun(addresses AddressSet) time.Duration {
+func (m *MockContext) earliestTimeToRun(addresses AddressSet) time.Duration {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "earliestTimeToRun", addresses)
 	ret0, _ := ret[0].(time.Duration)
@@ -95,7 +95,7 @@ func (m *MockIContext) earliestTimeToRun(addresses AddressSet) time.Duration {
 }
 
 // earliestTimeToRun indicates an expected call of earliestTimeToRun.
-func (mr *MockIContextMockRecorder) earliestTimeToRun(addresses any) *gomock.Call {
+func (mr *MockContextMockRecorder) earliestTimeToRun(addresses any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "earliestTimeToRun", reflect.TypeOf((*MockIContext)(nil).earliestTimeToRun), addresses)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "earliestTimeToRun", reflect.TypeOf((*MockContext)(nil).earliestTimeToRun), addresses)
 }

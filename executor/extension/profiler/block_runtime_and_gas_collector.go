@@ -42,13 +42,13 @@ type BlockRuntimeAndGasCollector struct {
 	extension.NilExtension[txcontext.TxContext]
 	log        logger.Logger
 	cfg        *utils.Config
-	profileDb  blockprofile.IProfileDB
-	ctx        blockprofile.IContext
+	profileDb  blockprofile.ProfileDB
+	ctx        blockprofile.Context
 	blockTimer time.Time
 	txTimer    time.Time
 }
 
-// PreRun prepares the ProfileDB
+// PreRun prepares the profileDB
 func (b *BlockRuntimeAndGasCollector) PreRun(executor.State[txcontext.TxContext], *executor.Context) error {
 	var err error
 	b.profileDb, err = blockprofile.NewProfileDB(b.cfg.ProfileDB)
@@ -56,7 +56,7 @@ func (b *BlockRuntimeAndGasCollector) PreRun(executor.State[txcontext.TxContext]
 		return fmt.Errorf("cannot create profile-db; %v", err)
 	}
 
-	b.log.Notice("Deleting old data from ProfileDB")
+	b.log.Notice("Deleting old data from profileDB")
 	_, err = b.profileDb.DeleteByBlockRange(b.cfg.First, b.cfg.Last)
 	if err != nil {
 		return fmt.Errorf("cannot delete old data from profile-db; %v", err)
@@ -87,7 +87,7 @@ func (b *BlockRuntimeAndGasCollector) PreBlock(executor.State[txcontext.TxContex
 	return nil
 }
 
-// PostBlock extracts data from profile context and writes them to ProfileDB.
+// PostBlock extracts data from profile context and writes them to profileDB.
 func (b *BlockRuntimeAndGasCollector) PostBlock(state executor.State[txcontext.TxContext], _ *executor.Context) error {
 	data, err := b.ctx.GetProfileData(uint64(state.Block), time.Since(b.blockTimer))
 	if err != nil {
@@ -102,7 +102,7 @@ func (b *BlockRuntimeAndGasCollector) PostBlock(state executor.State[txcontext.T
 	return nil
 }
 
-// PostRun closes ProfileDB
+// PostRun closes profileDB
 func (b *BlockRuntimeAndGasCollector) PostRun(executor.State[txcontext.TxContext], *executor.Context, error) error {
 	defer func() {
 		if r := recover(); r != nil {

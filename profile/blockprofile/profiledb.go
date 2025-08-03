@@ -70,15 +70,15 @@ CREATE TABLE IF NOT EXISTS txProfile (
 )
 
 //go:generate mockgen -source profiledb.go -destination profiledb_mock.go -package blockprofile
-type IProfileDB interface {
+type ProfileDB interface {
 	Close() error
 	Add(data ProfileData) error
 	Flush() error
 	DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error)
 }
 
-// ProfileDB is a profiling database for block processing.
-type ProfileDB struct {
+// profileDB is a profiling database for block processing.
+type profileDB struct {
 	sql       *sql.DB       // Sqlite3 database
 	blockStmt *sql.Stmt     // Prepared insert statement for a block
 	txStmt    *sql.Stmt     // Prepared insert statement for a transaction
@@ -86,7 +86,7 @@ type ProfileDB struct {
 }
 
 // NewProfileDB constructs a new profiling database.
-func NewProfileDB(dbFile string) (*ProfileDB, error) {
+func NewProfileDB(dbFile string) (*profileDB, error) {
 	// open SQLITE3 DB
 	sqlDB, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
@@ -106,7 +106,7 @@ func NewProfileDB(dbFile string) (*ProfileDB, error) {
 		return nil, fmt.Errorf("failed to prepare a SQL statement for tx profile; %v", err)
 	}
 
-	return &ProfileDB{
+	return &profileDB{
 		sql:       sqlDB,
 		blockStmt: blockStmt,
 		txStmt:    txStmt,
@@ -115,7 +115,7 @@ func NewProfileDB(dbFile string) (*ProfileDB, error) {
 }
 
 // Close flushes buffers of profiling database and closes the profiling database.
-func (db *ProfileDB) Close() error {
+func (db *profileDB) Close() error {
 	defer func() {
 		db.txStmt.Close()
 		db.blockStmt.Close()
@@ -128,7 +128,7 @@ func (db *ProfileDB) Close() error {
 }
 
 // Add a profile data record to the profiling database.
-func (db *ProfileDB) Add(ProfileData ProfileData) error {
+func (db *profileDB) Add(ProfileData ProfileData) error {
 	db.buffer = append(db.buffer, ProfileData)
 	if len(db.buffer) == cap(db.buffer) {
 		if err := db.Flush(); err != nil {
@@ -139,7 +139,7 @@ func (db *ProfileDB) Add(ProfileData ProfileData) error {
 }
 
 // Flush the profiling records in the database.
-func (db *ProfileDB) Flush() error {
+func (db *profileDB) Flush() error {
 	// open new transaction
 	tx, err := db.sql.Begin()
 	if err != nil {
@@ -170,7 +170,7 @@ func (db *ProfileDB) Flush() error {
 }
 
 // DeleteByBlockRange deletes information for a block range; used prior insertion
-func (db *ProfileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error) {
+func (db *profileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, error) {
 	const (
 		blockProfile = "blockProfile"
 		txProfile    = "txProfile"
