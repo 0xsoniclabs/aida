@@ -333,7 +333,7 @@ func TestPrinterToBuffer_Close(t *testing.T) {
 		buffer:   make([][]any, 10),
 		flusher:  &Flusher{},
 	}
-	assert.NotPanics(t, p.Close)
+	assert.NoError(t, p.Close())
 }
 func TestPrinterToBuffer_Reset(t *testing.T) {
 	p := &PrinterToBuffer{
