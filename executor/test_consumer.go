@@ -22,7 +22,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 )
 
-//go:generate mockgen -source test_consumer.go -destination test_consumer_mocks.go -package executor
+//go:generate mockgen -source test_consumer.go -destination test_consumer_mock.go -package executor
 
 //---------------------------------------------------------------------------------//
 // This file serves for creating a mock Consumer with specific type. Every possible

@@ -13,10 +13,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
 package executor
-
-//go:generate mockgen -source substate_provider_test.go -destination substate_provider_test_mocks.go -package executor
 
 import (
 	"errors"
@@ -27,6 +24,8 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
@@ -206,6 +205,82 @@ func createSubstateDb(t *testing.T, path string) error {
 		t.Fatal(err)
 	}
 
-	sdb.Close()
+	err = sdb.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 	return nil
+}
+
+func TestExecutor_OpenSubstateProvider(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("success", func(t *testing.T) {
+		cfg := &utils.Config{
+			AidaDb: "testdb",
+		}
+		ctxt := cli.NewContext(nil, nil, nil)
+
+		mockBaseDb := db.NewMockBaseDB(ctrl)
+		mockDb := db.NewMockDbAdapter(ctrl)
+		mockBaseDb.EXPECT().GetBackend().Return(mockDb)
+
+		provider, err := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
+		assert.NoError(t, err)
+		assert.NotNil(t, provider)
+	})
+
+	t.Run("error on setting encoding", func(t *testing.T) {
+		cfg := &utils.Config{
+			AidaDb:           "testdb",
+			SubstateEncoding: "invalid_encoding",
+		}
+		ctxt := cli.NewContext(nil, nil, nil)
+
+		mockBaseDb := db.NewMockBaseDB(ctrl)
+		mockDb := db.NewMockDbAdapter(ctrl)
+		mockBaseDb.EXPECT().GetBackend().Return(mockDb)
+
+		provider, err := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
+		assert.Error(t, err)
+		assert.Nil(t, provider)
+	})
+}
+
+func TestSubstateProvider_Run(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	mockIter := db.NewMockIIterator[*substate.Substate](ctrl)
+	mockDb.EXPECT().NewSubstateIterator(0, 0).Return(mockIter)
+	mockIter.EXPECT().Next().Return(true)
+	mockIter.EXPECT().Next().Return(false)
+	mockIter.EXPECT().Value().Return(&substate.Substate{
+		Block: 0,
+	})
+	mockIter.EXPECT().Release().Return()
+	mockIter.EXPECT().Error().Return(nil)
+
+	provider := &substateProvider{
+		db: mockDb,
+	}
+	err := provider.Run(0, 1, func(info TransactionInfo[txcontext.TxContext]) error {
+		return nil
+	})
+	assert.NoError(t, err)
+}
+
+func TestSubstateProvider_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	provider := &substateProvider{
+		db: mockDb,
+	}
+	assert.NotPanics(t, func() {
+		provider.Close()
+	})
 }
