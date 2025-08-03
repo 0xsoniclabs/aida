@@ -17,13 +17,18 @@
 package stochastic
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/generator"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"gonum.org/v1/gonum/stat/distuv"
@@ -233,4 +238,174 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 	ss.execute(RevertToSnapshotID, 1, 1, 1)
 	assert.GreaterOrEqual(t, len(ss.snapshot), 1)         // must have at lest one snapshot
 	assert.LessOrEqual(t, len(ss.snapshot), snapshotSize) // must not have more than 5 snapshots
+}
+
+func TestReplay_RunStochasticReplay(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tmpDir := t.TempDir()
+	cfg := &utils.Config{
+		ContractNumber:    1000,
+		KeysNumber:        1000,
+		ValuesNumber:      1000,
+		SnapshotDepth:     100,
+		BlockLength:       3,
+		SyncPeriodLength:  10,
+		TransactionLength: 2,
+		BalanceRange:      100,
+		NonceRange:        100,
+		Debug:             true,
+		ShadowImpl:        "geth",
+		DbTmp:             tmpDir,
+		DbImpl:            "carmen",
+		DbVariant:         "go-file",
+	}
+	db := state.NewMockStateDB(ctrl)
+	log := logger.NewLogger("INFO", "test")
+	e, err := ReadSimulation("data/test_replay.json")
+	if err != nil {
+		t.Fatalf("Failed to read simulation: %v", err)
+	}
+	db.EXPECT().GetShadowDB().Return(db).Times(1)
+	db.EXPECT().Error().Return(nil).Times(238)
+	db.EXPECT().EndSyncPeriod().Return().Times(73)
+	db.EXPECT().EndTransaction().Return(nil).Times(2)
+	db.EXPECT().BeginSyncPeriod(gomock.Any()).Return().Times(2)
+	db.EXPECT().BeginBlock(gomock.Any()).Return(nil).Times(2)
+	db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).Times(2)
+	db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1003)
+	db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(0)).Times(4)
+	db.EXPECT().EndBlock().Return(nil).Times(2)
+	db.EXPECT().GetState(gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(19)
+	db.EXPECT().GetCodeHash(gomock.Any()).Return(common.Hash{}).Times(4)
+	db.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(65)
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1007)
+	db.EXPECT().GetCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(13)
+	db.EXPECT().GetStorageRoot(gomock.Any()).Return(common.Hash{}).Times(1)
+	db.EXPECT().GetCodeSize(gomock.Any()).Return(0).Times(2)
+	db.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)).Times(3)
+	db.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return(nil).Times(2)
+	db.EXPECT().Empty(gomock.Any()).Return(false).Times(2)
+	db.EXPECT().Exist(gomock.Any()).Return(false).Times(1)
+	db.EXPECT().HasSelfDestructed(gomock.Any()).Return(false).Times(4)
+	db.EXPECT().CreateContract(gomock.Any()).Return().Times(4)
+	db.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).Return().Times(5)
+	db.EXPECT().GetCode(gomock.Any()).Return(nil).Times(2)
+	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0)).Times(6)
+	db.EXPECT().SelfDestruct6780(gomock.Any()).Return(*uint256.NewInt(0), false).Times(3)
+	db.EXPECT().GetTransientState(gomock.Any(), gomock.Any()).Return(common.Hash{}).Times(13)
+
+	err = RunStochasticReplay(db, e, 0, cfg, log)
+	assert.NoError(t, err)
+}
+
+func TestStochasticState_prime(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("success", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(nil)
+		db.EXPECT().EndBlock().Return(nil)
+		db.EXPECT().EndSyncPeriod().Return()
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.NoError(t, err)
+	})
+
+	t.Run("failed begin block", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed begin transaction", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed end transaction", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed end block", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(nil)
+		db.EXPECT().EndBlock().Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
 }
