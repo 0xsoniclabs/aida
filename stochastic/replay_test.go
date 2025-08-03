@@ -17,6 +17,7 @@
 package stochastic
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -296,4 +297,115 @@ func TestReplay_RunStochasticReplay(t *testing.T) {
 
 	err = RunStochasticReplay(db, e, 0, cfg, log)
 	assert.NoError(t, err)
+}
+
+func TestStochasticState_prime(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Run("success", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(nil)
+		db.EXPECT().EndBlock().Return(nil)
+		db.EXPECT().EndSyncPeriod().Return()
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.NoError(t, err)
+	})
+
+	t.Run("failed begin block", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed begin transaction", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed end transaction", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
+	t.Run("failed end block", func(t *testing.T) {
+		rg := rand.New(rand.NewSource(999))
+		qpdf := make([]float64, 2)
+		ra := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		contracts := generator.NewIndirectAccess(ra)
+		keys := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		values := generator.NewRandomAccess(rg, 1000, 5.0, qpdf)
+		snapshotLambda := 0.1
+		mockErr := errors.New("mock error")
+
+		db := state.NewMockStateDB(ctrl)
+		db.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		db.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		db.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		db.EXPECT().CreateAccount(gomock.Any()).Return().Times(1002)
+		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).Times(1002)
+		db.EXPECT().EndTransaction().Return(nil)
+		db.EXPECT().EndBlock().Return(mockErr)
+		ss := NewStochasticState(rg, db, contracts, keys, values, snapshotLambda, logger.NewLogger("INFO", "test"))
+		err := ss.prime()
+		assert.Equal(t, mockErr, err)
+	})
+
 }

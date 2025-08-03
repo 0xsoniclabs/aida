@@ -74,7 +74,7 @@ func find[T comparable](a []T, x T) int {
 }
 
 // createState creates a stochastic state and primes the StateDB
-func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) *stochasticState {
+func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*stochasticState, error) {
 	// produce random access generators for contract addresses,
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
@@ -102,9 +102,12 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	ss := NewStochasticState(rg, db, contracts, keys, values, e.SnapshotLambda, log)
 
 	// create accounts in StateDB
-	ss.prime()
+	err := ss.prime()
+	if err != nil {
+		return nil, err
+	}
 
-	return &ss
+	return &ss, nil
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
@@ -145,7 +148,10 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 	log.Noticef("using random seed %d", cfg.RandomSeed)
 
 	// create a stochastic state
-	ss := createState(cfg, e, db, rg, log)
+	ss, err := createState(cfg, e, db, rg, log)
+	if err != nil {
+		return err
+	}
 
 	// get stochastic matrix
 	operations, A, state := getStochasticMatrix(e)
@@ -256,7 +262,7 @@ func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.In
 }
 
 // prime StateDB accounts using account information
-func (ss *stochasticState) prime() {
+func (ss *stochasticState) prime() error {
 	numInitialAccounts := ss.contracts.NumElem() + 1
 	ss.log.Notice("Start priming...")
 	ss.log.Noticef("\tinitializing %v accounts\n", numInitialAccounts)
@@ -265,14 +271,15 @@ func (ss *stochasticState) prime() {
 	db.BeginSyncPeriod(0)
 	err := db.BeginBlock(0)
 	if err != nil {
-		ss.log.Fatal(err)
+		return err
 	}
 	err = db.BeginTransaction(0)
 	if err != nil {
-		ss.log.Fatal(err)
+		return err
 	}
 
 	// initialise accounts in memory with balances greater than zero
+	// TODO why not < numInitialAccounts?
 	for i := int64(0); i <= numInitialAccounts; i++ {
 		addr := toAddress(i)
 		db.CreateAccount(addr)
@@ -282,14 +289,15 @@ func (ss *stochasticState) prime() {
 	ss.log.Notice("Finalizing...")
 	err = db.EndTransaction()
 	if err != nil {
-		ss.log.Fatal(err)
+		return err
 	}
 	err = db.EndBlock()
 	if err != nil {
-		ss.log.Fatal(err)
+		return err
 	}
 	db.EndSyncPeriod()
 	ss.log.Notice("End priming...")
+	return nil
 }
 
 // EnableDebug set traceDebug flag to true, and enable debug message when executing an operation

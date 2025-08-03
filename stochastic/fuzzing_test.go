@@ -116,7 +116,11 @@ func FuzzStochastic(f *testing.F) {
 		rg := rand.New(fSrc)
 
 		// create a stochastic state
-		ss := createState(&cfg, &e, db, rg, logger.NewLogger("INFO", "Fuzzing Stochastic"))
+		ss, err := createState(&cfg, &e, db, rg, logger.NewLogger("INFO", "Fuzzing Stochastic"))
+		if err != nil {
+			f.Fatalf("failed creating stochastic state. Error: %v", err)
+			return
+		}
 
 		// get stochastic matrix
 		operations, A, state := getStochasticMatrix(&e)
