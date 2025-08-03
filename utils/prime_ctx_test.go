@@ -270,10 +270,11 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
 		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
 			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
 			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 		})
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(1), prime.block)
 	})
 
@@ -296,20 +297,17 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		mockError := errors.New("mock error")
 		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
 		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(mockError)
-		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(mockError)
-		mockStateDb.EXPECT().EndTransaction().Return(mockError)
-		mockStateDb.EXPECT().EndBlock().Return(mockError)
-		mockStateDb.EXPECT().EndSyncPeriod().Return()
 		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
 		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
 		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
 			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
 			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 		})
-		assert.Equal(t, uint64(1), prime.block)
+		assert.NotNil(t, err)
+		assert.Equal(t, uint64(0), prime.block)
 	})
 
 }
