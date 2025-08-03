@@ -61,7 +61,8 @@ func TestPrinter_Print(t *testing.T) {
 		mockPrinter,
 	}}
 	mockPrinter.EXPECT().Print().Return(nil).Times(1)
-	assert.NotPanics(t, p.Print)
+	err := p.Print()
+	assert.NoError(t, err)
 }
 
 func TestPrinter_Close(t *testing.T) {
@@ -72,8 +73,9 @@ func TestPrinter_Close(t *testing.T) {
 	p := &Printers{[]Printer{
 		mockPrinter,
 	}}
-	mockPrinter.EXPECT().Close().Return().Times(1)
-	assert.NotPanics(t, p.Close)
+	mockPrinter.EXPECT().Close().Return(nil).Times(1)
+	err := p.Close()
+	assert.NoError(t, err)
 }
 
 func TestPrinters_AddPrinterToWriter(t *testing.T) {
@@ -134,7 +136,8 @@ func TestPrinterToWriter_Print(t *testing.T) {
 
 func TestPrinterToWriter_Close(t *testing.T) {
 	p := &PrinterToWriter{}
-	assert.NotPanics(t, p.Close)
+	err := p.Close()
+	assert.NoError(t, err)
 }
 
 func TestPrinterToWriter_NewPrinterToWriter(t *testing.T) {
@@ -175,7 +178,8 @@ func TestPrinterToFile_Close(t *testing.T) {
 			return "Hello, World!"
 		},
 	}
-	assert.NotPanics(t, p.Close)
+	err := p.Close()
+	assert.NoError(t, err)
 }
 
 func TestPrinterToFile_NewPrinterToFile(t *testing.T) {
@@ -271,7 +275,8 @@ func TestPrinterToDb_Close(t *testing.T) {
 		f:      nil,
 	}
 	mockDb.ExpectClose()
-	p.Close()
+	err = p.Close()
+	assert.NoError(t, err)
 	if err = mockDb.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
@@ -407,7 +412,8 @@ func TestFlusher_Close(t *testing.T) {
 		},
 	}
 	mockDb.ExpectClose()
-	assert.NotPanics(t, f.Close)
+	err = f.Close()
+	assert.NoError(t, err)
 	if err := mockDb.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
