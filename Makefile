@@ -117,10 +117,9 @@ install-dev-tools:
 	@go install golang.org/x/tools/cmd/goimports@v0.30.0
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
 
-#check:
-#	@golangci-lint run --timeout 5m0s
+format:
+	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc
 
 check:
-	@goimports -w ./utils
-	@gofmt -s -d -w ./utils
-	@golangci-lint run -c .golangci.yml ./utils
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc
