@@ -245,7 +245,8 @@ func (p *PrinterToBuffer) Print() error {
 	return nil
 }
 
-func (p *PrinterToBuffer) Close() {
+func (p *PrinterToBuffer) Close() error {
+	return nil
 }
 
 func (p *PrinterToBuffer) Reset() {
@@ -278,6 +279,9 @@ func (p *Flusher) Close() error {
 	if err != nil {
 		return fmt.Errorf("failed to close original printer: %v", err)
 	}
-	p.bf.Close()
+	err = p.bf.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close buffer printer: %v", err)
+	}
 	return nil
 }
