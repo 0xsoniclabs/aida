@@ -40,9 +40,11 @@ func (m *MockPrinter) EXPECT() *MockPrinterMockRecorder {
 }
 
 // Close mocks base method.
-func (m *MockPrinter) Close() {
+func (m *MockPrinter) Close() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close")
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Close indicates an expected call of Close.
@@ -90,9 +92,11 @@ func (m *MockIFlusher) EXPECT() *MockIFlusherMockRecorder {
 }
 
 // Close mocks base method.
-func (m *MockIFlusher) Close() {
+func (m *MockIFlusher) Close() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close")
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Close indicates an expected call of Close.
