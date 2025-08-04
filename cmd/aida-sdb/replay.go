@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package trace
+package main
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ import (
 	"time"
 )
 
-func ReplayTrace(ctx *cli.Context) error {
+func RunReplay(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
