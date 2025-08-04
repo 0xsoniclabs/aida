@@ -31,7 +31,6 @@ func TestCmd_RunReplay(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = RunReplay
 	app.Flags = []cli.Flag{
-		&utils.SubstateEncodingFlag,
 		&utils.TraceFileFlag,
 	}
 	traceFile := t.TempDir() + "/trace-file"

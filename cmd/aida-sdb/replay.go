@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
 	"github.com/0xsoniclabs/aida/executor/extension/tracker"
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
+	aidaLogger "github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/utils"
@@ -32,6 +33,57 @@ import (
 	"github.com/urfave/cli/v2"
 	"os"
 	"time"
+)
+
+var (
+	// RunReplayCmd data structure for the replay app
+	RunReplayCmd = cli.Command{
+		Action:    RunReplay,
+		Name:      "replay",
+		Usage:     "executes storage trace",
+		ArgsUsage: "<blockNumFirst> <blockNumLast>",
+		Flags: []cli.Flag{
+			&utils.CarmenSchemaFlag,
+			&utils.ChainIDFlag,
+			&utils.CpuProfileFlag,
+			&utils.SyncPeriodLengthFlag,
+			&utils.KeepDbFlag,
+			&utils.MemoryBreakdownFlag,
+			&utils.MemoryProfileFlag,
+			&utils.RandomSeedFlag,
+			&utils.PrimeThresholdFlag,
+			&utils.ProfileFlag,
+			&utils.ProfileFileFlag,
+			&utils.ProfileIntervalFlag,
+			&utils.RandomizePrimingFlag,
+			&utils.SkipPrimingFlag,
+			&utils.StateDbImplementationFlag,
+			&utils.StateDbVariantFlag,
+			&utils.StateDbSrcFlag,
+			&utils.StateDbSrcOverwriteFlag,
+			&utils.VmImplementation,
+			&utils.DbTmpFlag,
+			&utils.UpdateBufferSizeFlag,
+			&utils.StateDbLoggingFlag,
+			&utils.ShadowDb,
+			&utils.ShadowDbImplementationFlag,
+			&utils.ShadowDbVariantFlag,
+			&utils.WorkersFlag,
+			&utils.TraceFileFlag,
+			&utils.TraceDirectoryFlag,
+			&utils.TraceDebugFlag,
+			&utils.DebugFromFlag,
+			&utils.AidaDbFlag,
+			&utils.SubstateEncodingFlag,
+			&aidaLogger.LogLevelFlag,
+		},
+		Description: `
+The trace replay command requires two arguments:
+<blockNumFirst> <blockNumLast>
+
+<blockNumFirst> and <blockNumLast> are the first and
+last block of the inclusive range of blocks to replay storage traces.`,
+	}
 )
 
 func RunReplay(ctx *cli.Context) error {
@@ -50,22 +102,9 @@ func RunReplay(ctx *cli.Context) error {
 		defer aidaDb.Close()
 	}
 
-	var files []string
-	if cfg.TraceDirectory != "" {
-		entries, err := os.ReadDir(cfg.TraceDirectory)
-		if err != nil {
-			return err
-		}
-		for _, entry := range entries {
-			if entry.IsDir() {
-				return fmt.Errorf("given dir %s contains subdirectories, please provide a single trace file or a directory with trace files", cfg.TraceDirectory)
-			}
-			files = append(files, entry.Name())
-		}
-	} else if cfg.TraceFile != "" {
-		files = append(files, cfg.TraceFile)
-	} else {
-		return fmt.Errorf("no trace file (--%s) or directory (--%s) provided", utils.TraceFileFlag.Name, utils.TraceDirectoryFlag.Name)
+	files, err := getTraceFiles(cfg.TraceFile, cfg.TraceDirectory)
+	if err != nil {
+		return err
 	}
 
 	for _, filename := range files {
@@ -138,4 +177,25 @@ func replay(
 		extensionList,
 		aidaDb,
 	)
+}
+
+func getTraceFiles(traceFile, traceDir string) ([]string, error) {
+	var files []string
+	if traceDir != "" {
+		entries, err := os.ReadDir(traceDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				return nil, fmt.Errorf("given dir %s contains subdirectories, please provide a single trace file or a directory with trace files", traceDir)
+			}
+			files = append(files, entry.Name())
+		}
+	} else if traceFile != "" {
+		files = append(files, traceFile)
+	} else {
+		return nil, fmt.Errorf("no trace file (--%s) or directory (--%s) provided", utils.TraceFileFlag.Name, utils.TraceDirectoryFlag.Name)
+	}
+	return files, nil
 }
