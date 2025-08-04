@@ -102,11 +102,13 @@ func RunReplay(ctx *cli.Context) error {
 		defer aidaDb.Close()
 	}
 
+	log := aidaLogger.NewLogger(cfg.LogLevel, "Trace_Replay")
 	files, err := getTraceFiles(cfg.TraceFile, cfg.TraceDirectory)
 	if err != nil {
 		return err
 	}
 
+	p := &traceProcessor{}
 	for _, filename := range files {
 		file, err := tracer.NewFileReader(filename)
 		if err != nil {
@@ -114,10 +116,15 @@ func RunReplay(ctx *cli.Context) error {
 		}
 
 		provider := executor.NewTraceProvider(file)
-		err = replay(cfg, provider, nil, &traceProcessor{}, nil, aidaDb)
+		err = replay(cfg, provider, nil, p, nil, aidaDb)
 		if err != nil {
 			return err
 		}
+	}
+	if p.counter == 0 {
+		log.Critical("no operations were replayed")
+	} else {
+		log.Noticef("%d operations were replayed", p.counter)
 	}
 
 	return nil

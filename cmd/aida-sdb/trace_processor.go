@@ -12,9 +12,12 @@ import (
 	"github.com/holiman/uint256"
 )
 
-type traceProcessor struct{}
+type traceProcessor struct {
+	counter uint32
+}
 
 func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *executor.Context) error {
+	p.counter++
 	switch state.Data.Op {
 	case tracer.AddBalanceID:
 		value, reason := state.Data.Data[0].(*uint256.Int), state.Data.Data[1].(tracing.BalanceChangeReason)
