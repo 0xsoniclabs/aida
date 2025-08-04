@@ -18,6 +18,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"strings"
 	"testing"
@@ -34,6 +36,19 @@ import (
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunSubstate(t *testing.T) {
+	_, _, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunSubstate
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+	}
+
+	err := app.Run([]string{RunSubstateCmd.Name, "--aida-db", path, "--substate-encoding", "pb", "first", "last"})
+	require.ErrorContains(t, err, "nonce too high")
+}
 
 func TestVmSdb_Substate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)

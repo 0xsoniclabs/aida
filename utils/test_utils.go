@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"github.com/stretchr/testify/require"
 	"math/big"
+	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
@@ -87,4 +89,19 @@ func GetTestSubstate(encoding string) *substate.Substate {
 		ss.Message.SetCodeAuthorizations = nil
 	}
 	return ss
+}
+
+// CreateTestSubstateDb creates a test substate database with a predefined substate.
+func CreateTestSubstateDb(t *testing.T) (substateDb.SubstateDB, *substate.Substate, string) {
+	path := t.TempDir()
+	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+
+	ss := GetTestSubstate("protobuf")
+	err = db.PutSubstate(ss)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	return db, ss, path
 }
