@@ -17,6 +17,8 @@
 package main
 
 import (
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"testing"
 	"time"
@@ -31,6 +33,17 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunTxGenerator(t *testing.T) {
+	app := cli.NewApp()
+	app.Action = RunTxGenerator
+	app.Flags = []cli.Flag{
+		&utils.ForkFlag,
+	}
+
+	err := app.Run([]string{RunTxGeneratorCmd.Name, "--fork", "Prague", "1"})
+	require.NoError(t, err)
+}
 
 func TestVmSdb_TxGenerator_AllTransactionsAreProcessedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)
