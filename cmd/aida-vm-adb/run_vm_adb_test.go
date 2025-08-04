@@ -18,6 +18,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"strings"
 	"testing"
@@ -35,6 +37,38 @@ import (
 )
 
 var testingAddress = common.Address{1}
+
+func TestCmd_RunVmAdb(t *testing.T) {
+	_, _, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunVmAdb
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.StateDbSrcFlag,
+	}
+
+	tmp := t.TempDir()
+	// Create a tmp archive
+	cfg := &utils.Config{
+		DbTmp:          tmp,
+		DbVariant:      "go-file",
+		DbImpl:         "carmen",
+		ArchiveMode:    true,
+		ArchiveVariant: "s5",
+		CarmenSchema:   5,
+	}
+	sdb, archivePath, err := utils.PrepareStateDB(cfg)
+	require.NoError(t, err)
+	err = sdb.Close()
+	require.NoError(t, err)
+
+	err = utils.WriteStateDbInfo(archivePath, cfg, 1, common.Hash{0x13}, true)
+	require.NoError(t, err)
+
+	err = app.Run([]string{RunArchiveApp.Name, "--aida-db", path, "--db-src", archivePath, "--substate-encoding", "pb", "first", "last"})
+	require.ErrorContains(t, err, "archive is empty")
+}
 
 func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	ctrl := gomock.NewController(t)

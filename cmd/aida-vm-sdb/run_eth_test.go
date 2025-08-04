@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -36,6 +37,17 @@ import (
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunEthereumTest(t *testing.T) {
+	app := cli.NewApp()
+	app.Action = RunEthereumTest
+	app.Flags = []cli.Flag{
+		&utils.ChainIDFlag,
+	}
+
+	err := app.Run([]string{RunEthTestsCmd.Name, "--chainid", strconv.Itoa(int(utils.EthTestsChainID)), t.TempDir()})
+	require.NoError(t, err)
+}
 
 func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)

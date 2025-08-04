@@ -18,6 +18,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"math/big"
 	"strings"
 	"testing"
@@ -36,6 +38,19 @@ import (
 )
 
 var testingAddress = common.Address{1}
+
+func TestCmd_RunVm(t *testing.T) {
+	_, _, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunVm
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+	}
+
+	err := app.Run([]string{runVmApp.Name, "--aida-db", path, "--substate-encoding", "pb", "first", "last"})
+	require.ErrorContains(t, err, "intrinsic gas too low")
+}
 
 func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	ctrl := gomock.NewController(t)

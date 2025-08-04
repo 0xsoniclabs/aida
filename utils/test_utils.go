@@ -2,12 +2,14 @@ package utils
 
 import (
 	"math/big"
+	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 )
 
 var testUpdateSet = &updateset.UpdateSet{
@@ -96,4 +98,19 @@ func Must[T any](value T, err error) T {
 		panic(err)
 	}
 	return value
+}
+
+// CreateTestSubstateDb creates a test substate database with a predefined substate.
+func CreateTestSubstateDb(t *testing.T) (substateDb.SubstateDB, *substate.Substate, string) {
+	path := t.TempDir()
+	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+
+	ss := GetTestSubstate("protobuf")
+	err = db.PutSubstate(ss)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	return db, ss, path
 }
