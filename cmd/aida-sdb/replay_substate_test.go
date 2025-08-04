@@ -41,6 +41,8 @@ func TestCmd_RunReplaySubstate(t *testing.T) {
 	traceFile := t.TempDir() + "/trace-file"
 	writer, err := tracer.NewFileWriter(traceFile)
 	require.NoError(t, err)
+	err = writer.WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(2)...))
+	require.NoError(t, err)
 	op, err := tracer.EncodeArgOp(tracer.BeginBlockID, tracer.NoArgID, tracer.NoArgID, tracer.NoArgID)
 	require.NoError(t, err)
 	err = writer.WriteUint16(op)

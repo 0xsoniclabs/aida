@@ -94,9 +94,13 @@ func RunReplaySubstate(ctx *cli.Context) error {
 	}
 
 	for _, filename := range files {
-		file, err := tracer.NewFileReader(filename)
+		file, first, _, err := tracer.NewFileReader(filename)
 		if err != nil {
 			return err
+		}
+
+		if cfg.First < first {
+			return fmt.Errorf("chosen first block %d is less than the first block %d in the trace file %s", cfg.First, first, filename)
 		}
 
 		provider := executor.NewTraceProvider(file)
