@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"math"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,10 +19,6 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"math"
-	"math/big"
-	"os"
-	"testing"
 )
 
 func TestNewFileReader_ErrorCases(t *testing.T) {
@@ -48,7 +49,7 @@ func TestNewFileReader_ErrorCases(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewFileReader(test.filepath)
+			_, _, _, err := NewFileReader(test.filepath)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), test.wantErr)
 		})
@@ -60,13 +61,15 @@ func TestNewFileReader_Success(t *testing.T) {
 	file, err := os.Create(tempFile)
 	require.NoError(t, err)
 	writer := gzip.NewWriter(file)
-	_, err = writer.Write([]byte("test data for file reader"))
+	_, err = writer.Write(append(bigendian.Uint64ToBytes(1), bigendian.Uint64ToBytes(2)...))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
 
-	reader, err := NewFileReader(tempFile)
+	reader, first, last, err := NewFileReader(tempFile)
 	require.NoError(t, err)
 	require.NotNil(t, reader)
+	require.Equal(t, uint64(1), first)
+	require.Equal(t, uint64(2), last)
 	_, ok := reader.(*fileReader)
 	require.True(t, ok)
 

@@ -5,8 +5,11 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -14,28 +17,26 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/klauspost/compress/gzip"
-	"io"
-	"os"
 )
 
-func NewFileReader(filename string) (FileReader, error) {
+func NewFileReader(filename string) (FileReader, uint64, uint64, error) {
 	stat, err := os.Stat(filename)
 	if err != nil {
-		return nil, fmt.Errorf("could not stat file: %s, does it exist? %w", filename, err)
+		return nil, 0, 0, fmt.Errorf("could not stat file: %s, does it exist? %w", filename, err)
 	}
 	if stat.IsDir() {
-		return nil, errors.New("given path to trace file is a directory")
+		return nil, 0, 0, errors.New("given path to trace file is a directory")
 	}
 	if stat.Size() == 0 {
-		return nil, errors.New("given trace file is empty")
+		return nil, 0, 0, errors.New("given trace file is empty")
 	}
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, fmt.Errorf("could not open trace file: %s, %w", filename, err)
+		return nil, 0, 0, fmt.Errorf("could not open trace file: %s, %w", filename, err)
 	}
 	gzipReader, err := gzip.NewReader(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not create gzip reader for trace file: %s, %w", filename, err)
+		return nil, 0, 0, fmt.Errorf("could not create gzip reader for trace file: %s, %w", filename, err)
 	}
 
 	// Register the types we will be decoding from the trace file.
@@ -44,10 +45,15 @@ func NewFileReader(filename string) (FileReader, error) {
 	gob.Register(types.AccessList{})
 	gob.Register(types.Log{})
 
-	return &fileReader{
+	fr := &fileReader{
 		reader: bufio.NewReader(gzipReader),
 		closer: gzipReader,
-	}, nil
+	}
+	first, last, err := fr.readMetadata()
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("could not read metadata: %w", err)
+	}
+	return fr, first, last, nil
 }
 
 //go:generate mockgen -source file_reader.go -destination file_reader_mock.go -package tracer
@@ -268,6 +274,18 @@ func (f *fileReader) ReadLog() (*types.Log, error) {
 
 func (f *fileReader) Close() error {
 	return f.closer.Close()
+}
+
+func (f *fileReader) readMetadata() (uint64, uint64, error) {
+	first, err := f.ReadUint64()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to read first block number: %w", err)
+	}
+	last, err := f.ReadUint64()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to read last block number: %w", err)
+	}
+	return first, last, nil
 }
 
 // decodeGob decodes a gob-encoded byte slice into the specified type T and returns it.

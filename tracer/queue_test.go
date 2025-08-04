@@ -151,8 +151,6 @@ func TestQueue_Get_Errors(t *testing.T) {
 }
 
 func TestQueue_ClassifyGet(t *testing.T) {
-	const m = 10
-
 	queue := NewQueue[int]()
 	item1 := 1
 	item2 := 3

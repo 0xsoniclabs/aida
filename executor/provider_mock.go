@@ -34,7 +34,7 @@ func NewMockProvider[T any](ctrl *gomock.Controller) *MockProvider[T] {
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expectedOp use.
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProvider[T]) EXPECT() *MockProviderMockRecorder[T] {
 	return m.recorder
 }
@@ -45,7 +45,7 @@ func (m *MockProvider[T]) Close() {
 	m.ctrl.Call(m, "Close")
 }
 
-// Close indicates an expectedOp call of Close.
+// Close indicates an expected call of Close.
 func (mr *MockProviderMockRecorder[T]) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockProvider[T])(nil).Close))
@@ -59,7 +59,7 @@ func (m *MockProvider[T]) Run(from, to int, consumer Consumer[T]) error {
 	return ret0
 }
 
-// Run indicates an expectedOp call of Run.
+// Run indicates an expected call of Run.
 func (mr *MockProviderMockRecorder[T]) Run(from, to, consumer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockProvider[T])(nil).Run), from, to, consumer)

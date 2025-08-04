@@ -102,22 +102,33 @@ func RunReplay(ctx *cli.Context) error {
 		defer aidaDb.Close()
 	}
 
+	log := aidaLogger.NewLogger(cfg.LogLevel, "Trace_Replay")
 	files, err := getTraceFiles(cfg.TraceFile, cfg.TraceDirectory)
 	if err != nil {
 		return err
 	}
 
+	p := &traceProcessor{}
 	for _, filename := range files {
-		file, err := tracer.NewFileReader(filename)
+		file, first, _, err := tracer.NewFileReader(filename)
 		if err != nil {
 			return err
 		}
 
+		if cfg.First < first {
+			return fmt.Errorf("chosen first block %d is less than the first block %d in the trace file %s", cfg.First, first, filename)
+		}
+
 		provider := executor.NewTraceProvider(file)
-		err = replay(cfg, provider, nil, &traceProcessor{}, nil, aidaDb)
+		err = replay(cfg, provider, nil, p, nil, aidaDb)
 		if err != nil {
 			return err
 		}
+	}
+	if p.counter == 0 {
+		log.Critical("no operations were replayed")
+	} else {
+		log.Noticef("%d operations were replayed", p.counter)
 	}
 
 	return nil

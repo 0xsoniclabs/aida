@@ -25,7 +25,9 @@ func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
 	require.NoError(t, err)
 	ctrl := gomock.NewController(t)
 	mockState := state.NewMockStateDB(ctrl)
-	proxy := proxy.NewTracerProxy(mockState, tracer.NewArgumentContext(writer))
+	argCtx, err := tracer.NewContext(writer, 0, 100)
+	require.NoError(t, err)
+	proxy := proxy.NewTracerProxy(mockState, argCtx)
 
 	addr := common.Address{0x1}
 	key := common.Hash{0x2}
@@ -172,8 +174,10 @@ func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
 	err = proxy.Close()
 	require.NoError(t, err)
 
-	reader, err := tracer.NewFileReader(file)
+	reader, first, last, err := tracer.NewFileReader(file)
 	require.NoError(t, err)
+	require.Equal(t, first, uint64(0))
+	require.Equal(t, last, uint64(100))
 
 	tp := &traceProcessor{}
 	ctx := &executor.Context{
