@@ -16,162 +16,82 @@
 
 package main
 
-// todo: will be handled in upcoming PR
-//
-//var testingAddress = common.Address{1}
-//
-//func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
-//	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
-//	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
-//
-//	cfg := &utils.Config{}
-//	cfg.DbImpl = "carmen"
-//	cfg.KeepDb = false
-//
-//	cfg.First = 0
-//	cfg.Last = 0
-//
-//	provider.EXPECT().
-//		Run(0, 1, gomock.Any()).
-//		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
-//			for i := from; i < to; i++ {
-//				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
-//				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 1, Data: substatecontext.NewTxContext(testTx)})
-//			}
-//			return nil
-//		})
-//
-//	// All transactions are processed in order
-//	gomock.InOrder(
-//		ext.EXPECT().PreRun(executor.AtBlock[txcontext.TxContext](0), gomock.Any()),
-//
-//		// tx 0
-//		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
-//		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
-//		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
-//
-//		// tx 1
-//		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](0, 1), gomock.Any()),
-//		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](0, 1), gomock.Any()),
-//		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](0, 1), gomock.Any()),
-//
-//		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](1), gomock.Any(), nil),
-//	)
-//
-//	if err := replaySubstate(cfg, provider, processor, nil, []executor.Extension[txcontext.TxContext]{ext}); err != nil {
-//		t.Errorf("record failed: %v", err)
-//	}
-//}
-//
-//func TestSdbReplaySubstate_StateDbPrepperIsAddedIfDbImplIsMemory(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	substateProvider := executor.NewMockProvider[txcontext.TxContext](ctrl)
-//	operationProvider := executor.NewMockProvider[[]operation.Operation](ctrl)
-//	db := state.NewMockStateDB(ctrl)
-//
-//	cfg := &utils.Config{}
-//	cfg.DbImpl = "memory"
-//	cfg.KeepDb = false
-//
-//	cfg.First = 0
-//	cfg.Last = 0
-//
-//	substateProvider.EXPECT().
-//		Run(0, 1, gomock.Any()).
-//		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
-//			for i := from; i < to; i++ {
-//				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
-//			}
-//			return nil
-//		})
-//	operationProvider.EXPECT().
-//		Run(0, 0, gomock.Any()).
-//		DoAndReturn(func(from int, to int, consumer executor.Consumer[[]operation.Operation]) error {
-//			for i := from; i < to; i++ {
-//				consumer(executor.TransactionInfo[[]operation.Operation]{Block: 0, Transaction: 0, Data: testOperationsA})
-//			}
-//			return nil
-//		})
-//
-//	processor := makeSubstateProcessor(cfg, context.NewReplay(), operationProvider)
-//
-//	// if DbPrepper is added PrepareSubstate is called
-//	db.EXPECT().PrepareSubstate(gomock.Any(), uint64(0))
-//
-//	if err := replaySubstate(cfg, substateProvider, processor, db, nil); err != nil {
-//		t.Errorf("record failed: %v", err)
-//	}
-//}
-//
-//func TestSdbReplaySubstate_TxPrimerIsAddedIfDbImplIsNotMemory(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	substateProvider := executor.NewMockProvider[txcontext.TxContext](ctrl)
-//	operationProvider := executor.NewMockProvider[[]operation.Operation](ctrl)
-//	db := state.NewMockStateDB(ctrl)
-//	bulkLoad := state.NewMockBulkLoad(ctrl)
-//
-//	cfg := &utils.Config{}
-//	cfg.DbImpl = "carmen"
-//	cfg.KeepDb = false
-//
-//	cfg.First = 1
-//	cfg.Last = 1
-//
-//	substateProvider.EXPECT().
-//		Run(1, 2, gomock.Any()).
-//		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
-//			for i := from; i < to; i++ {
-//				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 1, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
-//			}
-//			return nil
-//		})
-//	operationProvider.EXPECT().
-//		Run(1, 1, gomock.Any()).
-//		DoAndReturn(func(from int, to int, consumer executor.Consumer[[]operation.Operation]) error {
-//			for i := from; i < to; i++ {
-//				consumer(executor.TransactionInfo[[]operation.Operation]{Block: 1, Transaction: 0, Data: testOperationsA})
-//			}
-//			return nil
-//		})
-//
-//	processor := makeSubstateProcessor(cfg, context.NewReplay(), operationProvider)
-//
-//	db.EXPECT().BeginBlock(uint64(0))
-//	db.EXPECT().BeginTransaction(uint32(0))
-//	db.EXPECT().EndTransaction()
-//	db.EXPECT().EndBlock()
-//	db.EXPECT().StartBulkLoad(uint64(1)).Return(bulkLoad, nil)
-//	bulkLoad.EXPECT().Close()
-//
-//	if err := replaySubstate(cfg, substateProvider, processor, db, nil); err != nil {
-//		t.Errorf("record failed: %v", err)
-//	}
-//}
-//
-//var testOperationsA = []operation.Operation{
-//	operation.NewBeginBlock(0),
-//	operation.NewBeginTransaction(0),
-//	operation.NewExist(common.Address{}),
-//	operation.NewEndTransaction(),
-//}
-//
-//var testOperationsB = []operation.Operation{
-//	operation.NewBeginTransaction(1),
-//	operation.NewExist(common.Address{}),
-//	operation.NewEndTransaction(),
-//	operation.NewEndBlock(),
-//}
-//
-//// testTx is a dummy substate that will be processed without crashing.
-//var testTx = &substate.Substate{
-//	Env: &substate.Env{},
-//	Message: &substate.Message{
-//		Gas:      10000,
-//		GasPrice: big.NewInt(0),
-//	},
-//	Result: &substate.Result{
-//		GasUsed: 1,
-//	},
-//}
+import (
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
+	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
+	"go.uber.org/mock/gomock"
+	"testing"
+)
+
+func TestCmd_RunReplaySubstate(t *testing.T) {
+	_, _, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunReplaySubstate
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.TraceFileFlag,
+	}
+	traceFile := t.TempDir() + "/trace-file"
+	writer, err := tracer.NewFileWriter(traceFile)
+	require.NoError(t, err)
+	op, err := tracer.EncodeArgOp(tracer.BeginBlockID, tracer.NoArgID, tracer.NoArgID, tracer.NoArgID)
+	require.NoError(t, err)
+	err = writer.WriteUint16(op)
+	require.NoError(t, err)
+	err = writer.WriteData(bigendian.Uint64ToBytes(123))
+	require.NoError(t, err)
+	err = writer.Close()
+	require.NoError(t, err)
+
+	err = app.Run([]string{RunReplaySubstateCmd.Name, "--trace-file", traceFile, "--substate-encoding", "pb", "--aida-db", path, "first", "last"})
+	require.NoError(t, err)
+}
+
+func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
+	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
+	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
+
+	cfg := &utils.Config{}
+	cfg.DbImpl = "carmen"
+	cfg.KeepDb = false
+
+	cfg.First = 0
+	cfg.Last = 0
+
+	provider.EXPECT().
+		Run(0, 1, gomock.Any()).
+		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
+			for i := from; i < to; i++ {
+				err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(emptyTx)})
+				require.NoError(t, err)
+			}
+			return nil
+		})
+
+	// All transactions are processed in order
+	gomock.InOrder(
+		ext.EXPECT().PreRun(executor.AtBlock[txcontext.TxContext](0), gomock.Any()),
+
+		// tx 0
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](0), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](0, 0), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](0), gomock.Any()),
+
+		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](1), gomock.Any(), nil),
+	)
+
+	if err := replaySubstate(cfg, provider, processor, nil, []executor.Extension[txcontext.TxContext]{ext}); err != nil {
+		t.Errorf("record failed: %v", err)
+	}
+}

@@ -16,101 +16,159 @@
 
 package main
 
-import "github.com/urfave/cli/v2"
+import (
+	"fmt"
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
+	"github.com/0xsoniclabs/aida/executor/extension/primer"
+	"github.com/0xsoniclabs/aida/executor/extension/profiler"
+	"github.com/0xsoniclabs/aida/executor/extension/statedb"
+	"github.com/0xsoniclabs/aida/executor/extension/validator"
+	aidaLogger "github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/urfave/cli/v2"
+)
+
+var RunReplaySubstateCmd = cli.Command{
+	Action:    RunReplaySubstate,
+	Name:      "replay-substate",
+	Usage:     "executes storage trace using substates",
+	ArgsUsage: "<blockNumFirst> <blockNumLast>",
+	Flags: []cli.Flag{
+		&utils.ChainIDFlag,
+		&utils.CpuProfileFlag,
+		&utils.RandomizePrimingFlag,
+		&utils.RandomSeedFlag,
+		&utils.PrimeThresholdFlag,
+		&utils.ProfileFlag,
+		&utils.StateDbImplementationFlag,
+		&utils.StateDbVariantFlag,
+		&utils.StateDbLoggingFlag,
+		&utils.ShadowDbImplementationFlag,
+		&utils.ShadowDbVariantFlag,
+		&utils.SyncPeriodLengthFlag,
+		&utils.WorkersFlag,
+		&utils.TraceFileFlag,
+		&utils.TraceDirectoryFlag,
+		&utils.TraceDebugFlag,
+		&utils.DebugFromFlag,
+		//&utils.ValidateFlag,
+		//&utils.ValidateTxStateFlag,
+		&utils.AidaDbFlag,
+		&aidaLogger.LogLevelFlag,
+	},
+	Description: `
+The trace replay-substate command requires two arguments:
+<blockNumFirst> <blockNumLast>
+
+<blockNumFirst> and <blockNumLast> are the first and
+last block of the inclusive range of blocks to replay storage traces.`,
+}
 
 // todo: will be handled in upcoming PR
-func ReplaySubstate(ctx *cli.Context) error {
-	//	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
-	//	if err != nil {
-	//		return fmt.Errorf("cannot open aida-db; %w", err)
-	//	}
-	//	defer aidaDb.Close()
-	//
-	//	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
-	//	if err != nil {
-	//		return fmt.Errorf("cannot open substate provider; %w", err)
-	//	}
-	//	defer substateIterator.Close()
-	//
-	//	operationProvider, err := executor.OpenOperations(cfg)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	defer substateIterator.Close()
-	//
-	//	rCtx := context.NewReplay()
-	//
-	//	processor := makeSubstateProcessor(cfg, rCtx, operationProvider)
-	//
-	//	var extra = []executor.Extension[txcontext.TxContext]{
-	//		profiler.MakeReplayProfiler[txcontext.TxContext](cfg, rCtx),
-	//	}
-	//
-	//	return replaySubstate(cfg, substateIterator, processor, nil, extra)
+func RunReplaySubstate(ctx *cli.Context) error {
+	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	if err != nil {
+		return err
+	}
+
+	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %w", err)
+	}
+	defer aidaDb.Close()
+
+	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open substate provider; %w", err)
+	}
+	defer substateIterator.Close()
+
+	files, err := getTraceFiles(cfg.TraceFile, cfg.TraceDirectory)
+	if err != nil {
+		return err
+	}
+
+	for _, filename := range files {
+		file, err := tracer.NewFileReader(filename)
+		if err != nil {
+			return err
+		}
+
+		provider := executor.NewTraceProvider(file)
+
+		processor := makeSubstateProcessor(provider)
+		err = replaySubstate(cfg, substateIterator, processor, nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to replay substate: %w", err)
+		}
+	}
 	return nil
 }
 
-//
-//func makeSubstateProcessor(cfg *utils.Config, rCtx *context.Replay, operationProvider executor.Provider[[]operation.Operation]) *substateProcessor {
-//	return &substateProcessor{
-//		operationProcessor: operationProcessor{cfg, rCtx},
-//		operationProvider:  operationProvider,
-//	}
-//}
-//
-//type substateProcessor struct {
-//	operationProcessor
-//	operationProvider executor.Provider[[]operation.Operation]
-//}
-//
-//func (p substateProcessor) Process(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
-//	return p.operationProvider.Run(state.Block, state.Block, func(t executor.TransactionInfo[[]operation.Operation]) error {
-//		p.runTransaction(uint64(state.Block), t.Data, ctx.State)
-//		return nil
-//	})
-//}
-//
-//func replaySubstate(
-//	cfg *utils.Config,
-//	provider executor.Provider[txcontext.TxContext],
-//	processor executor.Processor[txcontext.TxContext],
-//	stateDb state.StateDB,
-//	extra []executor.Extension[txcontext.TxContext],
-//) error {
-//	var extensionList = []executor.Extension[txcontext.TxContext]{
-//		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
-//		logger.MakeProgressLogger[txcontext.TxContext](cfg, 0),
-//		profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
-//		profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
-//		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
-//	}
-//
-//	if stateDb == nil {
-//		extensionList = append(extensionList, statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""))
-//	}
-//
-//	if cfg.DbImpl == "memory" {
-//		extensionList = append(extensionList, statedb.MakeStateDbPrepper())
-//	} else {
-//		extensionList = append(extensionList, primer.MakeTxPrimer(cfg))
-//	}
-//
-//	extensionList = append(extensionList, extra...)
-//
-//	return executor.NewExecutor(provider, cfg.LogLevel).Run(
-//		executor.Params{
-//			From:  int(cfg.First),
-//			To:    int(cfg.Last) + 1,
-//			State: stateDb,
-//		},
-//		processor,
-//		extensionList,
-//		nil,
-//	)
-//}
+func makeSubstateProcessor(operationProvider executor.Provider[tracer.Operation]) *substateProcessor {
+	return &substateProcessor{
+		traceProcessor:    traceProcessor{},
+		operationProvider: operationProvider,
+	}
+}
+
+type substateProcessor struct {
+	traceProcessor
+	operationProvider      executor.Provider[tracer.Operation]
+	currentBlockOperations []tracer.Operation
+}
+
+func (p substateProcessor) Process(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+	return p.operationProvider.Run(state.Block, state.Block, func(t executor.TransactionInfo[tracer.Operation]) error {
+		return p.traceProcessor.Process(executor.State[tracer.Operation]{
+			Block:       state.Block,
+			Transaction: state.Transaction,
+			Data:        t.Data,
+		}, ctx)
+	})
+}
+
+func replaySubstate(
+	cfg *utils.Config,
+	provider executor.Provider[txcontext.TxContext],
+	processor executor.Processor[txcontext.TxContext],
+	stateDb state.StateDB,
+	extra []executor.Extension[txcontext.TxContext],
+) error {
+	var extensionList = []executor.Extension[txcontext.TxContext]{
+		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
+		logger.MakeProgressLogger[txcontext.TxContext](cfg, 0),
+		profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
+		profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
+		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
+	}
+
+	if stateDb == nil {
+		extensionList = append(extensionList, statedb.MakeStateDbManager[txcontext.TxContext](cfg, ""))
+	}
+
+	if cfg.DbImpl == "memory" {
+		extensionList = append(extensionList, statedb.MakeStateDbPrepper())
+	} else {
+		extensionList = append(extensionList, primer.MakeTxPrimer(cfg))
+	}
+
+	extensionList = append(extensionList, extra...)
+
+	return executor.NewExecutor(provider, cfg.LogLevel).Run(
+		executor.Params{
+			From:                   int(cfg.First),
+			To:                     int(cfg.Last) + 1,
+			State:                  stateDb,
+			ParallelismGranularity: executor.BlockLevel,
+		},
+		processor,
+		extensionList,
+		nil,
+	)
+}
