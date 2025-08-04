@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 )
 
 var testUpdateSet = &updateset.UpdateSet{
