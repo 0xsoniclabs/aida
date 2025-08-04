@@ -1,4 +1,4 @@
-package trace
+package main
 
 import (
 	"github.com/0xsoniclabs/aida/executor"

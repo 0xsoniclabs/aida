@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package trace
+package main
 
 import (
 	"github.com/0xsoniclabs/aida/logger"
@@ -24,9 +24,9 @@ import (
 
 // todo: will be handled in upcoming PR
 
-// TraceReplayCommand data structure for the replay app
-var TraceReplayCommand = cli.Command{
-	Action:    ReplayTrace,
+// RunReplayCmd data structure for the replay app
+var RunReplayCmd = cli.Command{
+	Action:    RunReplay,
 	Name:      "replay",
 	Usage:     "executes storage trace",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
