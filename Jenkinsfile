@@ -18,6 +18,7 @@ pipeline {
         PRIME = '--update-buffer-size 4000'
         VM = '--vm-impl lfvm'
         AIDADB = '--aida-db /mnt/substate-sonic-mainnet/aida-db'
+        CHAINID = '--chainid 146'
         SUBSTATEENCODING = '--substate-encoding pb'
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
@@ -89,7 +90,7 @@ pipeline {
                 stage('aida-vm') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm ${VM} ${AIDADB} ${SUBSTATEENCODING} --cpu-profile cpu-profile.dat --workers 32 --validate-tx ${FROMBLOCK} ${TOBLOCK}"
+                            sh "build/aida-vm ${VM} ${AIDADB} ${SUBSTATEENCODING} ${CHAINID} --cpu-profile cpu-profile.dat --workers 32 --validate-tx ${FROMBLOCK} ${TOBLOCK}"
                         }
                         sh "rm -rf *.dat"
                     }
@@ -109,8 +110,8 @@ pipeline {
                         sh "rm -rf ${TRACEDIR}/*"
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
                             // use fixed ranges to control the priming time
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${SUBSTATEENCODING} 1000 1500"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${SUBSTATEENCODING} 1501 2000"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${SUBSTATEENCODING} ${CHAINID} 1000 1500"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${SUBSTATEENCODING} ${CHAINID} 1501 2000"
                         }
                     }
                 }
