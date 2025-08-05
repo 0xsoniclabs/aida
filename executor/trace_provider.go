@@ -30,8 +30,9 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 		err = errors.Join(err, p.file.Close())
 	}()
 	var (
-		blk uint64
-		tx  uint32
+		blk          uint64
+		tx           uint32
+		skippedBlock = true
 	)
 	for {
 		// read 16-bit operation number
@@ -59,9 +60,11 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			if err != nil {
 				return fmt.Errorf("cannot read block number: %w", err)
 			}
-			if blk < uint64(from) {
-				continue
+			// are we in the range of blocks we are interested in?
+			if blk >= uint64(from) {
+				skippedBlock = false
 			}
+			// are we past the range of blocks we are interested in?
 			if blk > uint64(to) {
 				return nil
 			}
@@ -272,13 +275,15 @@ func (p *traceProvider) Run(from int, to int, consumer Consumer[tracer.Operation
 			return fmt.Errorf("invalid operation %d/%s", operation.Op, tracer.OpText[operation.Op])
 		}
 
-		err = consumer(TransactionInfo[tracer.Operation]{
-			Block:       int(blk),
-			Transaction: int(tx),
-			Data:        operation,
-		})
-		if err != nil {
-			return err
+		if !skippedBlock {
+			err = consumer(TransactionInfo[tracer.Operation]{
+				Block:       int(blk),
+				Transaction: int(tx),
+				Data:        operation,
+			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
