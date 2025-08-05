@@ -18,6 +18,7 @@ pipeline {
         PRIME = '--update-buffer-size 4000'
         VM = '--vm-impl lfvm'
         AIDADB = '--aida-db /mnt/substate-sonic-mainnet/aida-db'
+        SUBSTATEENCODING = '--substate-encoding pb'
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
         PROFILE = '--cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown'
@@ -88,7 +89,7 @@ pipeline {
                 stage('aida-vm') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm ${VM} ${AIDADB} --cpu-profile cpu-profile.dat --workers 32 --validate-tx ${FROMBLOCK} ${TOBLOCK}"
+                            sh "build/aida-vm ${VM} ${AIDADB} ${SUBSTATEENCODING} --cpu-profile cpu-profile.dat --workers 32 --validate-tx ${FROMBLOCK} ${TOBLOCK}"
                         }
                         sh "rm -rf *.dat"
                     }
@@ -108,8 +109,8 @@ pipeline {
                         sh "rm -rf ${TRACEDIR}/*"
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
                             // use fixed ranges to control the priming time
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} 1000 1500"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} 1501 2000"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} ${SUBSTATEENCODING} 1000 1500"
+                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} ${SUBSTATEENCODING} 1501 2000"
                         }
                     }
                 }
@@ -117,8 +118,8 @@ pipeline {
                 stage('aida-sdb replay') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${SUBSTATEENCODING} ${PRIME} ${PROFILE}--shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
+                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${SUBSTATEENCODING} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
                         }
                         sh "rm -rf ${TRACEDIR}"
                     }
@@ -127,7 +128,7 @@ pipeline {
                 stage('aida-vm-sdb live mode') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${PRIME} ${TMPDB} ${STATEDB} --validate-tx --validate-state-hash --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
+                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${SUBSTATEENCODING} ${PRIME} ${TMPDB} ${STATEDB} --validate-tx --validate-state-hash --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
                         }
                         sh "rm -rf *.dat"
                     }
@@ -136,7 +137,7 @@ pipeline {
                 stage('aida-vm-sdb archive mode') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${PRIME} ${TMPDB} ${STATEDB} ${ARCHIVE} ${PROFILE} --keep-db --validate-tx --validate-state-hash --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
+                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${SUBSTATEENCODING} ${PRIME} ${TMPDB} ${STATEDB} ${ARCHIVE} ${PROFILE} --keep-db --validate-tx --validate-state-hash --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
                         }
                         sh "rm -rf *.dat"
                     }
@@ -145,7 +146,7 @@ pipeline {
                 stage('aida-vm-sdb archive-inquirer') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${PRIME} ${TMPDB} ${STATEDB} ${ARCHIVE} ${PROFILE} --archive-query-rate 200 --validate-tx --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
+                            sh "build/aida-vm-sdb substate ${VM} ${AIDADB} ${SUBSTATEENCODING} ${PRIME} ${TMPDB} ${STATEDB} ${ARCHIVE} ${PROFILE} --archive-query-rate 200 --validate-tx --continue-on-failure ${FROMBLOCK} ${TOBLOCK} "
                         }
                         sh "rm -rf *.dat"
                     }
@@ -154,7 +155,7 @@ pipeline {
                 stage('aida-vm-sdb db-src') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-sdb substate ${VM} --db-src ${DBSRC} ${AIDADB} --validate-tx --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure 4600001 4610000"
+                            sh "build/aida-vm-sdb substate ${VM} --db-src ${DBSRC} ${AIDADB} ${SUBSTATEENCODING} --validate-tx --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure 4600001 4610000"
                         }
                         sh "rm -rf *.dat"
                     }
@@ -199,7 +200,7 @@ pipeline {
                 stage('aida-vm-adb validate-tx') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-adb ${AIDADB} --db-src ${DBSRC} --cpu-profile cpu-profile.dat --validate-tx ${FROMBLOCK} ${TOBLOCK}"
+                            sh "build/aida-vm-adb ${AIDADB} ${SUBSTATEENCODING} --db-src ${DBSRC} --cpu-profile cpu-profile.dat --validate-tx ${FROMBLOCK} ${TOBLOCK}"
                         }
                         sh "rm -rf *.dat"
                     }
