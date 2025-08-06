@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/0xsoniclabs/carmen/go/common"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/klauspost/compress/gzip"
 )
 
