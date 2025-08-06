@@ -19,7 +19,7 @@ package tracer
 import (
 	"fmt"
 
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 )
 
