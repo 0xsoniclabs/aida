@@ -29,12 +29,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestArgumentContext_WriteOp(t *testing.T) {
+func TestContext_WriteOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 
 	fw.EXPECT().WriteUint16(uint16(125))
@@ -43,12 +43,12 @@ func TestArgumentContext_WriteOp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArgumentContext_WriteAddressOp(t *testing.T) {
+func TestContext_WriteAddressOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 
 	addrData1 := common.Address{0x1, 0x2, 0x3}
@@ -85,12 +85,12 @@ func TestArgumentContext_WriteAddressOp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArgumentContext_WriteKeyOp(t *testing.T) {
+func TestContext_WriteKeyOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
@@ -140,12 +140,12 @@ func TestArgumentContext_WriteKeyOp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArgumentContext_WriteValueOp(t *testing.T) {
+func TestContext_WriteValueOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 	addrData1 := common.Address{0x1, 0x2, 0x3}
 	addrData2 := common.Address{0x2, 0x3, 0x4}
@@ -191,12 +191,12 @@ func TestArgumentContext_WriteValueOp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
+func TestContext_Close_ClosesFileHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 	fw.EXPECT().Close().Return(nil)
 
@@ -204,12 +204,12 @@ func TestArgumentContext_Close_ClosesFileHandler(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestArgumentContext_writeClassifiedOp_UnknownOp(t *testing.T) {
+func TestContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	fw := NewMockFileWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
-	ctx, err := NewArgumentContext(fw, 0, 0)
+	ctx, err := NewContext(fw, 0, 0)
 	require.NoError(t, err)
 	err = ctx.(*argumentContext).writeClassifiedOp(NumOps+1, 0, nil)
 	assert.Error(t, err)
@@ -415,6 +415,6 @@ func TestNewArgumentContext_WritesMetadata(t *testing.T) {
 	fw := NewMockFileWriter(ctrl)
 	data := append(bigendian.Uint64ToBytes(11), bigendian.Uint64ToBytes(22)...)
 	fw.EXPECT().WriteData(data)
-	_, err := NewArgumentContext(fw, 11, 22)
+	_, err := NewContext(fw, 11, 22)
 	require.NoError(t, err)
 }
