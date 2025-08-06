@@ -46,7 +46,7 @@ func makeTracerProxyPrepper[T any](cfg *utils.Config) *tracerProxyPrepper[T] {
 type tracerProxyPrepper[T any] struct {
 	extension.NilExtension[T]
 	cfg        *utils.Config
-	ctx        tracer.ArgumentContext
+	ctx        tracer.Context
 	syncPeriod uint64
 }
 
@@ -56,7 +56,7 @@ func (p *tracerProxyPrepper[T]) PreRun(executor.State[T], *executor.Context) err
 	if err != nil {
 		return err
 	}
-	p.ctx, err = tracer.NewArgumentContext(writer, p.cfg.First, p.cfg.Last)
+	p.ctx, err = tracer.NewContext(writer, p.cfg.First, p.cfg.Last)
 	if err != nil {
 		return fmt.Errorf("cannot create argument context: %w", err)
 	}

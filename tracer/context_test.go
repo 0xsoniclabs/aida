@@ -256,7 +256,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 			fw.EXPECT().WriteData(gomock.Any()).Return(mockErr),
 		)
 		err = ctx.WriteAddressOp(AddBalanceID, &common.Address{0x2}, []byte{})
-		require.NoError(t, err)
+		assert.ErrorIs(t, err, mockErr)
 
 		gomock.InOrder(
 			fw.EXPECT().WriteUint16(gomock.Any()),
