@@ -23,9 +23,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-//go:generate mockgen -source argument_context.go -destination argument_context_mock.go -package tracer
+//go:generate mockgen -source context.go -destination context_mock.go -package tracer
 
-type ArgumentContext interface {
+type Context interface {
 	WriteOp(op uint8, data []byte) error
 	WriteAddressOp(op uint8, address *common.Address, data []byte) error
 	WriteKeyOp(op uint8, address *common.Address, key *common.Hash, data []byte) error
@@ -44,8 +44,8 @@ type argumentContext struct {
 	file   FileWriter
 }
 
-// NewArgumentContext creates a new event registry.
-func NewArgumentContext(file FileWriter, first uint64, last uint64) (ArgumentContext, error) {
+// NewContext creates a new event registry.
+func NewContext(file FileWriter, first uint64, last uint64) (Context, error) {
 	ctx := &argumentContext{
 		contracts: NewQueue[common.Address](),
 		keys:      NewQueue[common.Hash](),
