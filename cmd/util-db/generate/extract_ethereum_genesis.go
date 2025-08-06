@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package generate
 
 import (
 	"fmt"
@@ -28,8 +28,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var ExtractEthereumGenesisCommand = cli.Command{
-	Action: extractEthereumGenesis,
+var EthereumGenesisCommand = cli.Command{
+	Action: generateEthereumGenesisAction,
 	Name:   "extract-ethereum-genesis",
 	Usage:  "Extracts WorldState from json into first updateset",
 	Flags: []cli.Flag{
@@ -40,7 +40,7 @@ var ExtractEthereumGenesisCommand = cli.Command{
 	Description: `
 Extracts WorldState from ethereum genesis.json into first updateset.`}
 
-func extractEthereumGenesis(ctx *cli.Context) error {
+func generateEthereumGenesisAction(ctx *cli.Context) error {
 	// process arguments and flags
 	if ctx.Args().Len() != 1 {
 		return fmt.Errorf("ethereum-update command requires exactly 1 arguments")

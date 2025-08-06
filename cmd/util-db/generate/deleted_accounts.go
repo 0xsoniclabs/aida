@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package generate
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var GenDeletedAccountsCommand = cli.Command{
-	Action:    genDeletedAccountsAction,
+var DeletedAccountsCommand = cli.Command{
+	Action:    generateDeletedAccountsAction,
 	Name:      "gen-deleted-accounts",
 	Usage:     "executes full state transitions and record suicided accounts",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
@@ -46,8 +46,8 @@ The util-db gen-deleted-accounts command requires two arguments:
 last block of the inclusive range of blocks to replay transactions.`,
 }
 
-// genDeletedAccountsAction prepares config and arguments before GenDeletedAccountsAction
-func genDeletedAccountsAction(ctx *cli.Context) error {
+// generateDeletedAccountsAction prepares config and arguments before GenDeletedAccountsAction
+func generateDeletedAccountsAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err

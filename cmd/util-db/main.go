@@ -19,6 +19,9 @@ package main
 import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dump_substate"
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
+	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"log"
 	"os"
 
@@ -37,17 +40,18 @@ var UtilDbApp = cli.App{
 	Commands: []*cli.Command{
 		&clone.Command,
 		&compact.Command,
-		&db.ExtractEthereumGenesisCommand,
+		&genesis.ExtractEthereumGenesisCommand,
 		&db.MergeCommand,
 		&db.UpdateCommand,
-		&db.InfoCommand,
+		&info.Command,
 		&db.ValidateCommand,
-		&db.GenDeletedAccountsCommand,
-		&db.SubstateDumpCommand,
-		&db.GenerateDbHashCommand,
+		&dump_substate.Command,
+		&generate.EthereumGenesisCommand,
+		&generate.DeletedAccountsCommand,
+		&generate.DbHashCommand,
+		&db.MergeCommand,
+		&db.UpdateCommand,
 		&db.PrintDbHashCommand,
-		&db.PrintPrefixHashCommand,
-		&db.PrintTableHashCommand,
 		&db.ScrapeCommand,
 		&db.MetadataCommand,
 

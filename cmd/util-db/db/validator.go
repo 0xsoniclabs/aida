@@ -29,15 +29,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var GenerateDbHashCommand = cli.Command{
-	Action: generateDbHashCmd,
-	Name:   "generate-db-hash",
-	Usage:  "Generates new db-hash. Note that this will overwrite the current AidaDb hash.",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-	},
-}
-
 var ValidateCommand = cli.Command{
 	Action: validateCmd,
 	Name:   "validate",
@@ -45,35 +36,6 @@ var ValidateCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
 	},
-}
-
-// validateCmd calculates the dbHash for given AidaDb and saves it.
-func generateDbHashCmd(ctx *cli.Context) error {
-	log := logger.NewLogger("INFO", "DbHashGenerateCMD")
-
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
-
-	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open db; %v", err)
-	}
-
-	defer utildb.MustCloseDB(aidaDb)
-
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
-
-	log.Noticef("Starting DbHash generation for %v; this may take several hours...", cfg.AidaDb)
-	hash, err := utildb.GenerateDbHash(aidaDb, "INFO")
-	if err != nil {
-		return err
-	}
-
-	err = md.SetDbHash(hash)
-	if err != nil {
-		return fmt.Errorf("cannot set db-hash; %v", err)
-	}
-
-	return nil
 }
 
 // validateCmd calculates the dbHash for given AidaDb and compares it to expected hash either found in metadata or online
