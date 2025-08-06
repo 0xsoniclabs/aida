@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/0xsoniclabs/carmen/go/common"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/klauspost/compress/gzip"
-	"io"
-	"os"
 )
 
 // NewFileWriter creates a new FileWriter that writes to a gzip-compressed file using a buffer.

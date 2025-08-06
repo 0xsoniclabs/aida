@@ -2,13 +2,14 @@ package tracer
 
 import (
 	"errors"
+	"os"
+	"testing"
+
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"os"
-	"testing"
 )
 
 func TestNewFileWriter(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewFileWriter(t *testing.T) {
 	assert.True(t, ok)
 	require.NoError(t, fw.Close())
 	// file exists - factory func should fail
-	fw, err = NewFileWriter(fp)
+	_, err = NewFileWriter(fp)
 	assert.ErrorContains(t, err, "already exists")
 }
 
