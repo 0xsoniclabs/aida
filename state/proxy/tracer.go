@@ -38,12 +38,12 @@ import (
 // TracerProxy data structure for writing StateDB operations
 type TracerProxy struct {
 	db       state.StateDB
-	ctx      tracer.ArgumentContext
+	ctx      tracer.Context
 	writeErr error
 }
 
 // NewTracerProxy creates a new StateDB proxy for recording and writing events.
-func NewTracerProxy(db state.StateDB, ctx tracer.ArgumentContext) *TracerProxy {
+func NewTracerProxy(db state.StateDB, ctx tracer.Context) *TracerProxy {
 	return &TracerProxy{
 		db:  db,
 		ctx: ctx,

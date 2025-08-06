@@ -17,7 +17,7 @@ import (
 	"testing"
 )
 
-func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.ArgumentContext) map[string]state.StateDB {
+func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.Context) map[string]state.StateDB {
 	t.Helper()
 
 	delChan := make(chan ContractLiveliness, 10)
