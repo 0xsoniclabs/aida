@@ -5,8 +5,11 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -14,8 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/klauspost/compress/gzip"
-	"io"
-	"os"
 )
 
 func NewFileReader(filename string) (FileReader, uint64, uint64, error) {

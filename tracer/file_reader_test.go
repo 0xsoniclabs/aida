@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"math"
+	"math/big"
+	"os"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/0xsoniclabs/aida/utils/bigendian"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,10 +19,6 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"math"
-	"math/big"
-	"os"
-	"testing"
 )
 
 func TestNewFileReader_ErrorCases(t *testing.T) {
