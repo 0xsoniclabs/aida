@@ -18,21 +18,21 @@ package validator
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeEthStateTestStateHashValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthStateTestStateHashValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	if !cfg.Validate {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 	return makeEthStateTestStateHashValidator(cfg)
 }
 
-func makeEthStateTestStateHashValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func makeEthStateTestStateHashValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return &ethStateTestStateHashValidator{
 		cfg: cfg,
 	}
@@ -40,7 +40,7 @@ func makeEthStateTestStateHashValidator(cfg *utils.Config) executor.Extension[tx
 
 type ethStateTestStateHashValidator struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 // PostBlock validates state root hash.

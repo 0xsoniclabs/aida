@@ -1,20 +1,4 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
-package utildb
+package db
 
 import (
 	"archive/tar"
@@ -25,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"io"
 	"os"
 	"path/filepath"
@@ -48,10 +34,10 @@ const (
 )
 
 type Generator struct {
-	Cfg               *utils.Config
+	Cfg               *config.Config
 	ctx               *cli.Context
 	Log               logger.Logger
-	md                *utils.AidaDbMetadata
+	md                *AidaDbMetadata
 	AidaDb            db.BaseDB
 	DeletionDbTmp     db.BaseDB
 	DeletionDbTmpPath string
@@ -63,17 +49,17 @@ type Generator struct {
 }
 
 // PrepareManualGenerate prepares generator for manual generation
-func (g *Generator) PrepareManualGenerate(ctx *cli.Context, cfg *utils.Config) (err error) {
+func (g *Generator) PrepareManualGenerate(ctx *cli.Context, cfg *config.Config) (err error) {
 	if ctx.Args().Len() != 4 {
 		return fmt.Errorf("generate command requires exactly 4 arguments - first block, last block, first epoch, last epoch")
 	}
 
-	g.Opera.firstBlock, g.Opera.lastBlock, err = utils.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
+	g.Opera.firstBlock, g.Opera.lastBlock, err = config.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
 	if err != nil {
 		return err
 	}
 
-	g.Opera.FirstEpoch, g.Opera.lastEpoch, err = utils.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
+	g.Opera.FirstEpoch, g.Opera.lastEpoch, err = config.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
 	if err != nil {
 		return err
 	}
@@ -122,7 +108,7 @@ func (g *Generator) PrepareManualGenerate(ctx *cli.Context, cfg *utils.Config) (
 }
 
 // NewGenerator returns new instance of generator
-func NewGenerator(ctx *cli.Context, cfg *utils.Config) (*Generator, error) {
+func NewGenerator(ctx *cli.Context, cfg *config.Config) (*Generator, error) {
 	if cfg.AidaDb == "" {
 		return nil, fmt.Errorf("you need to specify aida-db (--aida-db)")
 	}
@@ -183,7 +169,7 @@ func (g *Generator) Generate() error {
 	}
 
 	g.Log.Notice("Generate metadata for AidaDb...")
-	err = utils.ProcessGenLikeMetadata(g.AidaDb, g.Opera.firstBlock, g.Opera.lastBlock, g.Opera.FirstEpoch, g.Opera.lastEpoch, g.Cfg.ChainID, g.Cfg.LogLevel, g.dbHash)
+	err = ProcessGenLikeMetadata(g.AidaDb, g.Opera.firstBlock, g.Opera.lastBlock, g.Opera.FirstEpoch, g.Opera.lastEpoch, g.Cfg.ChainID, g.Cfg.LogLevel, g.dbHash)
 	if err != nil {
 		return err
 	}
@@ -387,7 +373,7 @@ func (g *Generator) createPatch() (string, error) {
 	}
 
 	// metadata
-	err = utils.ProcessPatchLikeMetadata(patchDb, g.Cfg.LogLevel, g.Cfg.First, g.Cfg.Last, g.Opera.FirstEpoch,
+	err = ProcessPatchLikeMetadata(patchDb, g.Cfg.LogLevel, g.Cfg.First, g.Cfg.Last, g.Opera.FirstEpoch,
 		g.Opera.lastEpoch, g.Cfg.ChainID, g.Opera.isNew, g.dbHash)
 	if err != nil {
 		return "", err
@@ -439,7 +425,7 @@ func (g *Generator) updatePatchesJson(fileName string) error {
 	jsonFilePath := filepath.Join(g.Cfg.Output, patchesJsonName)
 
 	// Load previous JSON
-	var patchesJson []utils.PatchJson
+	var patchesJson []PatchJson
 
 	// Attempt to load previous JSON
 	file, err := os.Open(jsonFilePath)
@@ -469,11 +455,11 @@ func (g *Generator) updatePatchesJson(fileName string) error {
 
 	// Initialize the array if it doesn't exist
 	if patchesJson == nil {
-		patchesJson = make([]utils.PatchJson, 0)
+		patchesJson = make([]PatchJson, 0)
 	}
 
 	// Create a new patch object
-	newPatch := utils.PatchJson{
+	newPatch := PatchJson{
 		FileName:  fileName,
 		FromBlock: g.Cfg.First,
 		ToBlock:   g.Cfg.Last,
@@ -496,7 +482,7 @@ func (g *Generator) updatePatchesJson(fileName string) error {
 }
 
 // doUpdatePatchesJson with newly acquired patch
-func (g *Generator) doUpdatePatchesJson(patchesJson []utils.PatchJson, file *os.File) error {
+func (g *Generator) doUpdatePatchesJson(patchesJson []PatchJson, file *os.File) error {
 	// Convert the array to JSON bytes
 	jsonBytes, err := json.MarshalIndent(patchesJson, "", "  ")
 	if err != nil {
@@ -600,7 +586,7 @@ func (g *Generator) calculatePatchEnd() error {
 	g.TargetEpoch = g.Opera.FirstEpoch
 
 	// next patch will be at least X epochs large
-	if g.Cfg.ChainID == utils.MainnetChainID {
+	if g.Cfg.ChainID == chainid.MainnetChainID {
 		// mainnet currently takes about 250 epochs per day
 		g.TargetEpoch += 250
 	} else {

@@ -18,6 +18,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -28,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-func StartCPUProfile(cfg *Config) error {
+func StartCPUProfile(cfg *config.Config) error {
 	if cfg.CPUProfile != "" {
 		f, err := os.Create(cfg.CPUProfile)
 		if err != nil {
@@ -41,13 +42,13 @@ func StartCPUProfile(cfg *Config) error {
 	return nil
 }
 
-func StopCPUProfile(cfg *Config) {
+func StopCPUProfile(cfg *config.Config) {
 	if cfg.CPUProfile != "" {
 		pprof.StopCPUProfile()
 	}
 }
 
-func StartMemoryProfile(cfg *Config) error {
+func StartMemoryProfile(cfg *config.Config) error {
 	// write memory profile if requested
 	if cfg.MemoryProfile != "" {
 		f, err := os.Create(cfg.MemoryProfile)
@@ -63,7 +64,7 @@ func StartMemoryProfile(cfg *Config) error {
 }
 
 // MemoryBreakdown prints memory usage details of statedb if applicable
-func MemoryBreakdown(db state.StateDB, cfg *Config, log logger.Logger) {
+func MemoryBreakdown(db state.StateDB, cfg *config.Config, log logger.Logger) {
 	if cfg.MemoryBreakdown {
 		if usage := db.GetMemoryUsage(); usage.Breakdown != nil {
 			log.Noticef("State DB memory usage: %d byte\n%s", usage.UsedBytes, usage.Breakdown)
@@ -75,7 +76,7 @@ func MemoryBreakdown(db state.StateDB, cfg *Config, log logger.Logger) {
 
 // PrintEvmStatistics prints EVM implementation specific statical information
 // to the console. Does nothing, if such information is not offered.
-func PrintEvmStatistics(cfg *Config) {
+func PrintEvmStatistics(cfg *config.Config) {
 	inter, err := tosca.NewInterpreter(cfg.VmImpl)
 	if err != nil {
 		log.Warn("Failed to create interpreter: %v", err)

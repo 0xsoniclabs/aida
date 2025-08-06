@@ -20,6 +20,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"sync"
 	"time"
 
@@ -45,19 +47,19 @@ type validator struct {
 }
 
 // FindDbHashOnline if user has no dbHash inside his AidaDb metadata
-func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDbMetadata) ([]byte, error) {
+func FindDbHashOnline(chainId chainid.ChainID, log logger.Logger, md *AidaDbMetadata) ([]byte, error) {
 	var url string
 
-	if chainId == utils.SonicMainnetChainID {
-		url = utils.AidaDbRepositorySonicUrl
-	} else if chainId == utils.MainnetChainID {
-		url = utils.AidaDbRepositoryOperaUrl
-	} else if chainId == utils.TestnetChainID {
-		url = utils.AidaDbRepositoryTestnetUrl
+	if chainId == chainid.SonicMainnetChainID {
+		url = config.AidaDbRepositorySonicUrl
+	} else if chainId == chainid.MainnetChainID {
+		url = config.AidaDbRepositoryOperaUrl
+	} else if chainId == chainid.TestnetChainID {
+		url = config.AidaDbRepositoryTestnetUrl
 	}
 
 	log.Noticef("looking for db-hash online on %v", url)
-	patches, err := utils.DownloadPatchesJson()
+	patches, err := DownloadPatchesJson()
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +72,7 @@ func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDb
 
 	var ok bool
 
-	md.FirstBlock, md.LastBlock, ok = utils.FindBlockRangeInSubstate(db.MakeDefaultSubstateDBFromBaseDB(md.Db))
+	md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(db.MakeDefaultSubstateDBFromBaseDB(md.Db))
 	if !ok {
 		return nil, errors.New("cannot find block range in substate")
 	}

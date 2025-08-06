@@ -19,6 +19,7 @@ package tracker
 import (
 	"encoding/json"
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"testing"
 	"time"
@@ -28,12 +29,11 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func TestRpcProgressTrackerExtension_NoLoggerIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TrackProgress = false
 	ext := MakeRequestProgressTracker(cfg, testStateDbInfoFrequency)
 	if _, ok := ext.(extension.NilExtension[*rpc.RequestAndResults]); !ok {
@@ -46,7 +46,7 @@ func TestRpcProgressTrackerExtension_LoggingHappens(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	ext := makeRequestProgressTracker(cfg, 6, log)
 
@@ -118,7 +118,7 @@ func TestRpcProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 4
 
 	ext := makeRequestProgressTracker(cfg, testStateDbInfoFrequency, log)

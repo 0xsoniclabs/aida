@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
@@ -26,20 +27,19 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
 // RunVmAdb performs block processing on an ArchiveDb
 func RunVmAdb(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
 
 	cfg.SetStateDbSrcReadOnly()
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 
 	// executing archive blocks always calls ArchiveDb with block -1
 	// this condition prevents an incorrect call for block that does not exist (block number -1 in this case)
@@ -69,7 +69,7 @@ func RunVmAdb(ctx *cli.Context) error {
 }
 
 func run(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	stateDb state.StateDB,
 	processor executor.Processor[txcontext.TxContext],

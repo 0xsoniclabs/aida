@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -30,7 +31,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -41,12 +41,12 @@ const (
 
 // RunSubstate performs sequential block processing on a StateDb
 func RunSubstate(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
 
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 
 	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
@@ -68,7 +68,7 @@ func RunSubstate(ctx *cli.Context) error {
 	return runSubstates(cfg, substateIterator, nil, processor, nil, aidaDb)
 }
 
-func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxContext], stateDb state.StateDB, processor executor.Processor[txcontext.TxContext], extra []executor.Extension[txcontext.TxContext], aidaDb db.BaseDB) error {
+func runSubstates(cfg *config.Config, provider executor.Provider[txcontext.TxContext], stateDb state.StateDB, processor executor.Processor[txcontext.TxContext], extra []executor.Extension[txcontext.TxContext], aidaDb db.BaseDB) error {
 	// order of extensionList has to be maintained
 	var extensionList = []executor.Extension[txcontext.TxContext]{
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),

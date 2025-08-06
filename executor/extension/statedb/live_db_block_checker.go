@@ -18,6 +18,7 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"path/filepath"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -27,11 +28,11 @@ import (
 
 type liveDbBlockChecker[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 // MakeLiveDbBlockChecker creates an executor.Extension which checks block alignment of given Live StateDb
-func MakeLiveDbBlockChecker[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeLiveDbBlockChecker[T any](cfg *config.Config) executor.Extension[T] {
 	// this extension is only necessary for existing LiveDb
 	if cfg.StateDbSrc == "" {
 		return extension.NilExtension[T]{}

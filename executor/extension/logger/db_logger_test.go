@@ -18,6 +18,7 @@ package logger
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"io"
 	"os"
 	"strings"
@@ -29,7 +30,6 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
@@ -38,7 +38,7 @@ import (
 var testAddr = common.Address{0}
 
 func TestDbLoggerExtension_CorrectClose(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeDbLogger[any](cfg)
 
 	// start the report thread
@@ -60,7 +60,7 @@ func TestDbLoggerExtension_CorrectClose(t *testing.T) {
 }
 
 func TestDbLoggerExtension_NoLoggerIsCreatedIfNotEnabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeDbLogger[any](cfg)
 	if _, ok := ext.(extension.NilExtension[any]); !ok {
 		t.Errorf("Logger is enabled although not set in configuration")
@@ -74,7 +74,7 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 
 	fileName := t.TempDir() + "test-log"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = fileName
 
 	ext := makeDbLogger[any](cfg, log)
@@ -150,7 +150,7 @@ func TestDbLoggerExtension_PreTransactionCreatesNewLoggerProxy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = t.TempDir() + "test-log"
 	cfg.LogLevel = "critical"
 
@@ -174,7 +174,7 @@ func TestDbLoggerExtension_PreTransactionDoesNotCreateNewLoggerProxy(t *testing.
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = t.TempDir() + "test-log"
 	cfg.LogLevel = "critical"
 
@@ -207,7 +207,7 @@ func TestDbLoggerExtension_PreRunCreatesNewLoggerProxyIfStateIsNotNil(t *testing
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = t.TempDir() + "test-log"
 	cfg.LogLevel = "critical"
 
@@ -227,7 +227,7 @@ func TestDbLoggerExtension_PreRunCreatesNewLoggerProxyIfStateIsNotNil(t *testing
 }
 
 func TestDbLoggerExtension_PreRunDoesNotCreateNewLoggerProxyIfStateIsNil(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = t.TempDir() + "test-log"
 	cfg.LogLevel = "critical"
 
@@ -251,7 +251,7 @@ func TestDbLoggerExtension_StateDbCloseIsWrittenInTheFile(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 
 	fileName := t.TempDir() + "test-log"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbLogging = fileName
 
 	ext := makeDbLogger[any](cfg, log)

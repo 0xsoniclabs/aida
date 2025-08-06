@@ -19,6 +19,7 @@ package executor
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"slices"
 	"strings"
@@ -48,7 +49,7 @@ import (
 )
 
 // MakeLiveDbTxProcessor creates a executor.Processor which processes transaction into LIVE StateDb.
-func MakeLiveDbTxProcessor(cfg *utils.Config) (*LiveDbTxProcessor, error) {
+func MakeLiveDbTxProcessor(cfg *config.Config) (*LiveDbTxProcessor, error) {
 	processor, err := MakeTxProcessor(cfg)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (p *LiveDbTxProcessor) Process(state State[txcontext.TxContext], ctx *Conte
 }
 
 // MakeArchiveDbTxProcessor creates a executor.Processor which processes transaction into ARCHIVE StateDb.
-func MakeArchiveDbTxProcessor(cfg *utils.Config) (*ArchiveDbTxProcessor, error) {
+func MakeArchiveDbTxProcessor(cfg *config.Config) (*ArchiveDbTxProcessor, error) {
 	processor, err := MakeTxProcessor(cfg)
 	if err != nil {
 		return nil, err
@@ -108,7 +109,7 @@ func (p *ArchiveDbTxProcessor) Process(state State[txcontext.TxContext], ctx *Co
 }
 
 // MakeEthTestProcessor creates an executor.Processor which processes transaction created from ethereum test package.
-func MakeEthTestProcessor(cfg *utils.Config) (*ethTestProcessor, error) {
+func MakeEthTestProcessor(cfg *config.Config) (*ethTestProcessor, error) {
 	processor, err := MakeTxProcessor(cfg)
 	if err != nil {
 		return nil, err
@@ -192,13 +193,13 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 }
 
 type TxProcessor struct {
-	cfg       *utils.Config
+	cfg       *config.Config
 	numErrors *atomic.Int32 // transactions can be processed in parallel, so this needs to be thread safe
 	log       logger.Logger
 	processor processor
 }
 
-func MakeTxProcessor(cfg *utils.Config) (*TxProcessor, error) {
+func MakeTxProcessor(cfg *config.Config) (*TxProcessor, error) {
 	var processor processor
 	switch strings.ToLower(cfg.EvmImpl) {
 	case "", "opera", "ethereum":
@@ -251,7 +252,7 @@ func (s *TxProcessor) isErrFatal() bool {
 }
 
 func (s *TxProcessor) ProcessTransaction(db state.VmStateDB, block int, tx int, st txcontext.TxContext) (txcontext.Result, error) {
-	if tx >= utils.PseudoTx {
+	if tx >= config.PseudoTx {
 		return s.processPseudoTx(st.GetOutputState(), db), nil
 	}
 	return s.processor.processRegularTx(db, block, tx, st)
@@ -262,12 +263,12 @@ type processor interface {
 }
 
 type aidaProcessor struct {
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 
 // for testing purposes
-func makeAidaProcessor(cfg *utils.Config) *aidaProcessor {
+func makeAidaProcessor(cfg *config.Config) *aidaProcessor {
 	evmImpl := strings.ToLower(cfg.EvmImpl)
 	return &aidaProcessor{
 		cfg: cfg,
@@ -379,7 +380,7 @@ func (s *TxProcessor) processPseudoTx(ws txcontext.WorldState, db state.VmStateD
 
 type toscaProcessor struct {
 	processor tosca.Processor
-	cfg       *utils.Config
+	cfg       *config.Config
 	log       logger.Logger
 }
 

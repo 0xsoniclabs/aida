@@ -17,18 +17,19 @@
 package validator
 
 import (
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // ethereumLfvmBlockExceptions LFVM uses a uint16 program counter with a range from 0 to 65535.
 // Starting with the Shanghai revision and eip-3860 this was fixed
 // only post alloc is diverging for these block exceptions, so it needs to be overwritten
-var ethereumLfvmBlockExceptions = map[utils.ChainID]map[int]struct{}{
-	utils.EthereumChainID: {
+var ethereumLfvmBlockExceptions = map[chainid.ChainID]map[int]struct{}{
+	chainid.EthereumChainID: {
 		10880015: {}, 10880604: {}, 10880608: {}, 13142297: {}, 13163624: {}, 13163650: {}, 13656943: {}, 13658320: {},
 		13715268: {}, 13803456: {}, 13810899: {}, 13815453: {}, 13854983: {}, 13854989: {}, 13854993: {}, 13854995: {},
 		13856623: {}, 14171562: {}, 14340503: {}, 14369546: {}, 14643356: {}, 14729777: {}, 14740700: {}, 14764663: {},
@@ -48,11 +49,11 @@ var ethereumLfvmBlockExceptions = map[utils.ChainID]map[int]struct{}{
 		16592162: {}, 16782381: {}, 16832475: {}, 16832667: {}, 16832676: {}, 16832890: {}, 16840977: {}, 16844950: {},
 		16845000: {}, 16881016: {},
 	},
-	utils.SepoliaChainID: {
+	chainid.SepoliaChainID: {
 		2259736: {}, 2259718: {}, 2259775: {}, 2261404: {}, 2261423: {}, 2267647: {}, 2299256: {},
 		2513443: {}, 2612238: {}, 2656617: {}, 2825745: {},
 	},
-	utils.TestnetChainID: {
+	chainid.TestnetChainID: {
 		4362260: {}, 4362273: {}, 4362287: {}, 4432681: {}, 4432885: {}, 4432897: {}, 4432910: {}, 4432934: {},
 		4805316: {}, 4805731: {}, 8114395: {}, 8151297: {}, 8151512: {}, 8151721: {}, 8152084: {}, 8152229: {},
 		8152313: {}, 10162070: {}, 10188748: {}, 10203245: {}, 10203269: {}, 14025784: {}, 14025973: {}, 14048179: {},
@@ -62,13 +63,13 @@ var ethereumLfvmBlockExceptions = map[utils.ChainID]map[int]struct{}{
 }
 
 // MakeEthereumDbPostTransactionUpdater creates an extension which fixes Ethereum exceptions in LiveDB
-func MakeEthereumDbPostTransactionUpdater(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthereumDbPostTransactionUpdater(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	log := logger.NewLogger(cfg.LogLevel, "Ethereum-Exception-Updater")
 
 	return makeEthereumDbPostTransactionUpdater(cfg, log)
 }
 
-func makeEthereumDbPostTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
+func makeEthereumDbPostTransactionUpdater(cfg *config.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
 	if cfg.VmImpl != "lfvm" {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -87,7 +88,7 @@ func makeEthereumDbPostTransactionUpdater(cfg *utils.Config, log logger.Logger) 
 
 type ethereumDbPostTransactionUpdater struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 

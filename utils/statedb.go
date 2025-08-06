@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"path/filepath"
 
@@ -40,7 +41,7 @@ const (
 
 // PrepareStateDB creates stateDB or load existing stateDB
 // Use this function when both opening existing and creating new StateDB
-func PrepareStateDB(cfg *Config) (state.StateDB, string, error) {
+func PrepareStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		db     state.StateDB
 		err    error
@@ -63,7 +64,7 @@ func PrepareStateDB(cfg *Config) (state.StateDB, string, error) {
 }
 
 // useExistingStateDB uses already existing DB to create a DB instance with a potential shadow instance.
-func useExistingStateDB(cfg *Config) (state.StateDB, string, error) {
+func useExistingStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		err            error
 		stateDb        state.StateDB
@@ -164,7 +165,7 @@ func useExistingStateDB(cfg *Config) (state.StateDB, string, error) {
 }
 
 // makeNewStateDB creates a DB instance with a potential shadow instance.
-func makeNewStateDB(cfg *Config) (state.StateDB, string, error) {
+func makeNewStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		err         error
 		stateDb     state.StateDB
@@ -219,7 +220,7 @@ func makeStateDBVariant(
 	variant, archiveVariant string,
 	carmenSchema int,
 	rootHash common.Hash,
-	cfg *Config,
+	cfg *config.Config,
 ) (state.StateDB, error) {
 	switch impl {
 	case "memory":
@@ -235,7 +236,7 @@ func makeStateDBVariant(
 			variant,
 			rootHash,
 			cfg.ArchiveMode,
-			state.NewChainConduit(IsEthereumNetwork(cfg.ChainID), chainCfg),
+			state.NewChainConduit(config.IsEthereumNetwork(cfg.ChainID), chainCfg),
 		)
 	case "carmen":
 		// Disable archive if not enabled.
@@ -258,7 +259,7 @@ func makeStateDBVariant(
 
 // DeleteDestroyedAccountsFromWorldState removes previously suicided accounts from
 // the world state.
-func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config, target uint64) (err error) {
+func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *config.Config, target uint64) (err error) {
 	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
 
 	src, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)
@@ -283,7 +284,7 @@ func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config,
 
 // DeleteDestroyedAccountsFromStateDB performs suicide operations on previously
 // self-destructed accounts.
-func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target uint64, aidaDb db.BaseDB) error {
+func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *config.Config, target uint64, aidaDb db.BaseDB) error {
 	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
 
 	src := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)

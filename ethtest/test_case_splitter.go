@@ -2,11 +2,11 @@ package ethtest
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/tests"
 	"golang.org/x/exp/maps"
@@ -34,8 +34,8 @@ var usableForks = map[string]struct{}{
 }
 
 // NewTestCaseSplitter opens all JSON tests within path
-func NewTestCaseSplitter(cfg *utils.Config) (*TestCaseSplitter, error) {
-	tests, err := getTestsWithinPath(cfg, utils.StateTests)
+func NewTestCaseSplitter(cfg *config.Config) (*TestCaseSplitter, error) {
+	tests, err := getTestsWithinPath(cfg, config.StateTests)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func NewTestCaseSplitter(cfg *utils.Config) (*TestCaseSplitter, error) {
 }
 
 func sortForks(log logger.Logger, cfgFork string) (forks []string) {
-	cfgFork = utils.ToTitleCase(cfgFork)
+	cfgFork = config.ToTitleCase(cfgFork)
 	if cfgFork == "All" {
 		forks = maps.Keys(usableForks)
 	} else {

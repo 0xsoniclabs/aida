@@ -19,6 +19,8 @@ package validator
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"math/big"
 	"strconv"
 	"strings"
@@ -88,7 +90,7 @@ type comparatorError struct {
 
 // MakeRpcComparator returns extension which handles comparison of result created by the StateDb and the recording.
 // If ContinueOnFailure is enabled errors are being saved and printed after the whole run ends. Otherwise, error is returned.
-func MakeRpcComparator(cfg *utils.Config) executor.Extension[*rpc.RequestAndResults] {
+func MakeRpcComparator(cfg *config.Config) executor.Extension[*rpc.RequestAndResults] {
 	if !cfg.Validate {
 		return extension.NilExtension[*rpc.RequestAndResults]{}
 	}
@@ -98,13 +100,13 @@ func MakeRpcComparator(cfg *utils.Config) executor.Extension[*rpc.RequestAndResu
 	return makeRPCComparator(cfg, log)
 }
 
-func makeRPCComparator(cfg *utils.Config, log logger.Logger) *rpcComparator {
+func makeRPCComparator(cfg *config.Config, log logger.Logger) *rpcComparator {
 	return &rpcComparator{cfg: cfg, log: log}
 }
 
 type rpcComparator struct {
 	extension.NilExtension[*rpc.RequestAndResults]
-	cfg                     *utils.Config
+	cfg                     *config.Config
 	log                     logger.Logger
 	numberOfRetriedRequests int
 	totalNumberOfRequests   int
@@ -224,7 +226,7 @@ func (c *rpcComparator) resendRequest(result txcontext.Result, state executor.St
 
 	c.log.Debugf("Retried params: %v", retriedReq.Params)
 	// we only record on mainnet, so we can safely put mainnet chainID constant here
-	m, err := utils.SendRpcRequest(retriedReq, utils.MainnetChainID)
+	m, err := utils.SendRpcRequest(retriedReq, chainid.MainnetChainID)
 	if err != nil {
 		return newComparatorError(result, nil, nil, state.Data, state.Block, cannotSendRpcRequest)
 	}

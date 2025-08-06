@@ -17,6 +17,8 @@
 package statedb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
@@ -41,8 +43,8 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 	t.Run("no duration", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
-		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg := config.Config{}
+		cfg.ChainID = chainid.MainnetChainID
 		cfg.ArchiveQueryRate = 100
 		ext, err := makeArchiveInquirer(&cfg, log, nil)
 		assert.NoError(t, err)
@@ -54,8 +56,8 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 	t.Run("valid duration", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
-		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg := config.Config{}
+		cfg.ChainID = chainid.MainnetChainID
 		cfg.ArchiveQueryRate = 100
 		duration := 150 * time.Second
 		ext, err := makeArchiveInquirer(&cfg, log, &duration)
@@ -68,8 +70,8 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 	t.Run("invalid duration", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
-		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg := config.Config{}
+		cfg.ChainID = chainid.MainnetChainID
 		cfg.ArchiveQueryRate = 100
 		duration := -150 * time.Second
 		ext, err := makeArchiveInquirer(&cfg, log, &duration)
@@ -81,7 +83,7 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 }
 
 func TestArchiveInquirer_DisabledIfNoQueryRateIsGiven(t *testing.T) {
-	config := utils.Config{}
+	config := config.Config{}
 	ext, err := MakeArchiveInquirer(&config)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
@@ -94,8 +96,8 @@ func TestArchiveInquirer_DisabledIfNoQueryRateIsGiven(t *testing.T) {
 func TestArchiveInquirer_ReportsErrorIfNoArchiveIsPresent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	cfg := utils.Config{}
-	cfg.ChainID = utils.MainnetChainID
+	cfg := config.Config{}
+	cfg.ChainID = chainid.MainnetChainID
 	cfg.ArchiveQueryRate = 100
 	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
@@ -115,8 +117,8 @@ func TestArchiveInquirer_CanStartUpAndShutdownGracefully(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.Config{}
-	cfg.ChainID = utils.MainnetChainID
+	cfg := config.Config{}
+	cfg.ChainID = chainid.MainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
 	ext, err := makeArchiveInquirer(&cfg, log, nil)
@@ -140,7 +142,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.TestnetChainID, 0, 0, false, "")
+	cfg := config.NewTestConfig(t, chainid.TestnetChainID, 0, 0, false, "")
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
 	cfg.ArchiveMaxQueryAge = 100

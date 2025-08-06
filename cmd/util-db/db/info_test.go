@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"strconv"
 	"strings"
@@ -97,7 +98,7 @@ func TestInfo_PrintCount(t *testing.T) {
 func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb:      aidaDbPath,
 		DbComponent: "all",
 		LogLevel:    "info",
@@ -129,7 +130,7 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *test
 func TestInfo_PrintCount_OnlyCalculateGivenRangeUpdateBlockHashException(t *testing.T) {
 	aidaDbPath := generateTestAidaDb(t)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb:      aidaDbPath,
 		DbComponent: "all",
 		LogLevel:    "info",
@@ -279,7 +280,7 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			cfg := &utils.Config{
+			cfg := &config.Config{
 				AidaDb:      aidaDbPath,
 				DbComponent: tc.dbComponent,
 				LogLevel:    "info",
@@ -312,7 +313,7 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 }
 
 func TestInfo_PrintCount_InvalidDbComponent(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: "invalid-component",
 		LogLevel:    "info",
 	}
@@ -331,7 +332,7 @@ func TestInfo_PrintCount_InvalidDbComponent(t *testing.T) {
 }
 
 func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: "all",
 		LogLevel:    "info",
 	}
@@ -399,12 +400,12 @@ func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
 func TestInfo_PrintRange(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     *utils.Config
+		cfg     *config.Config
 		wantErr string
 	}{
 		{
 			name: "All",
-			cfg: &utils.Config{
+			cfg: &config.Config{
 				AidaDb:      t.TempDir() + "/emptydb",
 				DbComponent: "all",
 			},
@@ -412,7 +413,7 @@ func TestInfo_PrintRange(t *testing.T) {
 		},
 		{
 			name: "NonExistentDb",
-			cfg: &utils.Config{
+			cfg: &config.Config{
 				AidaDb:      t.TempDir() + "non-existent-db",
 				DbComponent: "all",
 			},
@@ -420,7 +421,7 @@ func TestInfo_PrintRange(t *testing.T) {
 		},
 		{
 			name: "InvalidEncoding",
-			cfg: &utils.Config{
+			cfg: &config.Config{
 				AidaDb:           t.TempDir() + "/emptydb1",
 				SubstateEncoding: "errorEncoding",
 				DbComponent:      "substate",
@@ -429,7 +430,7 @@ func TestInfo_PrintRange(t *testing.T) {
 		},
 		{
 			name: "InvalidDbComponent",
-			cfg: &utils.Config{
+			cfg: &config.Config{
 				AidaDb:      t.TempDir() + "/emptydb2",
 				DbComponent: "not-a-component",
 			},
@@ -550,7 +551,7 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			cfg := &utils.Config{
+			cfg := &config.Config{
 				AidaDb:      aidaDbPath,
 				DbComponent: tc.dbComponent,
 				LogLevel:    "info",
@@ -591,7 +592,7 @@ func TestInfo_PrintRange_Success(t *testing.T) {
 	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
 	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(35))
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb:      aidaDbPath,
 		DbComponent: "all",
 	}
@@ -924,7 +925,7 @@ func TestInfo_PrintHashForBlock_InvalidHashType(t *testing.T) {
 
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb: aidaDbPath,
 	}
 
@@ -1028,7 +1029,7 @@ func TestInfo_PrintExceptionForBlock_Success(t *testing.T) {
 
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb: aidaDbPath,
 	}
 
@@ -1075,7 +1076,7 @@ func TestInfo_PrintExceptionForBlock_EmptyData(t *testing.T) {
 
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb: aidaDbPath,
 	}
 
@@ -1109,7 +1110,7 @@ func TestInfo_PrintExceptionForBlock_Empty(t *testing.T) {
 
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb: aidaDbPath,
 	}
 
@@ -1137,7 +1138,7 @@ func TestInfo_PrintExceptionForBlock_AidaDbDoesNotExists(t *testing.T) {
 
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AidaDb: aidaDbPath,
 	}
 

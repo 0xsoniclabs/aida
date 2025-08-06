@@ -17,6 +17,7 @@
 package db
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -44,7 +45,7 @@ Updates aida-db by downloading patches from aida-db generation server.
 
 // update updates aida-db by downloading patches from aida-db generation server.
 func update(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}

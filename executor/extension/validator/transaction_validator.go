@@ -18,6 +18,7 @@ package validator
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"sync/atomic"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -29,7 +30,7 @@ import (
 )
 
 // MakeLiveDbValidator creates an extension which validates LIVE StateDb
-func MakeLiveDbValidator(cfg *utils.Config, target ValidateTxTarget) executor.Extension[txcontext.TxContext] {
+func MakeLiveDbValidator(cfg *config.Config, target ValidateTxTarget) executor.Extension[txcontext.TxContext] {
 	if !cfg.ValidateTxState {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -39,7 +40,7 @@ func MakeLiveDbValidator(cfg *utils.Config, target ValidateTxTarget) executor.Ex
 	return makeLiveDbValidator(cfg, log, target)
 }
 
-func makeLiveDbValidator(cfg *utils.Config, log logger.Logger, target ValidateTxTarget) *liveDbTxValidator {
+func makeLiveDbValidator(cfg *config.Config, log logger.Logger, target ValidateTxTarget) *liveDbTxValidator {
 	return &liveDbTxValidator{
 		makeStateDbValidator(cfg, log, target),
 	}
@@ -60,7 +61,7 @@ func (v *liveDbTxValidator) PostTransaction(state executor.State[txcontext.TxCon
 }
 
 // MakeArchiveDbValidator creates an extension which validates ARCHIVE StateDb
-func MakeArchiveDbValidator(cfg *utils.Config, target ValidateTxTarget) executor.Extension[txcontext.TxContext] {
+func MakeArchiveDbValidator(cfg *config.Config, target ValidateTxTarget) executor.Extension[txcontext.TxContext] {
 	if !cfg.ValidateTxState {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -70,7 +71,7 @@ func MakeArchiveDbValidator(cfg *utils.Config, target ValidateTxTarget) executor
 	return makeArchiveDbValidator(cfg, log, target)
 }
 
-func makeArchiveDbValidator(cfg *utils.Config, log logger.Logger, target ValidateTxTarget) *archiveDbValidator {
+func makeArchiveDbValidator(cfg *config.Config, log logger.Logger, target ValidateTxTarget) *archiveDbValidator {
 	return &archiveDbValidator{
 		makeStateDbValidator(cfg, log, target),
 	}
@@ -93,7 +94,7 @@ func (v *archiveDbValidator) PostTransaction(state executor.State[txcontext.TxCo
 // makeStateDbValidator creates an extension that validates StateDb.
 // stateDbValidator should always be inherited depending on what
 // type of StateDb we are working with
-func makeStateDbValidator(cfg *utils.Config, log logger.Logger, target ValidateTxTarget) *stateDbValidator {
+func makeStateDbValidator(cfg *config.Config, log logger.Logger, target ValidateTxTarget) *stateDbValidator {
 	return &stateDbValidator{
 		cfg:            cfg,
 		log:            log,
@@ -104,7 +105,7 @@ func makeStateDbValidator(cfg *utils.Config, log logger.Logger, target ValidateT
 
 type stateDbValidator struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg            *utils.Config
+	cfg            *config.Config
 	log            logger.Logger
 	numberOfErrors *atomic.Int32
 	target         ValidateTxTarget
@@ -169,7 +170,7 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 	}
 
 	// TODO remove state.Transaction < 99999 after patch aida-db
-	if v.target.Receipt && state.Transaction < utils.PseudoTx && !skipEthereumException {
+	if v.target.Receipt && state.Transaction < config.PseudoTx && !skipEthereumException {
 		if err := v.validateReceipt(res.GetReceipt(), state.Data.GetResult().GetReceipt()); err != nil {
 			err = fmt.Errorf("%v err:\nvm-result error at block %v tx %v; %v", tool, state.Block, state.Transaction, err)
 			if v.isErrFatal(err, errOutput) {

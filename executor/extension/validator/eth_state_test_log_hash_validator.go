@@ -18,6 +18,7 @@ package validator
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
@@ -25,14 +26,14 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeEthStateTestLogHashValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthStateTestLogHashValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	if !cfg.Validate {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 	return makeEthStateTestLogHashValidator(cfg)
 }
 
-func makeEthStateTestLogHashValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func makeEthStateTestLogHashValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return &ethStateTestLogHashValidator{
 		cfg: cfg,
 	}
@@ -40,7 +41,7 @@ func makeEthStateTestLogHashValidator(cfg *utils.Config) executor.Extension[txco
 
 type ethStateTestLogHashValidator struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (e *ethStateTestLogHashValidator) PostBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {

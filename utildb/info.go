@@ -107,13 +107,13 @@ func FindBlockRangeInException(edb db.ExceptionDB) (uint64, uint64, error) {
 }
 
 // GetSubstateCount in given AidaDb
-func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
+func GetSubstateCount(first, last uint64, sdb db.SubstateDB) uint64 {
 	var count uint64
 
-	iter := sdb.NewSubstateIterator(int(cfg.First), 10)
+	iter := sdb.NewSubstateIterator(int(first), 10)
 	defer iter.Release()
 	for iter.Next() {
-		if iter.Value().Block > cfg.Last {
+		if iter.Value().Block > last {
 			break
 		}
 		count++
@@ -123,9 +123,9 @@ func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
 }
 
 // GetDeletedCount in given AidaDb
-func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
+func GetDeletedCount(first, last uint64, database db.BaseDB) (int, error) {
 	startingBlockBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+	binary.BigEndian.PutUint64(startingBlockBytes, first)
 
 	iter := database.NewIterator([]byte(db.DestroyedAccountPrefix), startingBlockBytes)
 	defer iter.Release()
@@ -136,7 +136,7 @@ func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("cannot Get all destroyed accounts; %w", err)
 		}
-		if block > cfg.Last {
+		if block > last {
 			break
 		}
 		count++
@@ -146,10 +146,10 @@ func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 }
 
 // GetUpdateCount in given AidaDb
-func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetUpdateCount(first, last uint64, database db.BaseDB) (uint64, error) {
 	var count uint64
 
-	start := db.SubstateDBBlockPrefix(cfg.First)[2:]
+	start := db.SubstateDBBlockPrefix(first)[2:]
 	iter := database.NewIterator([]byte(db.UpdateDBPrefix), start)
 	defer iter.Release()
 	for iter.Next() {
@@ -157,7 +157,7 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 		if err != nil {
 			return 0, fmt.Errorf("cannot decode updateset key; %w", err)
 		}
-		if block > cfg.Last {
+		if block > last {
 			break
 		}
 		count++
@@ -167,11 +167,11 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetStateHashCount in given AidaDb
-func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetStateHashCount(first, last uint64, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	hashProvider := utils.MakeHashProvider(database)
-	for i := cfg.First; i <= cfg.Last; i++ {
+	for i := first; i <= last; i++ {
 		_, err := hashProvider.GetStateRootHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
@@ -186,11 +186,11 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetBlockHashCount in given AidaDb
-func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetBlockHashCount(first, last uint64, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	hashProvider := utils.MakeHashProvider(database)
-	for i := cfg.First; i <= cfg.Last; i++ {
+	for i := first; i <= last; i++ {
 		_, err := hashProvider.GetBlockHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
@@ -205,9 +205,9 @@ func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetExceptionCount in given AidaDb
-func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
+func GetExceptionCount(first, last uint64, database db.BaseDB) (int, error) {
 	startingBlockBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+	binary.BigEndian.PutUint64(startingBlockBytes, first)
 
 	iter := database.NewIterator([]byte(db.ExceptionDBPrefix), startingBlockBytes)
 	defer iter.Release()
@@ -218,7 +218,7 @@ func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("cannot get exception count; %w", err)
 		}
-		if block > cfg.Last {
+		if block > last {
 			break
 		}
 		count++

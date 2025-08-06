@@ -2,11 +2,12 @@ package rpc
 
 import (
 	"encoding/json"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/ethapi"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,8 +25,8 @@ func TestRpc_newEvmExecutor(t *testing.T) {
 	mockArchive := state.NewMockNonCommittableStateDB(ctrl)
 
 	t.Run("success", func(t *testing.T) {
-		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+		cfg := &config.Config{
+			ChainID: chainid.MainnetChainID,
 		}
 		p := map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}
 		exec, err := newEvmExecutor(1, mockArchive, cfg, p, 123)
@@ -34,8 +35,8 @@ func TestRpc_newEvmExecutor(t *testing.T) {
 	})
 
 	t.Run("no factory", func(t *testing.T) {
-		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+		cfg := &config.Config{
+			ChainID: chainid.MainnetChainID,
 			VmImpl:  "1234",
 		}
 		p := map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}
@@ -46,8 +47,8 @@ func TestRpc_newEvmExecutor(t *testing.T) {
 	})
 
 	t.Run("no chain config", func(t *testing.T) {
-		cfg := &utils.Config{
-			ChainID: utils.PseudoTx,
+		cfg := &config.Config{
+			ChainID: config.PseudoTx,
 		}
 		p := map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}
 		exec, err := newEvmExecutor(1, mockArchive, cfg, p, 123)

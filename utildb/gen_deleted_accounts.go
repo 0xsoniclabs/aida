@@ -18,6 +18,8 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utils"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -25,7 +27,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
@@ -83,7 +84,7 @@ func genDeletedAccountsTask(
 	processor *executor.TxProcessor,
 	ddb *db.DestroyedAccountDB,
 	deleteHistory *map[common.Address]bool,
-	cfg *utils.Config,
+	cfg *config.Config,
 ) error {
 	ch := make(chan proxy.ContractLiveliness, channelSize)
 	var statedb state.StateDB
@@ -95,7 +96,7 @@ func genDeletedAccountsTask(
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
 
-	conduit := state.NewChainConduit(utils.IsEthereumNetwork(cfg.ChainID), chainCfg)
+	conduit := state.NewChainConduit(config.IsEthereumNetwork(cfg.ChainID), chainCfg)
 	statedb, err = state.MakeOffTheChainStateDB(ss.GetInputState(), tx.Block, conduit)
 	if err != nil {
 		return err
@@ -136,7 +137,7 @@ func genDeletedAccountsTask(
 }
 
 // GenDeletedAccountsAction replays transactions and record self-destructed accounts and resurrected accounts.
-func GenDeletedAccountsAction(cfg *utils.Config, sdb db.SubstateDB, ddb *db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
+func GenDeletedAccountsAction(cfg *config.Config, sdb db.SubstateDB, ddb *db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
 	var err error
 
 	err = utils.StartCPUProfile(cfg)
@@ -169,7 +170,7 @@ func GenDeletedAccountsAction(cfg *utils.Config, sdb db.SubstateDB, ddb *db.Dest
 			break
 		}
 
-		if tx.Transaction < utils.PseudoTx {
+		if tx.Transaction < config.PseudoTx {
 			err = genDeletedAccountsTask(tx, processor, ddb, &deleteHistory, cfg)
 			if err != nil {
 				return err

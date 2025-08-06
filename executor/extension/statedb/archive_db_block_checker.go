@@ -18,6 +18,7 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"path/filepath"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -29,13 +30,13 @@ import (
 
 type archiveBlockChecker[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 
 // MakeArchiveBlockChecker creates an executor.Extension which checks if given
 // archive has archive states block alignment of given Archive StateDb
-func MakeArchiveBlockChecker[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeArchiveBlockChecker[T any](cfg *config.Config) executor.Extension[T] {
 	return &archiveBlockChecker[T]{
 		cfg: cfg,
 		log: logger.NewLogger(cfg.LogLevel, "Archive-Block-Checker"),

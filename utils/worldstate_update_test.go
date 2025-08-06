@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/substate/db"
@@ -43,7 +44,7 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	baseDb.EXPECT().GetBackend().Return(mockDb)
 	baseDb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
 
-	set, i, err := GenerateUpdateSet(0, 2, &Config{
+	set, i, err := GenerateUpdateSet(0, 2, &config.Config{
 		Workers:          1,
 		SubstateEncoding: "rlp",
 	}, baseDb)
@@ -79,7 +80,7 @@ func TestWorldStateUpdate_GenerateWorldStateFromUpdateDB(t *testing.T) {
 
 	// create mock db
 	// case error
-	cfg := &Config{
+	cfg := &config.Config{
 		AidaDb:     src,
 		DeletionDb: dst,
 		Workers:    1,

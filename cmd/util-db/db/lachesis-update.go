@@ -18,6 +18,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
@@ -49,7 +50,7 @@ func lachesisUpdate(ctx *cli.Context) error {
 	if ctx.Args().Len() != 0 {
 		return fmt.Errorf("lachesis-update command requires exactly 0 arguments")
 	}
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -79,7 +80,7 @@ func lachesisUpdate(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot get last substate; %w", err)
 	}
-	lachesisLastBlock := utils.FirstOperaBlock - 1
+	lachesisLastBlock := config.FirstOperaBlock - 1
 	untrackedState := make(substate.WorldState)
 
 	if lastTx.Env.Number < lachesisLastBlock {
@@ -95,7 +96,7 @@ func lachesisUpdate(ctx *cli.Context) error {
 			lastTx.Message,
 			lastTx.Result,
 			lastTx.Block,
-			utils.PseudoTx,
+			config.PseudoTx,
 		)
 		// replace lachesis storage with zeros
 		if err := utildb.FixSfcContract(lachesis, transitionTx); err != nil {
@@ -105,7 +106,7 @@ func lachesisUpdate(ctx *cli.Context) error {
 		// write to db
 		log.Noticef("Write a transition tx to Block %v Tx %v with %v accounts",
 			lachesisLastBlock,
-			utils.PseudoTx,
+			config.PseudoTx,
 			len(untrackedState))
 		err = sdb.PutSubstate(transitionTx)
 		if err != nil {

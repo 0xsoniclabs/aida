@@ -19,6 +19,7 @@ package stochastic
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/0xsoniclabs/aida/config"
 	"log"
 	"math/rand"
 	"os"
@@ -79,7 +80,7 @@ func FuzzStochastic(f *testing.F) {
 	f.Fuzz(func(f *testing.T, fuzzingStr []byte) {
 
 		// generate configuration
-		cfg := utils.Config{
+		cfg := config.Config{
 			ContractNumber:    1000,
 			KeysNumber:        1000,
 			ValuesNumber:      1000,

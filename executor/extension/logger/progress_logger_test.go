@@ -17,6 +17,7 @@
 package logger
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 	"time"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -33,7 +33,7 @@ import (
 const testProgressReportFrequency = time.Second
 
 func TestProgressLoggerExtension_CorrectClose(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeProgressLogger[any](cfg, testProgressReportFrequency)
 
 	// start the report thread
@@ -55,7 +55,7 @@ func TestProgressLoggerExtension_CorrectClose(t *testing.T) {
 }
 
 func TestProgressLoggerExtension_NoLoggerIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.NoHeartbeatLogging = true
 	ext := MakeProgressLogger[any](cfg, testProgressReportFrequency)
 	if _, ok := ext.(extension.NilExtension[any]); !ok {
@@ -68,7 +68,7 @@ func TestProgressLoggerExtension_LoggingHappens(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	ext := makeProgressLogger[*substate.Substate](cfg, testProgressReportFrequency, log)
 
@@ -108,7 +108,7 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	// we set large tick rate that does not trigger the ticker
 	ext := makeProgressLogger[*substate.Substate](cfg, 10*time.Second, log)
@@ -137,7 +137,7 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 }
 
 func TestProgressLoggerExtension_MakeProgressLogger(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeProgressLogger[any](cfg, -1)
 
 	_, ok := ext.(*progressLogger[any])

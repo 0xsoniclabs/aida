@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"os"
 	"testing"
 
@@ -43,7 +45,7 @@ import (
 )
 
 func TestStateDbPrimerExtension_NoPrimerIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = true
 
 	ext := MakeStateDbPrimer[any](cfg)
@@ -57,7 +59,7 @@ func TestStateDbPrimerExtension_PrimingExistingStateDbMissingDbInfo(t *testing.T
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.IsExistingStateDb = true
 	cfg.First = 2
 
@@ -77,7 +79,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 	stateDb := state.NewMockStateDB(ctrl)
 	aidaDbPath := t.TempDir() + "aidadb"
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = ""
 	cfg.First = 2
@@ -119,7 +121,7 @@ func TestStateDbPrimerExtension_AttemptToPrimeBlockZeroDoesNotFail(t *testing.T)
 
 	tmpStateDb := t.TempDir()
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = tmpStateDb
 	cfg.IsExistingStateDb = true
@@ -215,7 +217,7 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aidadb"
 	stateDb := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = ""
 	cfg.First = 10
@@ -430,11 +432,11 @@ func TestPrimer_EthereumGenesisPriming(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	addr := common.Address{0x1}
-	for chainID, name := range utils.AllowedChainIDs {
+	for chainID, name := range chainid.AllowedChainIDs {
 
 		t.Run(name, func(t *testing.T) {
 			// setup
-			cfg := utils.NewTestConfig(t, chainID, utils.KeywordBlocks[chainID]["first"], 100, false, "Prague")
+			cfg := config.NewTestConfig(t, chainID, config.KeywordBlocks[chainID]["first"], 100, false, "Prague")
 			cfg.SkipPriming = false
 			log := logger.NewMockLogger(ctrl)
 			stateDb := state.NewMockStateDB(ctrl)
@@ -455,7 +457,7 @@ func TestPrimer_EthereumGenesisPriming(t *testing.T) {
 			}, nil)
 
 			// Genesis priming should only be triggered by ethereum data sets
-			if _, isEthChainID := utils.EthereumChainIDs[chainID]; isEthChainID {
+			if _, isEthChainID := chainid.EthereumChainIDs[chainID]; isEthChainID {
 				gomock.InOrder(
 					log.EXPECT().Noticef("Priming ethereum genesis..."),
 					log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 1, 1),
@@ -490,7 +492,7 @@ func TestStateDbPrimer_Prime(t *testing.T) {
 	defer ctrl.Finish()
 	log := logger.NewLogger("Info", "TestStateDbPrimer")
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = ""
 	cfg.First = 0

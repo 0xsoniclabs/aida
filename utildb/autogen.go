@@ -19,17 +19,17 @@ package utildb
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"io/fs"
 	"os"
 	"time"
 
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
 // SetLock creates lockfile in case of error while generating
-func SetLock(cfg *utils.Config, message string) error {
+func SetLock(cfg *config.Config, message string) error {
 	lockFile := cfg.AidaDb + ".autogen.lock"
 
 	// Write the string to the file
@@ -42,7 +42,7 @@ func SetLock(cfg *utils.Config, message string) error {
 }
 
 // GetLock checks existence and contents of lockfile
-func GetLock(cfg *utils.Config) (string, error) {
+func GetLock(cfg *config.Config) (string, error) {
 	lockFile := cfg.AidaDb + ".autogen.lock"
 
 	// Read lockfile contents
@@ -57,7 +57,7 @@ func GetLock(cfg *utils.Config) (string, error) {
 }
 
 // AutogenRun is used to record/update aida-db
-func AutogenRun(cfg *utils.Config, g *Generator) error {
+func AutogenRun(cfg *config.Config, g *Generator) error {
 	g.Log.Noticef("Starting substate generation %d - %d", g.Opera.FirstEpoch, g.TargetEpoch)
 
 	start := time.Now()
@@ -84,38 +84,4 @@ func AutogenRun(cfg *utils.Config, g *Generator) error {
 	}
 
 	return g.Generate()
-}
-
-// PrepareAutogen initializes a generator object, opera binary and adjust target range
-func PrepareAutogen(ctx *cli.Context, cfg *utils.Config) (*Generator, bool, error) {
-	// this explicit overwrite is necessary at first autogen run,
-	// in later runs the paths are correctly set in adjustMissingConfigValues
-	utils.OverwriteDbPathsByAidaDb(cfg)
-
-	g, err := NewGenerator(ctx, cfg)
-	if err != nil {
-		return nil, false, err
-	}
-
-	err = g.Opera.init()
-	if err != nil {
-		return nil, false, err
-	}
-
-	// user specified targetEpoch
-	if cfg.TargetEpoch > 0 {
-		g.TargetEpoch = cfg.TargetEpoch
-	} else {
-		err = g.calculatePatchEnd()
-		if err != nil {
-			return nil, false, err
-		}
-	}
-
-	g.AidaDb.Close()
-	// start epoch is last epoch + 1
-	if g.Opera.FirstEpoch > g.TargetEpoch {
-		return g, false, nil
-	}
-	return g, true, nil
 }

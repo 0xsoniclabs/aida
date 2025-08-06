@@ -18,12 +18,12 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"os/exec"
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,13 +32,13 @@ type aidaOpera struct {
 	firstBlock, lastBlock uint64
 	FirstEpoch, lastEpoch uint64
 	ctx                   *cli.Context
-	cfg                   *utils.Config
+	cfg                   *config.Config
 	log                   logger.Logger
 	isNew                 bool
 }
 
 // newAidaOpera returns new instance of Opera
-func newAidaOpera(ctx *cli.Context, cfg *utils.Config, log logger.Logger) *aidaOpera {
+func newAidaOpera(ctx *cli.Context, cfg *config.Config, log logger.Logger) *aidaOpera {
 	return &aidaOpera{
 		ctx: ctx,
 		cfg: cfg,
@@ -95,7 +95,7 @@ func (opera *aidaOpera) init() error {
 	return nil
 }
 
-func createTmpDir(cfg *utils.Config) (string, error) {
+func createTmpDir(cfg *config.Config) (string, error) {
 	// create a temporary working directory
 	fName, err := os.MkdirTemp(cfg.DbTmp, "aida_db_tmp_*")
 	if err != nil {

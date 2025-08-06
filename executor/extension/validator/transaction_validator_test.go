@@ -19,6 +19,8 @@ package validator
 import (
 	"bytes"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"math/big"
 	"strings"
 	"testing"
@@ -55,7 +57,7 @@ const (
 )
 
 func TestLiveTxValidator_NoValidatorIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = false
 
 	ext := MakeLiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -69,7 +71,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenOnlyWorldStateIsTested(t *testing
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeLiveDbValidator(cfg, log, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -82,7 +84,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenOnlyReceiptIsTested(t *testing.T)
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeLiveDbValidator(cfg, log, ValidateTxTarget{WorldState: false, Receipt: false})
@@ -95,7 +97,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenBothAreTested(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeLiveDbValidator(cfg, log, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -110,7 +112,7 @@ func TestLiveTxValidator_SingleErrorInPreTransactionDoesNotEndProgramWithContinu
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 2
@@ -143,7 +145,7 @@ func TestLiveTxValidator_SingleErrorInPreTransactionReturnsErrorWithNoContinueOn
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -183,10 +185,10 @@ func TestLiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContinueO
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 
 	ext := MakeLiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
@@ -224,10 +226,10 @@ func TestLiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContinueO
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
-	cfg.StateValidationMode = utils.EqualityCheck
+	cfg.StateValidationMode = config.EqualityCheck
 
 	ext := makeLiveDbValidator(cfg, log, ValidateTxTarget{WorldState: true, Receipt: false})
 
@@ -265,7 +267,7 @@ func TestLiveTxValidator_TwoErrorsDoNotReturnAnErrorWhenContinueOnFailureIsEnabl
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 3
@@ -319,7 +321,7 @@ func TestLiveTxValidator_TwoErrorsDoReturnErrorOnEventWhenContinueOnFailureIsEna
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 2
@@ -371,7 +373,7 @@ func TestLiveTxValidator_PreTransactionDoesNotFailWithIncorrectOutput(t *testing
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -400,7 +402,7 @@ func TestLiveTxValidator_PostTransactionDoesNotFailWithIncorrectInput(t *testing
 	ctx := &executor.Context{State: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -424,7 +426,7 @@ func TestLiveTxValidator_PostTransactionDoesNotFailWithIncorrectInput(t *testing
 }
 
 func TestArchiveTxValidator_NoValidatorIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = false
 
 	ext := MakeArchiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -438,7 +440,7 @@ func TestArchiveTxValidator_ValidatorIsEnabled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeArchiveDbValidator(cfg, log, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -453,7 +455,7 @@ func TestArchiveTxValidator_ValidatorDoesNotFailWithEmptySubstate(t *testing.T) 
 	db := state.NewMockNonCommittableStateDB(ctrl)
 	ctx := &executor.Context{Archive: db}
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeArchiveDbValidator(cfg, log, ValidateTxTarget{WorldState: true, Receipt: false})
@@ -478,7 +480,7 @@ func TestArchiveTxValidator_SingleErrorInPreTransactionDoesNotEndProgramWithCont
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 2
@@ -511,7 +513,7 @@ func TestArchiveTxValidator_SingleErrorInPreTransactionReturnsErrorWithNoContinu
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -551,10 +553,10 @@ func TestArchiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContin
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 
 	ext := MakeArchiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
@@ -591,10 +593,10 @@ func TestArchiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContin
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
-	cfg.StateValidationMode = utils.EqualityCheck
+	cfg.StateValidationMode = config.EqualityCheck
 
 	ext := MakeArchiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
@@ -627,7 +629,7 @@ func TestArchiveTxValidator_TwoErrorsDoNotReturnAnErrorWhenContinueOnFailureIsEn
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 3
@@ -681,7 +683,7 @@ func TestArchiveTxValidator_TwoErrorsDoReturnErrorOnEventWhenContinueOnFailureIs
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = true
 	cfg.MaxNumErrors = 2
@@ -733,7 +735,7 @@ func TestArchiveTxValidator_PreTransactionDoesNotFailWithIncorrectOutput(t *test
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -760,7 +762,7 @@ func TestArchiveTxValidator_PostTransactionDoesNotFailWithIncorrectInput(t *test
 	ctx := &executor.Context{Archive: db}
 	ctx.ErrorInput = make(chan error, 10)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 	cfg.ContinueOnFailure = false
 
@@ -927,7 +929,7 @@ func TestValidateStateDb_ValidateReceipt(t *testing.T) {
 	ctx := new(executor.Context)
 	ctx.ExecutionResult = substatecontext.NewReceipt(getDummyResult())
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeLiveDbValidator(cfg, logger.NewMockLogger(gomock.NewController(t)), ValidateTxTarget{WorldState: false, Receipt: true})
@@ -968,8 +970,8 @@ func TestValidateStateDb_ValidateReceiptEthereumSkip(t *testing.T) {
 	ctx := new(executor.Context)
 	ctx.ExecutionResult = substatecontext.NewReceipt(getDummyResult())
 
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.EthereumChainID
+	cfg := &config.Config{}
+	cfg.ChainID = chainid.EthereumChainID
 	cfg.VmImpl = "lfvm"
 	cfg.ValidateTxState = true
 
@@ -988,7 +990,7 @@ func TestValidateVMResult_ErrorIsInCorrectFormat(t *testing.T) {
 	expectedResult := getDummyResult()
 	vmResult := getDummyResult()
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ValidateTxState = true
 
 	ext := makeStateDbValidator(cfg, logger.NewMockLogger(gomock.NewController(t)), ValidateTxTarget{WorldState: true, Receipt: false})

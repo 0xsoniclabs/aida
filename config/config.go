@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package config
 
 import (
 	"errors"
 	"fmt"
-	"math"
+	"github.com/0xsoniclabs/aida/config/chainid"
+	"github.com/0xsoniclabs/aida/utildb"
 	"math/big"
 	"math/rand"
 	"os"
@@ -50,84 +51,19 @@ func init() {
 	}
 }
 
-type ArgumentMode int
-
-// ChainID is typed int64 same as in go-ethereum
-type ChainID int64
-type ChainIDs map[ChainID]string
-type EthTestType int
-
-const (
-	Unknown EthTestType = iota
-	StateTests
-	BlockTests
+var (
+	FirstOperaBlock     uint64 // id of the first block in substate
+	AidaDbRepositoryUrl string // url of the Aida DB repository
 )
 
-// An enums of argument modes used by trace subcommands
+type ArgumentMode int
+
 const (
 	BlockRangeArgs ArgumentMode = iota // requires 2 arguments: first block and last block
 	LastBlockArg                       // requires 1 argument: last block
 	NoArgs                             // requires no arguments
 	OneToNArgs                         // requires at least one argument, but accepts up to N
 	PathArg                            // requires 1 argument: path to file
-)
-
-const (
-	UnknownChainID      ChainID = 0
-	EthereumChainID     ChainID = 1
-	SonicMainnetChainID ChainID = 146
-	MainnetChainID      ChainID = 250
-	TestnetChainID      ChainID = 4002
-	HoleskyChainID      ChainID = 17000
-	HoodiChainID        ChainID = 560048
-	SepoliaChainID      ChainID = 11155111
-	// EthTestsChainID is a mock ChainID which is necessary for setting
-	// the chain rules to allow any block number for any fork.
-	EthTestsChainID ChainID = 1337
-)
-
-var RealChainIDs = ChainIDs{
-	SonicMainnetChainID: "mainnet-sonic",
-	MainnetChainID:      "mainnet-opera",
-	TestnetChainID:      "testnet",
-	EthereumChainID:     "ethereum",
-	HoleskyChainID:      "holesky",
-	HoodiChainID:        "hoodi",
-	SepoliaChainID:      "sepolia",
-}
-var AllowedChainIDs = ChainIDs{
-	SonicMainnetChainID: "mainnet-sonic",
-	MainnetChainID:      "mainnet-opera",
-	TestnetChainID:      "testnet",
-	EthereumChainID:     "ethereum",
-	HoleskyChainID:      "holesky",
-	HoodiChainID:        "hoodi",
-	SepoliaChainID:      "sepolia",
-	EthTestsChainID:     "eth-tests",
-}
-var EthereumChainIDs = ChainIDs{
-	EthereumChainID: "ethereum",
-	HoleskyChainID:  "holesky",
-	HoodiChainID:    "hoodi",
-	SepoliaChainID:  "sepolia",
-	EthTestsChainID: "eth-tests",
-}
-
-const (
-	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository-public/sonic/aida-patches"
-	AidaDbRepositoryOperaUrl    = "https://storage.googleapis.com/aida-repository-public/mainnet/aida-patches"
-	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository-public/testnet/aida-patches"
-	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository-public/ethereum/aida-patches"
-	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
-	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository-public/hoodi/aida-patches"
-	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
-)
-
-const maxLastBlock = math.MaxUint64 - 1 // we decrease the value by one because params are always +1
-
-var (
-	FirstOperaBlock     uint64 // id of the first block in substate
-	AidaDbRepositoryUrl string // url of the Aida DB repository
 )
 
 // Type of validation performs on stateDB during Tx processing.
@@ -137,122 +73,6 @@ const (
 	SubsetCheck   ValidationMode = iota // confirms whether a substate is contained in stateDB.
 	EqualityCheck                       // confirms whether a substate and StateDB are identical.
 )
-
-// A map of key blocks on Fantom chain
-var KeywordBlocks = map[ChainID]map[string]uint64{
-	SonicMainnetChainID: {
-		"zero":        0,
-		"opera":       0,
-		"istanbul":    0,
-		"muirglacier": 0,
-		"berlin":      0,
-		"london":      0,
-		"shanghai":    0, //timestamp
-		"cancun":      0, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	MainnetChainID: {
-		"zero":        0,
-		"opera":       4_564_026,
-		"istanbul":    0, // todo istanbul block for mainnet?
-		"muirglacier": 0, // todo muirglacier block for mainnet?
-		"berlin":      37_455_223,
-		"london":      37_534_833,
-		"shanghai":    maxLastBlock, //timestamp
-		"cancun":      maxLastBlock, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	TestnetChainID: {
-		"zero":        0,
-		"opera":       479_327,
-		"istanbul":    0, // todo istanbul block for testnet?
-		"muirglacier": 0, // todo muirglacier block for testnet?
-		"berlin":      1_559_470,
-		"london":      7_513_335,
-		"shanghai":    maxLastBlock, //timestamp
-		"cancun":      maxLastBlock, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	// ethereum fork blocks are not stored in this structure as ethereum has already prepared config
-	// at params.MainnetChainConfig and it has bigger amount of forks than Fantom chain
-	// Ethereum config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L43
-	EthereumChainID: {
-		"zero":        0,
-		"opera":       0,
-		"istanbul":    9_069_000,
-		"muirglacier": 9_200_000,
-		"berlin":      12_244_000,
-		"london":      12_965_000,
-		"shanghai":    1681338455, //timestamp
-		"cancun":      1710338135, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	// Holesky config - https://github.com/ethereum/go-ethereum/blob/7d8aca95d28c4e8560a657fd1ff7852ad4eee72c/params/config.go#L69C2-L69C36
-	HoleskyChainID: {
-		"zero":        0,
-		"opera":       0,
-		"istanbul":    0,
-		"muirglacier": maxLastBlock, // is nil in geth implementation, probably all functionality is overwritten by later forks
-		"berlin":      0,
-		"london":      0,
-		"shanghai":    1696000704, //timestamp
-		"cancun":      1707305664, //timestamp
-		"prague":      1740434112, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	// Hoodi config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L130
-	HoodiChainID: {
-		"zero":        0,
-		"opera":       0,
-		"istanbul":    0,
-		"muirglacier": 0,
-		"berlin":      0,
-		"london":      0,
-		"shanghai":    0,          //timestamp
-		"cancun":      0,          //timestamp
-		"prague":      1742999832, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-	// Sepolia config - https://github.com/ethereum/go-ethereum/blob/3e4fbce034b384c99afeead6cf0f72be0a2b8f13/params/config.go#L100
-	SepoliaChainID: {
-		"zero":        0,
-		"opera":       0,
-		"istanbul":    0,
-		"muirglacier": 0,
-		"berlin":      0,
-		"london":      0,
-		"shanghai":    1677557088, //timestamp
-		"cancun":      1706655072, //timestamp
-		"prague":      1741159776, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
-	},
-
-	// EthTest must always set its fork blocks to 0 because each test has random block number
-	// and if that block number is not greater than the config, the test won't get executed
-	EthTestsChainID: {},
-}
-
-const (
-	// special transaction number for pseudo transactions
-	PseudoTx = 99999
-)
-
-// GitCommit represents the GitHub commit hash the app was built from.
-var GitCommit = "0000000000000000000000000000000000000000"
 
 // Config represents execution configuration for Aida tools.
 type Config struct {
@@ -282,7 +102,7 @@ type Config struct {
 	CarmenNodeCacheSize      int                       // the size of the in-memory cache to be used by a Carmen LiveDB in byte (0 for default value)
 	CarmenSchema             int                       // the current DB schema ID to use in Carmen
 	CarmenStateCacheSize     int                       // the number of values cached in the Carmen StateDB (0 for default value)
-	ChainID                  ChainID                   // Blockchain ID (mainnet: 250/testnet: 4002)
+	ChainID                  chainid.ChainID           // Blockchain ID (mainnet: 250/testnet: 4002)
 	ChannelBufferSize        int                       // set a buffer size for profiling channel
 	CompactDb                bool                      // compact database after merging
 	ContinueOnFailure        bool                      // continue validation when an error detected
@@ -299,7 +119,7 @@ type Config struct {
 	DeletionDb               string                    // directory of deleted account database
 	DiagnosticServer         int64                     // if not zero, the port used for hosting a HTTP server for performance diagnostics
 	ErrorLogging             string                    // if defined, error logging to file is enabled
-	EthTestType              EthTestType               // which geth test are we running
+	EthTestType              chainid.EthTestType       // which geth test are we running
 	EvmImpl                  string                    // processor implementation
 	Fork                     string                    // Which forks are going to get executed byz
 	Genesis                  string                    // genesis file
@@ -392,7 +212,7 @@ func NewConfigContext(cfg *Config, ctx *cli.Context) *configContext {
 }
 
 // NewTestConfig creates a new config for test purpose
-func NewTestConfig(t *testing.T, chainId ChainID, first, last uint64, validate bool, fork string) *Config {
+func NewTestConfig(t *testing.T, chainId chainid.ChainID, first, last uint64, validate bool, fork string) *Config {
 	fork = ToTitleCase(fork)
 	chainCfg, err := getChainConfig(chainId, fork)
 	if err != nil {
@@ -425,7 +245,7 @@ func NewConfig(ctx *cli.Context, mode ArgumentMode) (*Config, error) {
 	// create config context for sharing common arguments
 	cc := NewConfigContext(cfg, ctx)
 
-	// check if chainID is set correctly
+	// check if ChainID is set correctly
 	err = cc.setChainId()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get chain id; %v", err)
@@ -501,7 +321,7 @@ func (cfg *Config) GetInterpreterFactory() (vm.InterpreterFactory, error) {
 }
 
 func (cc *configContext) setFirstOperaBlock() error {
-	if _, ok := AllowedChainIDs[cc.cfg.ChainID]; !ok {
+	if _, ok := chainid.AllowedChainIDs[cc.cfg.ChainID]; !ok {
 		return fmt.Errorf("unknown chain id %v", cc.cfg.ChainID)
 	}
 	FirstOperaBlock = KeywordBlocks[cc.cfg.ChainID]["opera"]
@@ -511,19 +331,19 @@ func (cc *configContext) setFirstOperaBlock() error {
 // setAidaDbRepositoryUrl based on chain id selects correct aida-db repository url
 func (cc *configContext) setAidaDbRepositoryUrl() error {
 	switch cc.cfg.ChainID {
-	case SonicMainnetChainID:
+	case chainid.SonicMainnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
-	case MainnetChainID:
+	case chainid.MainnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryOperaUrl
-	case TestnetChainID:
+	case chainid.TestnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryTestnetUrl
-	case EthereumChainID:
+	case chainid.EthereumChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryEthereumUrl
-	case HoleskyChainID:
+	case chainid.HoleskyChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryHoleskyUrl
-	case HoodiChainID:
+	case chainid.HoodiChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryHoodiUrl
-	case SepoliaChainID:
+	case chainid.SepoliaChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySepoliaUrl
 	default:
 		cc.log.Warningf("%v chain-id does not have aida-db repository url set - setting to mainnet", cc.cfg)
@@ -539,28 +359,28 @@ func (cfg *Config) SetStateDbSrcReadOnly() {
 }
 
 // getChainConfig returns chain configuration of either mainnet or testnets.
-func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
-	if chainId == EthTestsChainID {
+func getChainConfig(chainId chainid.ChainID, fork string) (*params.ChainConfig, error) {
+	if chainId == chainid.EthTestsChainID {
 		chainCfg, _, err := tests.GetChainConfig(fork)
 		return chainCfg, err
 	}
-	if _, ok := AllowedChainIDs[chainId]; !ok {
-		return nil, fmt.Errorf("unknown chain id %v\nallowed chain-ids: %v", chainId, AllowedChainIDs)
+	if _, ok := chainid.AllowedChainIDs[chainId]; !ok {
+		return nil, fmt.Errorf("unknown chain id %v\nallowed chain-ids: %v", chainId, chainid.AllowedChainIDs)
 	}
 	switch chainId {
-	case EthereumChainID:
+	case chainid.EthereumChainID:
 		chainConfig := params.MainnetChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
-	case HoleskyChainID:
+	case chainid.HoleskyChainID:
 		chainConfig := params.HoleskyChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
-	case HoodiChainID:
+	case chainid.HoodiChainID:
 		chainConfig := params.HoodiChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
-	case SepoliaChainID:
+	case chainid.SepoliaChainID:
 		chainConfig := params.SepoliaChainConfig
 		chainConfig.DAOForkSupport = false
 		return chainConfig, nil
@@ -590,7 +410,7 @@ func directoryExists(path string) bool {
 }
 
 // SetBlockRange checks the validity of a block range and return the first and last block as numbers.
-func SetBlockRange(firstArg string, lastArg string, chainId ChainID) (uint64, uint64, error) {
+func SetBlockRange(firstArg string, lastArg string, chainId chainid.ChainID) (uint64, uint64, error) {
 	var err error = nil
 	first, ferr := strconv.ParseUint(firstArg, 10, 64)
 	last, lerr := strconv.ParseUint(lastArg, 10, 64)
@@ -618,7 +438,7 @@ func SetBlockRange(firstArg string, lastArg string, chainId ChainID) (uint64, ui
 
 // setBlockNumber parse the command line argument (number, hardfork keyword or keyword with offset)
 // returns calculated block number
-func setBlockNumber(arg string, chainId ChainID) (uint64, error) {
+func setBlockNumber(arg string, chainId chainid.ChainID) (uint64, error) {
 	var blkNum uint64
 	var hasOffset bool
 	var keyword string
@@ -674,7 +494,7 @@ func splitKeywordOffset(arg string, symbol string) (string, uint64, bool) {
 	res := strings.Split(arg, symbol)
 
 	// if the keyword doesn't exist, return.
-	if _, ok := KeywordBlocks[MainnetChainID][strings.ToLower(res[0])]; !ok {
+	if _, ok := KeywordBlocks[chainid.MainnetChainID][strings.ToLower(res[0])]; !ok {
 		return "", 0, false
 	}
 
@@ -722,14 +542,14 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 		}
 	}()
 
-	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
+	md := utildb.NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 	err = md.getBlockRange()
 	if err != nil {
 		cc.log.Warning(err)
 		return defaultFirst, defaultLast, defaultLastPatch, nil
 	}
 	cc.hasMetadata = true
-	lastPatchBlock, err := getPatchFirstBlock(md.LastBlock)
+	lastPatchBlock, err := utildb.getPatchFirstBlock(md.LastBlock)
 	if err != nil {
 		cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
 	}
@@ -766,16 +586,16 @@ func (cc *configContext) adjustBlockRange(firstArg, lastArg uint64) (uint64, uin
 	}
 }
 
-// setChainId set config chainID to the default (mainnet) or user specified chainID
-// if the chainID is unknown type, it'll be loaded from aidaDB
+// setChainId set config ChainID to the default (mainnet) or user specified ChainID
+// if the ChainID is unknown type, it'll be loaded from aidaDB
 func (cc *configContext) setChainId() error {
-	// first look for chainId since we need it for verbal block indication
-	if cc.cfg.ChainID == UnknownChainID {
-		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", ChainIDFlag.Name)
+	// first look for ChainID since we need it for verbal block indication
+	if cc.cfg.ChainID == chainid.UnknownChainID {
+		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", chainid.ChainIDFlag.Name)
 
 		// we check if AidaDb was set with err == nil
 		if aidaDb, err := db.OpenBaseDB(cc.cfg.AidaDb); err == nil {
-			md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
+			md := utildb.NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 
 			cc.cfg.ChainID = md.GetChainID()
 
@@ -785,10 +605,10 @@ func (cc *configContext) setChainId() error {
 		}
 
 		if cc.cfg.ChainID == 0 {
-			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
-			cc.cfg.ChainID = MainnetChainID
+			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", chainid.ChainIDFlag.Name, cc.cfg.AidaDb)
+			cc.cfg.ChainID = chainid.MainnetChainID
 		} else {
-			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
+			cc.log.Noticef("Found ChainID (%v) in AidaDb", cc.cfg.ChainID)
 		}
 	}
 	return nil
@@ -964,7 +784,7 @@ func (cc *configContext) reportNewConfig() {
 
 func (cc *configContext) setChainConfig() (err error) {
 	// Each test will have its own chainConfig - no need to set here
-	if cc.cfg.ChainID == EthTestsChainID {
+	if cc.cfg.ChainID == chainid.EthTestsChainID {
 		return nil
 	}
 	cc.cfg.ChainCfg, err = getChainConfig(cc.cfg.ChainID, "")
@@ -1019,11 +839,4 @@ func ToTitleCase(fork string) string {
 	fork = strings.ReplaceAll(strings.ToLower(fork), "glacier", "Glacier")
 	fork = cases.Title(language.Und, cases.NoLower).String(fork)
 	return fork
-}
-
-// IsEthereumNetwork checks if the chainID is an Ethereum network - mainnet, holesky, hoodi or sepolia.
-// Special conditions for miner rewards and validation are applied.
-func IsEthereumNetwork(chainID ChainID) bool {
-	_, ok := EthereumChainIDs[chainID]
-	return ok
 }

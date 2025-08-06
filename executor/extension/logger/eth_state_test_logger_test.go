@@ -1,13 +1,13 @@
 package logger
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
@@ -53,7 +53,7 @@ func TestEthStateTestLogger_PostRunLogsOverall(t *testing.T) {
 }
 
 func TestEthStateTestLogger_MakeEthStateTestLogger(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeEthStateTestLogger(cfg, 0)
 
 	if _, ok := ext.(*ethStateTestLogger); !ok {

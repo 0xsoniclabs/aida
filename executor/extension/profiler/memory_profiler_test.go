@@ -18,17 +18,17 @@ package profiler
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestMemoryProfiler_CollectsProfileDataIfEnabled(t *testing.T) {
 	path := t.TempDir() + "/profile.dat"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.MemoryProfile = path
 	ext := MakeMemoryProfiler[any](cfg)
 
@@ -43,7 +43,7 @@ func TestMemoryProfiler_CollectsProfileDataIfEnabled(t *testing.T) {
 }
 
 func TestMemoryProfiler_NoProfileIsCollectedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeMemoryProfiler[any](cfg)
 
 	if _, ok := ext.(extension.NilExtension[any]); !ok {

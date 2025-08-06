@@ -18,6 +18,7 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
@@ -42,14 +43,14 @@ const (
 )
 
 // MakeStateDbCorrector creates an extension, which fixes LiveDB with data in Exception database.
-func MakeStateDbCorrector(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeStateDbCorrector(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	log := logger.NewLogger(cfg.LogLevel, "State-DB-Corrector")
 
 	return makeStateDbCorrector(cfg, log)
 }
 
 // makeStateDbCorrector creates an exception updater with the given configuration and logger.
-func makeStateDbCorrector(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
+func makeStateDbCorrector(cfg *config.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
 	return &stateDbCorrector{
 		cfg: cfg,
 		log: log,
@@ -58,7 +59,7 @@ func makeStateDbCorrector(cfg *utils.Config, log logger.Logger) executor.Extensi
 
 type stateDbCorrector struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg              *utils.Config       // configuration for the updater
+	cfg              *config.Config      // configuration for the updater
 	log              logger.Logger       // logger for the updater
 	db               db.ExceptionDB      // contains a list of database exceptions
 	currentException *substate.Exception // current exception for the block being processed
@@ -93,7 +94,7 @@ func (e *stateDbCorrector) PreBlock(state executor.State[txcontext.TxContext], c
 			return fmt.Errorf("failed to load exception for pre block %d: %w", e.nextBlock, err)
 		}
 		if e.currentException != nil {
-			err = e.fixExceptionAt(ctx.State, preBlock, e.nextBlock, utils.PseudoTx)
+			err = e.fixExceptionAt(ctx.State, preBlock, e.nextBlock, config.PseudoTx)
 			if err != nil {
 				return fmt.Errorf("failed to fix exception at pre block %d, %w", e.nextBlock, err)
 			}
@@ -122,7 +123,7 @@ func (e *stateDbCorrector) PostBlock(state executor.State[txcontext.TxContext], 
 	if ctx.AidaDb == nil || e.currentException == nil {
 		return nil
 	}
-	err := e.fixExceptionAt(ctx.State, postBlock, state.Block, utils.PseudoTx)
+	err := e.fixExceptionAt(ctx.State, postBlock, state.Block, config.PseudoTx)
 	if err != nil {
 		return fmt.Errorf("failed to fix exception at post block %d; %w", state.Block, err)
 	}

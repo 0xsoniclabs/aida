@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -83,12 +84,12 @@ The aida-vm-sdb geth-state-tests command requires one argument: <pathToJsonTest 
 
 // RunEthereumTest performs sequential block processing on a StateDb
 func RunEthereumTest(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.PathArg)
+	cfg, err := config.NewConfig(ctx, config.PathArg)
 	if err != nil {
 		return err
 	}
 
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 	cfg.ValidateTxState = true
 
 	processor, err := executor.MakeEthTestProcessor(cfg)
@@ -103,7 +104,7 @@ func RunEthereumTest(ctx *cli.Context) error {
 }
 
 func runEth(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	stateDb state.StateDB,
 	processor executor.Processor[txcontext.TxContext],

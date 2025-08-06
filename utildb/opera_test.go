@@ -1,10 +1,10 @@
 package utildb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -15,7 +15,7 @@ func TestOpera_InitFromGenesis_Success(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "/bin/true", // This is a valid binary that should succeed
@@ -34,7 +34,7 @@ func TestOpera_InitFromGenesis_Failure(t *testing.T) {
 
 	tmpDir := t.TempDir() + "/operaDb"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "non-existent-binary", // This binary will fail

@@ -2,6 +2,7 @@ package primer
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -14,7 +15,7 @@ import (
 )
 
 func TestTxPrimer_MakeTxPrimer(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeTxPrimer(cfg)
 
 	_, ok := ext.(*txPrimer)
@@ -22,7 +23,7 @@ func TestTxPrimer_MakeTxPrimer(t *testing.T) {
 }
 
 func TestTxPrimer_PreRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeTxPrimer(cfg)
 
 	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1}
@@ -35,7 +36,7 @@ func TestTxPrimer_PreRun(t *testing.T) {
 func TestTxPrimer_PreTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	mockDb := state.NewMockStateDB(ctrl)
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{

@@ -17,6 +17,7 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"net/http"
 	"testing"
 	"time"
@@ -24,7 +25,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
@@ -32,7 +32,7 @@ func TestDiagnosticServer_CollectsProfileDataIfEnabled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DiagnosticServer = 6060
 	ext := makeDiagnosticServer[any](cfg, log)
 
@@ -54,7 +54,7 @@ func TestDiagnosticServer_CollectsProfileDataIfEnabled(t *testing.T) {
 }
 
 func TestDiagnosticServer_NoServerIsHostedWhenDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeDiagnosticServer[any](cfg)
 
 	if _, ok := ext.(extension.NilExtension[any]); !ok {

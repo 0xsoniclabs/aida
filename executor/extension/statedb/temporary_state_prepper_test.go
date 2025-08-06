@@ -17,17 +17,18 @@
 package statedb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTemporaryStatePrepper_DefaultDbImplementationIsOffTheChainStateDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = ""
 
 	ext := MakeTemporaryStatePrepper(cfg)
@@ -39,7 +40,7 @@ func TestTemporaryStatePrepper_DefaultDbImplementationIsOffTheChainStateDb(t *te
 }
 
 func TestTemporaryStatePrepper_OffTheChainDbImplementation(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "off-the-chain"
 
 	ext := MakeTemporaryStatePrepper(cfg)
@@ -51,7 +52,7 @@ func TestTemporaryStatePrepper_OffTheChainDbImplementation(t *testing.T) {
 }
 
 func TestTemporaryStatePrepper_InMemoryDbImplementation(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "in-memory"
 
 	ext := MakeTemporaryStatePrepper(cfg)
@@ -74,8 +75,8 @@ func TestTemporaryStatePrepper_PreTransaction(t *testing.T) {
 
 func TestTemporaryOffTheChainStatePrepper_PreRun(t *testing.T) {
 	tt := &temporaryOffTheChainStatePrepper{
-		cfg: &utils.Config{
-			ChainID: utils.MainnetChainID,
+		cfg: &config.Config{
+			ChainID: chainid.MainnetChainID,
 		},
 		chainConduit: nil,
 	}
@@ -85,8 +86,8 @@ func TestTemporaryOffTheChainStatePrepper_PreRun(t *testing.T) {
 
 func TestTemporaryOffTheChainStatePrepper_PreTransaction(t *testing.T) {
 	tt := &temporaryOffTheChainStatePrepper{
-		cfg: &utils.Config{
-			ChainID: utils.MainnetChainID,
+		cfg: &config.Config{
+			ChainID: chainid.MainnetChainID,
 		},
 		chainConduit: nil,
 	}

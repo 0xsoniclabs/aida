@@ -20,12 +20,12 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/txcontext/txgenerator"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/Fantom-foundation/Norma/load/app"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,12 +44,12 @@ type normaConsumer func(*types.Transaction, *common.Address) error
 // normaTxProvider is a Provider that generates transactions using the norma
 // transactions generator.
 type normaTxProvider struct {
-	cfg     *utils.Config
+	cfg     *config.Config
 	stateDb state.StateDB
 }
 
 // NewNormaTxProvider creates a new norma tx provider.
-func NewNormaTxProvider(cfg *utils.Config, stateDb state.StateDB) Provider[txcontext.TxContext] {
+func NewNormaTxProvider(cfg *config.Config, stateDb state.StateDB) Provider[txcontext.TxContext] {
 	return normaTxProvider{
 		cfg:     cfg,
 		stateDb: stateDb,

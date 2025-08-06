@@ -18,6 +18,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -48,7 +49,7 @@ last block of the inclusive range of blocks to replay transactions.`,
 func substateDumpAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

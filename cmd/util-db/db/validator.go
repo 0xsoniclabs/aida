@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
@@ -51,7 +53,7 @@ var ValidateCommand = cli.Command{
 func generateDbHashCmd(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "DbHashGenerateCMD")
 
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 
 	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
 	if err != nil {
@@ -60,7 +62,7 @@ func generateDbHashCmd(ctx *cli.Context) error {
 
 	defer utildb.MustCloseDB(aidaDb)
 
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := utildb.NewAidaDbMetadata(aidaDb, "INFO")
 
 	log.Noticef("Starting DbHash generation for %v; this may take several hours...", cfg.AidaDb)
 	hash, err := utildb.GenerateDbHash(aidaDb, "INFO")
@@ -80,7 +82,7 @@ func generateDbHashCmd(ctx *cli.Context) error {
 func validateCmd(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "ValidateCMD")
 
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return fmt.Errorf("cannot parse config; %v", err)
 	}
@@ -92,7 +94,7 @@ func validateCmd(ctx *cli.Context) error {
 
 	defer utildb.MustCloseDB(aidaDb)
 
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := utildb.NewAidaDbMetadata(aidaDb, "INFO")
 
 	md.ChainId = md.GetChainID()
 	if md.ChainId == 0 {
@@ -102,14 +104,14 @@ func validateCmd(ctx *cli.Context) error {
 
 	// validation only makes sense if user has pure AidaDb
 	dbType := md.GetDbType()
-	if dbType != utils.GenType {
+	if dbType != utildb.GenType {
 		return fmt.Errorf("validation cannot be performed - your db type (%v) cannot be validated; aborting", dbType)
 	}
 
 	// we need to make sure aida-db starts from beginning, otherwise validation is impossible
 	// todo simplify condition once lachesis patch is ready for testnet
 	md.FirstBlock = md.GetFirstBlock()
-	if (md.ChainId == utils.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == utils.TestnetChainID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
+	if (md.ChainId == chainid.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == chainid.TestnetChainID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
 		return fmt.Errorf("validation cannot be performed - your db does not start at block 0; your first block: %v", md.FirstBlock)
 	}
 
@@ -174,7 +176,7 @@ func printDbHash(ctx *cli.Context) error {
 
 	log := logger.NewLogger("INFO", "AidaDb-Db-Hash")
 
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := utildb.NewAidaDbMetadata(aidaDb, "INFO")
 
 	// first try to extract from db
 	dbHash = md.GetDbHash()

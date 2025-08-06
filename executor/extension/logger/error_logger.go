@@ -19,29 +19,29 @@ package logger
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"sync"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 type errorLogger[T any] struct {
 	extension.NilExtension[T]
-	cfg    *utils.Config
+	cfg    *config.Config
 	file   *os.File
 	log    logger.Logger
 	wg     *sync.WaitGroup
 	errors []error
 }
 
-func MakeErrorLogger[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeErrorLogger[T any](cfg *config.Config) executor.Extension[T] {
 	return makeErrorLogger[T](cfg, logger.NewLogger("critical", "Error-Logger"))
 }
 
-func makeErrorLogger[T any](cfg *utils.Config, log logger.Logger) *errorLogger[T] {
+func makeErrorLogger[T any](cfg *config.Config, log logger.Logger) *errorLogger[T] {
 	return &errorLogger[T]{
 		cfg: cfg,
 		log: log,

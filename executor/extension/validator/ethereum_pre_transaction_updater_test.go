@@ -1,6 +1,8 @@
 package validator
 
 import (
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
@@ -10,7 +12,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,8 +23,8 @@ import (
 )
 
 func TestEthereumPreTransactionUpdater_FixBalanceWhenNewBalanceIsHigher(t *testing.T) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.EthereumChainID
+	cfg := &config.Config{}
+	cfg.ChainID = chainid.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -54,8 +55,8 @@ func TestEthereumPreTransactionUpdater_FixBalanceWhenNewBalanceIsHigher(t *testi
 }
 
 func TestEthereumPreTransactionUpdater_DontFixBalanceIfLower(t *testing.T) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.EthereumChainID
+	cfg := &config.Config{}
+	cfg.ChainID = chainid.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -96,8 +97,8 @@ func TestEthereumPreTransactionUpdater_ConsolidationQueueAddressStorageException
 }
 
 func testEthereumSystemContractStorageException(t *testing.T, address common.Address) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.EthereumChainID
+	cfg := &config.Config{}
+	cfg.ChainID = chainid.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -115,7 +116,7 @@ func testEthereumSystemContractStorageException(t *testing.T, address common.Add
 		db.EXPECT().GetState(address, common.HexToHash("0x1")),
 		db.EXPECT().SetState(address, common.HexToHash("0x1"), common.HexToHash("0x2")),
 		db.EXPECT().EndTransaction().Return(nil),
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)),
 	)
 
 	ext := makeEthereumDbPreTransactionUpdater(cfg, log)
@@ -126,8 +127,8 @@ func testEthereumSystemContractStorageException(t *testing.T, address common.Add
 }
 
 func TestEthereumPreTransactionUpdater_DaoFork(t *testing.T) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.EthereumChainID
+	cfg := &config.Config{}
+	cfg.ChainID = chainid.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -178,7 +179,7 @@ func createDaoForkAddressTestTransaction() txcontext.TxContext {
 func TestEthereumDbPreTransactionUpdater_PreRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	st := executor.State[txcontext.TxContext]{}
 	ctx := new(executor.Context)
 	log.EXPECT().Warning(gomock.Any())
@@ -191,8 +192,8 @@ func TestEthereumDbPreTransactionUpdater_PreRun(t *testing.T) {
 }
 
 func TestEthereumDbPreTransactionUpdater_MakeEthereumDbPreTransactionUpdater(t *testing.T) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.PseudoTx
+	cfg := &config.Config{}
+	cfg.ChainID = config.PseudoTx
 	ext := MakeEthereumDbPreTransactionUpdater(cfg)
 	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }

@@ -20,10 +20,10 @@ package executor
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,7 +33,7 @@ import (
 // ----------------------------------------------------------------------------
 
 // OpenSubstateProvider opens a substate database as configured in the given parameters.
-func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB) (Provider[txcontext.TxContext], error) {
+func OpenSubstateProvider(cfg *config.Config, ctxt *cli.Context, aidaDb db.BaseDB) (Provider[txcontext.TxContext], error) {
 	substateDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
 	err := substateDb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
 	if err != nil {

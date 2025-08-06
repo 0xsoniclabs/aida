@@ -18,6 +18,7 @@ package updateset
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -41,7 +42,7 @@ func reportUpdateSetStats(ctx *cli.Context) error {
 	var (
 		err error
 	)
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}

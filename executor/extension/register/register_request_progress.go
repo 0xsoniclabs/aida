@@ -18,6 +18,7 @@ package register
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -57,7 +58,7 @@ const (
 
 // MakeRegisterRequestProgress creates a blockProgressTracker that depends on the
 // PostBlock event and is only useful as part of a sequential evaluation.a
-func MakeRegisterRequestProgress(cfg *utils.Config, reportFrequency int, when whenToPrint) executor.Extension[*rpc.RequestAndResults] {
+func MakeRegisterRequestProgress(cfg *config.Config, reportFrequency int, when whenToPrint) executor.Extension[*rpc.RequestAndResults] {
 	// As temporary measure: issue a warning to user if both RegisterRun and TrackProgress is on.
 	log := logger.NewLogger(cfg.LogLevel, "RegisterRequestProgress")
 	if cfg.RegisterRun != "" && cfg.TrackProgress {
@@ -76,7 +77,7 @@ func MakeRegisterRequestProgress(cfg *utils.Config, reportFrequency int, when wh
 	return makeRegisterRequestProgress(cfg, freq, when, log)
 }
 
-func makeRegisterRequestProgress(cfg *utils.Config, reportFrequency int, when whenToPrint, log logger.Logger) *registerRequestProgress {
+func makeRegisterRequestProgress(cfg *config.Config, reportFrequency int, when whenToPrint, log logger.Logger) *registerRequestProgress {
 	return &registerRequestProgress{
 		cfg:             cfg,
 		log:             log,
@@ -92,7 +93,7 @@ func makeRegisterRequestProgress(cfg *utils.Config, reportFrequency int, when wh
 type registerRequestProgress struct {
 	extension.NilExtension[*rpc.RequestAndResults]
 
-	cfg  *utils.Config
+	cfg  *config.Config
 	log  logger.Logger
 	lock sync.Mutex
 	ps   *utils.Printers

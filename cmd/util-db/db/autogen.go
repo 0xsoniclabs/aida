@@ -18,6 +18,8 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
@@ -32,7 +34,7 @@ var AutoGenCommand = cli.Command{
 	Usage:  "autogen generates aida-db periodically",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&chainid.ChainIDFlag,
 		&utils.ClientDbFlag,
 		&utils.GenesisFlag,
 		&utils.DbTmpFlag,
@@ -50,7 +52,7 @@ AutoGen generates aida-db patches and handles second opera for event generation.
 
 // autogen command is used to record/update aida-db periodically
 func autogen(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}
@@ -63,9 +65,9 @@ func autogen(ctx *cli.Context) error {
 		return fmt.Errorf("GENERATION BLOCKED: autogen failed in last run; %v", locked)
 	}
 
-	var g *utildb.Generator
+	var g *Generator
 	var ok bool
-	g, ok, err = utildb.PrepareAutogen(ctx, cfg)
+	g, ok, err = prepareAutogen(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("cannot start autogen; %v", err)
 	}
@@ -82,4 +84,38 @@ func autogen(ctx *cli.Context) error {
 		}
 	}
 	return err
+}
+
+// PrepareAutogen initializes a generator object, opera binary and adjust target range
+func prepareAutogen(ctx *cli.Context, cfg *config.Config) (*Generator, bool, error) {
+	// this explicit overwrite is necessary at first autogen run,
+	// in later runs the paths are correctly set in adjustMissingConfigValues
+	config.OverwriteDbPathsByAidaDb(cfg)
+
+	g, err := NewGenerator(ctx, cfg)
+	if err != nil {
+		return nil, false, err
+	}
+
+	err = g.Opera.init()
+	if err != nil {
+		return nil, false, err
+	}
+
+	// user specified targetEpoch
+	if cfg.TargetEpoch > 0 {
+		g.TargetEpoch = cfg.TargetEpoch
+	} else {
+		err = g.calculatePatchEnd()
+		if err != nil {
+			return nil, false, err
+		}
+	}
+
+	g.AidaDb.Close()
+	// start epoch is last epoch + 1
+	if g.Opera.FirstEpoch > g.TargetEpoch {
+		return g, false, nil
+	}
+	return g, true, nil
 }

@@ -18,6 +18,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
@@ -95,7 +96,7 @@ Clone custom is a specialized clone tool which copies specific components in aid
 // clonePatch creates aida-db patch
 func clonePatch(ctx *cli.Context) error {
 	// TODO refactor
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}
@@ -104,13 +105,13 @@ func clonePatch(ctx *cli.Context) error {
 		return fmt.Errorf("clone patch command requires exactly 4 arguments")
 	}
 
-	cfg.First, cfg.Last, err = utils.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
+	cfg.First, cfg.Last, err = config.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
 	if err != nil {
 		return err
 	}
 
 	var firstEpoch, lastEpoch uint64
-	firstEpoch, lastEpoch, err = utils.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
+	firstEpoch, lastEpoch, err = config.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
 	if err != nil {
 		return err
 	}
@@ -133,7 +134,7 @@ func clonePatch(ctx *cli.Context) error {
 
 // createDbClone creates aida-db copy or subset
 func createDbClone(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -143,7 +144,7 @@ func createDbClone(ctx *cli.Context) error {
 		return err
 	}
 
-	err = utildb.Clone(cfg, aidaDb, targetDb, utils.CloneType, false)
+	err = utildb.Clone(cfg, aidaDb, targetDb, utildb.CloneType, false)
 	if err != nil {
 		return err
 	}
@@ -156,7 +157,7 @@ func createDbClone(ctx *cli.Context) error {
 
 // createDbClone creates aida-db copy or subset
 func createCustomClone(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func createCustomClone(ctx *cli.Context) error {
 		return err
 	}
 
-	err = utildb.Clone(cfg, aidaDb, targetDb, utils.CustomType, false)
+	err = utildb.Clone(cfg, aidaDb, targetDb, utildb.CustomType, false)
 	if err != nil {
 		return err
 	}

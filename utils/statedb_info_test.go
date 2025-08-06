@@ -18,6 +18,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"path/filepath"
 	"testing"
@@ -70,8 +71,8 @@ func TestStatedbInfo_WriteReadStateDbInfo(t *testing.T) {
 			if dbInfo.RootHash != (common.Hash{}) {
 				t.Fatalf("failed to write RootHash into DB info json file correctly; Is: %d; Should be: %d", dbInfo.RootHash, common.Hash{})
 			}
-			if dbInfo.GitCommit != GitCommit {
-				t.Fatalf("failed to write GitCommit into DB info json file correctly; Is: %s; Should be: %s", dbInfo.GitCommit, GitCommit)
+			if dbInfo.GitCommit != config.GitCommit {
+				t.Fatalf("failed to write GitCommit into DB info json file correctly; Is: %s; Should be: %s", dbInfo.GitCommit, config.GitCommit)
 			}
 			if !dbInfo.HasFinished {
 				t.Fatalf("failed to write HasFinished into DB info json file correctly; Is: %v; Should be: %v", dbInfo.HasFinished, !dbInfo.HasFinished)
@@ -112,7 +113,7 @@ func TestStatedbInfo_RenameTempStateDbDirectory(t *testing.T) {
 
 // TestStatedbInfo_RenameTempStateDbDirectory tests renaming temporary state DB directory into a custom name.
 func TestStatedbInfo_RenameTempStateDbDirectoryToCustomName(t *testing.T) {
-	cfg := &Config{
+	cfg := &config.Config{
 		DbImpl:       "geth",
 		DbVariant:    "",
 		CustomDbName: "TestName",
@@ -230,7 +231,7 @@ func TestStateDBInfo_ReadStateDbInfoError(t *testing.T) {
 }
 
 func TestStateDBInfo_RenameTempStateDbDirectoryError(t *testing.T) {
-	cfg := &Config{
+	cfg := &config.Config{
 		DbImpl:       "geth",
 		DbVariant:    "",
 		CustomDbName: "TestName",

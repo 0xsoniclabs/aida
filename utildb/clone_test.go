@@ -2,6 +2,7 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"os"
 	"strconv"
@@ -19,22 +20,22 @@ import (
 func TestClone(t *testing.T) {
 	tests := []struct {
 		name        string
-		cloningType utils.AidaDbType
+		cloningType AidaDbType
 		dbc         string
 		wantErr     string
 	}{
-		{"NoType", utils.NoType, "", "clone failed for NoType: incorrect clone type: 0"},
-		{"GenType", utils.GenType, "", "clone failed for GenType: incorrect clone type: 1"},
-		{"PatchType", utils.PatchType, "", ""},
-		{"CloneType", utils.CloneType, "", ""},
-		{"CustomTypeAll", utils.CustomType, "all", ""},
-		{"CustomTypeSubstate", utils.CustomType, "substate", ""},
-		{"CustomTypeDelete", utils.CustomType, "delete", ""},
-		{"CustomTypeUpdate", utils.CustomType, "update", ""},
-		{"CustomTypeStateHash", utils.CustomType, "state-hash", ""},
-		{"CustomTypeBlockHash", utils.CustomType, "block-hash", ""},
-		{"CustomTypeException", utils.CustomType, "exception", ""},
-		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
+		{"NoType", NoType, "", "clone failed for NoType: incorrect clone type: 0"},
+		{"GenType", GenType, "", "clone failed for GenType: incorrect clone type: 1"},
+		{"PatchType", PatchType, "", ""},
+		{"CloneType", CloneType, "", ""},
+		{"CustomTypeAll", CustomType, "all", ""},
+		{"CustomTypeSubstate", CustomType, "substate", ""},
+		{"CustomTypeDelete", CustomType, "delete", ""},
+		{"CustomTypeUpdate", CustomType, "update", ""},
+		{"CustomTypeStateHash", CustomType, "state-hash", ""},
+		{"CustomTypeBlockHash", CustomType, "block-hash", ""},
+		{"CustomTypeException", CustomType, "exception", ""},
+		{"CustomTypeInvalid", CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
 	}
 
 	for _, tt := range tests {
@@ -51,8 +52,8 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, name string, dbc string) error {
-	cfg := &utils.Config{
+func testClone(t *testing.T, aidaDb db.BaseDB, cloningType AidaDbType, name string, dbc string) error {
+	cfg := &config.Config{
 		First:       0,
 		Last:        100,
 		Validate:    true, // TODO add substates with code to testDb then validate would produce error as count wouldn't match
@@ -196,7 +197,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 				t.Fatalf("error putting invalid db key: %v", err)
 			}
 
-			err = testClone(t, aidaDb, utils.CustomType, tt.name, tt.dbComponent)
+			err = testClone(t, aidaDb, CustomType, tt.name, tt.dbComponent)
 			if err == nil {
 				t.Fatalf("Expected error for invalid db key, but got none")
 			} else {
@@ -207,7 +208,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 }
 
 func TestClone_BlockHashes(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First:       0,
 		Last:        100,
 		Validate:    false,
@@ -218,7 +219,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = Clone(cfg, aidaDb, cloneDb, utils.CustomType, false)
+	err = Clone(cfg, aidaDb, cloneDb, CustomType, false)
 
 	assert.NoError(t, err)
 
@@ -233,7 +234,7 @@ func TestClone_BlockHashes(t *testing.T) {
 }
 
 func TestClone_LastUpdateBeforeRange(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First:       1000,
 		Last:        1001,
 		Validate:    false,
@@ -244,7 +245,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = Clone(cfg, aidaDb, cloneDb, utils.CloneType, false)
+	err = Clone(cfg, aidaDb, cloneDb, CloneType, false)
 
 	assert.NoError(t, err)
 
@@ -303,7 +304,7 @@ func generateTestAidaDb(t *testing.T) db.BaseDB {
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
-	md := utils.NewAidaDbMetadata(database, "ERROR")
+	md := NewAidaDbMetadata(database, "ERROR")
 	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
 	assert.NoError(t, err)
 

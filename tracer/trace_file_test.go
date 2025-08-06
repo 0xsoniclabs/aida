@@ -19,20 +19,20 @@ package tracer
 import (
 	"bufio"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/dsnet/compress/bzip2"
 )
 
 const firstBlockInTrace = 10
 
 // makeTestTraceFileConfig creates a config struct for reading trace files
-func makeTestTraceFileConfig() *utils.Config {
-	cfg := &utils.Config{
+func makeTestTraceFileConfig() *config.Config {
+	cfg := &config.Config{
 		TraceFile:      "test_trace.dat",
 		TraceDirectory: "test_traces",
 	}
@@ -184,7 +184,7 @@ func TestTraceFile_keepRelevantTraceFiles(t *testing.T) {
 // for the specified range.
 func TestTraceFile_GetTraceFiles(t *testing.T) {
 	// get a trace file from --trace-file
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		TraceFile: "test_trace.dat",
 		First:     1500,
 		Last:      5500,
@@ -203,7 +203,7 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 
 	// get trace files from --trace-dir
 	numFiles := 10
-	cfg = &utils.Config{
+	cfg = &config.Config{
 		TraceDirectory: "test_traces",
 		First:          1500,
 		Last:           5500,
@@ -222,7 +222,7 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 	}
 
 	// get trace files returns an error if trace files are not given
-	cfg = &utils.Config{
+	cfg = &config.Config{
 		First: 1500,
 		Last:  5500,
 	}

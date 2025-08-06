@@ -19,6 +19,7 @@ package updateset
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -60,7 +61,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 	if ctx.Args().Len() != 2 {
 		return fmt.Errorf("gen-update-set command requires exactly 2 arguments")
 	}
-	cfg, argErr := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, argErr := config.NewConfig(ctx, config.LastBlockArg)
 	if argErr != nil {
 		return argErr
 	}
@@ -126,7 +127,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 }
 
 // GenUpdateSet generates a series of update sets from substate db
-func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db.DestroyedAccountDB, first, last uint64, interval uint64) error {
+func GenUpdateSet(cfg *config.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db.DestroyedAccountDB, first, last uint64, interval uint64) error {
 	var (
 		err               error
 		destroyedAccounts []substatetypes.Address

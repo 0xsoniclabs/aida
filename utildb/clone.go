@@ -19,6 +19,8 @@ package utildb
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"os"
 	"time"
 
@@ -34,12 +36,12 @@ import (
 const cloneWriteChanSize = 1
 
 type cloner struct {
-	cfg             *utils.Config
+	cfg             *config.Config
 	log             logger.Logger
 	aidaDb, cloneDb db.BaseDB
 	cloneComponent  dbcomponent.DbComponent
 	count           uint64
-	typ             utils.AidaDbType
+	typ             AidaDbType
 	writeCh         chan rawEntry
 	errCh           chan error
 	stopCh          chan any
@@ -52,16 +54,16 @@ type rawEntry struct {
 }
 
 // CreatePatchClone creates aida-db patch
-func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
+func CreatePatchClone(cfg *config.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
 	var isFirstGenerationFromGenesis = false
 
-	var cloneType = utils.PatchType
+	var cloneType = PatchType
 
 	// if the patch is first, we need to make some exceptions hence cloner needs to know
 	if isNewOpera {
-		if firstEpoch == 5577 && cfg.ChainID == utils.MainnetChainID {
+		if firstEpoch == 5577 && cfg.ChainID == chainid.MainnetChainID {
 			isFirstGenerationFromGenesis = true
-		} else if firstEpoch == 2458 && cfg.ChainID == utils.TestnetChainID {
+		} else if firstEpoch == 2458 && cfg.ChainID == chainid.TestnetChainID {
 			isFirstGenerationFromGenesis = true
 		}
 	}
@@ -71,7 +73,7 @@ func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch,
 		return err
 	}
 
-	md := utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+	md := NewAidaDbMetadata(targetDb, cfg.LogLevel)
 	err = md.SetFirstEpoch(firstEpoch)
 	if err != nil {
 		return err
@@ -86,13 +88,13 @@ func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch,
 }
 
 // Clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func Clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
+func Clone(cfg *config.Config, aidaDb, cloneDb db.BaseDB, cloneType AidaDbType, isFirstGenerationFromGenesis bool) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb Clone")
 
 	var dbComponent dbcomponent.DbComponent
 
-	if cloneType == utils.CustomType {
+	if cloneType == CustomType {
 		dbComponent, err = dbcomponent.ParseDbComponent(cfg.DbComponent)
 		if err != nil {
 			return err
@@ -142,11 +144,11 @@ func (c *cloner) clone(isFirstGenerationFromGenesis bool) error {
 		}
 	}
 
-	if c.typ != utils.CustomType {
-		sourceMD := utils.NewAidaDbMetadata(c.aidaDb, c.cfg.LogLevel)
+	if c.typ != CustomType {
+		sourceMD := NewAidaDbMetadata(c.aidaDb, c.cfg.LogLevel)
 		chainID := sourceMD.GetChainID()
 
-		if err = utils.ProcessCloneLikeMetadata(c.cloneDb, c.typ, c.cfg.LogLevel, c.cfg.First, c.cfg.Last, chainID); err != nil {
+		if err = ProcessCloneLikeMetadata(c.cloneDb, c.typ, c.cfg.LogLevel, c.cfg.First, c.cfg.Last, chainID); err != nil {
 			return err
 		}
 	}
@@ -168,7 +170,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 	// notify writer that all data was read
 	defer close(c.writeCh)
 
-	if c.typ == utils.CustomType {
+	if c.typ == CustomType {
 		return c.readDataCustom()
 	}
 
@@ -180,7 +182,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 	// lastUpdateBeforeRange contains block number at which is first updateset preceding the given block range,
 	// it is only required in CloneType db
 	lastUpdateBeforeRange := c.readUpdateSet(isFirstGenerationFromGenesis)
-	if c.typ == utils.CloneType {
+	if c.typ == CloneType {
 		// check whether updateset before interval exists
 		if lastUpdateBeforeRange < c.cfg.First && lastUpdateBeforeRange != 0 {
 			c.log.Noticef("Last updateset found at block %v, changing first block to %v", lastUpdateBeforeRange, lastUpdateBeforeRange+1)
@@ -310,12 +312,12 @@ func (c *cloner) readUpdateSet(isFirstGenerationFromGenesis bool) uint64 {
 		return false, nil
 	}
 
-	if c.typ == utils.CloneType {
+	if c.typ == CloneType {
 		c.read([]byte(db.UpdateDBPrefix), 0, endCond)
 
 		// if there is no updateset before interval (first 1M blocks) then 0 is returned
 		return lastUpdateBeforeRange
-	} else if c.typ == utils.PatchType || c.typ == utils.CustomType {
+	} else if c.typ == PatchType || c.typ == CustomType {
 		var wantedBlock uint64
 
 		// if we are working with first patch that was created from genesis we need to move the start of the iterator minus one block

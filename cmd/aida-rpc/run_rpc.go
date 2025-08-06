@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -28,7 +29,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,7 +37,7 @@ const (
 )
 
 func RunRpc(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -54,14 +54,14 @@ func RunRpc(ctx *cli.Context) error {
 	return run(cfg, rpcSource, nil, makeRpcProcessor(cfg), nil)
 }
 
-func makeRpcProcessor(cfg *utils.Config) rpcProcessor {
+func makeRpcProcessor(cfg *config.Config) rpcProcessor {
 	return rpcProcessor{
 		cfg: cfg,
 	}
 }
 
 type rpcProcessor struct {
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (p rpcProcessor) Process(state executor.State[*rpc.RequestAndResults], ctx *executor.Context) error {
@@ -74,7 +74,7 @@ func (p rpcProcessor) Process(state executor.State[*rpc.RequestAndResults], ctx 
 }
 
 func run(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[*rpc.RequestAndResults],
 	stateDb state.StateDB,
 	processor executor.Processor[*rpc.RequestAndResults],

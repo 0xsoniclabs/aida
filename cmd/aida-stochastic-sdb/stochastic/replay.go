@@ -18,6 +18,7 @@ package stochastic
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"strconv"
 	"time"
@@ -78,7 +79,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	}
 
 	// process configuration
-	cfg, err := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, err := config.NewConfig(ctx, config.LastBlockArg)
 	if err != nil {
 		return err
 	}

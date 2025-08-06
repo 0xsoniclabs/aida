@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"testing"
 
@@ -99,7 +100,7 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 
 	// Case 1
 	prime := &PrimeContext{
-		cfg: &Config{
+		cfg: &config.Config{
 			PrimeRandom: true,
 		},
 		load:       mockBulkLoad,
@@ -114,7 +115,7 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 
 	// Case 2
 	prime = &PrimeContext{
-		cfg: &Config{
+		cfg: &config.Config{
 			PrimeRandom: false,
 		},
 		load:       mockBulkLoad,
@@ -213,7 +214,7 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 		common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): acc2,
 	})
 	prime := &PrimeContext{
-		cfg: &Config{
+		cfg: &config.Config{
 			RandomSeed: 0,
 		},
 		load:       nil,

@@ -17,20 +17,20 @@
 package tracker
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"sync"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 const (
 	ProgressTrackerDefaultReportFrequency = 100_000 // in blocks
 )
 
-func newProgressTracker[T any](cfg *utils.Config, reportFrequency int, log logger.Logger) *progressTracker[T] {
+func newProgressTracker[T any](cfg *config.Config, reportFrequency int, log logger.Logger) *progressTracker[T] {
 	return &progressTracker[T]{
 		cfg:             cfg,
 		log:             log,
@@ -40,7 +40,7 @@ func newProgressTracker[T any](cfg *utils.Config, reportFrequency int, log logge
 
 type progressTracker[T any] struct {
 	extension.NilExtension[T]
-	cfg                 *utils.Config
+	cfg                 *config.Config
 	log                 logger.Logger
 	reportFrequency     int
 	startOfRun          time.Time

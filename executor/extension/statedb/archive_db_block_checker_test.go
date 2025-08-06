@@ -18,6 +18,7 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,7 +30,7 @@ import (
 )
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfStateDbDoesNotHaveArchive(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.StateDbSrc = t.TempDir()
 	err := utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, 0, common.Hash{}, true)
 	if err != nil {
@@ -50,7 +51,7 @@ func TestArchiveDbBlockChecker_PreRunReturnsErrorIfStateDbDoesNotHaveArchive(t *
 }
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfStateDbDoesNotContainGivenBlockRange(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Last = 11
 
 	cfg.StateDbSrc = t.TempDir()
@@ -68,7 +69,7 @@ func TestArchiveDbBlockChecker_PreRunReturnsErrorIfStateDbDoesNotContainGivenBlo
 }
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfPrimeStateDbDoesNotHaveArchive(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ShadowDb = true
 	cfg.StateDbSrc = t.TempDir()
 	if err := os.Mkdir(cfg.StateDbSrc+utils.PathToPrimaryStateDb, os.ModePerm); err != nil {
@@ -93,7 +94,7 @@ func TestArchiveDbBlockChecker_PreRunReturnsErrorIfPrimeStateDbDoesNotHaveArchiv
 }
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfPrimeStateDbDoesNotContainGivenBlockRange(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Last = 11
 
 	cfg.StateDbSrc = t.TempDir()
@@ -126,7 +127,7 @@ func TestArchiveDbBlockChecker_PreRunReturnsErrorIfPrimeStateDbDoesNotContainGiv
 }
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfShadowStateDbDoesNotContainGivenBlockRange(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Last = 11
 
 	cfg.StateDbSrc = t.TempDir()
@@ -159,7 +160,7 @@ func TestArchiveDbBlockChecker_PreRunReturnsErrorIfShadowStateDbDoesNotContainGi
 }
 
 func TestArchiveDbBlockChecker_PreRunReturnsErrorIfShadowStateDbDoesNotHaveArchive(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ShadowDb = true
 	cfg.ArchiveMode = false
 	cfg.StateDbSrc = t.TempDir()

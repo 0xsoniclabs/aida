@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"io"
 	"os"
 	"os/exec"
@@ -31,7 +32,6 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/op/go-logging"
@@ -242,7 +242,7 @@ func calculateMD5Sum(filePath string) (string, error) {
 }
 
 // startOperaIpc starts opera node for ipc requests
-func startOperaIpc(cfg *utils.Config, stopChan chan struct{}) chan error {
+func startOperaIpc(cfg *config.Config, stopChan chan struct{}) chan error {
 	errChan := make(chan error, 1)
 
 	log := logger.NewLogger(cfg.LogLevel, "Autogen-ipc")
@@ -332,7 +332,7 @@ func ipcLoadingProcessWait(resChan chan string, errChan chan error, timer *time.
 }
 
 // startOperaRecording records substates
-func startOperaRecording(cfg *utils.Config, syncUntilEpoch uint64) chan error {
+func startOperaRecording(cfg *config.Config, syncUntilEpoch uint64) chan error {
 	errChan := make(chan error, 1)
 	// todo check if path to aidaDb exists otherwise create the dir
 
@@ -353,7 +353,7 @@ func startOperaRecording(cfg *utils.Config, syncUntilEpoch uint64) chan error {
 }
 
 // getOperaBinary returns path to opera binary
-func getOperaBinary(cfg *utils.Config) string {
+func getOperaBinary(cfg *config.Config) string {
 	var operaBin = "opera"
 	if cfg.OperaBinary != "" {
 		operaBin = cfg.OperaBinary
@@ -380,7 +380,7 @@ func PrintMetadata(pathToDb string) error {
 		return err
 	}
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := NewAidaDbMetadata(base, "INFO")
 
 	log.Notice("AIDA-DB INFO:")
 
@@ -431,7 +431,7 @@ func PrintMetadata(pathToDb string) error {
 }
 
 // printUpdateSetInfo from given AidaDb
-func printUpdateSetInfo(m *utils.AidaDbMetadata) {
+func printUpdateSetInfo(m *AidaDbMetadata) {
 	log := logger.NewLogger("INFO", "Print-Metadata")
 
 	log.Notice("UPDATE-SET INFO:")
@@ -454,18 +454,18 @@ func printUpdateSetInfo(m *utils.AidaDbMetadata) {
 }
 
 // printDbType from given AidaDb
-func printDbType(m *utils.AidaDbMetadata) error {
+func printDbType(m *AidaDbMetadata) error {
 	t := m.GetDbType()
 
 	var typePrint string
 	switch t {
-	case utils.GenType:
+	case GenType:
 		typePrint = "Generate"
-	case utils.CloneType:
+	case CloneType:
 		typePrint = "Clone"
-	case utils.PatchType:
+	case PatchType:
 		typePrint = "Patch"
-	case utils.NoType:
+	case NoType:
 		typePrint = "NoType"
 
 	default:

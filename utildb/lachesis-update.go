@@ -18,6 +18,7 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
@@ -39,12 +40,12 @@ func LoadOperaWorldState(path string) (*updateset.UpdateSet, error) {
 	}
 	defer udb.Close()
 
-	return udb.GetUpdateSet(utils.FirstOperaBlock)
+	return udb.GetUpdateSet(config.FirstOperaBlock)
 }
 
 // CreateLachesisWorldState creates update-set from block 0 to the last lachesis block
-func CreateLachesisWorldState(cfg *utils.Config, aidaDb db.BaseDB) (substate.WorldState, error) {
-	lachesisLastBlock := utils.FirstOperaBlock - 1
+func CreateLachesisWorldState(cfg *config.Config, aidaDb db.BaseDB) (substate.WorldState, error) {
+	lachesisLastBlock := config.FirstOperaBlock - 1
 	lachesis, _, err := utils.GenerateUpdateSet(0, lachesisLastBlock, cfg, aidaDb)
 	if err != nil {
 		return nil, err

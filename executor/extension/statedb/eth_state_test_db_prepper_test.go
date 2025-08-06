@@ -17,6 +17,8 @@
 package statedb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -25,12 +27,11 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbImpl:   "geth",
 		ChainID:  1,
 		LogLevel: "critical",
@@ -51,7 +52,7 @@ func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
 }
 
 func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbImpl:   "geth",
 		ChainID:  1,
 		LogLevel: "critical",
@@ -83,8 +84,8 @@ func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
 }
 
 func Test_ethStateTestDbPrepper_PreBlock_FailsWithUnknownFork(t *testing.T) {
-	cfg := &utils.Config{
-		ChainID:  utils.EthTestsChainID,
+	cfg := &config.Config{
+		ChainID:  chainid.EthTestsChainID,
 		LogLevel: "critical",
 	}
 	ext := ethStateTestDbPrepper{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrepper")}
@@ -95,7 +96,7 @@ func Test_ethStateTestDbPrepper_PreBlock_FailsWithUnknownFork(t *testing.T) {
 }
 
 func Test_ethStateTestDbPrepper_MakeEthStateTestDbPrepper(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeEthStateTestDbPrepper(cfg)
 	_, ok := ext.(*ethStateTestDbPrepper)
 	assert.True(t, ok)

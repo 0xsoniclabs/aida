@@ -18,6 +18,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
@@ -45,7 +46,7 @@ func extractEthereumGenesis(ctx *cli.Context) error {
 	if ctx.Args().Len() != 1 {
 		return fmt.Errorf("ethereum-update command requires exactly 1 arguments")
 	}
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}

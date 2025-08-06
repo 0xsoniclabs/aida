@@ -19,12 +19,12 @@ package executor
 import (
 	"encoding/json"
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"strings"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
@@ -33,7 +33,7 @@ func TestRPCRequestProvider_WorksWithValidResponse(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -58,7 +58,7 @@ func TestRPCRequestProvider_WorksWithErrorResponse(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -83,7 +83,7 @@ func TestRPCRequestProvider_NilRequestDoesNotGetToConsumer(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -115,7 +115,7 @@ func TestRPCRequestProvider_ErrorReturnedByIteratorEndsTheApp(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -141,7 +141,7 @@ func TestRPCRequestProvider_GetLogMethodDoesNotEndIteration(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -169,7 +169,7 @@ func TestRPCRequestProvider_ReportsAboutRun(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RpcRecordingPath = "test_file"
 
 	provider := openRpcRecording(i, cfg, log, nil, []string{cfg.RpcRecordingPath})

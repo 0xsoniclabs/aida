@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package utildb
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"testing"
 
 	"github.com/0xsoniclabs/substate/db"
@@ -30,7 +32,7 @@ import (
 )
 
 func TestDownloadPatchesJson(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
@@ -43,7 +45,7 @@ func TestDownloadPatchesJson(t *testing.T) {
 }
 
 func TestGetPatchFirstBlock_Positive(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
@@ -76,7 +78,7 @@ func TestAidaDbMetadata_SetAll(t *testing.T) {
 	md.LastBlock = 200
 	md.FirstEpoch = 10
 	md.LastEpoch = 20
-	md.ChainId = MainnetChainID
+	md.ChainId = chainid.MainnetChainID
 	md.DbType = GenType
 
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(7) // 7 metadata fields
@@ -208,14 +210,14 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	mockDb := db.NewMockBaseDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(8) // 8 metadata fields including hash
-	err := md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err := md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.NoError(t, err)
 
 	// Case 2: Error with SetFirstBlock
 	mockDb = db.NewMockBaseDB(ctrl)
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -224,7 +226,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -233,7 +235,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -242,7 +244,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(3)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -251,7 +253,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(4)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -260,7 +262,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(5)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -269,7 +271,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(6)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -278,7 +280,7 @@ func TestAidaDbMetadata_SetAllMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(7)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.SetAllMetadata(100, 200, 10, 20, MainnetChainID, dbHash, GenType)
+	err = md.SetAllMetadata(100, 200, 10, 20, chainid.MainnetChainID, dbHash, GenType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 }
@@ -288,9 +290,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Case 1: Success
-	cfg := &Config{
+	cfg := &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  MainnetChainID,
+		ChainID:  chainid.MainnetChainID,
 	}
 	mockAidaDb := db.NewMockBaseDB(ctrl)
 	mockPatchDb := db.NewMockBaseDB(ctrl)
@@ -301,9 +303,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Case 2: Last block is Zero
-	cfg = &Config{
+	cfg = &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  ChainID(0),
+		ChainID:  chainid.ChainID(0),
 	}
 	mockAidaDb = db.NewMockBaseDB(ctrl)
 	mockPatchDb = db.NewMockBaseDB(ctrl)
@@ -314,9 +316,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	assert.Error(t, err)
 
 	// Case 3: Block not aligned
-	cfg = &Config{
+	cfg = &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  MainnetChainID,
+		ChainID:  chainid.MainnetChainID,
 	}
 	mockAidaDb = db.NewMockBaseDB(ctrl)
 	mockPatchDb = db.NewMockBaseDB(ctrl)
@@ -327,9 +329,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	assert.Error(t, err)
 
 	// Case 4: ChainID mismatch
-	cfg = &Config{
+	cfg = &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  MainnetChainID,
+		ChainID:  chainid.MainnetChainID,
 	}
 	mockAidaDb = db.NewMockBaseDB(ctrl)
 	mockPatchDb = db.NewMockBaseDB(ctrl)
@@ -341,9 +343,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	assert.Error(t, err)
 
 	// Case 5
-	cfg = &Config{
+	cfg = &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  MainnetChainID,
+		ChainID:  chainid.MainnetChainID,
 	}
 	mockAidaDb = db.NewMockBaseDB(ctrl)
 	mockPatchDb = db.NewMockBaseDB(ctrl)
@@ -356,9 +358,9 @@ func TestAidaDbMetadata_CheckUpdateMetadata(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Case 6
-	cfg = &Config{
+	cfg = &config.Config{
 		LogLevel: "ERROR",
-		ChainID:  MainnetChainID,
+		ChainID:  chainid.MainnetChainID,
 	}
 	mockAidaDb = db.NewMockBaseDB(ctrl)
 	mockPatchDb = db.NewMockBaseDB(ctrl)
@@ -378,7 +380,7 @@ func TestAidaDbMetadata_SetFreshMetadata(t *testing.T) {
 	mockDb := db.NewMockBaseDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(3)
-	err := md.SetFreshMetadata(MainnetChainID)
+	err := md.SetFreshMetadata(chainid.MainnetChainID)
 	assert.NoError(t, err)
 
 	// case 2
@@ -387,19 +389,19 @@ func TestAidaDbMetadata_SetFreshMetadata(t *testing.T) {
 
 	// case 3
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(errors.New("error"))
-	err = md.SetFreshMetadata(MainnetChainID)
+	err = md.SetFreshMetadata(chainid.MainnetChainID)
 	assert.Error(t, err)
 
 	// case 4
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(errors.New("error"))
-	err = md.SetFreshMetadata(MainnetChainID)
+	err = md.SetFreshMetadata(chainid.MainnetChainID)
 	assert.Error(t, err)
 
 	// case 5
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(errors.New("error"))
-	err = md.SetFreshMetadata(MainnetChainID)
+	err = md.SetFreshMetadata(chainid.MainnetChainID)
 	assert.Error(t, err)
 }
 
@@ -497,7 +499,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Put([]byte(LastBlockPrefix), gomock.Any()).Return(nil)
 	mockDb.EXPECT().Put([]byte(TypePrefix), gomock.Any()).Return(nil)
 
-	err := md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err := md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.NoError(t, err)
 
 	// Case 2: Error when setting ChainID
@@ -507,7 +509,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(ChainIDPrefix), gomock.Any()).Return(mockErr)
 
-	err = md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err = md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -520,7 +522,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(FirstBlockPrefix), gomock.Any()).Return(mockErr)
 
-	err = md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err = md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -535,7 +537,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(LastBlockPrefix), gomock.Any()).Return(mockErr)
 
-	err = md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err = md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -552,7 +554,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(TypePrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(TypePrefix), gomock.Any()).Return(mockErr)
 
-	err = md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err = md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -561,7 +563,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 
 	// Chain ID already exists
-	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(uint64(MainnetChainID)), nil)
+	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(uint64(chainid.MainnetChainID)), nil)
 	// First block needs to be set
 	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(FirstBlockPrefix), gomock.Any()).Return(nil)
@@ -571,7 +573,7 @@ func TestAidaDbMetadata_UpdateMetadataInOldAidaDb(t *testing.T) {
 	mockDb.EXPECT().Get([]byte(TypePrefix)).Return(nil, errors.New("not found"))
 	mockDb.EXPECT().Put([]byte(TypePrefix), gomock.Any()).Return(nil)
 
-	err = md.UpdateMetadataInOldAidaDb(MainnetChainID, 100, 200)
+	err = md.UpdateMetadataInOldAidaDb(chainid.MainnetChainID, 100, 200)
 	assert.NoError(t, err)
 }
 
@@ -676,14 +678,14 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb := db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	err := ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err := ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NoError(t, err)
 
 	// SetFirstBlock error
 	mockDb = db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -692,7 +694,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -701,7 +703,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -710,7 +712,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(3)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -719,7 +721,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(4)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -728,7 +730,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(5)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -737,7 +739,7 @@ func TestProcessCloneLikeMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(6)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, MainnetChainID)
+	err = ProcessCloneLikeMetadata(mockDb, NoType, "ERROR", 0, 0, chainid.MainnetChainID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 }
@@ -749,7 +751,7 @@ func TestProcessGenLikeMetadata(t *testing.T) {
 	mockDb := db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	err := ProcessGenLikeMetadata(mockDb, 0, 0, 0, 0, MainnetChainID, "ERROR", nil)
+	err := ProcessGenLikeMetadata(mockDb, 0, 0, 0, 0, chainid.MainnetChainID, "ERROR", nil)
 	assert.NoError(t, err)
 }
 
@@ -764,7 +766,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	md := NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	err := md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err := md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NoError(t, err)
 
 	// SetFirstBlock error
@@ -772,7 +774,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -782,7 +784,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -792,7 +794,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -802,7 +804,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(3)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -812,7 +814,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(4)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -822,7 +824,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(5)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -832,7 +834,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(6)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -842,7 +844,7 @@ func TestAidaDbMetadata_genMetadata(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any()).Return(bigendian.Uint64ToBytes(99), nil).AnyTimes()
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil).Times(7)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(mockErr)
-	err = md.genMetadata(0, 0, 0, 0, MainnetChainID, nil)
+	err = md.genMetadata(0, 0, 0, 0, chainid.MainnetChainID, nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), mockErr.Error())
 
@@ -1078,21 +1080,21 @@ func TestAidaDbMetadata_GetChainID(t *testing.T) {
 	md := NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
 	data := md.GetChainID()
-	assert.Equal(t, ChainID(100), data)
+	assert.Equal(t, chainid.ChainID(100), data)
 
 	mockDb = db.NewMockBaseDB(ctrl)
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return([]byte{0, 1}, nil)
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(1), data)
+	assert.Equal(t, chainid.ChainID(1), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, errors.New("mock error"))
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(0), data)
+	assert.Equal(t, chainid.ChainID(0), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(0), data)
+	assert.Equal(t, chainid.ChainID(0), data)
 }
 
 func TestAidaDbMetadata_GetTimestamp(t *testing.T) {
@@ -1162,7 +1164,7 @@ func TestProcessMergeMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	mockAidaDb := db.NewMockBaseDB(ctrl)
 	mockSourceDb := db.NewMockBaseDB(ctrl)
 	mockSourceDb.EXPECT().Get(gomock.Any()).Return([]byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}, nil).AnyTimes()
@@ -1172,7 +1174,7 @@ func TestProcessMergeMetadata(t *testing.T) {
 }
 
 func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
-	for chainID := range EthereumChainIDs {
+	for chainID := range chainid.EthereumChainIDs {
 		md := &AidaDbMetadata{ChainId: chainID}
 		assert.NoError(t, md.findEpochs())
 		// Epochs must be unchange

@@ -18,27 +18,27 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 )
 
 type Merger struct {
-	cfg           *utils.Config
+	cfg           *config.Config
 	log           logger.Logger
 	targetDb      db.BaseDB
 	sourceDbs     []db.BaseDB
 	sourceDbPaths []string
-	md            *utils.AidaDbMetadata
+	md            *AidaDbMetadata
 	start         time.Time
 }
 
 // NewMerger returns new instance of Merger
-func NewMerger(cfg *utils.Config, targetDb db.BaseDB, sourceDbs []db.BaseDB, sourceDbPaths []string, md *utils.AidaDbMetadata) *Merger {
+func NewMerger(cfg *config.Config, targetDb db.BaseDB, sourceDbs []db.BaseDB, sourceDbPaths []string, md *AidaDbMetadata) *Merger {
 	return &Merger{
 		cfg:           cfg,
 		log:           logger.NewLogger(cfg.LogLevel, "aida-db-Merger"),

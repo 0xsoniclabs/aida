@@ -18,6 +18,7 @@ package primer
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"path/filepath"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -31,7 +32,7 @@ import (
 	"github.com/google/martian/log"
 )
 
-func MakeStateDbPrimer[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeStateDbPrimer[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.SkipPriming {
 		return extension.NilExtension[T]{}
 	}
@@ -39,7 +40,7 @@ func MakeStateDbPrimer[T any](cfg *utils.Config) executor.Extension[T] {
 	return makeStateDbPrimer[T](cfg, logger.NewLogger(cfg.LogLevel, "StateDb-Primer"))
 }
 
-func makeStateDbPrimer[T any](cfg *utils.Config, log logger.Logger) *stateDbPrimer[T] {
+func makeStateDbPrimer[T any](cfg *config.Config, log logger.Logger) *stateDbPrimer[T] {
 	return &stateDbPrimer[T]{
 		cfg: cfg,
 		log: log,
@@ -48,7 +49,7 @@ func makeStateDbPrimer[T any](cfg *utils.Config, log logger.Logger) *stateDbPrim
 
 type stateDbPrimer[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 	ctx *utils.PrimeContext
 }
@@ -62,10 +63,10 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 
 	// As different substates start on different blocks (either 0 or 1)
 	// we must check the starting block with the key word "first" with appropriate chainid
-	if p.cfg.First == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
-		if utils.IsEthereumNetwork(p.cfg.ChainID) {
+	if p.cfg.First == config.KeywordBlocks[p.cfg.ChainID]["first"] {
+		if config.IsEthereumNetwork(p.cfg.ChainID) {
 			p.log.Noticef("Priming ethereum genesis...")
-			p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, utils.KeywordBlocks[p.cfg.ChainID]["first"], p.log)
+			p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, config.KeywordBlocks[p.cfg.ChainID]["first"], p.log)
 			return p.primeEthereumGenesis(ctx.State, ctx.AidaDb)
 		}
 		return nil

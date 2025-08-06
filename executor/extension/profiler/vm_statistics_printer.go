@@ -17,6 +17,7 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/utils"
@@ -24,13 +25,13 @@ import (
 
 // MakeVirtualMachineStatisticsPrinter creates an extension that prints VM specific
 // profiling data at the end of a run, if this is supported by the VM implementation.
-func MakeVirtualMachineStatisticsPrinter[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeVirtualMachineStatisticsPrinter[T any](cfg *config.Config) executor.Extension[T] {
 	return &vmStatPrinter[T]{cfg: cfg}
 }
 
 type vmStatPrinter[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (p *vmStatPrinter[T]) PostRun(executor.State[T], *executor.Context, error) error {

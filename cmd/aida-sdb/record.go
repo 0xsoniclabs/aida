@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
@@ -61,7 +62,7 @@ last block of the inclusive range of blocks to trace transactions.`,
 }
 
 func RecordStateDbTrace(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,7 @@ func RecordStateDbTrace(ctx *cli.Context) error {
 }
 
 func record(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	processor executor.Processor[txcontext.TxContext],
 	extra []executor.Extension[txcontext.TxContext],

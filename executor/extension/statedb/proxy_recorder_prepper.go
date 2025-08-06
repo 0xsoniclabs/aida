@@ -18,22 +18,22 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeProxyRecorderPrepper creates an extension which
 // creates a temporary RecorderProxy before each txcontext
-func MakeProxyRecorderPrepper[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeProxyRecorderPrepper[T any](cfg *config.Config) executor.Extension[T] {
 	return makeProxyRecorderPrepper[T](cfg)
 }
 
-func makeProxyRecorderPrepper[T any](cfg *utils.Config) *proxyRecorderPrepper[T] {
+func makeProxyRecorderPrepper[T any](cfg *config.Config) *proxyRecorderPrepper[T] {
 	return &proxyRecorderPrepper[T]{
 		cfg: cfg,
 	}
@@ -41,7 +41,7 @@ func makeProxyRecorderPrepper[T any](cfg *utils.Config) *proxyRecorderPrepper[T]
 
 type proxyRecorderPrepper[T any] struct {
 	extension.NilExtension[T]
-	cfg        *utils.Config
+	cfg        *config.Config
 	rCtx       *context.Record
 	syncPeriod uint64
 }

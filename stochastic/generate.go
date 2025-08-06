@@ -17,13 +17,13 @@
 package stochastic
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.
-func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistry {
+func GenerateUniformRegistry(cfg *config.Config, log logger.Logger) *EventRegistry {
 	r := NewEventRegistry()
 
 	// generate a uniform distribution for contracts, storage keys/values, and snapshots

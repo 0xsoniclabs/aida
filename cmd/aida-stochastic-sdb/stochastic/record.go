@@ -19,6 +19,7 @@ package stochastic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math"
 	"os"
 	"time"
@@ -59,7 +60,7 @@ last block for recording events.`,
 func stochasticRecordAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

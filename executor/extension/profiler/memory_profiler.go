@@ -17,13 +17,14 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeMemoryProfiler creates an executor.Extension that records memory profiling data if enabled in the configuration.
-func MakeMemoryProfiler[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeMemoryProfiler[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.MemoryProfile == "" {
 		return extension.NilExtension[T]{}
 	}
@@ -32,7 +33,7 @@ func MakeMemoryProfiler[T any](cfg *utils.Config) executor.Extension[T] {
 
 type memoryProfiler[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (p *memoryProfiler[T]) PostRun(executor.State[T], *executor.Context, error) error {

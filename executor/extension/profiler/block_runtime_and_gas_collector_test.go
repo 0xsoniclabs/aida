@@ -18,6 +18,7 @@ package profiler
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 	"time"
@@ -26,13 +27,12 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/profile/blockprofile"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestBlockProfilerExtension_NoProfileIsCollectedIfDisabled(t *testing.T) {
-	config := &utils.Config{}
+	config := &config.Config{}
 	ext := MakeBlockRuntimeAndGasCollector(config)
 
 	if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
@@ -42,7 +42,7 @@ func TestBlockProfilerExtension_NoProfileIsCollectedIfDisabled(t *testing.T) {
 
 func TestBlockProfilerExtension_ProfileDbIsCreated(t *testing.T) {
 	path := t.TempDir() + "/profile.db"
-	config := &utils.Config{}
+	config := &config.Config{}
 	config.ProfileBlocks = true
 	config.ProfileDB = path
 

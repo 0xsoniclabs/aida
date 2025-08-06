@@ -17,11 +17,11 @@
 package logger
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 const defaultReportFrequency = 1000
@@ -33,7 +33,7 @@ type ethStateTestLogger struct {
 	reportFrequency int
 }
 
-func MakeEthStateTestLogger(cfg *utils.Config, testReportFrequency int) executor.Extension[txcontext.TxContext] {
+func MakeEthStateTestLogger(cfg *config.Config, testReportFrequency int) executor.Extension[txcontext.TxContext] {
 	if testReportFrequency <= 0 {
 		testReportFrequency = defaultReportFrequency
 	}

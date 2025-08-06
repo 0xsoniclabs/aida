@@ -19,18 +19,18 @@ package executor
 import (
 	_ "embed"
 	"encoding/json"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func Test_ethTestProvider_Run(t *testing.T) {
 	pathFile := createTestDataFile(t)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ArgPath: pathFile,
 		Fork:    "all",
 	}

@@ -19,6 +19,7 @@ package validator
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -31,7 +32,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-func MakeStateHashValidator[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeStateHashValidator[T any](cfg *config.Config) executor.Extension[T] {
 	// todo make true when --validate is chosen (validate should enable all validations)
 
 	if !cfg.ValidateStateHashes {
@@ -42,13 +43,13 @@ func MakeStateHashValidator[T any](cfg *utils.Config) executor.Extension[T] {
 	return makeStateHashValidator[T](cfg, log)
 }
 
-func makeStateHashValidator[T any](cfg *utils.Config, log logger.Logger) *stateHashValidator[T] {
+func makeStateHashValidator[T any](cfg *config.Config, log logger.Logger) *stateHashValidator[T] {
 	return &stateHashValidator[T]{cfg: cfg, log: log, nextArchiveBlockToCheck: int(cfg.First)}
 }
 
 type stateHashValidator[T any] struct {
 	extension.NilExtension[T]
-	cfg                     *utils.Config
+	cfg                     *config.Config
 	log                     logger.Logger
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int

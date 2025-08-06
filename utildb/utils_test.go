@@ -2,12 +2,12 @@ package utildb
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -15,7 +15,7 @@ import (
 func TestUtils_StartOperaIpc_Timeout(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "/bin/true", // This is a valid binary that should succeed
@@ -39,7 +39,7 @@ func TestUtils_StartOperaIpc_Timeout(t *testing.T) {
 func TestUtils_StartOperaIpc_InvalidBinary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "non-existent-binary", // This binary will fail
@@ -61,7 +61,7 @@ func TestUtils_StartOperaIpc_InvalidBinary(t *testing.T) {
 func TestUtils_StartOperaRecording(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "/bin/true", // This is a valid binary that should succeed
@@ -82,7 +82,7 @@ func TestUtils_StartOperaRecording(t *testing.T) {
 func TestUtils_StartOperaRecording_InvalidBinary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ClientDb:    tmpDir,
 		LogLevel:    "info",
 		OperaBinary: "non-existent-binary", // This binary will fail

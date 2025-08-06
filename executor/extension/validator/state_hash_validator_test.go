@@ -18,6 +18,7 @@ package validator
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"strings"
 	"testing"
 
@@ -41,7 +42,7 @@ const exampleHashC = "0x0a0b0c00000000000000000000000000000000000000000000000000
 const exampleHashD = "0x0300000000000000000000000000000000000000000000000000000000000000"
 
 func TestStateHashValidator_NotActiveIfNotEnabledInConfig(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ValidateStateHashes = false
@@ -64,7 +65,7 @@ func TestStateHashValidator_FailsIfHashIsNotFoundInAidaDb(t *testing.T) {
 		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash{}, leveldb.ErrNotFound),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	ext := makeStateHashValidator[any](cfg, log)
@@ -96,7 +97,7 @@ func TestStateHashValidator_InvalidHashOfLiveDbIsDetected(t *testing.T) {
 
 	blockNumber := 1
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	ext := makeStateHashValidator[any](cfg, log)
@@ -123,7 +124,7 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 
 	blockNumber := 1
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ArchiveMode = true
@@ -220,7 +221,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 		baseDb.EXPECT().GetBackend().Return(mockDb),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -273,7 +274,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchiveDoesNotWaitForNon
 		archive2.EXPECT().Release(),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -315,7 +316,7 @@ func TestStateHashValidator_ValidatingLaggingArchivesIsSkippedIfRunIsAborted(t *
 		archive0.EXPECT().Release(),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -338,7 +339,7 @@ func TestStateHashValidator_ValidatingLaggingArchivesIsSkippedIfRunIsAborted(t *
 }
 
 func TestStateHashValidator_PreRunReturnsErrorIfWrongDbImplIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "wrong"
 	cfg.Last = 5
 
@@ -356,7 +357,7 @@ func TestStateHashValidator_PreRunReturnsErrorIfWrongDbImplIsChosen(t *testing.T
 }
 
 func TestStateHashValidator_PreRunReturnsErrorIfWrongDbVariantIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 3
 	cfg.Last = 5
@@ -375,7 +376,7 @@ func TestStateHashValidator_PreRunReturnsErrorIfWrongDbVariantIsChosen(t *testin
 }
 
 func TestStateHashValidator_PreRunReturnsErrorIfArchiveIsEnabledAndWrongVariantIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -410,7 +411,7 @@ func TestStateHashValidator_CheckArchiveHashesBlocksErrorSkippedAtEmptyBlocks(t 
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ArchiveMode = true
@@ -474,7 +475,7 @@ func TestStateHashValidator_CheckArchiveHashesErrorHandled(t *testing.T) {
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ArchiveMode = true

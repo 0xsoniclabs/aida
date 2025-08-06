@@ -18,6 +18,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/rand"
 	"sort"
 
@@ -28,13 +29,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func NewPrimeContext(cfg *Config, db state.StateDB, block uint64, log logger.Logger) *PrimeContext {
+func NewPrimeContext(cfg *config.Config, db state.StateDB, block uint64, log logger.Logger) *PrimeContext {
 	return &PrimeContext{cfg: cfg, log: log, block: block, db: db, exist: make(map[common.Address]bool)}
 }
 
 // PrimeContext structure keeps context used over iterations of priming
 type PrimeContext struct {
-	cfg        *Config
+	cfg        *config.Config
 	log        logger.Logger
 	block      uint64
 	load       state.BulkLoad

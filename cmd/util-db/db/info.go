@@ -19,6 +19,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"strconv"
 	"strings"
 
@@ -113,7 +114,7 @@ var cmdPrintException = cli.Command{
 
 // printCountRun prints count of given db component in given AidaDb
 func printCountRun(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -136,7 +137,7 @@ func printCountRun(ctx *cli.Context) error {
 }
 
 // printCount prints count of given db component in given AidaDb
-func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
+func printCount(cfg *config.Config, base db.BaseDB, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
@@ -217,7 +218,7 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 // printRangeRun prints range of given db component in given AidaDb
 func printRangeRun(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -227,7 +228,7 @@ func printRangeRun(ctx *cli.Context) error {
 }
 
 // printRange prints range of given db component in given AidaDb
-func printRange(cfg *utils.Config, log logger.Logger) error {
+func printRange(cfg *config.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
@@ -246,7 +247,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
 
-		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
+		firstBlock, lastBlock, ok := utildb.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			log.Warning("No substate found")
 		} else {
@@ -316,7 +317,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 // printDeletedAccountInfo for given deleted account in AidaDb
 func printDeletedAccountInfo(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -350,7 +351,7 @@ func printDeletedAccountInfo(ctx *cli.Context) error {
 
 // printTableHash creates hash of substates, updatesets, deletion and state-hashes.
 func printTableHash(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -382,7 +383,7 @@ func printBlockHash(ctx *cli.Context) error {
 }
 
 func printHash(ctx *cli.Context, hashType string) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, argErr := config.NewConfig(ctx, config.OneToNArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -403,7 +404,7 @@ func printHash(ctx *cli.Context, hashType string) error {
 }
 
 // printHashForBlock prints state or block hash for given block number in AidaDb
-func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashType string) error {
+func printHashForBlock(cfg *config.Config, log logger.Logger, blockNum int, hashType string) error {
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err
@@ -437,7 +438,7 @@ func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashT
 }
 
 func printException(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, argErr := config.NewConfig(ctx, config.OneToNArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -456,7 +457,7 @@ func printException(ctx *cli.Context) error {
 	return printExceptionForBlock(cfg, log, blockNum)
 }
 
-func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint64) error {
+func printExceptionForBlock(cfg *config.Config, log logger.Logger, blockNum uint64) error {
 	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
@@ -476,7 +477,7 @@ func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint6
 func printPrefixHash(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "GeneratePrefixHash")
 
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 
 	database, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {

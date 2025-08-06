@@ -17,20 +17,20 @@
 package tracker
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 const rpcProgressTrackerReportFormat = "Track: request %d, interval_total_req_rate %.2f, interval_gas_rate %.2f, overall_total_req_rate %.2f, overall_gas_rate %.2f"
 
 // MakeRequestProgressTracker creates a blockProgressTracker that depends on the
 // PostBlock event and is only useful as part of a sequential evaluation.
-func MakeRequestProgressTracker(cfg *utils.Config, reportFrequency int) executor.Extension[*rpc.RequestAndResults] {
+func MakeRequestProgressTracker(cfg *config.Config, reportFrequency int) executor.Extension[*rpc.RequestAndResults] {
 	if !cfg.TrackProgress {
 		return extension.NilExtension[*rpc.RequestAndResults]{}
 	}
@@ -42,7 +42,7 @@ func MakeRequestProgressTracker(cfg *utils.Config, reportFrequency int) executor
 	return makeRequestProgressTracker(cfg, reportFrequency, logger.NewLogger(cfg.LogLevel, "ProgressTracker"))
 }
 
-func makeRequestProgressTracker(cfg *utils.Config, reportFrequency int, log logger.Logger) *requestProgressTracker {
+func makeRequestProgressTracker(cfg *config.Config, reportFrequency int, log logger.Logger) *requestProgressTracker {
 	return &requestProgressTracker{
 		progressTracker: newProgressTracker[*rpc.RequestAndResults](cfg, reportFrequency, log),
 	}

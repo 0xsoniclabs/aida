@@ -19,6 +19,7 @@ package stochastic
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"math/rand"
 	"time"
 
@@ -74,7 +75,7 @@ func find[T comparable](a []T, x T) int {
 }
 
 // createState creates a stochastic state and primes the StateDB
-func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) *stochasticState {
+func createState(cfg *config.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) *stochasticState {
 	// produce random access generators for contract addresses,
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
@@ -125,7 +126,7 @@ func getStochasticMatrix(e *EstimationModelJSON) ([]string, [][]float64, int) {
 // It requires the simulation model and simulation length. The trace-debug flag
 // enables/disables the printing of StateDB operations and their arguments on
 // the screen.
-func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
+func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, cfg *config.Config, log logger.Logger) error {
 	var (
 		opFrequency [NumOps]uint64 // operation frequency
 		numOps      uint64         // total number of operations

@@ -20,11 +20,11 @@ package executor
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"math/big"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
@@ -149,7 +149,7 @@ func TestSubstateProvider_IterationCanBeAbortedByConsumer(t *testing.T) {
 }
 
 func openSubstateDb(path string, t *testing.T) Provider[txcontext.TxContext] {
-	cfg := utils.Config{}
+	cfg := config.Config{}
 	cfg.AidaDb = path
 	cfg.Workers = 1
 	aidaDb, err := db.NewReadOnlyBaseDB(path)

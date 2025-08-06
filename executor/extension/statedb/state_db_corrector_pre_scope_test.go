@@ -18,12 +18,12 @@ package statedb
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	substatedb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
@@ -190,7 +190,7 @@ func TestStateDbCorrector_FixExceptionAt(t *testing.T) {
 			}
 
 			corrector := &stateDbCorrector{
-				cfg:              &utils.Config{},
+				cfg:              &config.Config{},
 				currentException: test.exception,
 			}
 			err := corrector.fixExceptionAt(db, test.scope, test.block, tx)
@@ -213,7 +213,7 @@ func TestStateDbCorrector_FixExceptionAtWithBeginTransactionError(t *testing.T) 
 	db.EXPECT().BeginTransaction(uint32(tx)).Return(errors.New("err")).Times(1)
 
 	corrector := &stateDbCorrector{
-		cfg:              &utils.Config{},
+		cfg:              &config.Config{},
 		currentException: targetException,
 	}
 	err := corrector.fixExceptionAt(db, preBlock, int(targetException.Block), tx)
@@ -241,7 +241,7 @@ func TestStateDbCorrector_FixExceptionAtWithEndTransactionError(t *testing.T) {
 	)
 
 	corrector := &stateDbCorrector{
-		cfg:              &utils.Config{},
+		cfg:              &config.Config{},
 		currentException: targetException,
 	}
 	err := corrector.fixExceptionAt(db, preBlock, int(targetException.Block), tx)
@@ -265,7 +265,7 @@ func TestStateDbCorrector_PreRun(t *testing.T) {
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
-			ext := MakeStateDbCorrector(&utils.Config{})
+			ext := MakeStateDbCorrector(&config.Config{})
 			if test.withAidaDb {
 				// Init directory for aida-db
 				aidaDbDir := t.TempDir() + "aida-db"
@@ -330,7 +330,7 @@ func TestStateDbCorrector_PreBlockSuccessful(t *testing.T) {
 	edb.EXPECT().GetException(uint64(1001)).Return(testExceptionBlock, nil).Times(1)
 
 	gomock.InOrder(
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil).Times(1),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)).Return(nil).Times(1),
 		db.EXPECT().Exist(common.Address{0x01}).Times(1),
 		db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
 		db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),
@@ -401,7 +401,7 @@ func TestStateDbCorrector_PreBlockFailsFixException(t *testing.T) {
 	edb.EXPECT().GetException(uint64(1001)).Return(testExceptionBlock, nil).Times(1)
 
 	gomock.InOrder(
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(errors.New("err")).Times(1),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)).Return(errors.New("err")).Times(1),
 	)
 
 	ctx := &executor.Context{AidaDb: aidaDb, State: db}
@@ -476,7 +476,7 @@ func TestStateDbCorrector_PostBlockProcessesException(t *testing.T) {
 	}
 
 	gomock.InOrder(
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil).Times(1),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)).Return(nil).Times(1),
 		db.EXPECT().Exist(common.Address{0x01}).Times(1),
 		db.EXPECT().CreateAccount(common.Address{0x01}).Times(1),
 		db.EXPECT().GetBalance(common.Address{0x01}).Return(uint256.NewInt(100)).Times(1),

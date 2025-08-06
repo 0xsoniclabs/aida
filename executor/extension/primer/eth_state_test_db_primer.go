@@ -17,6 +17,7 @@
 package primer
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -24,11 +25,11 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeEthStateTestDbPrimer(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthStateTestDbPrimer(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return makeEthStateTestDbPrimer(logger.NewLogger(cfg.LogLevel, "EthStatePrimer"), cfg)
 }
 
-func makeEthStateTestDbPrimer(log logger.Logger, cfg *utils.Config) *ethStateTestDbPrimer {
+func makeEthStateTestDbPrimer(log logger.Logger, cfg *config.Config) *ethStateTestDbPrimer {
 	return &ethStateTestDbPrimer{
 		cfg: cfg,
 		log: log,
@@ -37,7 +38,7 @@ func makeEthStateTestDbPrimer(log logger.Logger, cfg *utils.Config) *ethStateTes
 
 type ethStateTestDbPrimer struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 

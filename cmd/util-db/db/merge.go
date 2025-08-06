@@ -18,6 +18,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
@@ -48,7 +49,7 @@ Creates target aida-db by merging source databases from arguments:
 
 // merge two or more Dbs together
 func merge(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, err := config.NewConfig(ctx, config.OneToNArgs)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func merge(ctx *cli.Context) error {
 
 	var (
 		dbs []db.BaseDB
-		md  *utils.AidaDbMetadata
+		md  *utildb.AidaDbMetadata
 	)
 
 	if !cfg.SkipMetadata {
@@ -78,7 +79,7 @@ func merge(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		md, err = utils.ProcessMergeMetadata(cfg, targetDb, dbs, sourcePaths)
+		md, err = utildb.ProcessMergeMetadata(cfg, targetDb, dbs, sourcePaths)
 		if err != nil {
 			return err
 		}

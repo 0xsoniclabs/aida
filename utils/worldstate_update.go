@@ -19,6 +19,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/db"
@@ -27,7 +28,7 @@ import (
 )
 
 // GenerateUpdateSet generates an update set for a block range.
-func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB) (substate.WorldState, []substatetypes.Address, error) {
+func GenerateUpdateSet(first uint64, last uint64, cfg *config.Config, aidaDb db.BaseDB) (substate.WorldState, []substatetypes.Address, error) {
 	var (
 		deletedAccountDB *db.DestroyedAccountDB
 		deletedAccounts  []substatetypes.Address
@@ -74,7 +75,7 @@ func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB)
 
 // GenerateWorldStateFromUpdateDB generates an initial world-state
 // from pre-computed update-set
-func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (ws substate.WorldState, err error) {
+func GenerateWorldStateFromUpdateDB(cfg *config.Config, target uint64) (ws substate.WorldState, err error) {
 	ws = make(substate.WorldState)
 	block := uint64(0)
 	// load pre-computed update-set from update-set db

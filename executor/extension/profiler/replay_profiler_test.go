@@ -1,19 +1,19 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/profile"
 	"github.com/0xsoniclabs/aida/tracer/context"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestReplayProfiler_MakeReplayProfiler(t *testing.T) {
 	// case profile true
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		Profile: true,
 	}
 	ext := MakeReplayProfiler[int](cfg, nil)
@@ -21,7 +21,7 @@ func TestReplayProfiler_MakeReplayProfiler(t *testing.T) {
 	assert.True(t, ok)
 
 	// case profile false
-	cfg = &utils.Config{
+	cfg = &config.Config{
 		Profile: false,
 	}
 	ext = MakeReplayProfiler[int](cfg, nil)
@@ -30,7 +30,7 @@ func TestReplayProfiler_MakeReplayProfiler(t *testing.T) {
 }
 
 func TestReplayProfiler_PostRun(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		Profile: true,
 		First:   0,
 		Last:    100,

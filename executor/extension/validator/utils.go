@@ -19,12 +19,12 @@ package validator
 import (
 	"bytes"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"slices"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -35,12 +35,12 @@ import (
 // validateWorldState compares states of accounts in stateDB to an expected set of states.
 // If fullState mode, check if expected state is contained in stateDB.
 // If partialState mode, check for equality of sets.
-func validateWorldState(cfg *utils.Config, db state.VmStateDB, expectedAlloc txcontext.WorldState, log logger.Logger) error {
+func validateWorldState(cfg *config.Config, db state.VmStateDB, expectedAlloc txcontext.WorldState, log logger.Logger) error {
 	var err error
 	switch cfg.StateValidationMode {
-	case utils.SubsetCheck:
+	case config.SubsetCheck:
 		err = doSubsetValidation(expectedAlloc, db)
-	case utils.EqualityCheck:
+	case config.EqualityCheck:
 		vmAlloc := db.GetSubstatePostAlloc()
 		isEqual := expectedAlloc.Equal(vmAlloc)
 		if !isEqual {
@@ -246,7 +246,7 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 		if err != nil {
 			return fmt.Errorf("cannot end transaction: %w", err)
 		}
-		err = db.BeginTransaction(utils.PseudoTx) // the transaction number is ignored
+		err = db.BeginTransaction(config.PseudoTx) // the transaction number is ignored
 		if err != nil {
 			return fmt.Errorf("cannot end transaction: %w", err)
 		}

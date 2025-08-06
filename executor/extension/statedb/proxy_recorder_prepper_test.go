@@ -17,19 +17,19 @@
 package statedb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func TestTemporaryProxyRecorderPrepper_PreTransactionCreatesRecorderProxy(t *testing.T) {
 	path := t.TempDir() + "test_trace"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 
@@ -61,7 +61,7 @@ func TestTemporaryProxyRecorderPrepper_PreTransactionCreatesRecorderProxy(t *tes
 
 func TestProxyRecorderPrepper_PreBlockWritesABeginBlockOperation(t *testing.T) {
 	path := t.TempDir() + "test_trace"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 
@@ -100,7 +100,7 @@ func TestProxyRecorderPrepper_PreBlockWritesABeginBlockOperation(t *testing.T) {
 
 func TestProxyRecorderPrepper_PostBlockWritesAnEndBlockOperation(t *testing.T) {
 	path := t.TempDir() + "test_trace"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 
@@ -139,7 +139,7 @@ func TestProxyRecorderPrepper_PostBlockWritesAnEndBlockOperation(t *testing.T) {
 
 func TestProxyRecorderPrepper_PostRunWritesAnEndSynchPeriodOperation(t *testing.T) {
 	path := t.TempDir() + "test_trace"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 
@@ -173,7 +173,7 @@ func TestProxyRecorderPrepper_PreTransactionCreatesNewLoggerProxy(t *testing.T) 
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.LogLevel = "critical"
 
 	ctx := new(executor.Context)
@@ -196,7 +196,7 @@ func TestProxyRecorderPrepper_PreTransactionDoesNotCreateNewLoggerProxy(t *testi
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TraceFile = t.TempDir() + "test_trace"
 	cfg.LogLevel = "critical"
 	cfg.SyncPeriodLength = 1

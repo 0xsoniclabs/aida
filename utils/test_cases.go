@@ -18,6 +18,8 @@ package utils
 
 import (
 	crytporand "crypto/rand"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -88,8 +90,8 @@ func MakeAccountStorage(t *testing.T) map[common.Hash]common.Hash {
 }
 
 // MakeTestConfig creates a config struct for testing
-func MakeTestConfig(testCase StateDbTestCase) *Config {
-	cfg := &Config{
+func MakeTestConfig(testCase StateDbTestCase) *config.Config {
+	cfg := &config.Config{
 		DbLogging:      "",
 		DbImpl:         testCase.Variant,
 		DbVariant:      "",
@@ -98,7 +100,7 @@ func MakeTestConfig(testCase StateDbTestCase) *Config {
 		ArchiveVariant: testCase.ArchiveVariant,
 		ArchiveMode:    testCase.archiveMode,
 		PrimeRandom:    testCase.primeRandom,
-		ChainID:        MainnetChainID,
+		ChainID:        chainid.MainnetChainID,
 	}
 
 	if testCase.Variant == "flat" {

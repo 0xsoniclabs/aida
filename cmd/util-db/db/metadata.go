@@ -20,6 +20,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/utildb"
@@ -49,7 +51,7 @@ var cmdPrintMetadata = cli.Command{
 }
 
 func printMetadata(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -68,7 +70,7 @@ var cmdGenerateMetadata = cli.Command{
 }
 
 func generateMetadata(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -80,12 +82,12 @@ func generateMetadata(ctx *cli.Context) error {
 
 	defer base.Close()
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-	fb, lb, ok := utils.FindBlockRangeInSubstate(sdb)
+	fb, lb, ok := utildb.FindBlockRangeInSubstate(sdb)
 	if !ok {
 		return errors.New("cannot find block range in substate")
 	}
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := utildb.NewAidaDbMetadata(base, "INFO")
 	md.FirstBlock = fb
 	md.LastBlock = lb
 	if err = md.SetFreshMetadata(cfg.ChainID); err != nil {
@@ -135,10 +137,10 @@ func insertMetadata(ctx *cli.Context) error {
 
 	defer base.Close()
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := utildb.NewAidaDbMetadata(base, "INFO")
 
 	switch db.MetadataPrefix + keyArg {
-	case utils.FirstBlockPrefix:
+	case utildb.FirstBlockPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -146,7 +148,7 @@ func insertMetadata(ctx *cli.Context) error {
 		if err = md.SetFirstBlock(val); err != nil {
 			return err
 		}
-	case utils.LastBlockPrefix:
+	case utildb.LastBlockPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -154,7 +156,7 @@ func insertMetadata(ctx *cli.Context) error {
 		if err = md.SetLastBlock(val); err != nil {
 			return err
 		}
-	case utils.FirstEpochPrefix:
+	case utildb.FirstEpochPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -162,7 +164,7 @@ func insertMetadata(ctx *cli.Context) error {
 		if err = md.SetFirstEpoch(val); err != nil {
 			return err
 		}
-	case utils.LastEpochPrefix:
+	case utildb.LastEpochPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -170,27 +172,27 @@ func insertMetadata(ctx *cli.Context) error {
 		if err = md.SetLastEpoch(val); err != nil {
 			return err
 		}
-	case utils.TypePrefix:
+	case utildb.TypePrefix:
 		num64, err := strconv.ParseUint(valArg, 10, 8)
 		if err != nil {
 			return err
 		}
-		if err = md.SetDbType(utils.AidaDbType(uint8(num64))); err != nil {
+		if err = md.SetDbType(utildb.AidaDbType(uint8(num64))); err != nil {
 			return err
 		}
-	case utils.ChainIDPrefix:
+	case utildb.ChainIDPrefix:
 		val, err := strconv.ParseInt(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
 		}
-		if err = md.SetChainID(utils.ChainID(val)); err != nil {
+		if err = md.SetChainID(chainid.ChainID(val)); err != nil {
 			return err
 		}
-	case utils.TimestampPrefix:
+	case utildb.TimestampPrefix:
 		if err = md.SetTimestamp(); err != nil {
 			return err
 		}
-	case utils.DbHashPrefix:
+	case utildb.DbHashPrefix:
 		hash, err := hex.DecodeString(valArg)
 		if err != nil {
 			return fmt.Errorf("cannot decode db-hash string into []byte; %v", err)
@@ -246,7 +248,7 @@ func removeMetadata(ctx *cli.Context) error {
 	}
 
 	defer base.Close()
-	md := utils.NewAidaDbMetadata(base, "DEBUG")
+	md := utildb.NewAidaDbMetadata(base, "DEBUG")
 	md.DeleteMetadata()
 
 	return nil

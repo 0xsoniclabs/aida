@@ -17,6 +17,7 @@
 package stochastic
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/utils"
@@ -44,7 +45,7 @@ var StochasticGenerateCommand = cli.Command{
 
 // stochasticGenerateAction produces an event file with uniform parameters.
 func stochasticGenerateAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}

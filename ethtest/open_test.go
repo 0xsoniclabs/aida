@@ -2,10 +2,10 @@ package ethtest
 
 import (
 	"encoding/json"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,10 +30,10 @@ func createConfigFile(t *testing.T, path string) {
 func TestEthTest_getTestWithinPath(t *testing.T) {
 	tmp := t.TempDir()
 	t.Run("no file", func(t *testing.T) {
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ArgPath: tmp + "/testdata",
 		}
-		tests, err := getTestsWithinPath[*stJSON](cfg, utils.StateTests)
+		tests, err := getTestsWithinPath[*stJSON](cfg, config.StateTests)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "no such file or directory")
 		assert.Empty(t, tests)
@@ -42,10 +42,10 @@ func TestEthTest_getTestWithinPath(t *testing.T) {
 	t.Run("with json config file", func(t *testing.T) {
 		filePath := tmp + "/testdata.json"
 		createConfigFile(t, filePath)
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ArgPath: filePath,
 		}
-		tests, err := getTestsWithinPath[*stJSON](cfg, utils.StateTests)
+		tests, err := getTestsWithinPath[*stJSON](cfg, config.StateTests)
 		assert.NoError(t, err)
 		assert.Len(t, tests,
 			1)
@@ -65,10 +65,10 @@ func TestEthTest_getTestWithinPath(t *testing.T) {
 			t.Fatalf("failed to create directory: %v", err)
 		}
 		createConfigFile(t, tmp+"/GeneralStateTests/testdata.json")
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ArgPath: tmp,
 		}
-		tests, err := getTestsWithinPath[*stJSON](cfg, utils.StateTests)
+		tests, err := getTestsWithinPath[*stJSON](cfg, config.StateTests)
 		assert.NoError(t, err)
 		assert.Len(t, tests, 1)
 	})
@@ -76,10 +76,10 @@ func TestEthTest_getTestWithinPath(t *testing.T) {
 	t.Run("with block test", func(t *testing.T) {
 		// create dir name testdata
 		createConfigFile(t, tmp+"/GeneralStateTests/testdata.json")
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ArgPath: tmp,
 		}
-		tests, err := getTestsWithinPath[*stJSON](cfg, utils.BlockTests)
+		tests, err := getTestsWithinPath[*stJSON](cfg, config.BlockTests)
 		assert.Error(t, err)
 		assert.Nil(t, tests)
 	})
@@ -87,10 +87,10 @@ func TestEthTest_getTestWithinPath(t *testing.T) {
 	t.Run("with other test", func(t *testing.T) {
 		// create dir name testdata
 		createConfigFile(t, tmp+"/GeneralStateTests/testdata.json")
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ArgPath: tmp,
 		}
-		tests, err := getTestsWithinPath[*stJSON](cfg, utils.PseudoTx)
+		tests, err := getTestsWithinPath[*stJSON](cfg, config.PseudoTx)
 		assert.Error(t, err)
 		assert.Nil(t, tests)
 	})

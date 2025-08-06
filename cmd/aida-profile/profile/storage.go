@@ -18,6 +18,7 @@ package profile
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
@@ -126,7 +127,7 @@ func getStorageUpdateSizeTask(block uint64, tx int, st *substate.Substate, taskP
 func getStorageUpdateSizeAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

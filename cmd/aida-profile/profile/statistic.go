@@ -18,10 +18,10 @@ package profile
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"sort"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/urfave/cli/v2"
@@ -121,7 +121,7 @@ func getReferenceStatsAction[T comparable](ctx *cli.Context, cli_command string,
 func getReferenceStatsActionWithConsumer[T comparable](ctx *cli.Context, cli_command string, extract Extractor[T], consume AccessStatisticsConsumer[T]) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

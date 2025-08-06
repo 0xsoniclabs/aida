@@ -18,6 +18,8 @@ package executor
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
@@ -85,8 +87,8 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 
 	for name, check := range tests {
 		t.Run(name, func(t *testing.T) {
-			cfg := &utils.Config{
-				ChainID: utils.MainnetChainID,
+			cfg := &config.Config{
+				ChainID: chainid.MainnetChainID,
 				EvmImpl: name,
 				VmImpl:  "geth",
 			}
@@ -101,8 +103,8 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 }
 
 func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
-	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+	cfg := &config.Config{
+		ChainID: chainid.MainnetChainID,
 		EvmImpl: "tosca",
 		VmImpl:  "invalid",
 	}
@@ -112,8 +114,8 @@ func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
 }
 
 func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
-	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+	cfg := &config.Config{
+		ChainID: chainid.MainnetChainID,
 		EvmImpl: "invalid",
 		VmImpl:  "lfvm",
 	}
@@ -123,7 +125,7 @@ func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
 }
 
 func TestEthTestProcessor_DoesNotExecuteTransactionWhenBlobGasCouldExceed(t *testing.T) {
-	p, err := MakeEthTestProcessor(&utils.Config{})
+	p, err := MakeEthTestProcessor(&config.Config{})
 	if err != nil {
 		t.Fatalf("cannot make eth test processor: %v", err)
 	}
@@ -163,7 +165,7 @@ func TestEthTestProcessor_DoesNotExecuteTransactionWithInvalidTxBytes(t *testing
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p, err := MakeEthTestProcessor(&utils.Config{ChainID: utils.EthTestsChainID})
+			p, err := MakeEthTestProcessor(&config.Config{ChainID: chainid.EthTestsChainID})
 			if err != nil {
 				t.Fatalf("cannot make eth test processor: %v", err)
 			}

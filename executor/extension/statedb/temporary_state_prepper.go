@@ -18,18 +18,18 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	statedb "github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeTemporaryStatePrepper creates an executor.Extension which Makes a fresh StateDb
 // after each txcontext. Default is offTheChainStateDb.
 // NOTE: inMemoryStateDb currently does not work for block 67m onwards.
-func MakeTemporaryStatePrepper(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeTemporaryStatePrepper(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	switch cfg.DbImpl {
 	case "in-memory", "memory":
 		return &temporaryInMemoryStatePrepper{}
@@ -57,7 +57,7 @@ func (p *temporaryInMemoryStatePrepper) PreTransaction(state executor.State[txco
 // StateDB instance before each transaction execution.
 type temporaryOffTheChainStatePrepper struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg          *utils.Config
+	cfg          *config.Config
 	chainConduit *statedb.ChainConduit
 }
 
@@ -66,7 +66,7 @@ func (p *temporaryOffTheChainStatePrepper) PreRun(executor.State[txcontext.TxCon
 	if err != nil {
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
-	p.chainConduit = statedb.NewChainConduit(utils.IsEthereumNetwork(p.cfg.ChainID), chainCfg)
+	p.chainConduit = statedb.NewChainConduit(config.IsEthereumNetwork(p.cfg.ChainID), chainCfg)
 	return nil
 }
 

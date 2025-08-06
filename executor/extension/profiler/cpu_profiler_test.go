@@ -19,17 +19,17 @@ package profiler
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestCpuExtension_CollectsProfileDataIfEnabled(t *testing.T) {
 	path := t.TempDir() + "/profile.dat"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.CPUProfile = path
 	ext := MakeCpuProfiler[any](cfg)
 
@@ -45,7 +45,7 @@ func TestCpuExtension_CollectsProfileDataIfEnabled(t *testing.T) {
 
 func TestCpuExtension_CollectsIntervalProfileDataIfEnabled(t *testing.T) {
 	path := t.TempDir() + "/profile.dat"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.CPUProfile = path
 	cfg.CPUProfilePerInterval = true
 	ext := MakeCpuProfiler[any](cfg)
@@ -71,7 +71,7 @@ func TestCpuExtension_CollectsIntervalProfileDataIfEnabled(t *testing.T) {
 }
 
 func TestCpuExtension_NpProfileIsCollectedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeCpuProfiler[any](cfg)
 
 	if _, ok := ext.(extension.NilExtension[any]); !ok {

@@ -17,6 +17,7 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -117,7 +118,7 @@ const (
 )
 
 // MakeOperationProfiler creates a executor.Extension that records Operation profiling
-func MakeOperationProfiler[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeOperationProfiler[T any](cfg *config.Config) executor.Extension[T] {
 
 	if !cfg.Profile {
 		return extension.NilExtension[T]{}
@@ -171,7 +172,7 @@ type operationProfiler[T any] struct {
 	extension.NilExtension[T]
 
 	// configuration
-	cfg   *utils.Config
+	cfg   *config.Config
 	depth ProfileDepth
 
 	// analytics/printing

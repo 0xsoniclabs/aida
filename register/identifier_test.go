@@ -17,14 +17,13 @@
 package register
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 	"time"
-
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestIdentity_SameIdIfSameRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5
@@ -50,13 +49,13 @@ func TestIdentity_SameIdIfSameRun(t *testing.T) {
 }
 
 func TestIdentity_DiffIdIfDiffRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5
 	cfg.VmImpl = "lfvm"
 
-	cfg2 := &utils.Config{}
+	cfg2 := &config.Config{}
 	cfg2.DbImpl = "carmen"
 	cfg2.DbVariant = "go-file"
 	cfg2.CarmenSchema = 3
@@ -86,7 +85,7 @@ func TestIdentity_DiffIdIfDiffRun(t *testing.T) {
 }
 
 func TestIdentity_OverwriteRunIdWorks(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5

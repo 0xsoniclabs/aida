@@ -17,10 +17,10 @@
 package executor
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
@@ -30,7 +30,7 @@ func TestNormaTxProvider_Run(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dbMock := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		BlockLength:     uint64(3),
 		TxGeneratorType: []string{"counter"},
 		ChainID:         297,
@@ -97,7 +97,7 @@ func TestNormaTxProvider_RunAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dbMock := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		BlockLength:     uint64(5),
 		TxGeneratorType: []string{"erc20", "counter", "store"},
 		ChainID:         297,

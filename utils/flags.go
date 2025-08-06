@@ -69,10 +69,6 @@ var (
 		Usage: "select the DB schema used by Carmen's current state DB",
 		Value: 5,
 	}
-	ChainIDFlag = cli.IntFlag{
-		Name:  "chainid",
-		Usage: "ChainID for replayer",
-	}
 	CacheFlag = cli.IntFlag{
 		Name:  "cache",
 		Usage: "Cache limit for StateDb or Priming",

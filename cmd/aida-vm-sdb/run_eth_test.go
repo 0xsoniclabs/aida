@@ -20,6 +20,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/config/chainid"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"strings"
@@ -42,7 +44,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, false, "Cancun")
+	cfg := config.NewTestConfig(t, chainid.EthTestsChainID, 2, 4, false, "Cancun")
 	cfg.ContinueOnFailure = true
 
 	data := ethtest.CreateTestTransaction(t)
@@ -106,7 +108,7 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, false, "Cancun")
+	cfg := config.NewTestConfig(t, chainid.EthTestsChainID, 2, 4, false, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	// Simulate the execution of 4 transactions
@@ -120,7 +122,7 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 			// Tx 3
 			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 3, Data: data})
 			// Tx 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: utils.PseudoTx, Data: data})
+			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: config.PseudoTx, Data: data})
 			return nil
 		})
 
@@ -165,10 +167,10 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		db.EXPECT().BeginBlock(uint64(5)),
 		db.EXPECT().BeginTransaction(uint32(3)),
 		ext.EXPECT().PreBlock(executor.AtTransaction[txcontext.TxContext](5, 3), gomock.Any()),
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostBlock(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](5), gomock.Any(), nil),
@@ -184,7 +186,7 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, true, "Cancun")
+	cfg := config.NewTestConfig(t, chainid.EthTestsChainID, 2, 4, true, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	provider.EXPECT().
@@ -245,7 +247,7 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, true, "Cancun")
+	cfg := config.NewTestConfig(t, chainid.EthTestsChainID, 2, 4, true, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	provider.EXPECT().
@@ -293,7 +295,7 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 
 func TestVmSdb_EthTest_FailsWhenChainIDIsNotSet(t *testing.T) {
 	flagSet := flag.NewFlagSet("utils_config_test", 0)
-	flagSet.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "Chain ID.")
+	flagSet.Int(utils.ChainIDFlag.Name, int(chainid.SonicMainnetChainID), "Chain ID.")
 	err := flagSet.Parse([]string{t.TempDir()})
 	require.NoError(t, err)
 

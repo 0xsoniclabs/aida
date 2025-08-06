@@ -18,6 +18,7 @@ package tracker
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/config"
 	"os"
 	"regexp"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"go.uber.org/mock/gomock"
 )
@@ -37,7 +37,7 @@ import (
 const testStateDbInfoFrequency = 2
 
 func TestSubstateProgressTrackerExtension_NoLoggerIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.TrackProgress = false
 	ext := MakeBlockProgressTracker(cfg, testStateDbInfoFrequency)
 	if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
@@ -51,7 +51,7 @@ func TestSubstateProgressTrackerExtension_LoggingHappens(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 4
 	dummyStateDbPath := t.TempDir()
 
@@ -127,7 +127,7 @@ func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 4
 
 	ext := makeBlockProgressTracker(cfg, testStateDbInfoFrequency, log)

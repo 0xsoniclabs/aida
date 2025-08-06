@@ -17,16 +17,16 @@
 package executor
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func TestOperationProvider_OpeningANonExistingTraceFilesResultsInAnError(t *testing.T) {
-	cfg := utils.Config{}
+	cfg := config.Config{}
 	cfg.TraceFile = t.TempDir()
 
 	_, err := OpenOperations(&cfg)
@@ -39,7 +39,7 @@ func TestOperationProvider_OperationsAreUnitedCorrectly(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	consumer := NewMockOperationConsumer(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 1
 	cfg.Last = 3
 
@@ -86,7 +86,7 @@ func TestOperationProvider_BeginBlockSetsBlockNumber(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	consumer := NewMockOperationConsumer(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 0
 	cfg.Last = 99
 
@@ -121,7 +121,7 @@ func TestOperationProvider_BeginTransactionSetsTransactionNumber(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	consumer := NewMockOperationConsumer(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 0
 	cfg.Last = 99
 
