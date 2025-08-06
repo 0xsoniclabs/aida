@@ -1,34 +1,18 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
-package utildb
+package clone
 
 import (
 	"errors"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/syndtr/goleveldb/leveldb"
+	"os"
+	"time"
 )
 
 const cloneWriteChanSize = 1
@@ -51,44 +35,10 @@ type rawEntry struct {
 	Value []byte
 }
 
-// CreatePatchClone creates aida-db patch
-func CreatePatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
-	var isFirstGenerationFromGenesis = false
-
-	var cloneType = utils.PatchType
-
-	// if the patch is first, we need to make some exceptions hence cloner needs to know
-	if isNewOpera {
-		if firstEpoch == 5577 && cfg.ChainID == utils.MainnetChainID {
-			isFirstGenerationFromGenesis = true
-		} else if firstEpoch == 2458 && cfg.ChainID == utils.TestnetChainID {
-			isFirstGenerationFromGenesis = true
-		}
-	}
-
-	err := Clone(cfg, aidaDb, targetDb, cloneType, isFirstGenerationFromGenesis)
-	if err != nil {
-		return err
-	}
-
-	md := utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
-	err = md.SetFirstEpoch(firstEpoch)
-	if err != nil {
-		return err
-	}
-
-	err = md.SetLastEpoch(lastEpoch)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func Clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
+// clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
+func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
 	var err error
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb Clone")
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb clone")
 
 	var dbComponent dbcomponent.DbComponent
 
@@ -120,7 +70,7 @@ func Clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbT
 	return nil
 }
 
-// createDbClone AidaDb in given block range
+// cloneDbAction AidaDb in given block range
 func (c *cloner) clone(isFirstGenerationFromGenesis bool) error {
 	go c.write()
 
@@ -210,7 +160,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 	return nil
 }
 
-// write data read from func read() into new createDbClone
+// write data read from func read() into new cloneDbAction
 func (c *cloner) write() {
 	defer close(c.errCh)
 
@@ -231,7 +181,7 @@ func (c *cloner) write() {
 				if batchWriter.ValueSize() > 0 {
 					err = batchWriter.Write()
 					if err != nil {
-						c.errCh <- fmt.Errorf("cannot read rest of the data into createDbClone; %v", err)
+						c.errCh <- fmt.Errorf("cannot read rest of the data into cloneDbAction; %v", err)
 						return
 					}
 				}
@@ -240,7 +190,7 @@ func (c *cloner) write() {
 
 			err = batchWriter.Put(data.Key, data.Value)
 			if err != nil {
-				c.errCh <- fmt.Errorf("cannot put data into createDbClone %v", err)
+				c.errCh <- fmt.Errorf("cannot put data into cloneDbAction %v", err)
 				return
 			}
 
@@ -451,7 +401,7 @@ func (c *cloner) readDeletions(firstDeletionBlock uint64) {
 
 // validateDbSize compares size of database and expectedWritten
 func (c *cloner) validateDbSize() error {
-	actualWritten := GetDbSize(c.cloneDb)
+	actualWritten := utildb.GetDbSize(c.cloneDb)
 	if actualWritten != c.count {
 		return fmt.Errorf("TargetDb has %v records; expected: %v", actualWritten, c.count)
 	}
@@ -519,8 +469,8 @@ func (c *cloner) readDataCustom() error {
 	return nil
 }
 
-// OpenCloningDbs prepares aida and target databases
-func OpenCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, error) {
+// openCloningDbs prepares aida and target databases
+func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, error) {
 	var err error
 
 	// if source db doesn't exist raise error
@@ -543,7 +493,7 @@ func OpenCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
 	}
 
-	// open createDbClone
+	// open cloneDbAction
 	cloneDb, err = db.NewDefaultBaseDB(targetDbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("targetDb %v; %v", targetDbPath, err)

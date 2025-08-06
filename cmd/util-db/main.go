@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"log"
 	"os"
 
@@ -33,7 +34,7 @@ var UtilDbApp = cli.App{
 	Usage:     "merge source data into profiling database",
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
-		&db.CloneCommand,
+		&clone.Command,
 		&db.CompactCommand,
 		&db.ExtractEthereumGenesisCommand,
 		&db.MergeCommand,
