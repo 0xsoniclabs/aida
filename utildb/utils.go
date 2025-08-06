@@ -22,13 +22,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
+	"strconv"
+	"testing"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 )
 
 // OpenSourceDatabases opens all databases required for merge
@@ -207,4 +215,105 @@ func printDbType(m *utils.AidaDbMetadata) error {
 	logger.NewLogger("INFO", "Print-Metadata").Noticef("DB-Type: %v", typePrint)
 
 	return nil
+}
+
+func GenerateTestAidaDb(t *testing.T) db.BaseDB {
+	tmpDir := t.TempDir() + "/testAidaDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+	md := utils.NewAidaDbMetadata(database, "ERROR")
+	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
+	assert.NoError(t, err)
+
+	// write substates to the database
+	substateDb := db.MakeDefaultSubstateDBFromBaseDB(database)
+	state := substate.Substate{
+		Block:       10,
+		Transaction: 7,
+		Env: &substate.Env{
+			Number:     11,
+			Difficulty: big.NewInt(1),
+			GasLimit:   uint64(15),
+		},
+		Message: &substate.Message{
+			Value:    big.NewInt(12),
+			GasPrice: big.NewInt(14),
+		},
+		InputSubstate:  substate.WorldState{},
+		OutputSubstate: substate.WorldState{},
+		Result:         &substate.Result{},
+	}
+
+	for i := 0; i < 10; i++ {
+		state.Block = uint64(10 + i)
+		err = substateDb.PutSubstate(&state)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	udb := db.MakeDefaultUpdateDBFromBaseDB(database)
+	// write update sets to the database
+	for i := 1; i <= 10; i++ {
+		updateSet := &updateset.UpdateSet{
+			WorldState: substate.WorldState{
+				types.Address{1}: &substate.Account{
+					Nonce:   1,
+					Balance: new(uint256.Int).SetUint64(1),
+					Code:    []byte{0x01, 0x02},
+				},
+			},
+			Block: uint64(i),
+		}
+		err = udb.PutUpdateSet(updateSet, []types.Address{})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write delete accounts to the database
+	for i := 1; i <= 10; i++ {
+		err = database.Put(db.EncodeDestroyedAccountKey(uint64(i), i), []byte("0x1234567812345678123456781234567812345678123456781234567812345678"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write state hashes to the database
+	for i := 11; i <= 20; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveStateRoot(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write block hashes to the database
+	for i := 21; i <= 30; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// write exceptions to the database
+	for i := 31; i <= 40; i++ {
+		exception := &substate.Exception{
+			Block: uint64(i),
+			Data: substate.ExceptionBlock{
+				PreBlock:  &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100)}},
+				PostBlock: &substate.WorldState{types.Address{0x02}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(200)}},
+			},
+		}
+		eDb := db.MakeDefaultExceptionDBFromBaseDB(database)
+		err = eDb.PutException(exception)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return database
 }
