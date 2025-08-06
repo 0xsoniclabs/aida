@@ -60,7 +60,7 @@ func TestTemporaryProxyRecorderPrepper_PostTransaction_ChecksForErrors(t *testin
 
 func TestTemporaryProxyRecorderPrepper_PostRun_ClosesCtx(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	argCtx := tracer.NewMockArgumentContext(ctrl)
+	argCtx := tracer.NewMockContext(ctrl)
 	argCtx.EXPECT().Close()
 	cfg := &utils.Config{
 		TraceFile: t.TempDir() + "test_trace",

@@ -19,7 +19,7 @@ import (
 func TestTracerProxy_PrepareSubstate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)
-	ctx := tracer.NewMockArgumentContext(ctrl)
+	ctx := tracer.NewMockContext(ctrl)
 	proxy := NewTracerProxy(base, ctx)
 	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		{0x1}: txcontext.NewAccount(
@@ -45,7 +45,7 @@ func TestTracerProxy_PrepareSubstate(t *testing.T) {
 func TestTracerProxy_Prepare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)
-	ctx := tracer.NewMockArgumentContext(ctrl)
+	ctx := tracer.NewMockContext(ctrl)
 	proxy := NewTracerProxy(base, ctx)
 	rules := params.Rules{
 		ChainID:    big.NewInt(146),
@@ -102,7 +102,7 @@ func TestTracerProxy_Prepare(t *testing.T) {
 func TestTracerProxy_AddLog(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)
-	ctx := tracer.NewMockArgumentContext(ctrl)
+	ctx := tracer.NewMockContext(ctrl)
 	proxy := NewTracerProxy(base, ctx)
 	log := types.Log{
 		Address:        common.Address{0x1},

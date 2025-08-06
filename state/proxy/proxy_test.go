@@ -47,7 +47,7 @@ func TestProxies_AllCalls(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)
-	traceCtx := tracer.NewMockArgumentContext(ctrl)
+	traceCtx := tracer.NewMockContext(ctrl)
 	proxies := getAllProxyImpls(t, base, traceCtx)
 	addr := common.Address{0x11}
 	hash := common.Hash{0x12}
