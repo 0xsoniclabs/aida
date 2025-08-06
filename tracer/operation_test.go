@@ -17,9 +17,10 @@
 package tracer
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // TestOperationDecoding checks whether number encoding/decoding of operations with their arguments works.

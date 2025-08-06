@@ -19,6 +19,7 @@ package tracer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -285,7 +286,7 @@ var argId = map[byte]uint8{
 
 // OpMnemo returns the mnemonic code for an operation.
 func OpMnemo(op uint8) string {
-	if op < 0 || op >= NumOps {
+	if op >= NumOps {
 		panic("opcode is out of range")
 	}
 	return opMnemo[op]
@@ -293,16 +294,16 @@ func OpMnemo(op uint8) string {
 
 // checkArgOp checks whether op/argument combination is valid.
 func checkArgOp(op uint8, contract uint8, key uint8, value uint8) bool {
-	if op < 0 || op >= NumOps {
+	if op >= NumOps {
 		return false
 	}
-	if contract < 0 || contract >= NumClasses {
+	if contract >= NumClasses {
 		return false
 	}
-	if key < 0 || key >= NumClasses {
+	if key >= NumClasses {
 		return false
 	}
-	if value < 0 || value >= NumClasses {
+	if value >= NumClasses {
 		return false
 	}
 	switch opNumArgs[op] {
@@ -338,7 +339,7 @@ func EncodeArgOp(op uint8, addr uint8, key uint8, value uint8) (uint16, error) {
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
 func DecodeArgOp(argop uint16) (uint8, uint8, uint8, uint8, error) {
-	if argop < 0 || argop >= numArgOps {
+	if argop >= numArgOps {
 		return 0, 0, 0, 0, errors.New("DecodeArgOp: invalid op range")
 	}
 
