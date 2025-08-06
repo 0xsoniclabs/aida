@@ -39,7 +39,7 @@ const testStateDbInfoFrequency = 2
 func TestSubstateProgressTrackerExtension_NoLoggerIsCreatedIfDisabled(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.TrackProgress = false
-	ext := MakeBlockProgressTracker(cfg, testStateDbInfoFrequency)
+	ext := MakeBlockProgressTracker[txcontext.TxContext](cfg, testStateDbInfoFrequency)
 	if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
 		t.Errorf("Logger is enabled although not set in configuration")
 	}
@@ -59,7 +59,7 @@ func TestSubstateProgressTrackerExtension_LoggingHappens(t *testing.T) {
 		t.Fatalf("failed to prepare disk content")
 	}
 
-	ext := makeBlockProgressTracker(cfg, testStateDbInfoFrequency, log)
+	ext := makeBlockProgressTracker[txcontext.TxContext](cfg, testStateDbInfoFrequency, log)
 
 	ctx := &executor.Context{
 		State:           db,
@@ -130,7 +130,7 @@ func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.First = 4
 
-	ext := makeBlockProgressTracker(cfg, testStateDbInfoFrequency, log)
+	ext := makeBlockProgressTracker[txcontext.TxContext](cfg, testStateDbInfoFrequency, log)
 
 	ctx := &executor.Context{
 		State:           db,
