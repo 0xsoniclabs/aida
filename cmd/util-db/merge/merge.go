@@ -1,20 +1,4 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
-package db
+package merge
 
 import (
 	"fmt"
@@ -27,9 +11,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// MergeCommand merges given databases into aida-db
-var MergeCommand = cli.Command{
-	Action: merge,
+// Command merges given databases into aida-db
+var Command = cli.Command{
+	Action: mergeAction,
 	Name:   "merge",
 	Usage:  "merge source databases into aida-db",
 	Flags: []cli.Flag{
@@ -46,8 +30,8 @@ Creates target aida-db by merging source databases from arguments:
 `,
 }
 
-// merge two or more Dbs together
-func merge(ctx *cli.Context) error {
+// mergeAction two or more Dbs together
+func mergeAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.OneToNArgs)
 	if err != nil {
 		return err
