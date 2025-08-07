@@ -18,6 +18,9 @@ package clone
 
 import (
 	"fmt"
+
+	"go.uber.org/mock/gomock"
+	"math/big"
 	"os"
 	"strconv"
 	"testing"
@@ -26,10 +29,10 @@ import (
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClone(t *testing.T) {
@@ -67,15 +70,16 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, name string, dbc string) error {
+func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType, name string, dbc string) error {
 	cfg := &utils.Config{
 		First:       0,
 		Last:        100,
+		Workers:     1,
 		Validate:    true, // TODO add substates with code to testDb then validate would produce error as count wouldn't match
 		DbComponent: dbc,
 		CompactDb:   true,
 	}
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb_" + name)
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb_" + name)
 	assert.NoError(t, err)
 
 	err = clone(cfg, aidaDb, cloneDb, cloningType)
@@ -197,7 +201,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir() + "/testAidaDb"
-			aidaDb, err := db.NewDefaultBaseDB(tmpDir)
+			aidaDb, err := db.NewDefaultSubstateDB(tmpDir)
 			if err != nil {
 				t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 			}
@@ -232,7 +236,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	}
 	aidaDb := utildb.GenerateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
 	err = clone(cfg, aidaDb, cloneDb, utils.CustomType)
@@ -258,7 +262,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	}
 	aidaDb := utildb.GenerateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
 	err = clone(cfg, aidaDb, cloneDb, utils.CloneType)
@@ -727,6 +731,7 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 			GasTipCap:             big.NewInt(10),
 			BlobHashes:            make([]types.Hash, 0),
 			SetCodeAuthorizations: make([]types.SetCodeAuthorization, 0),
+			Data:                  []byte{0x1, 0x2, 0x3, 0x4, 0x5},
 		},
 		Result:      &substate.Result{},
 		Block:       uint64(1),
