@@ -119,7 +119,7 @@ install-dev-tools:
 
 format:
 	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db
 
 check:
 	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc

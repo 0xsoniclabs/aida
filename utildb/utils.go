@@ -18,23 +18,29 @@ package utildb
 
 import (
 	"bufio"
-	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/holiman/uint256"
 	"github.com/op/go-logging"
+	"github.com/stretchr/testify/assert"
 )
 
 const commandOutputLimit = 50
@@ -214,33 +220,6 @@ func processCommandResult(err error, ok bool, scanner *bufio.Scanner, lastOutput
 		return fmt.Errorf("error while executing Command %v; %v", cmd, err)
 	}
 	return nil
-}
-
-// calculateMD5Sum calculates MD5 hash of given file
-func calculateMD5Sum(filePath string) (string, error) {
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("unable open file %s; %v", filePath, err.Error())
-	}
-	defer file.Close()
-
-	// Create a new MD5 hash instance
-	hash := md5.New()
-
-	// Copy the file content into the hash instance
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return "", fmt.Errorf("unable to calculate md5; %v", err)
-	}
-
-	// Calculate the MD5 checksum as a byte slice
-	checksum := hash.Sum(nil)
-
-	// Convert the checksum to a hexadecimal string
-	md5sum := hex.EncodeToString(checksum)
-
-	return md5sum, nil
 }
 
 // startOperaIpc starts opera node for ipc requests
