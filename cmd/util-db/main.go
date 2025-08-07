@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
 	"github.com/0xsoniclabs/aida/cmd/util-db/update"
+	"github.com/0xsoniclabs/aida/cmd/util-db/validate"
 	"log"
 	"os"
 
@@ -49,10 +50,8 @@ var UtilDbApp = cli.App{
 		&generate.EthereumGenesisCommand,
 		&generate.DeletedAccountsCommand,
 		&generate.DbHashCommand,
-		&db.ValidateCommand,
-		&db.PrintDbHashCommand,
 		&db.ScrapeCommand,
-		&db.MetadataCommand,
+		&validate.Command,
 
 		//Priming only
 		&primer.RunPrimerCmd,
