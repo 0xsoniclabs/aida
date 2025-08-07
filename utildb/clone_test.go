@@ -575,6 +575,7 @@ func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Sub
 			GasTipCap:             big.NewInt(10),
 			BlobHashes:            make([]types.Hash, 0),
 			SetCodeAuthorizations: make([]types.SetCodeAuthorization, 0),
+			Data:                  []byte{0x1, 0x2, 0x3, 0x4, 0x5},
 		},
 		Result:      &substate.Result{},
 		Block:       uint64(1),
