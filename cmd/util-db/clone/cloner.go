@@ -19,6 +19,7 @@ package clone
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/substate/types/hash"
 	"os"
 	"time"
 
@@ -507,13 +508,11 @@ func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
 	}
 
-	baseDb, err := db.NewDefaultBaseDB(targetDbPath)
+	cloneDb, err = db.NewDefaultSubstateDB(targetDbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("targetDb %v; %v", targetDbPath, err)
 	}
 
-	// open clone db
-	cloneDb = db.MakeDefaultSubstateDBFromBaseDB(baseDb)
 	err = cloneDb.SetSubstateEncoding(substateEncoding)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
@@ -534,6 +533,19 @@ func (c *cloner) cloneCodes() error {
 		ss := iter.Value()
 		if ss.Block > c.cfg.Last {
 			return nil
+		}
+
+		// If the transaction is a contract creation,
+		// we need to save the hash of the data as code,
+		// otherwise it is not saved at all
+		if ss.Message.To == nil {
+			dataHash := hash.Keccak256Hash(ss.Message.Data)
+			if _, ok := savedCodes[dataHash]; !ok {
+				savedCodes[dataHash] = struct{}{}
+				if err := c.putCode(ss.Message.Data); err != nil {
+					return fmt.Errorf("failed to put data as code blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+			}
 		}
 
 		for _, acc := range ss.InputSubstate {
