@@ -1,4 +1,4 @@
-package dump_substate
+package info
 
 import (
 	"fmt"
@@ -8,11 +8,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Command returns content in substates in json format
-var Command = cli.Command{
+// dumpSubstateCommand returns content in substates in json format
+var dumpSubstateCommand = cli.Command{
 	Action:    dumpSubstateAction,
 	Name:      "dump-substate",
-	Usage:     "returns content in substates in json format",
+	Usage:     "prints content in substates in json format",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
