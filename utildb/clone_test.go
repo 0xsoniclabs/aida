@@ -2,22 +2,23 @@ package utildb
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/substate/types/hash"
-	"github.com/stretchr/testify/require"
+
 	"go.uber.org/mock/gomock"
 	"math/big"
 	"os"
 	"strconv"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/hash"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClone(t *testing.T) {
