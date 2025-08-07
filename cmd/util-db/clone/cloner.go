@@ -268,7 +268,7 @@ func (c *cloner) readUpdateSet(isFirstGenerationFromGenesis bool) uint64 {
 	} else if c.typ == utils.PatchType || c.typ == utils.CustomType {
 		var wantedBlock uint64
 
-		// if we are working with first patch that was created from genesis we need to move the start of the iterator minus one block
+		// if we are working with first clonePatchCommand that was created from genesis we need to move the start of the iterator minus one block
 		// so first update-set from worldstate gets inserted
 		if isFirstGenerationFromGenesis {
 			wantedBlock = c.cfg.First - 1
