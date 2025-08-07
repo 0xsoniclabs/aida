@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/dump_substate"
 	"github.com/0xsoniclabs/aida/cmd/util-db/genesis"
+	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"log"
 	"os"
 
