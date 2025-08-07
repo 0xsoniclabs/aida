@@ -2,6 +2,10 @@ package utildb
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/substate/types/hash"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"math/big"
 	"os"
 	"strconv"
@@ -51,14 +55,15 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, name string, dbc string) error {
+func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType, name string, dbc string) error {
 	cfg := &utils.Config{
 		First:       0,
 		Last:        100,
+		Workers:     1,
 		Validate:    true, // TODO add substates with code to testDb then validate would produce error as count wouldn't match
 		DbComponent: dbc,
 	}
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb_" + name)
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb_" + name)
 	assert.NoError(t, err)
 
 	err = Clone(cfg, aidaDb, cloneDb, cloningType, false)
@@ -180,7 +185,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir() + "/testAidaDb"
-			aidaDb, err := db.NewDefaultBaseDB(tmpDir)
+			aidaDb, err := db.NewDefaultSubstateDB(tmpDir)
 			if err != nil {
 				t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 			}
@@ -215,7 +220,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	}
 	aidaDb := generateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
 	err = Clone(cfg, aidaDb, cloneDb, utils.CustomType, false)
@@ -241,7 +246,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	}
 	aidaDb := generateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
 	err = Clone(cfg, aidaDb, cloneDb, utils.CloneType, false)
@@ -259,20 +264,20 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 }
 
 func TestClone_OpenCloningDbs_SourceDbNotExist(t *testing.T) {
-	_, _, err := OpenCloningDbs("/not/exist/source", "/tmp/target")
+	_, _, err := OpenCloningDbs("/not/exist/source", "/tmp/target", db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
 func TestClose_OpenCloningDbs_SourceDbInvalid(t *testing.T) {
 	tmpFile, _ := os.CreateTemp("", "sourcedb")
-	_, _, err := OpenCloningDbs(tmpFile.Name(), "/tmp/target")
+	_, _, err := OpenCloningDbs(tmpFile.Name(), "/tmp/target", db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
 func TestClone_OpenCloningDbs_TargetExists(t *testing.T) {
 	tmpFile, _ := os.CreateTemp("", "targetdb")
 	defer os.Remove(tmpFile.Name())
-	_, _, err := OpenCloningDbs(tmpFile.Name(), tmpFile.Name())
+	_, _, err := OpenCloningDbs(tmpFile.Name(), tmpFile.Name(), db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
@@ -288,7 +293,7 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Open cloning databases
-	openedSourceDb, openedTargetDb, err := OpenCloningDbs(sourceDir, targetDir)
+	openedSourceDb, openedTargetDb, err := OpenCloningDbs(sourceDir, targetDir, db.ProtobufEncodingSchema)
 	assert.NoError(t, err)
 
 	err = openedSourceDb.Close()
@@ -297,9 +302,9 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func generateTestAidaDb(t *testing.T) db.BaseDB {
+func generateTestAidaDb(t *testing.T) db.SubstateDB {
 	tmpDir := t.TempDir() + "/testAidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
