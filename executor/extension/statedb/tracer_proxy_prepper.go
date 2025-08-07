@@ -69,6 +69,8 @@ func (p *tracerProxyPrepper[T]) PreRun(executor.State[T], *executor.Context) err
 }
 
 func (p *tracerProxyPrepper[T]) PreBlock(st executor.State[T], _ *executor.Context) error {
+	// Underlying offTheChainStateDb is not yet initialized, so we need to record Block operations manually
+	// (State must be initialized in PreTransaction)
 	if err := p.ctx.WriteOp(tracer.BeginBlockID, bigendian.Uint64ToBytes(uint64(st.Block))); err != nil {
 		return fmt.Errorf("cannot write BeginBlockID: %w", err)
 	}
