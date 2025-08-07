@@ -3,7 +3,6 @@ package clone
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/types"
 	"os"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/syndtr/goleveldb/leveldb"
