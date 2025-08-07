@@ -18,12 +18,13 @@ package info
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"strings"
 )
 
 var printDeletedAccountsCommand = cli.Command{

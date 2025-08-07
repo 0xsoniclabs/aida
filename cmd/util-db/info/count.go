@@ -19,6 +19,7 @@ package info
 import (
 	"errors"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"

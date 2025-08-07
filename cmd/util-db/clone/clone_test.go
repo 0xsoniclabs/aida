@@ -18,10 +18,10 @@ package clone
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/utildb"
 	"os"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"

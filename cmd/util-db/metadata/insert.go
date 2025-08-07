@@ -19,10 +19,11 @@ package metadata
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"strconv"
 )
 
 // insertCommand is a generic command for inserting any metadata key/value pair into AidaDb

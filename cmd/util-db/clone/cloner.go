@@ -19,6 +19,9 @@ package clone
 import (
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
@@ -27,8 +30,6 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/syndtr/goleveldb/leveldb"
-	"os"
-	"time"
 )
 
 const cloneWriteChanSize = 1

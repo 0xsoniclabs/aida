@@ -18,11 +18,12 @@ package info
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"strconv"
 )
 
 var printExceptionsCommand = cli.Command{

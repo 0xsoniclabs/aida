@@ -16,9 +16,7 @@
 
 package clone
 
-import (
-	"github.com/urfave/cli/v2"
-)
+import "github.com/urfave/cli/v2"
 
 // Command clones aida-db as standalone or patch database
 var Command = cli.Command{

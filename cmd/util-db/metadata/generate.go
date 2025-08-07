@@ -18,6 +18,7 @@ package metadata
 
 import (
 	"errors"
+
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"

@@ -18,13 +18,14 @@ package info
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"strconv"
-	"strings"
 )
 
 var printStateHashCommand = cli.Command{
