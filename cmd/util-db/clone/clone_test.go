@@ -45,7 +45,7 @@ func TestClone(t *testing.T) {
 		{"CustomTypeStateHash", utils.CustomType, "state-hash", ""},
 		{"CustomTypeBlockHash", utils.CustomType, "block-hash", ""},
 		{"CustomTypeException", utils.CustomType, "exception", ""},
-		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid cloneDbCommand component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
+		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
 	}
 
 	for _, tt := range tests {
@@ -160,7 +160,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			name:        "SubstateInvalidDbKey",
 			keyPrefix:   db.SubstateDBPrefix,
 			dbComponent: "substate",
-			expectedErr: "clone failed for SubstateInvalidDbKey: condition emit error; invalid length of substate cloneDbCommand key: 5",
+			expectedErr: "clone failed for SubstateInvalidDbKey: condition emit error; invalid length of substate db key: 5",
 		},
 		{
 			name:        "UpdateSetsInvalidDbKey",
