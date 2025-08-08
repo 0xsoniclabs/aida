@@ -18,8 +18,8 @@ package clone
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -76,10 +76,10 @@ func clonePatchAction(ctx *cli.Context) error {
 		return err
 	}
 
-	utildb.MustCloseDB(aidaDb)
-	utildb.MustCloseDB(targetDb)
+	dbutils.MustCloseDB(aidaDb)
+	dbutils.MustCloseDB(targetDb)
 
-	return utildb.PrintMetadata(cfg.TargetDb)
+	return dbutils.PrintMetadata(cfg.TargetDb)
 }
 
 // createPatchClone creates aida-cloneDbCommand clonePatchCommand

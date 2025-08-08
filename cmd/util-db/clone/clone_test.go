@@ -18,10 +18,10 @@ package clone
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
@@ -50,7 +50,7 @@ func TestClone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			aidaDb := utildb.GenerateTestAidaDb(t)
+			aidaDb, _ := dbutils.GenerateTestAidaDb(t)
 			err := testClone(t, aidaDb, tt.cloningType, tt.name, tt.dbc)
 			if tt.wantErr != "" {
 				assert.Error(t, err, "Expected error but got none")
@@ -224,7 +224,7 @@ func TestClone_BlockHashes(t *testing.T) {
 		Validate:    false,
 		DbComponent: "block-hash",
 	}
-	aidaDb := utildb.GenerateTestAidaDb(t)
+	aidaDb, _ := dbutils.GenerateTestAidaDb(t)
 
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
@@ -250,7 +250,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 		Validate:    false,
 		DbComponent: "block-hash",
 	}
-	aidaDb := utildb.GenerateTestAidaDb(t)
+	aidaDb, _ := dbutils.GenerateTestAidaDb(t)
 
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)

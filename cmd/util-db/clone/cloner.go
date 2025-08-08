@@ -22,9 +22,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils/dbcomponent"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
@@ -143,7 +142,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 
 	firstDeletionBlock := c.cfg.First
 
-	// update c.cfg.First block before loading deletions and substates, because for utils.CloneType those are necessary to be from last updateset onward
+	// update c.cfg.First block before loading deletions and substates, because for dbutils.CloneType those are necessary to be from last updateset onward
 	// lastUpdateBeforeRange contains block number at which is first updateset preceding the given block range,
 	// it is only required in CloneType db
 	lastUpdateBeforeRange := c.readUpdateSet(isFirstGenerationFromGenesis)
@@ -418,7 +417,7 @@ func (c *cloner) readDeletions(firstDeletionBlock uint64) {
 
 // validateDbSize compares size of database and expectedWritten
 func (c *cloner) validateDbSize() error {
-	actualWritten := utildb.GetDbSize(c.cloneDb)
+	actualWritten := getDbSize(c.cloneDb)
 	if actualWritten != c.count {
 		return fmt.Errorf("TargetDb has %v records; expected: %v", actualWritten, c.count)
 	}
@@ -517,4 +516,15 @@ func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 	}
 
 	return aidaDb, cloneDb, nil
+}
+
+// getDbSize retrieves database size
+func getDbSize(db db.BaseDB) uint64 {
+	var count uint64
+	iter := db.NewIterator(nil, nil)
+	defer iter.Release()
+	for iter.Next() {
+		count++
+	}
+	return count
 }
