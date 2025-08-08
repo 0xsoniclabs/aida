@@ -26,8 +26,8 @@ pipeline {
 
         // Other parameters
         TRACEDIR = 'tracefiles'
-        FROMBLOCK = '1000000'
-        TOBLOCK = '1100000'
+        FROMBLOCK = '10000'
+        TOBLOCK = '20000'
     }
 
     stages {
