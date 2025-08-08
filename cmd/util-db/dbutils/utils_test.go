@@ -2,6 +2,10 @@ package dbutils
 
 import (
 	"errors"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/stretchr/testify/require"
+	"github.com/syndtr/goleveldb/leveldb"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 
@@ -51,4 +55,41 @@ func TestUtils_ErrorRelayer_Fail(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for errorRelayer to finish")
 	}
+}
+
+func TestMustCloseDB(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr error
+	}{
+		{
+			name:    "CloseDBSuccess",
+			wantErr: nil,
+		},
+		{
+			name:    "CloseDBError",
+			wantErr: leveldb.ErrClosed,
+		},
+		{
+			name:    "CloseDBPanic",
+			wantErr: errors.New("mock err"),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockDb := db.NewMockBaseDB(ctrl)
+			mockDb.EXPECT().Close().Return(test.wantErr)
+			MustCloseDB(mockDb)
+		})
+	}
+
+}
+func TestPrintMetadata(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	testDb, tmpDir := GenerateTestAidaDb(t)
+	require.NoError(t, testDb.Close())
+	err := PrintMetadata(tmpDir)
+	assert.NoError(t, err)
 }

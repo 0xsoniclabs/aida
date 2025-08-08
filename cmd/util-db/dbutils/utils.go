@@ -67,6 +67,7 @@ func errorRelayer(resChan chan string, errChan chan error, errChanParser chan er
 	}
 }
 
+// todo pass instance of db instead of path and instance of logger
 // PrintMetadata from given AidaDb
 func PrintMetadata(pathToDb string) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
