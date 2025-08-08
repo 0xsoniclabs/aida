@@ -15,32 +15,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockFileWriter is a mock of Writer interface.
-type MockFileWriter struct {
+// MockWriter is a mock of Writer interface.
+type MockWriter struct {
 	ctrl     *gomock.Controller
-	recorder *MockFileWriterMockRecorder
+	recorder *MockWriterMockRecorder
 	isgomock struct{}
 }
 
-// MockFileWriterMockRecorder is the mock recorder for MockFileWriter.
-type MockFileWriterMockRecorder struct {
-	mock *MockFileWriter
+// MockWriterMockRecorder is the mock recorder for MockWriter.
+type MockWriterMockRecorder struct {
+	mock *MockWriter
 }
 
-// NewMockFileWriter creates a new mock instance.
-func NewMockFileWriter(ctrl *gomock.Controller) *MockFileWriter {
-	mock := &MockFileWriter{ctrl: ctrl}
-	mock.recorder = &MockFileWriterMockRecorder{mock}
+// NewMockWriter creates a new mock instance.
+func NewMockWriter(ctrl *gomock.Controller) *MockWriter {
+	mock := &MockWriter{ctrl: ctrl}
+	mock.recorder = &MockWriterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFileWriter) EXPECT() *MockFileWriterMockRecorder {
+func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 	return m.recorder
 }
 
 // Close mocks base method.
-func (m *MockFileWriter) Close() error {
+func (m *MockWriter) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
@@ -48,13 +48,13 @@ func (m *MockFileWriter) Close() error {
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockFileWriterMockRecorder) Close() *gomock.Call {
+func (mr *MockWriterMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockFileWriter)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockWriter)(nil).Close))
 }
 
 // WriteData mocks base method.
-func (m *MockFileWriter) WriteData(data []byte) error {
+func (m *MockWriter) WriteData(data []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteData", data)
 	ret0, _ := ret[0].(error)
@@ -62,13 +62,13 @@ func (m *MockFileWriter) WriteData(data []byte) error {
 }
 
 // WriteData indicates an expected call of WriteData.
-func (mr *MockFileWriterMockRecorder) WriteData(data any) *gomock.Call {
+func (mr *MockWriterMockRecorder) WriteData(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteData", reflect.TypeOf((*MockFileWriter)(nil).WriteData), data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteData", reflect.TypeOf((*MockWriter)(nil).WriteData), data)
 }
 
 // WriteUint16 mocks base method.
-func (m *MockFileWriter) WriteUint16(data uint16) error {
+func (m *MockWriter) WriteUint16(data uint16) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteUint16", data)
 	ret0, _ := ret[0].(error)
@@ -76,13 +76,13 @@ func (m *MockFileWriter) WriteUint16(data uint16) error {
 }
 
 // WriteUint16 indicates an expected call of WriteUint16.
-func (mr *MockFileWriterMockRecorder) WriteUint16(data any) *gomock.Call {
+func (mr *MockWriterMockRecorder) WriteUint16(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint16", reflect.TypeOf((*MockFileWriter)(nil).WriteUint16), data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint16", reflect.TypeOf((*MockWriter)(nil).WriteUint16), data)
 }
 
 // WriteUint8 mocks base method.
-func (m *MockFileWriter) WriteUint8(idx uint8) error {
+func (m *MockWriter) WriteUint8(idx uint8) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteUint8", idx)
 	ret0, _ := ret[0].(error)
@@ -90,9 +90,9 @@ func (m *MockFileWriter) WriteUint8(idx uint8) error {
 }
 
 // WriteUint8 indicates an expected call of WriteUint8.
-func (mr *MockFileWriterMockRecorder) WriteUint8(idx any) *gomock.Call {
+func (mr *MockWriterMockRecorder) WriteUint8(idx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint8", reflect.TypeOf((*MockFileWriter)(nil).WriteUint8), idx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteUint8", reflect.TypeOf((*MockWriter)(nil).WriteUint8), idx)
 }
 
 // MockWriteBuffer is a mock of WriteBuffer interface.
