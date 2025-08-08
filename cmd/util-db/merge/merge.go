@@ -18,10 +18,11 @@ package merge
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
+	"os"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -74,7 +75,7 @@ func mergeAction(ctx *cli.Context) error {
 	)
 
 	if !cfg.SkipMetadata {
-		dbs, err = utildb.OpenSourceDatabases(sourcePaths)
+		dbs, err = openSourceDatabases(sourcePaths)
 		if err != nil {
 			return err
 		}
@@ -86,16 +87,16 @@ func mergeAction(ctx *cli.Context) error {
 		targetDb = md.Db
 
 		for _, db := range dbs {
-			utildb.MustCloseDB(db)
+			dbutils.MustCloseDB(db)
 		}
 	}
 
-	dbs, err = utildb.OpenSourceDatabases(sourcePaths)
+	dbs, err = openSourceDatabases(sourcePaths)
 	if err != nil {
 		return err
 	}
 
-	m := utildb.NewMerger(cfg, targetDb, dbs, sourcePaths, md)
+	m := dbutils.NewMerger(cfg, targetDb, dbs, sourcePaths, md)
 
 	if err = m.Merge(); err != nil {
 		return err
@@ -104,4 +105,27 @@ func mergeAction(ctx *cli.Context) error {
 	m.CloseSourceDbs()
 
 	return m.FinishMerge()
+}
+
+// openSourceDatabases opens all databases required for merge
+func openSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
+	if len(sourceDbPaths) < 1 {
+		return nil, fmt.Errorf("no source database were specified\n")
+	}
+
+	var sourceDbs []db.BaseDB
+	for i := 0; i < len(sourceDbPaths); i++ {
+		path := sourceDbPaths[i]
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("source database %s; doesn't exist\n", path)
+		}
+		db, err := db.NewReadOnlyBaseDB(path)
+		if err != nil {
+			return nil, fmt.Errorf("source database %s; error: %v", path, err)
+		}
+		sourceDbs = append(sourceDbs, db)
+	}
+
+	return sourceDbs, nil
 }
