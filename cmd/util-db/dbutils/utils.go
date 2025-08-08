@@ -273,3 +273,21 @@ func GenerateTestAidaDb(t *testing.T) (db.BaseDB, string) {
 
 	return database, tmpDir
 }
+
+func CreateEmptySubstate() *substate.Substate {
+	return &substate.Substate{
+		InputSubstate:  substate.WorldState{},
+		OutputSubstate: substate.WorldState{},
+		Env: &substate.Env{
+			Difficulty: big.NewInt(1),
+			GasLimit:   uint64(15),
+		},
+		Message: &substate.Message{
+			Value:    big.NewInt(12),
+			GasPrice: big.NewInt(14),
+		},
+		Result:      &substate.Result{},
+		Block:       0,
+		Transaction: 0,
+	}
+}
