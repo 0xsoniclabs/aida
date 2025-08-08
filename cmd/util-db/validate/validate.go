@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -50,7 +50,7 @@ func validateAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
-	defer utildb.MustCloseDB(aidaDb)
+	defer dbutils.MustCloseDB(aidaDb)
 
 	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
@@ -69,7 +69,7 @@ func validateAction(ctx *cli.Context) error {
 	// we need to make sure aida-db starts from beginning, otherwise validation is impossible
 	// todo simplify condition once lachesis patch is ready for testnet
 	md.FirstBlock = md.GetFirstBlock()
-	if (md.ChainId == utils.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == utils.TestnetChainID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
+	if (md.ChainId == utils.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == utils.TestnetChainID && md.FirstBlock != dbutils.FirstOperaTestnetBlock) {
 		return fmt.Errorf("validation cannot be performed - your db does not start at block 0; your first block: %v", md.FirstBlock)
 	}
 
@@ -80,7 +80,7 @@ func validateAction(ctx *cli.Context) error {
 	if len(expectedHash) == 0 {
 		// we want to save the hash inside metadata
 		saveHash = true
-		expectedHash, err = utildb.FindDbHashOnline(md.ChainId, log, md)
+		expectedHash, err = dbutils.FindDbHashOnline(md.ChainId, log, md)
 		if err != nil {
 			return fmt.Errorf("validation cannot be performed; %v", err)
 		}
@@ -89,7 +89,7 @@ func validateAction(ctx *cli.Context) error {
 	log.Noticef("Found DbHash for your Db: %v", hex.EncodeToString(expectedHash))
 
 	log.Noticef("Starting DbHash calculation for %v; this may take several hours...", cfg.AidaDb)
-	trueHash, err := utildb.GenerateDbHash(aidaDb, "INFO")
+	trueHash, err := dbutils.GenerateDbHash(aidaDb, "INFO")
 	if err != nil {
 		return err
 	}
