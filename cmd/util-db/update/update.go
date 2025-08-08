@@ -24,8 +24,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -75,7 +75,7 @@ func updateAction(ctx *cli.Context) error {
 		return err
 	}
 
-	return utildb.PrintMetadata(cfg.AidaDb)
+	return dbutils.PrintMetadata(cfg.AidaDb)
 }
 
 // Update implements updating command to be called from various commands and automatically downloads aida-db patches.
@@ -259,7 +259,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 					}
 				}
 
-				m := utildb.NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
+				m := dbutils.NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
 
 				err = m.Merge()
 				if err != nil {
