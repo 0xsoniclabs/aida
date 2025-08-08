@@ -72,6 +72,8 @@ func (p *temporaryOffTheChainStatePrepper) PreRun(executor.State[txcontext.TxCon
 
 func (p *temporaryOffTheChainStatePrepper) PreTransaction(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	var err error
+	// State must be initialized before each transaction,
+	// because each transaction carries a different input world state
 	ctx.State, err = statedb.MakeOffTheChainStateDB(state.Data.GetInputState(), uint64(state.Block), p.chainConduit)
 	return err
 }
