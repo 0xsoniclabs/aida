@@ -18,9 +18,9 @@ package generate
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -46,12 +46,12 @@ func generateDbHashAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
-	defer utildb.MustCloseDB(aidaDb)
+	defer dbutils.MustCloseDB(aidaDb)
 
 	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
 	log.Noticef("Starting DbHash generation for %v; this may take several hours...", cfg.AidaDb)
-	hash, err := utildb.GenerateDbHash(aidaDb, "INFO")
+	hash, err := dbutils.GenerateDbHash(aidaDb, "INFO")
 	if err != nil {
 		return err
 	}
