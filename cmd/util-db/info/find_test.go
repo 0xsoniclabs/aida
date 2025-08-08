@@ -1,11 +1,12 @@
 package info
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestFind_Info_FindBlockRangeInStateHash_Success(t *testing.T) {

@@ -3,6 +3,7 @@ package info
 import (
 	"encoding/binary"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"

@@ -18,6 +18,7 @@ package metadata
 
 import (
 	"errors"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 
 	"github.com/0xsoniclabs/aida/utils"

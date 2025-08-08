@@ -20,11 +20,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/holiman/uint256"
 	"io/ioutil"
 	"strconv"
 	"strings"
+
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/holiman/uint256"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"

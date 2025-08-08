@@ -18,9 +18,10 @@ package clone
 
 import (
 	"fmt"
-	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"os"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"

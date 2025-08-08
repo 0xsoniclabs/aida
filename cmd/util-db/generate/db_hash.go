@@ -18,6 +18,7 @@ package generate
 
 import (
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 
 	"github.com/0xsoniclabs/aida/logger"

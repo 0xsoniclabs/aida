@@ -19,6 +19,7 @@ package info
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/0xsoniclabs/substate/substate"
 
 	"github.com/0xsoniclabs/aida/utils"

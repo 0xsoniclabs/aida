@@ -24,11 +24,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
-	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
-	"github.com/0xsoniclabs/substate/db"
-	"github.com/urfave/cli/v2"
 	"io"
 	"net/http"
 	"os"
@@ -37,6 +32,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/urfave/cli/v2"
 )
 
 const (

@@ -22,10 +22,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils/dbcomponent"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils/dbcomponent"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"

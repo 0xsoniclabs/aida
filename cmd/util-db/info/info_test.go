@@ -19,10 +19,11 @@ package info
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
