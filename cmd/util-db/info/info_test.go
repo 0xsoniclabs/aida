@@ -19,8 +19,8 @@ package info
 import (
 	"errors"
 	"fmt"
-	"math/big"
-	"strconv"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
+	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 
@@ -29,7 +29,6 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
@@ -111,7 +110,8 @@ func TestInfo_PrintCount(t *testing.T) {
 }
 
 func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *testing.T) {
-	aidaDbPath := generateTestAidaDb(t)
+	aidaDb, aidaDbPath := dbutils.GenerateTestAidaDb(t)
+	require.NoError(t, aidaDb.Close())
 
 	cfg := &utils.Config{
 		AidaDb:      aidaDbPath,
@@ -125,8 +125,8 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *test
 	log := logger.NewMockLogger(ctrl)
 
 	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(10), uint64(11))
-	log.EXPECT().Noticef("Found %v substates", uint64(1))
-	log.EXPECT().Noticef("Found %v updates", uint64(0))
+	log.EXPECT().Noticef("Found %v substates", uint64(2))
+	log.EXPECT().Noticef("Found %v updates", uint64(1))
 	log.EXPECT().Noticef("Found %v deleted accounts", 1)
 	log.EXPECT().Noticef("Found %v state-hashes", uint64(1))
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(0))
@@ -143,7 +143,8 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *test
 }
 
 func TestInfo_PrintCount_OnlyCalculateGivenRangeUpdateBlockHashException(t *testing.T) {
-	aidaDbPath := generateTestAidaDb(t)
+	aidaDb, aidaDbPath := dbutils.GenerateTestAidaDb(t)
+	require.NoError(t, aidaDb.Close())
 
 	cfg := &utils.Config{
 		AidaDb:      aidaDbPath,
@@ -157,8 +158,8 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeUpdateBlockHashException(t *test
 	log := logger.NewMockLogger(ctrl)
 
 	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(12), uint64(31))
-	log.EXPECT().Noticef("Found %v substates", uint64(1))
-	log.EXPECT().Noticef("Found %v updates", uint64(1))
+	log.EXPECT().Noticef("Found %v substates", uint64(8))
+	log.EXPECT().Noticef("Found %v updates", uint64(0))
 	log.EXPECT().Noticef("Found %v deleted accounts", 0)
 	log.EXPECT().Noticef("Found %v state-hashes", uint64(9))
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(10))
@@ -594,18 +595,19 @@ func TestInfo_PrintRange_LoggingEmpty(t *testing.T) {
 }
 
 func TestInfo_PrintRange_Success(t *testing.T) {
-	aidaDbPath := generateTestAidaDb(t)
+	aidaDb, aidaDbPath := dbutils.GenerateTestAidaDb(t)
+	require.NoError(t, aidaDb.Close())
 
 	// mock logger
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 
 	log.EXPECT().Infof("Substate block range: %v - %v", uint64(11), uint64(11))
-	log.EXPECT().Infof("Updateset block range: %v - %v", uint64(12), uint64(12))
+	log.EXPECT().Infof("Updateset block range: %v - %v", uint64(1), uint64(10))
 	log.EXPECT().Infof("Deleted block range: %v - %v", uint64(1), uint64(10))
 	log.EXPECT().Warningf("cannot find state hash range; %w", fmt.Errorf("cannot get first state hash; %w", errors.New("not implemented")))
 	log.EXPECT().Infof("Block Hash range: %v - %v", uint64(21), uint64(30))
-	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(35))
+	log.EXPECT().Infof("Exception block range: %v - %v", uint64(31), uint64(40))
 
 	cfg := &utils.Config{
 		AidaDb:      aidaDbPath,
@@ -619,7 +621,8 @@ func TestInfo_PrintRange_Success(t *testing.T) {
 }
 
 func TestInfo_PrintRange_IntegrationTest(t *testing.T) {
-	aidaDbPath := generateTestAidaDb(t)
+	aidaDb, aidaDbPath := dbutils.GenerateTestAidaDb(t)
+	require.NoError(t, aidaDb.Close())
 	args := []string{
 		"info", "range",
 		"--aida-db", aidaDbPath,
@@ -844,94 +847,6 @@ func TestInfo_PrintHash_MissingArg(t *testing.T) {
 	err = app.Run(args)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to parse cli arguments; this command requires at least 1 argument")
-}
-
-func generateTestAidaDb(t *testing.T) string {
-	aidaDbPath := t.TempDir() + "aida-db"
-
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if aidaDb == nil {
-		t.Fatal("aidaDb is nil")
-	}
-
-	// insert substate
-	state := substate.Substate{
-		Block:       10,
-		Transaction: 7,
-		Env:         &substate.Env{Difficulty: big.NewInt(1), GasLimit: uint64(15), Number: 11},
-		Message: &substate.Message{
-			Value:    big.NewInt(12),
-			GasPrice: big.NewInt(14),
-		},
-		InputSubstate:  substate.WorldState{},
-		OutputSubstate: substate.WorldState{},
-		Result:         &substate.Result{},
-	}
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-	err = sdb.SetSubstateEncoding("pb")
-	assert.NoError(t, err)
-	err = sdb.PutSubstate(&state)
-	assert.NoError(t, err)
-
-	state.Block = 15
-	err = sdb.PutSubstate(&state)
-	assert.NoError(t, err)
-
-	us := updateset.UpdateSet{
-		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
-		Block:           12,
-		DeletedAccounts: []types.Address{},
-	}
-
-	// insert update
-	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
-	err = udb.PutUpdateSet(&us, us.DeletedAccounts)
-	assert.NoError(t, err)
-
-	// write delete accounts to the database
-	for i := 1; i <= 10; i++ {
-		err = aidaDb.Put(db.EncodeDestroyedAccountKey(uint64(i), i), []byte("0x1234567812345678123456781234567812345678123456781234567812345678"))
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// write state hashes to the database
-	for i := 11; i <= 20; i++ {
-		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveStateRoot(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// write block hashes to the database
-	for i := 21; i <= 30; i++ {
-		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// write exceptions to the database
-	for i := 31; i <= 35; i++ {
-		key := []byte(db.ExceptionDBPrefix)
-		key = append(key, db.BlockToBytes(uint64(i))...)
-		err = aidaDb.Put(key, []byte("exception data"))
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	err = aidaDb.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return aidaDbPath
 }
 
 func TestInfo_PrintHashForBlock_InvalidHashType(t *testing.T) {

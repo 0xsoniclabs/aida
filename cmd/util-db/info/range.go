@@ -18,10 +18,9 @@ package info
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils/dbcomponent"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -81,7 +80,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	// print update range
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
 		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
-		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
+		firstUsBlock, lastUsBlock, err := findBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %w", err)
 		} else {
@@ -92,7 +91,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
 		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
-		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
+		first, last, err := findBlockRangeInDeleted(ddb)
 		if err != nil {
 			log.Warningf("cannot find deleted range; %w", err)
 		} else {
@@ -102,7 +101,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print state hash range
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
-		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
+		firstStateHashBlock, lastStateHashBlock, err := findBlockRangeInStateHash(baseDb, log)
 		if err != nil {
 			log.Warningf("cannot find state hash range; %w", err)
 		} else {
@@ -112,7 +111,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print block hash range
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
-		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
+		firstBlockHashBlock, lastBlockHashBlock, err := findBlockRangeOfBlockHashes(baseDb, log)
 		if err != nil {
 			log.Warningf("cannot find block hash range; %w", err)
 		} else {
@@ -123,7 +122,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 	// print exception range
 	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
 		edb := db.MakeDefaultExceptionDBFromBaseDB(baseDb)
-		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInException(edb)
+		firstUsBlock, lastUsBlock, err := findBlockRangeInException(edb)
 		if err != nil {
 			log.Warningf("cannot find exception range; %w", err)
 		} else {

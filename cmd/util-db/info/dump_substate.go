@@ -17,9 +17,10 @@
 package info
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/0xsoniclabs/substate/substate"
 
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -67,8 +68,35 @@ func dumpSubstateAction(ctx *cli.Context) error {
 	}
 
 	// run substate dump task
-	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", utildb.SubstateDumpTask, cfg.First, cfg.Last, ctx)
+	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", substateDumpTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()
 
 	return err
+}
+
+// substateDumpTask dumps substate data
+func substateDumpTask(block uint64, tx int, recording *substate.Substate, taskPool *db.SubstateTaskPool) error {
+	InputSubstate := recording.InputSubstate
+	inputEnv := recording.Env
+	inputMessage := recording.Message
+
+	outputAlloc := recording.OutputSubstate
+	outputResult := recording.Result
+
+	out := fmt.Sprintf("block: %v Transaction: %v\n", block, tx)
+	var jbytes []byte
+	jbytes, _ = json.MarshalIndent(InputSubstate, "", " ")
+	out += fmt.Sprintf("Recorded input substate:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(inputEnv, "", " ")
+	out += fmt.Sprintf("Recorded input environmnet:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(inputMessage, "", " ")
+	out += fmt.Sprintf("Recorded input message:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(outputAlloc, "", " ")
+	out += fmt.Sprintf("Recorded output substate:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(outputResult, "", " ")
+	out += fmt.Sprintf("Recorded output result:\n%s\n", jbytes)
+
+	fmt.Println(out)
+
+	return nil
 }

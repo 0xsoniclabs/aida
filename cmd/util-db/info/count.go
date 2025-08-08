@@ -19,10 +19,8 @@ package info
 import (
 	"errors"
 	"fmt"
-
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils/dbcomponent"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -83,13 +81,13 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
-		count := utildb.GetSubstateCount(cfg, sdb)
+		count := getSubstateCount(cfg, sdb)
 		log.Noticef("Found %v substates", count)
 	}
 
 	// print update count
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
-		count, err := utildb.GetUpdateCount(cfg, base)
+		count, err := getUpdateCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print update count; %w", err)
@@ -100,7 +98,7 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	// print deleted count
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		count, err := utildb.GetDeletedCount(cfg, base)
+		count, err := getDeletedCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print deleted count; %w", err)
@@ -111,7 +109,7 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	// print state hash count
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
-		count, err := utildb.GetStateHashCount(cfg, base)
+		count, err := getStateHashCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print state hash count; %w", err)
@@ -122,7 +120,7 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	// print block hash count
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
-		count, err := utildb.GetBlockHashCount(cfg, base)
+		count, err := getBlockHashCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print block hash count; %w", err)
@@ -133,7 +131,7 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	// print exception count
 	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
-		count, err := utildb.GetExceptionCount(cfg, base)
+		count, err := getExceptionCount(cfg, base)
 		if err != nil {
 			errResult = errors.Join(errResult, err)
 			log.Warningf("cannot print exception count; %w", err)

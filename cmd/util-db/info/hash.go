@@ -18,14 +18,13 @@ package info
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
+	"strconv"
+	"strings"
 )
 
 var printStateHashCommand = cli.Command{
@@ -89,7 +88,7 @@ func printTableHashAction(ctx *cli.Context) error {
 
 	log := logger.NewLogger(cfg.LogLevel, "printTableHash")
 	log.Info("Inspecting database...")
-	err = utildb.TableHash(cfg, database, log)
+	err = tableHash(cfg, database, log)
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,7 @@ func printPrefixHashAction(ctx *cli.Context) error {
 
 	prefix := ctx.Args().Slice()[0]
 	log.Noticef("Generating hash for prefix %v", prefix)
-	_, err = utildb.GeneratePrefixHash(database, prefix, "INFO")
+	_, err = dbutils.GeneratePrefixHash(database, prefix, "INFO")
 	return err
 }
 

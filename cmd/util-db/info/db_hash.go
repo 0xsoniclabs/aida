@@ -19,10 +19,10 @@ package info
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
@@ -46,7 +46,7 @@ func dbHashAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
-	defer utildb.MustCloseDB(aidaDb)
+	defer dbutils.MustCloseDB(aidaDb)
 
 	var dbHash []byte
 
@@ -62,7 +62,7 @@ func dbHashAction(ctx *cli.Context) error {
 	}
 
 	// if not found in db, we need to iterate and create the hash
-	if dbHash, err = utildb.GenerateDbHash(aidaDb, "INFO"); err != nil {
+	if dbHash, err = dbutils.GenerateDbHash(aidaDb, "INFO"); err != nil {
 		return err
 	}
 
