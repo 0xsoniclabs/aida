@@ -31,7 +31,7 @@ import (
 
 func TestContext_WriteOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -45,7 +45,7 @@ func TestContext_WriteOp(t *testing.T) {
 
 func TestContext_WriteAddressOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -87,7 +87,7 @@ func TestContext_WriteAddressOp(t *testing.T) {
 
 func TestContext_WriteKeyOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -142,7 +142,7 @@ func TestContext_WriteKeyOp(t *testing.T) {
 
 func TestContext_WriteValueOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -193,7 +193,7 @@ func TestContext_WriteValueOp(t *testing.T) {
 
 func TestContext_Close_ClosesFileHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -206,7 +206,7 @@ func TestContext_Close_ClosesFileHandler(t *testing.T) {
 
 func TestContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	fw.EXPECT().WriteData(append(bigendian.Uint64ToBytes(0), bigendian.Uint64ToBytes(0)...))
 
 	ctx, err := NewContext(fw, 0, 0)
@@ -218,7 +218,7 @@ func TestContext_writeClassifiedOp_UnknownOp(t *testing.T) {
 
 func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	ctx := &argumentContext{
 		contracts: NewQueue[common.Address](),
 		keys:      NewQueue[common.Hash](),
@@ -231,7 +231,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	{
 		// Overflow the number of operations to ensure it is handled correctly
 		err := ctx.WriteOp(NumOps, []byte{})
-		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+		require.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
 		err = ctx.WriteOp(BeginBlockID, []byte{})
@@ -245,7 +245,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	{
 		// Overflow the number of operations to ensure it is handled correctly
 		err := ctx.WriteAddressOp(NumOps, &common.Address{0x20}, []byte{})
-		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+		require.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
 		err = ctx.WriteAddressOp(AddBalanceID, &common.Address{0x1}, []byte{})
@@ -269,7 +269,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	{
 		// Overflow the number of operations to ensure it is handled correctly
 		err := ctx.WriteKeyOp(NumOps, &common.Address{0x21}, &common.Hash{0x21}, []byte{})
-		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+		require.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
 		err = ctx.WriteKeyOp(GetStateID, &common.Address{0x4}, &common.Hash{0x1}, []byte{})
@@ -302,7 +302,7 @@ func TestArgumentContext_ErrorsAreDistributedCorrectly(t *testing.T) {
 	{
 		// Overflow the number of operations to ensure it is handled correctly
 		err := ctx.WriteValueOp(NumOps, &common.Address{0x22}, &common.Hash{0x22}, &common.Hash{0x23})
-		require.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+		require.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 
 		fw.EXPECT().WriteUint16(gomock.Any()).Return(mockErr)
 		err = ctx.WriteValueOp(SetStateID, &common.Address{0x8}, &common.Hash{0x6}, &common.Hash{0x5})
@@ -339,13 +339,13 @@ func Test_writeClassifiedOp(t *testing.T) {
 	tests := []struct {
 		name    string
 		class   uint8
-		setup   func(m *MockFileWriter)
+		setup   func(m *MockWriter)
 		wantErr error
 	}{
 		{
 			name:  "ZeroValueID",
 			class: ZeroValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				// nothing happens
 			},
 			wantErr: nil,
@@ -353,7 +353,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 		{
 			name:  "PreviousValueID",
 			class: PreviousValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				// nothing happens
 			},
 			wantErr: nil,
@@ -361,7 +361,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 		{
 			name:  "RecentValueID_Success",
 			class: RecentValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				m.EXPECT().WriteUint8(uint8(1)).Return(nil)
 			},
 			wantErr: nil,
@@ -369,7 +369,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 		{
 			name:  "RecentValueID_Error",
 			class: RecentValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				m.EXPECT().WriteUint8(uint8(1)).Return(mockErr)
 			},
 			wantErr: mockErr,
@@ -377,7 +377,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 		{
 			name:  "NewValueID_Success",
 			class: NewValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				m.EXPECT().WriteData(data.Bytes()).Return(nil)
 			},
 			wantErr: nil,
@@ -385,7 +385,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 		{
 			name:  "NewValueID_Error",
 			class: NewValueID,
-			setup: func(m *MockFileWriter) {
+			setup: func(m *MockWriter) {
 				m.EXPECT().WriteData(data.Bytes()).Return(mockErr)
 			},
 			wantErr: mockErr,
@@ -395,7 +395,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			fw := NewMockFileWriter(ctrl)
+			fw := NewMockWriter(ctrl)
 			ctx := &argumentContext{
 				file: fw,
 			}
@@ -412,7 +412,7 @@ func Test_writeClassifiedOp(t *testing.T) {
 
 func TestNewArgumentContext_WritesMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	fw := NewMockFileWriter(ctrl)
+	fw := NewMockWriter(ctrl)
 	data := append(bigendian.Uint64ToBytes(11), bigendian.Uint64ToBytes(22)...)
 	fw.EXPECT().WriteData(data)
 	_, err := NewContext(fw, 11, 22)

@@ -102,11 +102,11 @@ func TestOpMnemo_OverflowPanicks(t *testing.T) {
 }
 func Test_EncodeArgOp_OverflowError(t *testing.T) {
 	_, err := EncodeArgOp(NumOps, 0, 0, 0)
-	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	assert.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 	_, err = EncodeArgOp(0, NumClasses, 0, 0)
-	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	assert.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 	_, err = EncodeArgOp(0, 0, NumClasses, 0)
-	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	assert.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 	_, err = EncodeArgOp(0, 0, 0, NumClasses)
-	assert.ErrorContains(t, err, "EncodeArgOp: invalid operation/arguments")
+	assert.ErrorContains(t, err, "encodeArgOp: invalid operation/arguments")
 }
