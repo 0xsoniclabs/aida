@@ -67,6 +67,7 @@ func (q *Queue[T]) Find(item T) int {
 	for {
 		// if found, return position in the FIFO queue
 		if q.data[i] == item {
+			// idx is a relative distance from top position, where 0 is top itself
 			idx := (q.top - i + QueueLen) % QueueLen
 			return idx
 		}
