@@ -20,57 +20,7 @@ import (
 	"testing"
 )
 
-// TestQueueSimple tests for existence/non-existence of elements.
-func TestQueueSimple(t *testing.T) {
-	// create index queue
-	queue := NewQueue[int]()
-
-	// place first element
-	queue.Place(0)
-
-	// find first element
-	pos := queue.Find(0)
-	if pos != 0 {
-		t.Fatalf("element cannot be found")
-	}
-
-	// unknown element must not be found
-	pos = queue.Find(1)
-	if pos != -1 {
-		t.Fatalf("element must not be found")
-	}
-}
-
-// TestQueueSimple1 tests for existence/non-existence of elements.
-func TestQueueSimple1(t *testing.T) {
-	// create index queue
-	queue := NewQueue[int]()
-
-	// find first element
-	pos := queue.Find(0)
-	if pos != -1 {
-		t.Fatalf("Queue must be empty")
-	}
-
-	// place first element
-	queue.Place(0)
-
-	// place second element
-	queue.Place(1)
-
-	// find first element
-	pos = queue.Find(1)
-	if pos != 0 {
-		t.Fatalf("first element cannot be found")
-	}
-	pos = queue.Find(0)
-	if pos != 1 {
-		t.Fatalf("second element cannot be found")
-	}
-}
-
-// TestQueueSimple2 tests for existence/non-existence of elements.
-func TestQueueSimple2(t *testing.T) {
+func TestQueue_PlaceAndFind(t *testing.T) {
 	// create index queue
 	queue := NewQueue[int]()
 
@@ -140,5 +90,29 @@ func TestQueue_Classify(t *testing.T) {
 	id, idx = queue.Classify(1)
 	if id != RecentValueID || idx != 0 {
 		t.Fatalf("expected RecentValueID for recent value, got id=%d idx=%d", id, idx)
+	}
+}
+
+func TestQueue_IsCircularBuffer(t *testing.T) {
+	q := NewQueue[int]()
+
+	// Add more items than QueueLen to force overwrite
+	totalItems := QueueLen + 50
+	for i := 1; i <= totalItems; i++ {
+		q.Place(i)
+	}
+
+	// Oldest items should be gone
+	for i := 1; i <= 50; i++ {
+		if idx := q.Find(i); idx != -1 {
+			t.Errorf("Expected item %d to be overwritten, but found at index %d", i, idx)
+		}
+	}
+
+	// Most recent items should be present
+	for i := totalItems; i > totalItems-QueueLen; i-- {
+		if idx := q.Find(i); idx == -1 {
+			t.Errorf("Expected item %d to be in queue, but not found", i)
+		}
 	}
 }
