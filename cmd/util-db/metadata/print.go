@@ -17,7 +17,7 @@
 package metadata
 
 import (
-	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/0xsoniclabs/aida/cmd/util-db/dbutils"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
@@ -37,5 +37,5 @@ func printAction(ctx *cli.Context) error {
 		return argErr
 	}
 
-	return utildb.PrintMetadata(cfg.AidaDb)
+	return dbutils.PrintMetadata(cfg.AidaDb)
 }
