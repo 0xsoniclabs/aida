@@ -41,11 +41,11 @@ type argumentContext struct {
 	keys Queue[common.Hash]
 	// Storage-value queue
 	values Queue[common.Hash]
-	file   FileWriter
+	file   Writer
 }
 
 // NewContext creates a new event registry.
-func NewContext(file FileWriter, first uint64, last uint64) (Context, error) {
+func NewContext(file Writer, first uint64, last uint64) (Context, error) {
 	ctx := &argumentContext{
 		contracts: NewQueue[common.Address](),
 		keys:      NewQueue[common.Hash](),
