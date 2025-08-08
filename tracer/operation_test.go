@@ -24,7 +24,7 @@ import (
 )
 
 // TestOperationDecoding checks whether number encoding/decoding of operations with their arguments works.
-func TestOperationDecoding(t *testing.T) {
+func TestOperation_Decoding(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := uint8(0); op < NumOps; op++ {
@@ -56,7 +56,7 @@ func TestOperationDecoding(t *testing.T) {
 }
 
 // TestOperationOpcode checks the mnemonic encoding/decoding of operations with their argument classes as opcode.
-func TestOperationOpcode(t *testing.T) {
+func TestOperation_Opcode(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := uint8(0); op < NumOps; op++ {

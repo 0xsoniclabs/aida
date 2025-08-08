@@ -292,8 +292,8 @@ func OpMnemo(op uint8) string {
 	return opMnemo[op]
 }
 
-// checkArgOp checks whether op/argument combination is valid.
-func checkArgOp(op uint8, contract uint8, key uint8, value uint8) bool {
+// isValidOp checks whether op/argument combination is valid.
+func isValidOp(op uint8, contract uint8, key uint8, value uint8) bool {
 	if op >= NumOps {
 		return false
 	}
@@ -330,8 +330,8 @@ func checkArgOp(op uint8, contract uint8, key uint8, value uint8) bool {
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.
 func EncodeArgOp(op uint8, addr uint8, key uint8, value uint8) (uint16, error) {
-	if !checkArgOp(op, addr, key, value) {
-		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments\naddr: %d, key: %d, value: %d, op: %d", addr, key, value, op)
+	if !isValidOp(op, addr, key, value) {
+		return 0, fmt.Errorf("encodeArgOp: invalid operation/arguments\naddr: %d, key: %d, value: %d, op: %d", addr, key, value, op)
 	}
 	numClasses := uint16(NumClasses)
 	return (((uint16(op)*numClasses)+uint16(addr))*numClasses+uint16(key))*numClasses + uint16(value), nil
@@ -359,7 +359,7 @@ func DecodeArgOp(argop uint16) (uint8, uint8, uint8, uint8, error) {
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
 func EncodeOpcode(op uint8, addr uint8, key uint8, value uint8) (string, error) {
-	if !checkArgOp(op, addr, key, value) {
+	if !isValidOp(op, addr, key, value) {
 		return "", fmt.Errorf("EncodeOpcode: invalid operation/arguments")
 	}
 	code := fmt.Sprintf("%v%v%v%v", opMnemo[op], argMnemo[addr], argMnemo[key], argMnemo[value])

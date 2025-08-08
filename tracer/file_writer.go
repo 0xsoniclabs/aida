@@ -12,8 +12,8 @@ import (
 	"github.com/klauspost/compress/gzip"
 )
 
-// NewFileWriter creates a new FileWriter that writes to a gzip-compressed file using a buffer.
-func NewFileWriter(filename string) (FileWriter, error) {
+// NewFileWriter creates a new Writer that writes to a gzip-compressed file using a buffer.
+func NewFileWriter(filename string) (Writer, error) {
 	_, err := os.Stat(filename)
 	if err == nil {
 		return nil, fmt.Errorf("file %s already exists", filename)
@@ -33,7 +33,7 @@ func NewFileWriter(filename string) (FileWriter, error) {
 
 //go:generate mockgen -source file_writer.go -destination file_writer_mock.go -package tracer
 
-type FileWriter interface {
+type Writer interface {
 	// WriteData writes a byte slice of any size to the file.
 	WriteData(data []byte) error
 	// WriteUint16 writes a big-endian encoded uint16 value to the file.

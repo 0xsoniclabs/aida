@@ -85,7 +85,7 @@ func TestProxies_AllCalls(t *testing.T) {
 		})
 	}
 
-	// CreateAccount(
+	// CreateAccount
 	base.EXPECT().CreateAccount(addr).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_CreateAccount(", func(t *testing.T) {

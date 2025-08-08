@@ -15,7 +15,7 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockFileWriter is a mock of FileWriter interface.
+// MockFileWriter is a mock of Writer interface.
 type MockFileWriter struct {
 	ctrl     *gomock.Controller
 	recorder *MockFileWriterMockRecorder
