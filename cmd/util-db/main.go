@@ -20,9 +20,16 @@ import (
 	"log"
 	"os"
 
-	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
+	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
+	"github.com/0xsoniclabs/aida/cmd/util-db/info"
+	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
+	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
-
+	"github.com/0xsoniclabs/aida/cmd/util-db/scrape"
+	"github.com/0xsoniclabs/aida/cmd/util-db/update"
+	"github.com/0xsoniclabs/aida/cmd/util-db/validate"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,21 +40,17 @@ var UtilDbApp = cli.App{
 	Usage:     "merge source data into profiling database",
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
-		&db.CloneCommand,
-		&db.CompactCommand,
-		&db.ExtractEthereumGenesisCommand,
-		&db.MergeCommand,
-		&db.UpdateCommand,
-		&db.InfoCommand,
-		&db.ValidateCommand,
-		&db.GenDeletedAccountsCommand,
-		&db.SubstateDumpCommand,
-		&db.GenerateDbHashCommand,
-		&db.PrintDbHashCommand,
-		&db.PrintPrefixHashCommand,
-		&db.PrintTableHashCommand,
-		&db.ScrapeCommand,
-		&db.MetadataCommand,
+		&clone.Command,
+		&compact.Command,
+		&info.Command,
+		&merge.Command,
+		&metadata.Command,
+		&update.Command,
+		&generate.EthereumGenesisCommand,
+		&generate.DeletedAccountsCommand,
+		&generate.DbHashCommand,
+		&scrape.Command,
+		&validate.Command,
 
 		//Priming only
 		&primer.RunPrimerCmd,
