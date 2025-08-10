@@ -38,10 +38,8 @@ var GenUpdateSetCommand = cli.Command{
 	ArgsUsage: "<blockNumLast> <interval>",
 	Flags: []cli.Flag{
 		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
 		&utils.AidaDbFlag,
 		&utils.WorkersFlag,
-		&utils.UpdateDbFlag,
 		&utils.UpdateBufferSizeFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
@@ -109,6 +107,8 @@ func generateUpdateSet(ctx *cli.Context) error {
 	}
 	defer udb.Close()
 
+	// TODO if we pass actual aida-db, other db path will be overwritten
+	// TODO if we use aida-db, only we cannot open for write and for read at the same time
 	// iterate through subsets in sequence
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {

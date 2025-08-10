@@ -31,29 +31,45 @@ func TestUtils_getTestSubstate(t *testing.T) {
 	assert.NotNil(t, ss)
 }
 
-func TestUtils_Must(t *testing.T) {
-	// Test with a valid value
-	mockFn := func() ([]byte, error) {
-		return []byte{1, 2, 3}, nil
-	}
-	validValue := []byte{1, 2, 3}
-	result := Must(mockFn())
-	assert.Equal(t, validValue, result)
-
-	// Test with an error
-	mockFnWithError := func() ([]byte, error) {
-		return nil, errors.New("mock error")
-	}
-	assert.Panics(t, func() {
-		_ = Must(mockFnWithError())
-	})
+func TestArgsBuilder_NewArgs(t *testing.T) {
+	args := NewArgs("test").
+		Arg("a").
+		Arg(0).
+		Arg(false).
+		Arg(true).
+		Flag("f1", "v1").
+		Flag("f2", 0).
+		Flag("f3", false).
+		Flag("f4", true).
+		Build()
+	assert.Equal(t, "test", args[0])
+	assert.Equal(t, "a", args[1])
+	assert.Equal(t, "0", args[2])
+	assert.Equal(t, "false", args[3])
+	assert.Equal(t, "true", args[4])
+	assert.Equal(t, "--f1", args[5])
+	assert.Equal(t, "v1", args[6])
+	assert.Equal(t, "--f2", args[7])
+	assert.Equal(t, "0", args[8])
+	assert.Equal(t, "--f4", args[9])
+	assert.Equal(t, 10, len(args))
 }
 
-func TestUtils_CreateTestSubstateDb(t *testing.T) {
-	ss, path := CreateTestSubstateDb(t)
-	sdb, err := substateDb.NewDefaultSubstateDB(path)
+// CreateTestSubstateDb creates a test substate database with a predefined substate.
+func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
+	path := t.TempDir()
+	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
 	require.NoError(t, err)
-	gotSs, err := sdb.GetSubstate(ss.Block, ss.Transaction)
+	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+
+	ss := GetTestSubstate("protobuf")
+	err = db.PutSubstate(ss)
 	require.NoError(t, err)
-	require.NoError(t, ss.Equal(gotSs))
+
+	md := NewAidaDbMetadata(db, "CRITICAL")
+	require.NoError(t, md.genMetadata(ss.Block-1, ss.Block+1, 0, 0, SonicMainnetChainID, []byte{}))
+
+	require.NoError(t, db.Close())
+
+	return ss, path
 }

@@ -91,9 +91,11 @@ func generateMetadata(ctx *cli.Context) error {
 	if err = md.SetFreshMetadata(cfg.ChainID); err != nil {
 		return err
 	}
-
+	err = base.Close()
+	if err != nil {
+		return err
+	}
 	return utildb.PrintMetadata(cfg.AidaDb)
-
 }
 
 // InsertMetadataCommand is a generic command for inserting any metadata key/value pair into AidaDb

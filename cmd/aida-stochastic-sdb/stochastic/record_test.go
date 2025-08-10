@@ -1,0 +1,39 @@
+package stochastic
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
+)
+
+func TestCmd_RunStochasticRecordCommand(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	outputFile := filepath.Join(tempDir, "test_events.json")
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&StochasticRecordCommand}
+	args := utils.NewArgs("test").
+		Arg(StochasticRecordCommand.Name).
+		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.WorkersFlag.Name, 1).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(utils.OutputFlag.Name, outputFile).
+		Arg(0).
+		Arg(1000).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	assert.NoError(t, err)
+	_, err = os.Stat(outputFile)
+	assert.NoError(t, err)
+}

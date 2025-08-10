@@ -34,8 +34,8 @@ var GenDeletedAccountsCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
 		&utils.AidaDbFlag,
+		&utils.OutputFlag,
 		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
 		&utils.CpuProfileFlag,
 		&logger.LogLevelFlag,
 	},
@@ -53,11 +53,11 @@ func genDeletedAccountsAction(ctx *cli.Context) error {
 		return err
 	}
 
-	if cfg.DeletionDb == "" {
+	if cfg.Output == "" {
 		return fmt.Errorf("you need to specify where you want deletion-db to save (--deletion-db)")
 	}
 
-	if cfg.SubstateDb == "" {
+	if cfg.AidaDb == "" {
 		return fmt.Errorf("you need to specify path to existing substate (--substate-db)")
 	}
 
@@ -67,7 +67,7 @@ func genDeletedAccountsAction(ctx *cli.Context) error {
 	}
 	defer sdb.Close()
 
-	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.DeletionDb)
+	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.Output)
 	if err != nil {
 		return err
 	}
