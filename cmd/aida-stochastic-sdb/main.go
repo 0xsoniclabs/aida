@@ -44,9 +44,9 @@ func initStochasticApp() *cli.App {
 // main implements "stochastic" cli stochasticApplication.
 func main() {
 	app := initStochasticApp()
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run([]string{"stochastic", "generate"}); err != nil {
 		code := 1
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(code)
 	}
 }

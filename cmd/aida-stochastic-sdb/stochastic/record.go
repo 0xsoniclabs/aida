@@ -18,6 +18,7 @@ package stochastic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -82,18 +83,15 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 	iter := sdb.NewSubstateIterator(int(cfg.First), cfg.Workers)
 	defer iter.Release()
 	oldBlock := uint64(math.MaxUint64) // set to an infeasible block
-	var (
-		start   time.Time
-		sec     float64
-		lastSec float64
-	)
-	start = time.Now()
-	sec = time.Since(start).Seconds()
-	lastSec = time.Since(start).Seconds()
+	var sec float64
+	start := time.Now()
+	lastSec := time.Since(start).Seconds()
 
 	// create a new event registry
 	eventRegistry := stochastic.NewEventRegistry()
@@ -160,12 +158,14 @@ func stochasticRecordAction(ctx *cli.Context) error {
 }
 
 // WriteEvents writes event file in JSON format.
-func WriteEvents(r *stochastic.EventRegistry, filename string) error {
+func WriteEvents(r *stochastic.EventRegistry, filename string) (err error) {
 	f, fErr := os.Create(filename)
 	if fErr != nil {
 		return fmt.Errorf("cannot open JSON file; %v", fErr)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err = errors.Join(err, f.Close())
+	}(f)
 
 	jOut, jErr := json.MarshalIndent(r.NewEventRegistryJSON(), "", "    ")
 	if jErr != nil {

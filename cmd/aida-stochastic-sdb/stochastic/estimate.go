@@ -27,9 +27,12 @@ import (
 
 // StochasticEstimateCommand data structure for the estimator app.
 var StochasticEstimateCommand = cli.Command{
-	Action:    stochasticEstimateAction,
-	Name:      "estimate",
-	Usage:     "estimates parameters of access distributions and produces a simulation file",
+	Action: stochasticEstimateAction,
+	Name:   "estimate",
+	Usage:  "estimates parameters of access distributions and produces a simulation file",
+	Flags: []cli.Flag{
+		&utils.OutputFlag,
+	},
 	ArgsUsage: "<event-file>",
 	Description: `
 The stochastic estimator command requires one argument:

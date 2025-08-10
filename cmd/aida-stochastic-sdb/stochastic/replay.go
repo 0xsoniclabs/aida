@@ -17,6 +17,7 @@
 package stochastic
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -106,7 +107,9 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(stateDbDir)
+	defer func(path string) {
+		err = errors.Join(err, os.RemoveAll(path))
+	}(stateDbDir)
 
 	// Enable tracing if debug flag is set
 	if cfg.Trace {
