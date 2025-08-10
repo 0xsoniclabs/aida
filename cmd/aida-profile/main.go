@@ -41,7 +41,7 @@ func main() {
 	}
 	if err := app.Run(os.Args); err != nil {
 		code := 1
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(code)
 	}
 }
