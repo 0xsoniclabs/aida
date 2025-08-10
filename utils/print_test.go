@@ -56,26 +56,52 @@ func TestPrinter_Print(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockPrinter := NewMockPrinter(ctrl)
-	p := &Printers{[]Printer{
-		mockPrinter,
-	}}
-	mockPrinter.EXPECT().Print().Return(nil).Times(1)
-	err := p.Print()
-	assert.NoError(t, err)
+	t.Run("case success", func(t *testing.T) {
+		mockPrinter := NewMockPrinter(ctrl)
+		p := &Printers{[]Printer{
+			mockPrinter,
+		}}
+		mockPrinter.EXPECT().Print().Return(nil).Times(1)
+		err := p.Print()
+		assert.NoError(t, err)
+	})
+
+	t.Run("case error", func(t *testing.T) {
+		mockPrinter := NewMockPrinter(ctrl)
+		p := &Printers{[]Printer{
+			mockPrinter,
+		}}
+		mockPrinter.EXPECT().Print().Return(errors.New("mock error")).Times(1)
+		err := p.Print()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "mock error")
+	})
+
 }
 
 func TestPrinter_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	t.Run("case success", func(t *testing.T) {
+		mockPrinter := NewMockPrinter(ctrl)
+		p := &Printers{[]Printer{
+			mockPrinter,
+		}}
+		mockPrinter.EXPECT().Close().Return(nil).Times(1)
+		err := p.Close()
+		assert.NoError(t, err)
+	})
 
-	mockPrinter := NewMockPrinter(ctrl)
-	p := &Printers{[]Printer{
-		mockPrinter,
-	}}
-	mockPrinter.EXPECT().Close().Return(nil).Times(1)
-	err := p.Close()
-	assert.NoError(t, err)
+	t.Run("case error", func(t *testing.T) {
+		mockPrinter := NewMockPrinter(ctrl)
+		p := &Printers{[]Printer{
+			mockPrinter,
+		}}
+		mockPrinter.EXPECT().Close().Return(errors.New("mock error")).Times(1)
+		err := p.Close()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "mock error")
+	})
 }
 
 func TestPrinters_AddPrinterToWriter(t *testing.T) {
@@ -116,11 +142,21 @@ func TestPrinters_AddPrinterToFile(t *testing.T) {
 }
 
 func TestPrinters_AddPrinterToSqlite3(t *testing.T) {
-	p := &Printers{}
-	p.AddPrinterToSqlite3(":memory:", "", "", func() [][]any {
-		return [][]any{}
+	t.Run("case with conn string", func(t *testing.T) {
+		p := &Printers{}
+		p.AddPrinterToSqlite3(":memory:", "", "", func() [][]any {
+			return [][]any{}
+		})
+		assert.Equal(t, 1, len(p.printers))
 	})
-	assert.Equal(t, 1, len(p.printers))
+
+	t.Run("case without conn string", func(t *testing.T) {
+		p := &Printers{}
+		p.AddPrinterToSqlite3("", "", "", func() [][]any {
+			return [][]any{}
+		})
+		assert.Equal(t, 0, len(p.printers))
+	})
 }
 
 func TestPrinterToWriter_Print(t *testing.T) {
@@ -311,20 +347,40 @@ func TestPrinterToBuffer_Print(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockFlusher := NewMockIFlusher(ctrl)
-	p := &PrinterToBuffer{
-		capacity: 10,
-		f: func() [][]any {
-			return [][]any{
-				{"Hello", "World"},
-			}
-		},
-		buffer:  make([][]any, 10),
-		flusher: mockFlusher,
-	}
-	mockFlusher.EXPECT().Print().Return(nil).Times(1)
-	err := p.Print()
-	assert.NoError(t, err)
+	t.Run("case buffer >= capacity", func(t *testing.T) {
+		mockFlusher := NewMockIFlusher(ctrl)
+		p := &PrinterToBuffer{
+			capacity: 10,
+			f: func() [][]any {
+				return [][]any{
+					{"Hello", "World"},
+				}
+			},
+			buffer:  make([][]any, 10),
+			flusher: mockFlusher,
+		}
+		mockFlusher.EXPECT().Print().Return(nil).Times(1)
+		err := p.Print()
+		assert.NoError(t, err)
+	})
+
+	t.Run("case buffer < capacity", func(t *testing.T) {
+		mockFlusher := NewMockIFlusher(ctrl)
+		p := &PrinterToBuffer{
+			capacity: 100,
+			f: func() [][]any {
+				return [][]any{
+					{"Hello", "World"},
+				}
+			},
+			buffer:  make([][]any, 5),
+			flusher: mockFlusher,
+		}
+		mockFlusher.EXPECT().Print().Times(0)
+		err := p.Print()
+		assert.NoError(t, err)
+	})
+
 }
 func TestPrinterToBuffer_Close(t *testing.T) {
 	p := &PrinterToBuffer{
@@ -391,30 +447,61 @@ func TestFlusher_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	db, mockDb, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer func(db *sql.DB) {
-		_ = db.Close()
-	}(db)
-	f := &Flusher{
-		og: &PrinterToDb{
-			db:     db,
-			insert: "",
-			f:      nil,
-		},
-		bf: &PrinterToBuffer{
-			capacity: 0,
-			f:        nil,
-			buffer:   nil,
-			flusher:  &Flusher{},
-		},
-	}
-	mockDb.ExpectClose()
-	err = f.Close()
-	assert.NoError(t, err)
-	if err := mockDb.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
+	t.Run("case success", func(t *testing.T) {
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+		f := &Flusher{
+			og: &PrinterToDb{
+				db:     db,
+				insert: "",
+				f:      nil,
+			},
+			bf: &PrinterToBuffer{
+				capacity: 0,
+				f:        nil,
+				buffer:   nil,
+				flusher:  &Flusher{},
+			},
+		}
+		mockDb.ExpectClose()
+		err = f.Close()
+		assert.NoError(t, err)
+		if err := mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+	t.Run("case error", func(t *testing.T) {
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+		f := &Flusher{
+			og: &PrinterToDb{
+				db:     db,
+				insert: "",
+				f:      nil,
+			},
+			bf: &PrinterToBuffer{
+				capacity: 0,
+				f:        nil,
+				buffer:   nil,
+				flusher:  &Flusher{},
+			},
+		}
+		mockDb.ExpectClose().WillReturnError(errors.New("mock error"))
+		err = f.Close()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "mock error")
+		if err := mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
 }

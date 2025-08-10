@@ -278,7 +278,7 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		assert.Equal(t, uint64(1), prime.block)
 	})
 
-	t.Run("error", func(t *testing.T) {
+	t.Run("error begin block", func(t *testing.T) {
 
 		mockStateDb := state.NewMockStateDB(ctrl)
 		mockLogger := logger.NewMockLogger(ctrl)
@@ -304,6 +304,106 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
 		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
 		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
+			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
+		})
+		assert.NotNil(t, err)
+		assert.Equal(t, uint64(0), prime.block)
+	})
+
+	t.Run("error begin transaction", func(t *testing.T) {
+
+		mockStateDb := state.NewMockStateDB(ctrl)
+		mockLogger := logger.NewMockLogger(ctrl)
+		prime := &PrimeContext{
+			cfg:        nil,
+			load:       nil,
+			db:         mockStateDb,
+			operations: 0,
+			log:        mockLogger,
+			block:      0,
+			exist: map[common.Address]bool{
+				common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
+				common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+			},
+		}
+		mockError := errors.New("mock error")
+		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(mockError)
+		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
+			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
+		})
+		assert.NotNil(t, err)
+		assert.Equal(t, uint64(0), prime.block)
+	})
+
+	t.Run("error end transaction", func(t *testing.T) {
+
+		mockStateDb := state.NewMockStateDB(ctrl)
+		mockLogger := logger.NewMockLogger(ctrl)
+		prime := &PrimeContext{
+			cfg:        nil,
+			load:       nil,
+			db:         mockStateDb,
+			operations: 0,
+			log:        mockLogger,
+			block:      0,
+			exist: map[common.Address]bool{
+				common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
+				common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+			},
+		}
+		mockError := errors.New("mock error")
+		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().EndTransaction().Return(mockError)
+		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
+			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
+		})
+		assert.NotNil(t, err)
+		assert.Equal(t, uint64(0), prime.block)
+	})
+
+	t.Run("error end block", func(t *testing.T) {
+
+		mockStateDb := state.NewMockStateDB(ctrl)
+		mockLogger := logger.NewMockLogger(ctrl)
+		prime := &PrimeContext{
+			cfg:        nil,
+			load:       nil,
+			db:         mockStateDb,
+			operations: 0,
+			log:        mockLogger,
+			block:      0,
+			exist: map[common.Address]bool{
+				common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
+				common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+			},
+		}
+		mockError := errors.New("mock error")
+		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().EndTransaction().Return(nil)
+		mockStateDb.EXPECT().EndBlock().Return(mockError)
+		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
 		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 		err := prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
