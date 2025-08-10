@@ -59,6 +59,9 @@ var RunArchiveApp = cli.App{
 		// VM
 		&utils.VmImplementation,
 		&utils.EvmImplementation,
+
+		// Encoding
+		&utils.SubstateEncodingFlag,
 	},
 	Description: "Runs transactions on historic states derived from an archive DB",
 }

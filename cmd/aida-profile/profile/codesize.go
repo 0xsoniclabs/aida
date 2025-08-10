@@ -53,10 +53,10 @@ func GetTxType(to *common.Address, alloc substate.WorldState) string {
 		return "create"
 	}
 	account, hasReceiver := alloc[substatetypes.Address(*to)]
-	if to != nil && (!hasReceiver || len(account.Code) == 0) {
+	if !hasReceiver || len(account.Code) == 0 {
 		return "transfer"
 	}
-	if to != nil && (hasReceiver && len(account.Code) > 0) {
+	if hasReceiver && len(account.Code) > 0 {
 		return "call"
 	}
 	return "unknown"
