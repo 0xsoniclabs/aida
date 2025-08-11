@@ -56,6 +56,7 @@ func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, nam
 		Last:        100,
 		Validate:    true, // TODO add substates with code to testDb then validate would produce error as count wouldn't match
 		DbComponent: dbc,
+		CompactDb:   true,
 	}
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb_" + name)
 	assert.NoError(t, err)
@@ -300,6 +301,7 @@ func TestClone_Commands(t *testing.T) {
 	tests := []struct {
 		name   string
 		action cli.ActionFunc
+		flags  []string
 	}{
 		{
 			name:   cloneCustomCommand.Name,
@@ -352,5 +354,4 @@ func TestClone_Commands(t *testing.T) {
 			}, "Target database seems to be empty")
 		})
 	}
-
 }
