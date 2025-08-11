@@ -35,11 +35,13 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulkLoad, nil)
 	err := prime.mayApplyBulkLoad()
 	assert.NoError(t, err)
+	assert.True(t, prime.hasPrimed)
 
 	// case success
 	prime.operations = 0
 	err = prime.mayApplyBulkLoad()
 	assert.Nil(t, err)
+	assert.False(t, prime.hasPrimed)
 
 	// case error on close
 	prime = &PrimeContext{
@@ -329,4 +331,31 @@ func TestPrimeContext_GetBlock(t *testing.T) {
 	}
 	block := prime.GetBlock()
 	assert.Equal(t, uint64(0), block)
+}
+
+// write tests for HasPrimed
+func TestPrimeContext_HasPrimed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockStateDb := state.NewMockStateDB(ctrl)
+	prime := &PrimeContext{
+		cfg:        nil,
+		load:       mockBulkLoad,
+		db:         mockStateDb,
+		operations: OperationThreshold + 1,
+		log:        logger.NewLogger("ERROR", "Test"),
+	}
+	mockBulkLoad.EXPECT().Close().Return(nil)
+	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulkLoad, nil)
+	err := prime.mayApplyBulkLoad()
+	assert.NoError(t, err)
+	assert.True(t, prime.HasPrimed())
+
+	prime.operations = 0
+	err = prime.mayApplyBulkLoad()
+	assert.Nil(t, err)
+	assert.False(t, prime.HasPrimed())
 }

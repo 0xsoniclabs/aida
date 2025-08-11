@@ -166,7 +166,7 @@ func TestPrime_PrimeStateDB(t *testing.T) {
 			// Generating randomized world state
 			ws, _ := utils.MakeWorldState(t)
 
-			pc := utils.NewPrimeContext(cfg, sDB, 0, log)
+			pc := utils.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws, sDB)
 			if err != nil {
@@ -275,7 +275,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 			alloc, _ := utils.MakeWorldState(t)
 			ws := txcontext.NewWorldState(alloc)
 
-			pc := utils.NewPrimeContext(cfg, sDB, 0, log)
+			pc := utils.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws, sDB)
 			if err != nil {
@@ -385,7 +385,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 			alloc2, _ := utils.MakeWorldState(t)
 			ws2 := txcontext.NewWorldState(alloc2)
 
-			pc2 := utils.NewPrimeContext(cfg, sDB2, 8, log)
+			pc2 := utils.NewPrimeContext(cfg, sDB2, log)
 			// Priming state DB
 			err = pc2.PrimeStateDB(ws2, sDB2)
 			if err != nil {
@@ -500,7 +500,7 @@ func TestStateDbPrimer_Prime(t *testing.T) {
 	mockBulk := state.NewMockBulkLoad(ctrl)
 	p := &stateDbPrimer[any]{
 		log: log,
-		ctx: utils.NewPrimeContext(cfg, mockDb, 0, log),
+		ctx: utils.NewPrimeContext(cfg, mockDb, log),
 		cfg: cfg,
 	}
 	mockAida.EXPECT().GetBackend().Return(mockAdapter)
@@ -545,4 +545,84 @@ func TestStateDbPrimer_Prime(t *testing.T) {
 //go:generate mockgen -source=primer_test.go -destination=primer_mock.go -package=primer
 type ProxyIterator interface {
 	iterator.Iterator
+}
+
+func TestStateDbPrimerExtension_GetFirstPrimableBlock_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	sdb := db.NewMockSubstateDB(ctrl)
+	udb := db.NewMockUpdateDB(ctrl)
+	srcDbBlock := uint64(100)
+
+	testcases := []struct {
+		name           string
+		isExistingDb   bool
+		substateBlock  uint64
+		updateSetBlock uint64
+		primableBlock uint64
+	}{
+		{"Success_StartFromZero", false, uint64(0), uint64(0), uint64(0)}, // The first non-empty block is block 10, assume no priming is needed.
+		{"Success_StartFromUpdaetSet", false, uint64(11), uint64(10), uint64(10)} // The first non-empty block is block 1, genesis is in updateset.
+		{"Success_StartFromSubstate", false, uint64(10), uint64(11), uint64(10)} // The first non-empty block is block 1, genesis is in substate.
+		{"Success_StartFromExistingDb", true, uint64(10), uint64(11), srcDbBlock+1}, // use state-db at lblock 100, priming starts at 101
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &utils.Config{
+				IsExistingStateDb: tc.isExistingDb,
+				StateDbSrc:      t.TempDir(),
+			}
+			if tc.isExistingDb {
+				err := utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, srcDbBlock, common.Hash{}, true)
+				assert.NoError(t, err, "failed to write state db info")
+
+				pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
+				assert.NoError(t, err, "failed to get first primable block")
+				assert.Equal(t, tc.primableBlock, pfb, "first primable block mismatch")
+			} else {
+				substatedb.EXPECT().GetFirstSubstate().Return(&substate.Substate{Block: tc.substateBlock})
+				updatedb.EXPECT().GetFirstKey().Return(tc.updateSetBlock, nil)
+
+				pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
+				assert.NoError(t, err, "failed to get first primable block")
+				assert.Equal(t, tc.primableBlock, pfb, "first primable block mismatch")
+			}
+		})
+	}
+}
+
+func TestStateDbPrimerExtension_GetFirstPrimableBlock_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	sdb := db.NewMockSubstateDB(ctrl)
+	udb := db.NewMockUpdateDB(ctrl)
+
+	testcases := []struct {
+		name        string
+		isExisting  bool
+		expectedError error
+	}{
+		{"Error_SubstateEmpty", false, errors.New("substate db is empty")},
+		{"Error_StateInfoMissing", true, errors.New("cannot read state db info; failed to read statedb_info.json; open statedb_info.json: no such file or directory")},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &utils.Config{
+				IsExistingStateDb: tc.isExisting,
+			}
+
+			if !tc.isExisting {
+				if tc.substateErr != nil {
+					sdb.EXPECT().GetFirstSubstate().Return(nil).Times(1)
+				}
+			}
+
+			pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
+			assert.Error(t, err, "expected error but got none")
+			assert.EqualError(t, err, tc.expectedError.Error(), "unexpected error message")
+			assert.Equal(t, uint64(0), pfb, "expected zero block number on error")
+		})
+	}
 }
