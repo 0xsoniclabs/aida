@@ -2,8 +2,12 @@ package clone
 
 import (
 	"fmt"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -56,7 +60,7 @@ func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, nam
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb_" + name)
 	assert.NoError(t, err)
 
-	err = clone(cfg, aidaDb, cloneDb, cloningType, false)
+	err = clone(cfg, aidaDb, cloneDb, cloningType)
 	if err != nil {
 		//t.Fatalf("Clone failed for %s: %v", name, err)
 		return fmt.Errorf("clone failed for %s: %v", name, err)
@@ -213,7 +217,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, aidaDb, cloneDb, utils.CustomType, false)
+	err = clone(cfg, aidaDb, cloneDb, utils.CustomType)
 
 	assert.NoError(t, err)
 
@@ -239,7 +243,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, aidaDb, cloneDb, utils.CloneType, false)
+	err = clone(cfg, aidaDb, cloneDb, utils.CloneType)
 
 	assert.NoError(t, err)
 
@@ -290,4 +294,63 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	assert.NoError(t, err)
 	err = openedTargetDb.Close()
 	assert.NoError(t, err)
+}
+
+func TestClone_Commands(t *testing.T) {
+	tests := []struct {
+		name   string
+		action cli.ActionFunc
+	}{
+		{
+			name:   cloneCustomCommand.Name,
+			action: cloneCustomAction,
+		},
+		{
+			name:   cloneDbCommand.Name,
+			action: cloneDbAction,
+		},
+		{
+			name:   clonePatchCommand.Name,
+			action: clonePatchAction,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, ss, srcDbPath := utils.CreateTestSubstateDb(t)
+			app := cli.NewApp()
+			app.Action = test.action
+			app.Flags = []cli.Flag{
+				&utils.AidaDbFlag,
+				&utils.TargetDbFlag,
+				&logger.LogLevelFlag,
+				&utils.DbComponentFlag,
+			}
+
+			targetDbPath := t.TempDir() + "/target.db"
+
+			err := app.Run([]string{
+				test.name,
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				targetDbPath,
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			})
+			require.NoError(t, err)
+
+			require.Condition(t, func() bool {
+				stat, err := os.Stat(targetDbPath)
+				require.NoError(t, err)
+				return stat != nil && stat.IsDir() && stat.Size() > 0
+			}, "Target database seems to be empty")
+		})
+	}
+
 }

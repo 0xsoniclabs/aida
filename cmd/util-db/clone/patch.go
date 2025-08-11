@@ -55,7 +55,7 @@ func clonePatchAction(ctx *cli.Context) error {
 		return err
 	}
 
-	err = createPatchClone(cfg, aidaDb, targetDb, firstEpoch, lastEpoch, false)
+	err = createPatchClone(cfg, aidaDb, targetDb, firstEpoch, lastEpoch)
 	if err != nil {
 		return err
 	}
@@ -67,21 +67,9 @@ func clonePatchAction(ctx *cli.Context) error {
 }
 
 // createPatchClone creates aida-db clonePatchCommand
-func createPatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64, isNewOpera bool) error {
-	var isFirstGenerationFromGenesis = false
-
+func createPatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64) error {
 	var cloneType = utils.PatchType
-
-	// if the patch is first, we need to make some exceptions hence cloner needs to know
-	if isNewOpera {
-		if firstEpoch == 5577 && cfg.ChainID == utils.MainnetChainID {
-			isFirstGenerationFromGenesis = true
-		} else if firstEpoch == 2458 && cfg.ChainID == utils.TestnetChainID {
-			isFirstGenerationFromGenesis = true
-		}
-	}
-
-	err := clone(cfg, aidaDb, targetDb, cloneType, isFirstGenerationFromGenesis)
+	err := clone(cfg, aidaDb, targetDb, cloneType)
 	if err != nil {
 		return err
 	}

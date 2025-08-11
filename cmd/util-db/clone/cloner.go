@@ -36,7 +36,7 @@ type rawEntry struct {
 }
 
 // clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType, isFirstGenerationFromGenesis bool) error {
+func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb clone")
 
@@ -62,7 +62,7 @@ func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbT
 		stopCh:         make(chan any),
 	}
 
-	if err = c.clone(isFirstGenerationFromGenesis); err != nil {
+	if err = c.clone(); err != nil {
 		return err
 	}
 
@@ -71,10 +71,10 @@ func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbT
 }
 
 // cloneDbAction AidaDb in given block range
-func (c *cloner) clone(isFirstGenerationFromGenesis bool) error {
+func (c *cloner) clone() error {
 	go c.write()
 
-	err := c.readData(isFirstGenerationFromGenesis)
+	err := c.readData()
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (c *cloner) clone(isFirstGenerationFromGenesis bool) error {
 }
 
 // readData from source AidaDb
-func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
+func (c *cloner) readData() error {
 	// notify writer that all data was read
 	defer close(c.writeCh)
 
@@ -129,7 +129,7 @@ func (c *cloner) readData(isFirstGenerationFromGenesis bool) error {
 	// update c.cfg.First block before loading deletions and substates, because for utils.CloneType those are necessary to be from last updateset onward
 	// lastUpdateBeforeRange contains block number at which is first updateset preceding the given block range,
 	// it is only required in CloneType db
-	lastUpdateBeforeRange := c.readUpdateSet(isFirstGenerationFromGenesis)
+	lastUpdateBeforeRange := c.readUpdateSet()
 	if c.typ == utils.CloneType {
 		// check whether updateset before interval exists
 		if lastUpdateBeforeRange < c.cfg.First && lastUpdateBeforeRange != 0 {
@@ -243,7 +243,7 @@ func (c *cloner) read(prefix []byte, start uint64, condition func(key []byte) (b
 }
 
 // readUpdateSet from UpdateDb
-func (c *cloner) readUpdateSet(isFirstGenerationFromGenesis bool) uint64 {
+func (c *cloner) readUpdateSet() uint64 {
 	// labeling last updateSet before interval - need to export substate for that range as well
 	var lastUpdateBeforeRange uint64
 	endCond := func(key []byte) (bool, error) {
@@ -266,16 +266,7 @@ func (c *cloner) readUpdateSet(isFirstGenerationFromGenesis bool) uint64 {
 		// if there is no updateset before interval (first 1M blocks) then 0 is returned
 		return lastUpdateBeforeRange
 	} else if c.typ == utils.PatchType || c.typ == utils.CustomType {
-		var wantedBlock uint64
-
-		// if we are working with first patch that was created from genesis we need to move the start of the iterator minus one block
-		// so first update-set from worldstate gets inserted
-		if isFirstGenerationFromGenesis {
-			wantedBlock = c.cfg.First - 1
-		} else {
-			wantedBlock = c.cfg.First
-		}
-
+		wantedBlock := c.cfg.First
 		c.read([]byte(db.UpdateDBPrefix), wantedBlock, endCond)
 		return 0
 	} else {
@@ -444,7 +435,7 @@ func (c *cloner) readDataCustom() error {
 	}
 
 	if c.cloneComponent == dbcomponent.Update || c.cloneComponent == dbcomponent.All {
-		lastUpdateBeforeRange := c.readUpdateSet(false)
+		lastUpdateBeforeRange := c.readUpdateSet()
 		c.log.Noticef("Last updateset found at block %v", lastUpdateBeforeRange)
 	}
 

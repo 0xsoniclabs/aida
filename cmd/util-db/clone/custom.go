@@ -39,7 +39,7 @@ func cloneCustomAction(ctx *cli.Context) error {
 		return err
 	}
 
-	err = clone(cfg, aidaDb, targetDb, utils.CustomType, false)
+	err = clone(cfg, aidaDb, targetDb, utils.CustomType)
 	if err != nil {
 		return err
 	}
