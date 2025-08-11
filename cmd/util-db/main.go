@@ -33,12 +33,9 @@ var UtilDbApp = cli.App{
 	Usage:     "merge source data into profiling database",
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
-		&db.AutoGenCommand,
 		&db.CloneCommand,
 		&db.CompactCommand,
-		&db.GenerateCommand,
 		&db.ExtractEthereumGenesisCommand,
-		&db.LachesisUpdateCommand,
 		&db.MergeCommand,
 		&db.UpdateCommand,
 		&db.InfoCommand,

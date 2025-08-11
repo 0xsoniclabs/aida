@@ -37,6 +37,8 @@ import (
 	"github.com/op/go-logging"
 )
 
+const commandOutputLimit = 50
+
 // OpenSourceDatabases opens all databases required for merge
 func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 	if len(sourceDbPaths) < 1 {
@@ -475,20 +477,4 @@ func printDbType(m *utils.AidaDbMetadata) error {
 	logger.NewLogger("INFO", "Print-Metadata").Noticef("DB-Type: %v", typePrint)
 
 	return nil
-}
-
-// LogDetailedSize counts and prints all prefix occurrence
-func LogDetailedSize(db db.BaseDB, log logger.Logger) {
-	iter := db.NewIterator(nil, nil)
-	defer iter.Release()
-
-	countMap := make(map[string]uint64)
-
-	for iter.Next() {
-		countMap[string(iter.Key()[:2])]++
-	}
-
-	for key, count := range countMap {
-		log.Noticef("Prefix :%v; Count: %v", key, count)
-	}
 }
