@@ -72,15 +72,6 @@ func TestOperationOpcode(t *testing.T) {
 
 						// decode argument-encoded operation
 						dop, daddr, dkey, dvalue := DecodeOpcode(opcode)
-						if dop == BeginTransactionID {
-							println(opcode)
-						}
-						if dop == BeginBlockID {
-							println(opcode)
-						}
-						if dop == BeginSyncPeriodID {
-							println(opcode)
-						}
 						if op != dop || addr != daddr || key != dkey || value != dvalue {
 							t.Fatalf("Encoding/decoding failed for %v", opcode)
 						}
@@ -129,5 +120,8 @@ func TestStochastic_IsValidArgOp(t *testing.T) {
 	assert.True(t, valid)
 
 	invalid := IsValidArgOp(-1)
+	assert.False(t, invalid)
+
+	invalid = IsValidArgOp(numArgOps)
 	assert.False(t, invalid)
 }
