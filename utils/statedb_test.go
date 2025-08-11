@@ -168,7 +168,7 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			}
 
 			// Call for removal of destroyed accounts from state DB
-			err = DeleteDestroyedAccountsFromStateDB(sDB, cfg, 5, base)
+			err = MayDeleteDestroyedAccountsFromStateDB(sDB, cfg, 5, base)
 			if err != nil {
 				t.Fatalf("failed to delete accounts from the state DB: %v", err)
 			}

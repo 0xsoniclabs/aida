@@ -18,7 +18,6 @@ package primer
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
@@ -60,83 +59,71 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 		return nil
 	}
 
-	// As different substates start on different blocks (either 0 or 1)
-	// we must check the starting block with the key word "first" with appropriate chainid
-	if p.cfg.First == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
-		if utils.IsEthereumNetwork(p.cfg.ChainID) {
-			p.log.Noticef("Priming ethereum genesis...")
-			p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, utils.KeywordBlocks[p.cfg.ChainID]["first"], p.log)
-			return p.primeEthereumGenesis(ctx.State, ctx.AidaDb)
-		}
-		return nil
-	}
-
-	// is used to determine block from which the priming starts
-	var primingStartBlock uint64
-	if p.cfg.IsExistingStateDb {
-		var stateDbInfo utils.StateDbInfo
-		var err error
-		if p.cfg.ShadowDb {
-			stateDbInfo, err = utils.ReadStateDbInfo(filepath.Join(p.cfg.StateDbSrc, utils.PathToPrimaryStateDb))
-		} else {
-			stateDbInfo, err = utils.ReadStateDbInfo(p.cfg.StateDbSrc)
-		}
-		if err != nil {
-			return fmt.Errorf("cannot read state db info; %w", err)
-		}
-		primingStartBlock = stateDbInfo.Block + 1
-	}
-
-	if primingStartBlock == p.cfg.First {
-		p.log.Debugf("skipping priming; first priming block %v; first block %v", primingStartBlock-1, p.cfg.First)
-		return nil
-	}
-
-	// user incorrectly tries to prime data into database even tho database is already advanced further
-	if primingStartBlock > p.cfg.First {
-		return fmt.Errorf("undefined behaviour; starting block %v shouldn't lower than block of provided stateDb %v", p.cfg.First, primingStartBlock-1)
-	}
-
 	if p.cfg.PrimeRandom {
 		p.log.Infof("Randomized Priming enabled; Seed: %v, threshold: %v", p.cfg.RandomSeed, p.cfg.PrimeThreshold)
 	}
 
 	p.log.Infof("Update buffer size: %v bytes", p.cfg.UpdateBufferSize)
 
-	p.log.Noticef("Priming from block %v...", primingStartBlock)
-	p.log.Noticef("Priming to block %v...", p.cfg.First-1)
-	p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, primingStartBlock, p.log)
-
+	p.ctx = utils.NewPrimeContext(p.cfg, ctx.State, p.log)
 	return p.prime(ctx.State, ctx.AidaDb)
 }
 
-// prime advances the stateDb to given first block.
-func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error {
+// getFirstPrimableBlock calculates the first block to prime the stateDb.
+func (p *stateDbPrimer[T]) getFirstPrimableBlock(udb db.UpdateDB, sdb db.SubstateDB) (uint64, error) {
+	primable := uint64(0) // default value; start priming from block 0
+
+	if p.cfg.IsExistingStateDb {
+		stateDbInfo, err := utils.ReadStateDbInfo(p.cfg.StateDbSrc)
+		if err != nil {
+			return 0, fmt.Errorf("cannot read state db info; %w", err)
+		}
+		primable = stateDbInfo.Block + 1
+	} else {
+		substate := sdb.GetFirstSubstate()
+		if substate == nil {
+			return 0, fmt.Errorf("cannot get first substate; substate db is empty")
+		}
+		substateFirst := substate.Block
+		updateSetFirst, err := udb.GetFirstKey()
+		// Update-set may or may not exist. If it does not exist, we set the first block to
+		// the largest block in the stateDb.
+		if err != nil {
+			updateSetFirst = p.cfg.Last // if update-set does not exist, set to largest block
+		}
+		primable = min(substateFirst, updateSetFirst)
+	}
+	return primable, nil
+}
+
+// mayPrimeFromUpdateSet primes the stateDb from the update-set database if data is available.
+func (p *stateDbPrimer[T]) mayPrimeFromUpdateSet(stateDb state.StateDB, block uint64, udb db.UpdateDB) (uint64, error) {
 	var (
-		totalSize uint64             // total size of unprimed update set
-		hasPrimed bool               // if true, db has been primed
-		block     = p.ctx.GetBlock() // current block priming position
+		totalSize uint64 // total size of unprimed update set
+		hasPrimed bool   // if true, db has been primed
 	)
 
-	// load pre-computed update-set from update-set db
-	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
-	updateIter := udb.NewUpdateSetIterator(block, p.cfg.First-1)
+	// Primable block is already ahead of the first target block. No priming is needed.
+	if block >= p.ctx.GetFirst() {
+		return block, nil
+	}
+	// create iterator starting from the first primable block.
+	updateIter := udb.NewUpdateSetIterator(block, p.ctx.GetFirst()-1)
 	update := make(substate.WorldState)
 
 	for updateIter.Next() {
 		newSet := updateIter.Value()
-		if newSet.Block > p.cfg.First-1 {
+		if newSet.Block >= p.ctx.GetFirst() {
 			break
 		}
 		block = newSet.Block
-
 		incrementalSize := update.EstimateIncrementalSize(newSet.WorldState)
 
 		// Prime StateDB
 		if totalSize+incrementalSize > p.cfg.UpdateBufferSize {
 			p.log.Infof("\tPriming...")
 			if err := p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
-				return fmt.Errorf("cannot prime state-db; %v", err)
+				return block, fmt.Errorf("cannot prime state-db; %v", err)
 			}
 
 			totalSize = 0
@@ -151,6 +138,7 @@ func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error 
 		// if exists in DB, suicide
 		if hasPrimed {
 			p.ctx.SelfDestructAccounts(stateDb, newSet.DeletedAccounts)
+			hasPrimed = false
 		}
 
 		update.Merge(newSet.WorldState)
@@ -158,7 +146,7 @@ func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error 
 		p.log.Infof("\tMerge update set at block %v. New total size %v MB (+%v MB)",
 			newSet.Block, totalSize/1_000_000,
 			incrementalSize/1_000_000)
-		// advance block after merge update set
+		// advance next primable block after merge update set
 		block++
 	}
 	updateIter.Release()
@@ -166,57 +154,77 @@ func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error 
 	// if update set is not empty, prime the remaining
 	if len(update) > 0 {
 		if err := p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
-			return fmt.Errorf("cannot prime state-db; %v", err)
+			return block, fmt.Errorf("cannot prime state-db; %v", err)
 		}
 		update = make(substate.WorldState)
-		hasPrimed = true
 	}
 
-	// advance from the latest precomputed update-set to the target block
-	// if the first block is 1, target must prime the genesis block
-	if block < p.cfg.First || p.cfg.First-1 == 0 {
-		log.Infof("\tPriming using substate from %v to %v", block, p.cfg.First-1)
-		update, deletedAccounts, err := utils.GenerateUpdateSet(block, p.cfg.First-1, p.cfg, aidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot generate update-set; %w", err)
-		}
-		if hasPrimed {
-			p.ctx.SelfDestructAccounts(stateDb, deletedAccounts)
-		}
-		if err = p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
-			return fmt.Errorf("cannot prime state-db; %w", err)
-		}
+	return block, nil
+}
+
+// mayPrimeFromSubstate prime from current block to the runnable first block.
+func (p *stateDbPrimer[T]) mayPrimeFromSubstate(stateDb state.StateDB, block uint64, aidaDb db.BaseDB) error {
+	if block >= p.ctx.GetFirst() {
+		return nil
 	}
-
-	p.log.Noticef("Delete destroyed accounts until block %v", p.cfg.First-1)
-
-	// remove destroyed accounts until one block before the first block
-	err := utils.DeleteDestroyedAccountsFromStateDB(stateDb, p.cfg, p.cfg.First-1, aidaDb)
+	log.Infof("\tPriming using substate from %v to %v", block, p.ctx.GetFirst()-1)
+	update, deletedAccounts, err := utils.GenerateUpdateSet(block, p.ctx.GetFirst()-1, p.cfg, aidaDb)
 	if err != nil {
-		return fmt.Errorf("cannot delete destroyed accounts from state-db; %v", err)
+		return fmt.Errorf("cannot generate update-set; %w", err)
 	}
-
+	// remove deleted accounts from statedb before priming only if statedb is not empty
+	if p.ctx.HasPrimed() {
+		p.ctx.SelfDestructAccounts(stateDb, deletedAccounts)
+	}
+	if err = p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
+		return fmt.Errorf("cannot prime state-db; %w", err)
+	}
 	return nil
 }
 
-func (p *stateDbPrimer[T]) primeEthereumGenesis(stateDb state.StateDB, aidaDb db.BaseDB) error {
+// prime advances the stateDb to given first block.
+// A--B--C, If A is the First block in passed by user, B is the first
+// primmable block and C is the first substate (true first block).
+// Primming should be able to prime from B to C.
+func (p *stateDbPrimer[T]) prime(stateDb state.StateDB, aidaDb db.BaseDB) error {
+	var primeBlock uint64
+
 	// load pre-computed update-set from update-set db
-	block := p.ctx.GetBlock()
 	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
-	updateIter := udb.NewUpdateSetIterator(block, block+1)
-	update := make(substate.WorldState)
+	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	sdb.SetSubstateEncoding(p.cfg.SubstateEncoding)
 
-	for updateIter.Next() {
-		newSet := updateIter.Value()
-		block = newSet.Block
-		update.Merge(newSet.WorldState)
-		// advance block after merge update set
-		block++
+	// calculate key blocks
+	primeBlock, err := p.getFirstPrimableBlock(udb, sdb)
+	if err != nil {
+		return fmt.Errorf("cannot get first primable block; %w", err)
 	}
-	updateIter.Release()
+	substate := sdb.GetFirstSubstate()
+	if substate == nil {
+		return fmt.Errorf("cannot get first substate; substate db is empty")
+	}
+	p.ctx.SetFirst(max(substate.Block, p.cfg.First))
+	// skip priming
+	if primeBlock >= p.ctx.GetFirst() {
+		return nil
+	}
+	p.log.Noticef("Priming from block %v...", primeBlock)
+	p.log.Noticef("Priming to block %v...", p.ctx.GetFirst()-1)
 
-	if err := p.ctx.PrimeStateDB(substatecontext.NewWorldState(update), stateDb); err != nil {
-		return fmt.Errorf("cannot prime state-db; %v", err)
+	// try advance from update-set
+	primeBlock, err = p.mayPrimeFromUpdateSet(stateDb, primeBlock, udb)
+	if err != nil {
+		return fmt.Errorf("cannot prime from update-set; %w", err)
+	}
+
+	// advance from the latest precomputed update-set to the target block
+	err = p.mayPrimeFromSubstate(stateDb, primeBlock, aidaDb)
+
+	p.log.Noticef("Delete destroyed accounts until block %v", p.ctx.GetFirst()-1)
+	// remove destroyed accounts until one block before the first block
+	err = utils.MayDeleteDestroyedAccountsFromStateDB(stateDb, p.cfg, p.ctx.GetFirst()-1, aidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot delete destroyed accounts from state-db; %v", err)
 	}
 
 	return nil

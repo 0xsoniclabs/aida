@@ -281,9 +281,9 @@ func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config,
 	return nil
 }
 
-// DeleteDestroyedAccountsFromStateDB performs suicide operations on previously
+// MayDeleteDestroyedAccountsFromStateDB performs suicide operations on previously
 // self-destructed accounts.
-func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target uint64, aidaDb db.BaseDB) error {
+func MayDeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target uint64, aidaDb db.BaseDB) error {
 	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
 
 	src := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
