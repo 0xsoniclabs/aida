@@ -4,6 +4,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
@@ -29,4 +30,16 @@ func TestOpenSourceDatabases(t *testing.T) {
 	gotSs3, err := sdb3.GetSubstate(ss3.Block, ss3.Transaction)
 	require.NoError(t, err)
 	require.NoError(t, gotSs3.Equal(ss3))
+}
+
+func TestCalculateMD5Sum(t *testing.T) {
+	name := t.TempDir() + "/testfile"
+	f, err := os.Create(name)
+	require.NoError(t, err)
+	_, err = f.Write([]byte("test"))
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	md5Sum, err := calculateMD5Sum(name)
+	require.NoError(t, err)
+	require.Equal(t, md5Sum, "098f6bcd4621d373cade4e832627b4f6")
 }
