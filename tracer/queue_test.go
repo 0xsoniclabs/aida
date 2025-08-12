@@ -96,23 +96,37 @@ func TestQueue_Classify(t *testing.T) {
 func TestQueue_IsCircularBuffer(t *testing.T) {
 	q := NewQueue[int]()
 
-	// Add more items than QueueLen to force overwrite
+	// Fill the queue with more items than its capacity
 	totalItems := QueueLen + 50
 	for i := 1; i <= totalItems; i++ {
-		q.Place(i)
+		q.Classify(i)
 	}
 
-	// Oldest items should be gone
+	// Oldest items should be classified as new (since they were overwritten)
 	for i := 1; i <= 50; i++ {
 		if idx := q.Find(i); idx != -1 {
 			t.Errorf("Expected item %d to be overwritten, but found at index %d", i, idx)
 		}
 	}
 
-	// Most recent items should be present
+	// Most recent items should be present and classified as RecentValueID or PreviousValueID
 	for i := totalItems; i > totalItems-QueueLen; i-- {
-		if idx := q.Find(i); idx == -1 {
+		idx := q.Find(i)
+		if idx == -1 {
 			t.Errorf("Expected item %d to be in queue, but not found", i)
+			continue
+		}
+		if idx == 0 {
+			// Most recent item
+			id, _ := q.Classify(i)
+			if id != PreviousValueID {
+				t.Errorf("Expected item %d to be classified as PreviousValueID, got id=%d", i, id)
+			}
+		} else {
+			id, _ := q.Classify(i)
+			if id != RecentValueID {
+				t.Errorf("Expected item %d to be classified as RecentValueID, got id=%d", i, id)
+			}
 		}
 	}
 }
