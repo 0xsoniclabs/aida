@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"log"
 	"os"
 
@@ -34,7 +35,7 @@ var UtilDbApp = cli.App{
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
 		&db.CloneCommand,
-		&db.CompactCommand,
+		&compact.Command,
 		&db.ExtractEthereumGenesisCommand,
 		&db.MergeCommand,
 		&db.UpdateCommand,
