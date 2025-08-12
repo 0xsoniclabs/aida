@@ -95,11 +95,14 @@ func TestQueue_Classify(t *testing.T) {
 
 func TestQueue_IsCircularBuffer(t *testing.T) {
 	q := NewQueue[int]()
-
+	positions := make(map[int]int)
 	// Fill the queue with more items than its capacity
 	totalItems := QueueLen + 50
 	for i := 1; i <= totalItems; i++ {
-		q.Classify(i)
+		id, pos := q.Classify(i)
+		if id == RecentValueID {
+			positions[i] = pos
+		}
 	}
 
 	// Oldest items should be classified as new (since they were overwritten)
@@ -115,6 +118,11 @@ func TestQueue_IsCircularBuffer(t *testing.T) {
 		if idx == -1 {
 			t.Errorf("Expected item %d to be in queue, but not found", i)
 			continue
+		}
+		if pos, exists := positions[i]; exists {
+			if pos != idx {
+				t.Errorf("Expected item %d to be at position %d, but found at %d", i, pos, idx)
+			}
 		}
 		if idx == 0 {
 			// Most recent item
