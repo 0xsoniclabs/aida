@@ -64,7 +64,7 @@ func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, nam
 
 	err = clone(cfg, aidaDb, cloneDb, cloningType)
 	if err != nil {
-		//t.Fatalf("Clone failed for %s: %v", name, err)
+		//t.Fatalf("Clone failed for %s: %v", testName, err)
 		return fmt.Errorf("clone failed for %s: %v", name, err)
 	}
 
@@ -297,44 +297,23 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 }
 
 func TestClone_Commands(t *testing.T) {
+	ss, srcDbPath := utils.CreateTestSubstateDb(t)
 	tests := []struct {
-		name   string
-		action cli.ActionFunc
-		flags  []string
+		cmdName  string
+		testName string
+		action   cli.ActionFunc
+		wantErr  string
+		args     []string
 	}{
 		{
-			name:   cloneCustomCommand.Name,
-			action: cloneCustomAction,
-		},
-		{
-			name:   cloneDbCommand.Name,
-			action: cloneDbAction,
-		},
-		{
-			name:   clonePatchCommand.Name,
-			action: clonePatchAction,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, ss, srcDbPath := utils.CreateTestSubstateDb(t)
-			app := cli.NewApp()
-			app.Action = test.action
-			app.Flags = []cli.Flag{
-				&utils.AidaDbFlag,
-				&utils.TargetDbFlag,
-				&logger.LogLevelFlag,
-				&utils.DbComponentFlag,
-			}
-
-			targetDbPath := t.TempDir() + "/target.db"
-
-			err := app.Run([]string{
-				test.name,
+			cmdName:  cloneCustomCommand.Name,
+			testName: cloneCustomCommand.Name + "_Success",
+			action:   cloneCustomAction,
+			args: []string{
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
-				targetDbPath,
+				t.TempDir() + "/target.db",
 				"--db-component",
 				"all",
 				"-l",
@@ -343,14 +322,179 @@ func TestClone_Commands(t *testing.T) {
 				strconv.FormatUint(ss.Block+1, 10),
 				"0",
 				"0",
-			})
-			require.NoError(t, err)
+			},
+		},
+		{
+			cmdName:  cloneDbCommand.Name,
+			testName: cloneDbCommand.Name + "_Success",
+			action:   cloneDbAction,
+			args: []string{
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			},
+		},
+		{
+			cmdName:  clonePatchCommand.Name,
+			testName: clonePatchCommand.Name + "_Success",
+			action:   clonePatchAction,
+			args: []string{
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			},
+		},
+		{
+			cmdName:  cloneCustomCommand.Name,
+			testName: cloneCustomCommand.Name + "_Invalid_NumberOfArgs",
+			action:   cloneCustomAction,
+			wantErr:  "command requires 2 arguments",
+			args: []string{
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+			},
+		},
+		{
+			cmdName:  cloneDbCommand.Name,
+			testName: cloneDbCommand.Name + "_Invalid_NumberOfArgs",
+			action:   cloneDbAction,
+			wantErr:  "command requires 2 arguments",
+			args: []string{
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+			},
+		},
+		{
+			cmdName:  clonePatchCommand.Name,
+			testName: clonePatchCommand.Name + "_Invalid_NumberOfArgs",
+			action:   clonePatchAction,
+			wantErr:  "clone patch command requires exactly 4 arguments",
+			args: []string{
+				"--aida-db",
+				srcDbPath,
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+			},
+		},
+		{
+			cmdName:  cloneCustomCommand.Name,
+			testName: cloneCustomCommand.Name + "_SrcDoesNotExist",
+			action:   cloneCustomAction,
+			args: []string{
+				"--aida-db",
+				"/some/wrong/src/path",
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			},
+			wantErr: "specified aida-db /some/wrong/src/path is empty",
+		},
+		{
+			cmdName:  cloneDbCommand.Name,
+			testName: cloneDbCommand.Name + "_SrcDoesNotExist",
+			action:   cloneDbAction,
+			args: []string{
+				"--aida-db",
+				"/some/wrong/src/path",
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			},
+			wantErr: "specified aida-db /some/wrong/src/path is empty",
+		},
+		{
+			cmdName:  clonePatchCommand.Name,
+			testName: clonePatchCommand.Name + "_SrcDoesNotExist",
+			action:   clonePatchAction,
+			args: []string{
+				"--aida-db",
+				"/some/wrong/src/path",
+				"--target-db",
+				t.TempDir() + "/target.db",
+				"--db-component",
+				"all",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+				"0",
+				"0",
+			},
+			wantErr: "specified aida-db /some/wrong/src/path is empty",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			app := cli.NewApp()
+			app.Action = test.action
+			app.Flags = []cli.Flag{
+				&utils.AidaDbFlag,
+				&utils.TargetDbFlag,
+				&logger.LogLevelFlag,
+				&utils.DbComponentFlag,
+			}
+			targetDbPath := test.args[3]
 
-			require.Condition(t, func() bool {
-				stat, err := os.Stat(targetDbPath)
+			err := app.Run(append([]string{test.cmdName}, test.args...))
+			if test.wantErr == "" {
 				require.NoError(t, err)
-				return stat != nil && stat.IsDir() && stat.Size() > 0
-			}, "Target database seems to be empty")
+				require.Condition(t, func() bool {
+					stat, err := os.Stat(targetDbPath)
+					require.NoError(t, err)
+					return stat != nil && stat.IsDir() && stat.Size() > 0
+				}, "Target database seems to be empty")
+			} else {
+				require.ErrorContains(t, err, test.wantErr)
+			}
+
 		})
 	}
 }
