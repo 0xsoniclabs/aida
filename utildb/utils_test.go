@@ -1,11 +1,12 @@
 package utildb
 
 import (
+	"os"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func TestOpenSourceDatabases(t *testing.T) {
