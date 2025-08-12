@@ -42,7 +42,6 @@ var UtilDbApp = cli.App{
 		&info.Command,
 		&db.ValidateCommand,
 		&db.GenDeletedAccountsCommand,
-		&db.SubstateDumpCommand,
 		&db.GenerateDbHashCommand,
 		&db.ScrapeCommand,
 		&db.MetadataCommand,

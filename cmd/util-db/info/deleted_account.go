@@ -36,6 +36,13 @@ func printDeletedAccountsAction(ctx *cli.Context) error {
 		return err
 	}
 
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			log.Warningf("Error closing aida db: %v", err)
+		}
+	}()
+
 	accounts, err := db.GetAccountsDestroyedInRange(cfg.First, cfg.Last)
 	if err != nil {
 		return fmt.Errorf("cannot Get all destroyed accounts; %w", err)

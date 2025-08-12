@@ -3,6 +3,8 @@ package info
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"strconv"
 	"strings"
@@ -1148,4 +1150,179 @@ func TestInfo_PrintExceptionForBlock_AidaDbDoesNotExists(t *testing.T) {
 		t.Fatalf("expected an error %v, but got nil", errWant)
 	}
 	assert.Equal(t, errWant, err.Error())
+}
+
+func TestCommands(t *testing.T) {
+	ss, dbPath := utils.CreateTestSubstateDb(t)
+	addr := types.Address{0x1, 0x12}
+
+	tests := []struct {
+		cmd   cli.Command
+		args  []string
+		setup func()
+	}{
+		{
+			cmd:  printDbHashCommand,
+			args: []string{printDbHashCommand.Name, "--aida-db", dbPath},
+			setup: func() {
+				// ignored
+			},
+		},
+		{
+			cmd: printCountCommand,
+			args: []string{
+				printCountCommand.Name,
+				"--aida-db",
+				dbPath,
+				"--db-component",
+				string(dbcomponent.Substate),
+				"--substate-encoding",
+				"pb",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+			setup: func() {
+				// ignored
+			},
+		},
+		{
+			cmd: printDeletedAccountsCommand,
+			args: []string{
+				printDeletedAccountsCommand.Name,
+				"--aida-db",
+				dbPath,
+				"--account",
+				types.Address{0}.String(),
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+			setup: func() {
+				ddb, err := db.NewDefaultDestroyedAccountDB(dbPath)
+				require.NoError(t, err)
+				err = ddb.SetDestroyedAccounts(ss.Block, ss.Transaction, []types.Address{addr}, []types.Address{})
+				require.NoError(t, err)
+				err = ddb.Close()
+				require.NoError(t, err)
+			},
+		},
+		{
+			cmd: dumpSubstateCommand,
+			args: []string{
+				dumpSubstateCommand.Name,
+				"--aida-db",
+				dbPath,
+				"--substate-encoding",
+				"pb",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+			setup: func() {
+				// ignored
+			},
+		},
+		{
+			cmd: printExceptionsCommand,
+			args: []string{
+				printExceptionsCommand.Name,
+				"--aida-db",
+				dbPath,
+				strconv.FormatUint(ss.Block, 10),
+			},
+			setup: func() {
+				edb, err := db.NewDefaultExceptionDB(dbPath)
+				require.NoError(t, err)
+				err = edb.PutException(&substate.Exception{
+					Block: ss.Block,
+					Data: substate.ExceptionBlock{
+						Transactions: map[int]substate.ExceptionTx{
+							ss.Transaction: {
+								PreTransaction: &substate.WorldState{addr: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100)}},
+							},
+						},
+					},
+				})
+				require.NoError(t, err)
+				err = edb.Close()
+				require.NoError(t, err)
+			},
+		},
+		{
+			cmd: printStateHashCommand,
+			args: []string{
+				printStateHashCommand.Name,
+				"--aida-db",
+				dbPath,
+				strconv.FormatUint(ss.Block, 10),
+			},
+			setup: func() {
+				bdb, err := db.NewDefaultBaseDB(dbPath)
+				require.NoError(t, err)
+				hex := strconv.FormatUint(ss.Block, 16)
+				err = bdb.Put([]byte(utils.StateRootHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())
+				require.NoError(t, err)
+				err = bdb.Close()
+				require.NoError(t, err)
+			},
+		},
+		{
+			cmd: printRangeCommand,
+			args: []string{
+				printRangeCommand.Name,
+				"--aida-db",
+				dbPath,
+				"--db-component",
+				string(dbcomponent.Substate),
+				"--substate-encoding",
+				"pb",
+				"-l",
+				"CRITICAL",
+			},
+			setup: func() {
+				// ignored
+			},
+		},
+		{
+			cmd: printTableHashCommand,
+			args: []string{
+				printTableHashCommand.Name,
+				"--aida-db",
+				dbPath,
+				"--db-component",
+				string(dbcomponent.Substate),
+				"--substate-encoding",
+				"pb",
+				"-l",
+				"CRITICAL",
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+			setup: func() {
+				// ignored
+			},
+		},
+		{
+			cmd: printPrefixHashCommand,
+			args: []string{
+				printPrefixHashCommand.Name,
+				"--aida-db",
+				dbPath,
+				db.SubstateDBPrefix,
+			},
+			setup: func() {
+				// ignored
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.cmd.Name, func(t *testing.T) {
+			test.setup()
+			app := cli.NewApp()
+			app.Action = test.cmd.Action
+			app.Flags = test.cmd.Flags
+
+			err := app.Run(test.args)
+			require.NoError(t, err)
+		})
+	}
+
 }

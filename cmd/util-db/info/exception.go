@@ -45,6 +45,13 @@ func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint6
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
 
+	defer func() {
+		err = exceptionDb.Close()
+		if err != nil {
+			log.Warningf("Error closing aida db: %v", err)
+		}
+	}()
+
 	exception, err := exceptionDb.GetException(blockNum)
 	if err != nil {
 		return fmt.Errorf("cannot get exception for block %d; %v", blockNum, err)
