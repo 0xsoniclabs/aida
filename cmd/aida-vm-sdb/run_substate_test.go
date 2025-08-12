@@ -38,7 +38,7 @@ import (
 )
 
 func TestCmd_RunSubstate(t *testing.T) {
-	_, _, path := utils.CreateTestSubstateDb(t)
+	_, path := utils.CreateTestSubstateDb(t)
 	app := cli.NewApp()
 	app.Action = RunSubstate
 	app.Flags = []cli.Flag{

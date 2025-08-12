@@ -101,7 +101,7 @@ func Must[T any](value T, err error) T {
 }
 
 // CreateTestSubstateDb creates a test substate database with a predefined substate.
-func CreateTestSubstateDb(t *testing.T) (substateDb.SubstateDB, *substate.Substate, string) {
+func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
 	path := t.TempDir()
 	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
 	require.NoError(t, err)
@@ -112,5 +112,5 @@ func CreateTestSubstateDb(t *testing.T) (substateDb.SubstateDB, *substate.Substa
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	return db, ss, path
+	return ss, path
 }

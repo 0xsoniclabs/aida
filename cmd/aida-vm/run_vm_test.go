@@ -40,7 +40,7 @@ import (
 var testingAddress = common.Address{1}
 
 func TestCmd_RunVm(t *testing.T) {
-	_, _, path := utils.CreateTestSubstateDb(t)
+	_, path := utils.CreateTestSubstateDb(t)
 	app := cli.NewApp()
 	app.Action = RunVm
 	app.Flags = []cli.Flag{
