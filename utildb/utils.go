@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"io"
 	"math/big"
 	"os"
@@ -248,9 +249,7 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	for i := 0; i < 10; i++ {
 		state.Block = uint64(10 + i)
 		err = substateDb.PutSubstate(&state)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	udb := db.MakeDefaultUpdateDBFromBaseDB(database)
@@ -267,35 +266,27 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 			Block: uint64(i),
 		}
 		err = udb.PutUpdateSet(updateSet, []types.Address{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	// write delete accounts to the database
 	for i := 1; i <= 10; i++ {
 		err = database.Put(db.EncodeDestroyedAccountKey(uint64(i), i), []byte("0x1234567812345678123456781234567812345678123456781234567812345678"))
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	// write state hashes to the database
 	for i := 11; i <= 20; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
 		err = utils.SaveStateRoot(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	// write block hashes to the database
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
 		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	// write exceptions to the database
@@ -309,9 +300,7 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 		}
 		eDb := db.MakeDefaultExceptionDBFromBaseDB(database)
 		err = eDb.PutException(exception)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	return database
