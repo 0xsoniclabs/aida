@@ -8,12 +8,9 @@ import (
 )
 
 func TestOpenSourceDatabases(t *testing.T) {
-	db1, ss1, path1 := utils.CreateTestSubstateDb(t)
-	db2, ss2, path2 := utils.CreateTestSubstateDb(t)
-	db3, ss3, path3 := utils.CreateTestSubstateDb(t)
-	require.NoError(t, db1.Close())
-	require.NoError(t, db2.Close())
-	require.NoError(t, db3.Close())
+	_, ss1, path1 := utils.CreateTestSubstateDb(t)
+	_, ss2, path2 := utils.CreateTestSubstateDb(t)
+	_, ss3, path3 := utils.CreateTestSubstateDb(t)
 
 	dbs, err := OpenSourceDatabases([]string{path1, path2, path3})
 	require.NoError(t, err)
