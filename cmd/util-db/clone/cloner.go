@@ -3,6 +3,9 @@ package clone
 import (
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
@@ -11,8 +14,6 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/syndtr/goleveldb/leveldb"
-	"os"
-	"time"
 )
 
 const cloneWriteChanSize = 1
@@ -238,8 +239,6 @@ func (c *cloner) read(prefix []byte, start uint64, condition func(key []byte) (b
 
 	}
 	c.log.Noticef("Prefix %v done", string(prefix))
-
-	return
 }
 
 // readUpdateSet from UpdateDb
@@ -260,16 +259,16 @@ func (c *cloner) readUpdateSet() uint64 {
 		return false, nil
 	}
 
-	if c.typ == utils.CloneType {
+	switch c.typ {
+	case utils.CloneType:
 		c.read([]byte(db.UpdateDBPrefix), 0, endCond)
-
 		// if there is no updateset before interval (first 1M blocks) then 0 is returned
 		return lastUpdateBeforeRange
-	} else if c.typ == utils.PatchType || c.typ == utils.CustomType {
+	case utils.PatchType, utils.CustomType:
 		wantedBlock := c.cfg.First
 		c.read([]byte(db.UpdateDBPrefix), wantedBlock, endCond)
 		return 0
-	} else {
+	default:
 		c.errCh <- fmt.Errorf("incorrect clone type: %v", c.typ)
 		return 0
 	}
@@ -467,13 +466,13 @@ func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 	// if source db doesn't exist raise error
 	_, err = os.Stat(aidaDbPath)
 	if os.IsNotExist(err) {
-		return nil, nil, fmt.Errorf("specified aida-db %v is empty\n", aidaDbPath)
+		return nil, nil, fmt.Errorf("specified aida-db %v is empty", aidaDbPath)
 	}
 
 	// if target db exists raise error
 	_, err = os.Stat(targetDbPath)
 	if !os.IsNotExist(err) {
-		return nil, nil, fmt.Errorf("specified target-db %v already exists\n", targetDbPath)
+		return nil, nil, fmt.Errorf("specified target-db %v already exists", targetDbPath)
 	}
 
 	var aidaDb, cloneDb db.BaseDB

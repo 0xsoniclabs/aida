@@ -2,13 +2,14 @@ package clone
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-	"os"
-	"strconv"
-	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -264,15 +265,13 @@ func TestClone_OpenCloningDbs_SourceDbNotExist(t *testing.T) {
 }
 
 func TestClose_OpenCloningDbs_SourceDbInvalid(t *testing.T) {
-	tmpFile, _ := os.CreateTemp("", "sourcedb")
-	_, _, err := openCloningDbs(tmpFile.Name(), "/tmp/target")
+	_, _, err := openCloningDbs(t.TempDir(), t.TempDir())
 	assert.Error(t, err)
 }
 
 func TestClone_OpenCloningDbs_TargetExists(t *testing.T) {
-	tmpFile, _ := os.CreateTemp("", "targetdb")
-	defer os.Remove(tmpFile.Name())
-	_, _, err := openCloningDbs(tmpFile.Name(), tmpFile.Name())
+	tmpFile := t.TempDir()
+	_, _, err := openCloningDbs(tmpFile, tmpFile)
 	assert.Error(t, err)
 }
 

@@ -1,10 +1,11 @@
 package clone
 
 import (
-	"github.com/0xsoniclabs/substate/db"
-	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
+
+	"github.com/0xsoniclabs/substate/db"
+	"go.uber.org/mock/gomock"
 )
 
 func TestCloner_stop(t *testing.T) {
@@ -21,14 +22,12 @@ func TestCloner_stop(t *testing.T) {
 		cloneDb: mockDbTarget,
 		stopCh:  ch,
 	}
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		select {
-		case <-c.stopCh:
-			return
-		case <-ticker.C:
-			t.Fatal("stop channel was not closed")
-		}
-	}()
 	c.stop()
+	ticker := time.NewTicker(time.Second)
+	select {
+	case <-c.stopCh:
+		return
+	case <-ticker.C:
+		t.Fatal("stop channel was not closed")
+	}
 }
