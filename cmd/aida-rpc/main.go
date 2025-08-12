@@ -25,55 +25,54 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var rpcApp = &cli.App{
+	Action: RunRpc,
+	Name:   "Replay-RPC",
+	Usage: "Sends real API requests recorded on rpcapi.fantom.network to StateDB then compares recorded" +
+		"result with result returned by DB.",
+	Copyright: "(c) 2023 Fantom Foundation",
+	Flags: []cli.Flag{
+		&utils.RpcRecordingFileFlag,
+		&utils.WorkersFlag,
+
+		// VM
+		&utils.VmImplementation,
+
+		// Config
+		&logger.LogLevelFlag,
+		&utils.ChainIDFlag,
+		&utils.ContinueOnFailureFlag,
+		&utils.ValidateFlag,
+		&utils.NoHeartbeatLoggingFlag,
+		&utils.ErrorLoggingFlag,
+		&utils.TrackProgressFlag,
+
+		// Register
+		&utils.RegisterRunFlag,
+		&utils.OverwriteRunIdFlag,
+
+		// ShadowDB
+		&utils.ShadowDb,
+
+		// StateDB
+		&utils.StateDbSrcFlag,
+		&utils.StateDbLoggingFlag,
+
+		// Trace
+		&utils.TraceFlag,
+		&utils.TraceFileFlag,
+		&utils.TraceDebugFlag,
+
+		// Performance
+		&utils.CpuProfileFlag,
+		&utils.MemoryProfileFlag,
+		&utils.ProfileFlag,
+		&utils.ProfileFileFlag,
+	},
+}
+
 func main() {
-	app := &cli.App{
-		Action: RunRpc,
-		Name:   "Replay-RPC",
-		Usage: "Sends real API requests recorded on rpcapi.fantom.network to StateDB then compares recorded" +
-			"result with result returned by DB.",
-		Copyright: "(c) 2023 Fantom Foundation",
-		Flags: []cli.Flag{
-			&utils.RpcRecordingFileFlag,
-			&utils.WorkersFlag,
-
-			// VM
-			&utils.VmImplementation,
-
-			// Config
-			&logger.LogLevelFlag,
-			&utils.ChainIDFlag,
-			&utils.ContinueOnFailureFlag,
-			&utils.ValidateFlag,
-			&utils.NoHeartbeatLoggingFlag,
-			&utils.ErrorLoggingFlag,
-			&utils.TrackProgressFlag,
-
-			// Register
-			&utils.RegisterRunFlag,
-			&utils.OverwriteRunIdFlag,
-
-			// ShadowDB
-			&utils.ShadowDb,
-
-			// StateDB
-			&utils.StateDbSrcFlag,
-			&utils.StateDbLoggingFlag,
-
-			// Trace
-			&utils.TraceFlag,
-			&utils.TraceFileFlag,
-			&utils.TraceDebugFlag,
-
-			// Performance
-			&utils.CpuProfileFlag,
-			&utils.MemoryProfileFlag,
-			&utils.ProfileFlag,
-			&utils.ProfileFileFlag,
-		},
-	}
-
-	if err := app.Run(os.Args); err != nil {
+	if err := rpcApp.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-
 }

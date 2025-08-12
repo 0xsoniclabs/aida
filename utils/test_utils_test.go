@@ -6,6 +6,7 @@ import (
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUtils_createTestUpdateDB(t *testing.T) {
@@ -46,4 +47,13 @@ func TestUtils_Must(t *testing.T) {
 	assert.Panics(t, func() {
 		_ = Must(mockFnWithError())
 	})
+}
+
+func TestUtils_CreateTestSubstateDb(t *testing.T) {
+	ss, path := CreateTestSubstateDb(t)
+	sdb, err := substateDb.NewDefaultSubstateDB(path)
+	require.NoError(t, err)
+	gotSs, err := sdb.GetSubstate(ss.Block, ss.Transaction)
+	require.NoError(t, err)
+	require.NoError(t, ss.Equal(gotSs))
 }

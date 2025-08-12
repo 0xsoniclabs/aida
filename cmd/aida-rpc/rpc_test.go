@@ -17,7 +17,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
+
+	"os"
 	"strings"
 	"testing"
 
@@ -28,10 +31,51 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
 var testingAddress = "0x0000000000000000000000000000000000000000"
+
+func TestCmd_RunRpc(t *testing.T) {
+	app := cli.NewApp()
+	app.Action = RunRpc
+	app.Flags = []cli.Flag{
+		&utils.RpcRecordingFileFlag,
+		&utils.StateDbSrcFlag,
+	}
+	recordingsDir := t.TempDir()
+	f, err := os.Create(recordingsDir + "/test_record.gz")
+	require.NoError(t, err)
+
+	w := gzip.NewWriter(f)
+	_, err = w.Write([]byte("test_record"))
+	require.NoError(t, err)
+	err = f.Close()
+	require.NoError(t, err)
+
+	tmp := t.TempDir()
+	// Create a tmp archive
+	cfg := &utils.Config{
+		DbTmp:          tmp,
+		DbVariant:      "go-file",
+		DbImpl:         "carmen",
+		ArchiveMode:    true,
+		ArchiveVariant: "s5",
+		CarmenSchema:   5,
+	}
+	sdb, archivePath, err := utils.PrepareStateDB(cfg)
+	require.NoError(t, err)
+	err = sdb.Close()
+	require.NoError(t, err)
+
+	err = utils.WriteStateDbInfo(archivePath, cfg, 1, common.Hash{0x13}, true)
+	require.NoError(t, err)
+
+	err = app.Run([]string{rpcApp.Name, "-r", recordingsDir, "--db-src", archivePath, "first", "last"})
+	require.NoError(t, err)
+}
 
 func TestRpc_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	ctrl := gomock.NewController(t)
