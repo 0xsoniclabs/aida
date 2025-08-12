@@ -19,8 +19,7 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
+
 	"os"
 	"strings"
 	"testing"
@@ -32,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 

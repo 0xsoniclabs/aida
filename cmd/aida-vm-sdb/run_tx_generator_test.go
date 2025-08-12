@@ -17,8 +17,6 @@
 package main
 
 import (
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
 	"math/big"
 	"testing"
 	"time"
@@ -31,6 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 

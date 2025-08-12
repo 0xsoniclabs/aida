@@ -18,8 +18,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
+
 	"math/big"
 	"strings"
 	"testing"
@@ -34,6 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
