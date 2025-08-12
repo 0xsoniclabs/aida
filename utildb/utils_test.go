@@ -33,6 +33,32 @@ func TestOpenSourceDatabases(t *testing.T) {
 	require.NoError(t, gotSs3.Equal(ss3))
 }
 
+func TestOpenSourceDatabases_Error(t *testing.T) {
+	tests := []struct {
+		name        string
+		sourcePaths []string
+		wantErr     string
+	}{
+		{
+			name:        "No_Source_Paths",
+			sourcePaths: []string{},
+			wantErr:     "no source database were specified",
+		},
+		{
+			name:        "No_Source_Paths",
+			sourcePaths: []string{"/non/existent/path"},
+			wantErr:     "source database /non/existent/path; doesn't exist",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := OpenSourceDatabases(test.sourcePaths)
+			require.ErrorContains(t, err, test.wantErr)
+		})
+	}
+
+}
+
 func TestCalculateMD5Sum(t *testing.T) {
 	name := t.TempDir() + "/testfile"
 	f, err := os.Create(name)

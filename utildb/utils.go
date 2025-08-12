@@ -42,7 +42,7 @@ import (
 // OpenSourceDatabases opens all databases required for merge
 func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 	if len(sourceDbPaths) < 1 {
-		return nil, fmt.Errorf("no source database were specified\n")
+		return nil, fmt.Errorf("no source database were specified")
 	}
 
 	var sourceDbs []db.BaseDB
@@ -50,7 +50,7 @@ func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 		path := sourceDbPaths[i]
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("source database %s; doesn't exist\n", path)
+			return nil, fmt.Errorf("source database %s; doesn't exist", path)
 		}
 		db, err := db.NewReadOnlyBaseDB(path)
 		if err != nil {
@@ -58,7 +58,6 @@ func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 		}
 		sourceDbs = append(sourceDbs, db)
 	}
-
 	return sourceDbs, nil
 }
 
