@@ -1,10 +1,11 @@
 package compact
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-	"testing"
 )
 
 func TestCmd_Compact(t *testing.T) {
