@@ -1,0 +1,122 @@
+package info
+
+import (
+	"fmt"
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
+	"github.com/urfave/cli/v2"
+)
+
+var printRangeCommand = cli.Command{
+	Action: rangeAction,
+	Name:   "range",
+	Usage:  "Prints range of all types in AidaDb",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.DbComponentFlag,
+		&utils.SubstateEncodingFlag,
+		&logger.LogLevelFlag,
+	},
+}
+
+// rangeAction prints range of given db component in given AidaDb
+func rangeAction(ctx *cli.Context) error {
+	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	if argErr != nil {
+		return argErr
+	}
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Range")
+
+	return printRange(cfg, log)
+}
+
+// printRange prints range of given db component in given AidaDb
+func printRange(cfg *utils.Config, log logger.Logger) error {
+	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
+	if err != nil {
+		return err
+	}
+
+	baseDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("cannot open aida-db; %w", err)
+	}
+
+	// print substate range
+	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
+		sdb := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
+		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
+		if err != nil {
+			return fmt.Errorf("cannot set substate encoding; %w", err)
+		}
+
+		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
+		if !ok {
+			log.Warning("No substate found")
+		} else {
+			log.Infof("Substate block range: %v - %v", firstBlock, lastBlock)
+		}
+	}
+
+	// print update range
+	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
+		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
+		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
+		if err != nil {
+			log.Warningf("cannot find updateset range; %w", err)
+		} else {
+			log.Infof("Updateset block range: %v - %v", firstUsBlock, lastUsBlock)
+		}
+	}
+
+	// print deleted range
+	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
+		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
+		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
+		if err != nil {
+			log.Warningf("cannot find deleted range; %w", err)
+		} else {
+			log.Infof("Deleted block range: %v - %v", first, last)
+		}
+	}
+
+	// print state hash range
+	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
+		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
+		if err != nil {
+			log.Warningf("cannot find state hash range; %w", err)
+		} else {
+			log.Infof("State Hash range: %v - %v", firstStateHashBlock, lastStateHashBlock)
+		}
+	}
+
+	// print block hash range
+	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
+		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
+		if err != nil {
+			log.Warningf("cannot find block hash range; %w", err)
+		} else {
+			log.Infof("Block Hash range: %v - %v", firstBlockHashBlock, lastBlockHashBlock)
+		}
+	}
+
+	// print exception range
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		edb := db.MakeDefaultExceptionDBFromBaseDB(baseDb)
+		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInException(edb)
+		if err != nil {
+			log.Warningf("cannot find exception range; %w", err)
+		} else {
+			log.Infof("Exception block range: %v - %v", firstUsBlock, lastUsBlock)
+		}
+	}
+
+	err = baseDb.Close()
+	if err != nil {
+		return fmt.Errorf("cannot close aida db; %w", err)
+	}
+	return nil
+}

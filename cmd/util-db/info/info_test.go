@@ -1,4 +1,4 @@
-package db
+package info
 
 import (
 	"errors"
@@ -80,7 +80,7 @@ func TestInfo_PrintCount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			app := cli.App{
 				Commands: []*cli.Command{
-					&cmdCount,
+					&printCountCommand,
 				}}
 			err := app.Run(tc.args)
 			if tc.wantErr == "" {
@@ -612,7 +612,7 @@ func TestInfo_PrintRange_IntegrationTest(t *testing.T) {
 
 	app := cli.App{
 		Commands: []*cli.Command{
-			&cmdRange,
+			&printRangeCommand,
 		}}
 	err := app.Run(args)
 	assert.NoError(t, err)
@@ -669,7 +669,7 @@ func TestInfo_PrintStateHash_IntegrationTest(t *testing.T) {
 
 			app := cli.App{
 				Commands: []*cli.Command{
-					&cmdPrintStateHash,
+					&printStateHashCommand,
 				}}
 			err = app.Run(args)
 			if tc.expectErr {
@@ -739,7 +739,7 @@ func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 
 			app := cli.App{
 				Commands: []*cli.Command{
-					&cmdPrintBlockHash,
+					&printBlockHashCommand,
 				}}
 			err = app.Run(args)
 			if len(tc.expectErr) > 0 {
@@ -762,7 +762,7 @@ func TestInfo_PrintHash_EmptyDb(t *testing.T) {
 
 	app := cli.App{
 		Commands: []*cli.Command{
-			&cmdPrintBlockHash,
+			&printBlockHashCommand,
 		}}
 	err := app.Run(args)
 	assert.Error(t, err)
@@ -793,7 +793,7 @@ func TestInfo_PrintHash_InvalidArg(t *testing.T) {
 
 	app := cli.App{
 		Commands: []*cli.Command{
-			&cmdPrintBlockHash,
+			&printBlockHashCommand,
 		}}
 	err = app.Run(args)
 	assert.Error(t, err)
@@ -823,7 +823,7 @@ func TestInfo_PrintHash_MissingArg(t *testing.T) {
 
 	app := cli.App{
 		Commands: []*cli.Command{
-			&cmdPrintBlockHash,
+			&printBlockHashCommand,
 		}}
 	err = app.Run(args)
 	assert.Error(t, err)
@@ -978,7 +978,7 @@ func TestInfo_PrintException_IntegrationTest(t *testing.T) {
 			insertKey:   "0x1",
 			insertValue: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			queryArg:    []string{"1", "2"},
-			expectErr:   "printException command requires exactly 1 argument",
+			expectErr:   "printExceptionsAction command requires exactly 1 argument",
 		},
 	}
 
@@ -1009,7 +1009,7 @@ func TestInfo_PrintException_IntegrationTest(t *testing.T) {
 
 			app := cli.App{
 				Commands: []*cli.Command{
-					&cmdPrintException,
+					&printExceptionsCommand,
 				}}
 			err = app.Run(args)
 			if len(tc.expectErr) > 0 {
