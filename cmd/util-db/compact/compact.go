@@ -25,11 +25,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Command compactAction given database
+// Command compact given database
 var Command = cli.Command{
 	Action: compactAction,
-	Name:   "compactAction",
-	Usage:  "compactAction target db",
+	Name:   "compact",
+	Usage:  "compact target db",
 	Flags: []cli.Flag{
 		&utils.TargetDbFlag,
 	},
