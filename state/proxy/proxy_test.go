@@ -1,6 +1,9 @@
 package proxy
 
 import (
+	"sync"
+	"testing"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer"
@@ -13,8 +16,6 @@ import (
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/exp/maps"
-	"sync"
-	"testing"
 )
 
 func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.Context) map[string]state.StateDB {
