@@ -17,6 +17,7 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/exp/maps"
 )
 
 func getAllProxyImpls(t *testing.T, base state.StateDB, ctx tracer.Context) map[string]state.StateDB {
