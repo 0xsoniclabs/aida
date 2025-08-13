@@ -432,8 +432,6 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, tar
 
 	var includeNightly = cfg.UpdateType == "nightly"
 
-	var isAddingLachesisPatch = false
-
 	// download list of available availablePatches
 	availablePatches, err := utils.DownloadPatchesJson()
 	if err != nil {
@@ -456,25 +454,12 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, tar
 		}
 		// skip every patch which is sooner than previous last block
 		if patch.ToBlock <= targetDbLastBlock {
-			// if patch is lachesis and user has not got it in their db we download it
-			if patch.ToBlock == utils.FirstOperaBlock-1 && targetDbFirstBlock == utils.FirstOperaBlock {
-				isAddingLachesisPatch = true
-			} else {
-				continue
-			}
+			continue
 		}
 
 		// add all stable patches and nightly only if user wants to download nightly
 		if !patch.Nightly || includeNightly {
 			patchesToDownload = append(patchesToDownload, patch)
-		}
-	}
-
-	// if user has second patch already in their db, we have to re-download it again and delete old update-set key
-	if isAddingLachesisPatch && targetDbFirstBlock == utils.FirstOperaBlock {
-		patchesToDownload, err = appendFirstPatch(cfg, availablePatches, patchesToDownload)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -494,60 +479,6 @@ func (a ByToBlock) Swap(i, j int) {
 }
 func (a ByToBlock) Less(i, j int) bool {
 	return a[i].ToBlock < a[j].ToBlock
-}
-
-// appendFirstPatch finds whether user is downloading fresh new db or updating an existing one.
-// If updating an existing one, first patch is appended to download and first update-set is deleted
-func appendFirstPatch(cfg *utils.Config, availablePatches []utils.PatchJson, patchesToDownload []utils.PatchJson) ([]utils.PatchJson, error) {
-	var expectedFileName string
-
-	switch cfg.ChainID {
-	case utils.MainnetChainID:
-		expectedFileName = firstMainnetPatchFileName
-	case utils.TestnetChainID:
-		expectedFileName = firstTestnetPatchFileName
-	default:
-		return nil, errors.New("please choose chain-id with --chainid")
-	}
-
-	// did we already append first patch?
-	for _, patch := range patchesToDownload {
-		if patch.FileName == expectedFileName {
-
-			// first patch was already appended - that means user is downloading fresh db
-			return patchesToDownload, nil
-		}
-	}
-
-	for _, patch := range availablePatches {
-		if patch.FileName == expectedFileName {
-			patchesToDownload = append(patchesToDownload, patch)
-			// we need to remove first update-set for data consistency
-			err := deleteOperaWorldStateFromUpdateSet(cfg.AidaDb)
-			if err != nil {
-				return nil, err
-			}
-			break
-		}
-	}
-
-	return patchesToDownload, nil
-}
-
-// deleteOperaWorldStateFromUpdateSet when user has already merged second patch, and we are prepending lachesis patch.
-// This situation could happen due to lachesis patch being implemented later than rest of the Db
-func deleteOperaWorldStateFromUpdateSet(dbPath string) error {
-	updateDb, err := db.NewDefaultUpdateDB(dbPath)
-	if err != nil {
-		return fmt.Errorf("cannot open update-db; %v", err)
-	}
-
-	err = updateDb.DeleteUpdateSet(utils.FirstOperaBlock - 1)
-	if err != nil {
-		return err
-	}
-
-	return updateDb.Close()
 }
 
 // downloadFile downloads file - used for downloading individual patches.
