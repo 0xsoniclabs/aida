@@ -14,20 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package prime
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-// GenerateUpdateSet generates an update set for a block range.
-func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB) (substate.WorldState, []substatetypes.Address, error) {
+// generateUpdateSet generates an update set for a block range.
+func generateUpdateSet(first uint64, last uint64, cfg *utils.Config, aidaDb db.BaseDB) (substate.WorldState, []substatetypes.Address, error) {
 	var (
 		deletedAccountDB *db.DestroyedAccountDB
 		deletedAccounts  []substatetypes.Address
@@ -67,9 +71,9 @@ func GenerateUpdateSet(first uint64, last uint64, cfg *Config, aidaDb db.BaseDB)
 	return update, deletedAccounts, nil
 }
 
-// GenerateWorldStateFromUpdateDB generates an initial world-state
+// generateWorldStateFromUpdateDB generates an initial world-state
 // from pre-computed update-set
-func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (ws substate.WorldState, err error) {
+func generateWorldStateFromUpdateDB(cfg *utils.Config, target uint64) (ws substate.WorldState, err error) {
 	ws = make(substate.WorldState)
 	block := uint64(0)
 	// load pre-computed update-set from update-set db
@@ -97,12 +101,12 @@ func GenerateWorldStateFromUpdateDB(cfg *Config, target uint64) (ws substate.Wor
 	updateIter.Release()
 
 	// advance from the latest precomputed updateset to the target block
-	update, _, err := GenerateUpdateSet(block, target, cfg, udb)
+	update, _, err := generateUpdateSet(block, target, cfg, udb)
 	if err != nil {
 		return nil, err
 	}
 	ws.Merge(update)
-	err = DeleteDestroyedAccountsFromWorldState(substatecontext.NewWorldState(ws), cfg, target)
+	err = deleteDestroyedAccountsFromWorldState(substatecontext.NewWorldState(ws), cfg, target)
 	return ws, err
 }
 
@@ -113,4 +117,29 @@ func ClearAccountStorage(update substate.WorldState, accounts []substatetypes.Ad
 			update[addr].Storage = make(map[substatetypes.Hash]substatetypes.Hash)
 		}
 	}
+}
+
+// deleteDestroyedAccountsFromWorldState removes previously suicided accounts from
+// the world state.
+func deleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *utils.Config, target uint64) (err error) {
+	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
+
+	src, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)
+	if err != nil {
+		return err
+	}
+	defer func(src *db.DestroyedAccountDB) {
+		err = errors.Join(err, src.Close())
+	}(src)
+	list, err := src.GetAccountsDestroyedInRange(0, target)
+	if err != nil {
+		return err
+	}
+	for _, cur := range list {
+		if ws.Has(common.Address(cur)) {
+			log.Debugf("Remove %v from world state", cur)
+			ws.Delete(common.Address(cur))
+		}
+	}
+	return nil
 }
