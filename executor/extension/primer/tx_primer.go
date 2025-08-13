@@ -20,6 +20,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -35,13 +36,13 @@ func makeTxPrimer(cfg *utils.Config, log logger.Logger) executor.Extension[txcon
 
 type txPrimer struct {
 	extension.NilExtension[txcontext.TxContext]
-	primeCtx *utils.PrimeContext
+	primeCtx *prime.PrimeContext
 	cfg      *utils.Config
 	log      logger.Logger
 }
 
 func (p *txPrimer) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	p.primeCtx = utils.NewPrimeContext(p.cfg, ctx.State, p.log)
+	p.primeCtx = prime.NewPrimeContext(p.cfg, ctx.State, p.log)
 	return nil
 }
 

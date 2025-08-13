@@ -1,4 +1,4 @@
-package utils
+package prime
 
 import (
 	"errors"
@@ -8,12 +8,22 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
+
+func makeTestAccount(t *testing.T) txcontext.Account {
+	return txcontext.NewAccount(
+		utils.MakeRandomByteSlice(t, 2048),
+		utils.MakeAccountStorage(t),
+		big.NewInt(int64(utils.GetRandom(1, 1000*5000))),
+		uint64(utils.GetRandom(1, 1000*5000)),
+	)
+}
 
 func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -28,27 +38,25 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 		cfg:        nil,
 		load:       mockBulkLoad,
 		db:         mockStateDb,
-		operations: OperationThreshold + 1,
+		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
 	mockBulkLoad.EXPECT().Close().Return(nil)
 	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulkLoad, nil)
 	err := prime.mayApplyBulkLoad()
 	assert.NoError(t, err)
-	assert.True(t, prime.hasPrimed)
 
 	// case success
 	prime.operations = 0
 	err = prime.mayApplyBulkLoad()
 	assert.Nil(t, err)
-	assert.False(t, prime.hasPrimed)
 
 	// case error on close
 	prime = &PrimeContext{
 		cfg:        nil,
 		load:       mockBulkLoad,
 		db:         mockStateDb,
-		operations: OperationThreshold + 1,
+		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
 	mockBulkLoad.EXPECT().Close().Return(mockErr)
@@ -61,7 +69,7 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 		cfg:        nil,
 		load:       mockBulkLoad,
 		db:         mockStateDb,
-		operations: OperationThreshold + 1,
+		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
 	mockBulkLoad.EXPECT().Close().Return(nil)
@@ -74,60 +82,60 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 func TestPrimeContext_PrimeStateDB(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockBulkLoad := state.NewMockBulkLoad(ctrl)
-	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
-	mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
-	mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-	mockStateDb.EXPECT().EndTransaction().Return(nil).AnyTimes()
-	mockStateDb.EXPECT().EndBlock().Return(nil).AnyTimes()
-	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
-	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
 
-	acc := txcontext.NewAccount(
-		MakeRandomByteSlice(t, 2048),
-		MakeAccountStorage(t),
-		big.NewInt(int64(GetRandom(1, 1000*5000))),
-		uint64(GetRandom(1, 1000*5000)),
-	)
+	testcases := []struct {
+		name       string
+		useSrcDb   bool
+		primRandom bool
+	}{
+		{name: "RunFromFreshDB_PrimeRandom", useSrcDb: false, primRandom: true},
+		{name: "RunFromExistingDB_PrimeRandom", useSrcDb: true, primRandom: true},
+		{name: "RunFromFreshDB_PrimeInOrder", useSrcDb: false, primRandom: false},
+		{name: "RunFromExistingDB_PrimeInOrder", useSrcDb: true, primRandom: false},
+	}
+
+	acc := makeTestAccount(t)
 	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
 	})
 
-	// Case 1
-	prime := &PrimeContext{
-		cfg: &Config{
-			PrimeRandom: true,
-		},
-		load:       mockBulkLoad,
-		db:         mockStateDb,
-		operations: 0,
-		log:        logger.NewLogger("ERROR", "Test"),
-		block:      0,
-		exist:      map[common.Address]bool{},
-	}
-	err := prime.PrimeStateDB(ws, mockStateDb)
-	assert.NoError(t, err)
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup the PrimeContext
+			prime := &PrimeContext{
+				cfg: &utils.Config{
+					PrimeRandom:       tc.primRandom,
+					IsExistingStateDb: tc.useSrcDb,
+				},
+				load:       mockBulkLoad,
+				db:         mockStateDb,
+				operations: 0,
+				log:        logger.NewLogger("ERROR", "Test"),
+				block:      0,
+				exist:      map[common.Address]bool{},
+			}
 
-	// Case 2
-	prime = &PrimeContext{
-		cfg: &Config{
-			PrimeRandom: false,
-		},
-		load:       mockBulkLoad,
-		db:         mockStateDb,
-		operations: 0,
-		log:        logger.NewLogger("ERROR", "Test"),
-		block:      0,
-		exist:      map[common.Address]bool{},
+			if tc.useSrcDb {
+				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+				mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+				mockStateDb.EXPECT().EndTransaction().Return(nil).AnyTimes()
+				mockStateDb.EXPECT().EndBlock().Return(nil).AnyTimes()
+			}
+			mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
+			mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
+			mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
+
+			err := prime.PrimeStateDB(ws, mockStateDb)
+			assert.NoError(t, err)
+		})
 	}
-	err = prime.PrimeStateDB(ws, mockStateDb)
-	assert.NoError(t, err)
 }
 
 func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
@@ -145,12 +153,7 @@ func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 		block:      0,
 		exist:      map[common.Address]bool{},
 	}
-	acc := txcontext.NewAccount(
-		MakeRandomByteSlice(t, 2048),
-		MakeAccountStorage(t),
-		big.NewInt(int64(GetRandom(1, 1000*5000))),
-		uint64(GetRandom(1, 1000*5000)),
-	)
+	acc := makeTestAccount(t)
 	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
 	mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
 	mockStateDb.EXPECT().Exist(gomock.Any()).Return(true)
@@ -177,18 +180,13 @@ func TestPrimeContext_primeOneAccount(t *testing.T) {
 		block:      0,
 		exist:      map[common.Address]bool{},
 	}
-	acc := txcontext.NewAccount(
-		MakeRandomByteSlice(t, 2048),
-		MakeAccountStorage(t),
-		big.NewInt(int64(GetRandom(1, 1000*5000))),
-		uint64(GetRandom(1, 1000*5000)),
-	)
+	acc := makeTestAccount(t)
 	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return()
 	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return()
 	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return()
 	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return()
 	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	err := prime.primeOneAccount(common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"), acc, NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
+	err := prime.primeOneAccount(common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"), acc, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
 	assert.Nil(t, err)
 }
 
@@ -198,24 +196,14 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockBulkLoad := state.NewMockBulkLoad(ctrl)
-	acc1 := txcontext.NewAccount(
-		MakeRandomByteSlice(t, 2048),
-		MakeAccountStorage(t),
-		big.NewInt(int64(GetRandom(1, 1000*5000))),
-		uint64(GetRandom(1, 1000*5000)),
-	)
-	acc2 := txcontext.NewAccount(
-		MakeRandomByteSlice(t, 2048),
-		MakeAccountStorage(t),
-		big.NewInt(int64(GetRandom(1, 1000*5000))),
-		uint64(GetRandom(1, 1000*5000)),
-	)
+	acc1 := makeTestAccount(t)
+	acc2 := makeTestAccount(t)
 	mockWs := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc1,
 		common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): acc2,
 	})
 	prime := &PrimeContext{
-		cfg: &Config{
+		cfg: &utils.Config{
 			RandomSeed: 0,
 		},
 		load:       nil,
@@ -228,17 +216,14 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 			common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
 		},
 	}
-	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
-	mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
-	mockStateDb.EXPECT().EndTransaction().Return(nil)
-	mockStateDb.EXPECT().EndBlock().Return(nil)
-	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil)
+	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
+	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
 	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().Close().Return(nil)
-	err := prime.PrimeStateDBRandom(mockWs, mockStateDb, NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
+	mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
+	err := prime.PrimeStateDBRandom(mockWs, mockStateDb, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
 	assert.NoError(t, err)
 }
 
@@ -333,7 +318,6 @@ func TestPrimeContext_GetBlock(t *testing.T) {
 	assert.Equal(t, uint64(0), block)
 }
 
-// write tests for HasPrimed
 func TestPrimeContext_HasPrimed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -341,21 +325,33 @@ func TestPrimeContext_HasPrimed(t *testing.T) {
 	// case success
 	mockBulkLoad := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
+	acc := makeTestAccount(t)
+	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{
+		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
+	})
 	prime := &PrimeContext{
-		cfg:        nil,
+		cfg:        &utils.Config{},
 		load:       mockBulkLoad,
 		db:         mockStateDb,
-		operations: OperationThreshold + 1,
+		operations: 0,
 		log:        logger.NewLogger("ERROR", "Test"),
+		exist:      make(map[common.Address]bool),
 	}
-	mockBulkLoad.EXPECT().Close().Return(nil)
-	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulkLoad, nil)
-	err := prime.mayApplyBulkLoad()
-	assert.NoError(t, err)
-	assert.True(t, prime.HasPrimed())
 
-	prime.operations = 0
-	err = prime.mayApplyBulkLoad()
+	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
+	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
+	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
+
+	err := prime.PrimeStateDB(ws, mockStateDb)
 	assert.Nil(t, err)
 	assert.False(t, prime.HasPrimed())
+
+	prime.operations = utils.OperationThreshold + 1
+	err = prime.PrimeStateDB(ws, mockStateDb)
+	assert.NoError(t, err)
+	assert.True(t, prime.HasPrimed())
 }

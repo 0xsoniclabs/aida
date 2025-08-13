@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package prime
 
 import (
 	"fmt"
@@ -24,24 +24,24 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func NewPrimeContext(cfg *Config, db state.StateDB, log logger.Logger) *PrimeContext {
+func NewPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *PrimeContext {
 	return &PrimeContext{
 		cfg:   cfg,
 		log:   log,
 		block: 0,
 		db:    db,
 		exist: make(map[common.Address]bool),
-		first: cfg.First,
 	}
 }
 
 // PrimeContext structure keeps context used over iterations of priming
 type PrimeContext struct {
-	cfg        *Config                 // command configuration
+	cfg        *utils.Config           // command configuration
 	log        logger.Logger           // logger for the prime context
 	block      uint64                  // current block number used for priming
 	load       state.BulkLoad          // bulk load to be applied
@@ -49,12 +49,11 @@ type PrimeContext struct {
 	exist      map[common.Address]bool // account exists in db
 	operations int                     // number of operations processed without commit
 	hasPrimed  bool                    // whether the stateDB has been primed
-	first      uint64                  // true first runnable block
 }
 
 // mayApplyBulkLoad closes and reopen bulk load if it has over n operations.
 func (pc *PrimeContext) mayApplyBulkLoad() error {
-	if pc.operations >= OperationThreshold {
+	if pc.operations >= utils.OperationThreshold {
 		pc.log.Debugf("\t\tApply bulk load with %v operations...", pc.operations)
 		pc.operations = 0
 		if err := pc.load.Close(); err != nil {
@@ -81,7 +80,7 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) 
 
 	pc.log.Debugf("\tLoading %d accounts with %d values ..", ws.Len(), numValues)
 
-	pt := NewProgressTracker(numValues, pc.log)
+	pt := utils.NewProgressTracker(numValues, pc.log)
 	if pc.cfg.PrimeRandom {
 		//if 0, commit once after priming all accounts
 		if pc.cfg.PrimeThreshold == 0 {
@@ -167,7 +166,7 @@ func (pc *PrimeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) e
 }
 
 // primeOneAccount initializes an account on stateDB with substate
-func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *ProgressTracker) error {
+func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *utils.ProgressTracker) error {
 	exist, found := pc.exist[addr]
 	// do not create empty accounts
 	if !exist && acc.GetBalance().Sign() == 0 && acc.GetNonce() == 0 && len(acc.GetCode()) == 0 {
@@ -205,7 +204,7 @@ func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Accou
 }
 
 // PrimeStateDBRandom primes database with accounts from the world state in random order.
-func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.StateDB, pt *ProgressTracker) error {
+func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.StateDB, pt *utils.ProgressTracker) error {
 	var err error
 
 	contracts := make([]string, 0, ws.Len())
@@ -297,12 +296,4 @@ func (pc *PrimeContext) GetBlock() uint64 {
 
 func (pc *PrimeContext) HasPrimed() bool {
 	return pc.hasPrimed
-}
-
-func (pc *PrimeContext) SetFirst(first uint64) {
-	pc.first = first
-}
-
-func (pc *PrimeContext) GetFirst() uint64 {
-	return pc.first
 }

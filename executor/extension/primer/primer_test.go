@@ -26,19 +26,12 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/types/rlp"
-	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"go.uber.org/mock/gomock"
 )
 
@@ -166,7 +159,7 @@ func TestPrime_PrimeStateDB(t *testing.T) {
 			// Generating randomized world state
 			ws, _ := utils.MakeWorldState(t)
 
-			pc := utils.NewPrimeContext(cfg, sDB, log)
+			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws, sDB)
 			if err != nil {
@@ -275,7 +268,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 			alloc, _ := utils.MakeWorldState(t)
 			ws := txcontext.NewWorldState(alloc)
 
-			pc := utils.NewPrimeContext(cfg, sDB, log)
+			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws, sDB)
 			if err != nil {
@@ -385,7 +378,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 			alloc2, _ := utils.MakeWorldState(t)
 			ws2 := txcontext.NewWorldState(alloc2)
 
-			pc2 := utils.NewPrimeContext(cfg, sDB2, log)
+			pc2 := prime.NewPrimeContext(cfg, sDB2, log)
 			// Priming state DB
 			err = pc2.PrimeStateDB(ws2, sDB2)
 			if err != nil {
@@ -422,207 +415,6 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 					}
 				})
 			})
-		})
-	}
-}
-
-func TestPrimer_EthereumGenesisPriming(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	addr := common.Address{0x1}
-	for chainID, name := range utils.AllowedChainIDs {
-
-		t.Run(name, func(t *testing.T) {
-			// setup
-			cfg := utils.NewTestConfig(t, chainID, utils.KeywordBlocks[chainID]["first"], 100, false, "Prague")
-			cfg.SkipPriming = false
-			log := logger.NewMockLogger(ctrl)
-			stateDb := state.NewMockStateDB(ctrl)
-			bulk := state.NewMockBulkLoad(ctrl)
-			aidaDb, err := db.NewDefaultUpdateDB(t.TempDir())
-			require.NoError(t, err, "cannot create updatedb")
-			aidaDb.PutUpdateSet(&updateset.UpdateSet{
-				WorldState: map[types.Address]*substate.Account{
-					types.Address(addr): {
-						Nonce:   12,
-						Balance: uint256.NewInt(11),
-						Storage: map[types.Hash]types.Hash{{0x2}: {0x3}},
-						Code:    []byte{0x3},
-					},
-				},
-				Block:           0,
-				DeletedAccounts: nil,
-			}, nil)
-
-			// Genesis priming should only be triggered by ethereum data sets
-			if _, isEthChainID := utils.EthereumChainIDs[chainID]; isEthChainID {
-				gomock.InOrder(
-					log.EXPECT().Noticef("Priming ethereum genesis..."),
-					log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 1, 1),
-					stateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
-					stateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil),
-					stateDb.EXPECT().Exist(addr).Return(false),
-					stateDb.EXPECT().EndTransaction(),
-					stateDb.EXPECT().EndBlock(),
-					stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(bulk, nil),
-					bulk.EXPECT().CreateAccount(addr),
-					bulk.EXPECT().SetBalance(addr, uint256.NewInt(11)),
-					bulk.EXPECT().SetNonce(addr, uint64(12)),
-					bulk.EXPECT().SetCode(addr, []byte{0x3}),
-					bulk.EXPECT().SetState(addr, common.Hash{0x2}, common.Hash{0x3}),
-					bulk.EXPECT().Close().Return(nil),
-					log.EXPECT().Debugf("\t\tPriming completed ..."),
-				)
-			}
-
-			primer := makeStateDbPrimer[any](cfg, log)
-			err = primer.PreRun(executor.State[any]{}, &executor.Context{
-				State:  stateDb,
-				AidaDb: aidaDb,
-			})
-			require.NoError(t, err, "pre-run failed")
-		})
-	}
-}
-
-func TestStateDbPrimer_Prime(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	log := logger.NewLogger("Info", "TestStateDbPrimer")
-
-	cfg := &utils.Config{}
-	cfg.SkipPriming = false
-	cfg.StateDbSrc = ""
-	cfg.First = 0
-	mockDb := state.NewMockStateDB(ctrl)
-	mockAida := db.NewMockBaseDB(ctrl)
-	mockAdapter := db.NewMockDbAdapter(ctrl)
-	mockBulk := state.NewMockBulkLoad(ctrl)
-	p := &stateDbPrimer[any]{
-		log: log,
-		ctx: utils.NewPrimeContext(cfg, mockDb, log),
-		cfg: cfg,
-	}
-	mockAida.EXPECT().GetBackend().Return(mockAdapter)
-	mockIter := NewMockProxyIterator(ctrl)
-	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
-	mockAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]uint8{1, 2, 3}, nil)
-	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(nil).Times(3)
-	mockDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil).Times(3)
-	mockDb.EXPECT().EndTransaction().Return(nil).Times(3)
-	mockDb.EXPECT().EndBlock().Return(nil).Times(3)
-	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).Times(2)
-	mockBulk.EXPECT().Close().Times(2)
-	mockDb.EXPECT().BeginSyncPeriod(gomock.Any())
-	mockDb.EXPECT().EndSyncPeriod()
-	mockDb.EXPECT().Exist(gomock.Any()).Return(false)
-	mockAida.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
-	mockIter.EXPECT().Next().Return(true)
-	mockIter.EXPECT().Next().Return(false)
-	mockBulk.EXPECT().CreateAccount(gomock.Any())
-	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any())
-	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any())
-	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any())
-	blockNum := uint64(12345)
-	key := db.UpdateDBKey(blockNum)
-	value, _ := rlp.EncodeToBytes(updateset.UpdateSetRLP{
-		WorldState: updateset.UpdateSet{
-			WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
-			Block:           0,
-			DeletedAccounts: []types.Address{},
-		}.ToWorldStateRLP(),
-		DeletedAccounts: []types.Address{},
-	})
-	mockIter.EXPECT().Key().Return(key).AnyTimes()
-	mockIter.EXPECT().Value().Return(value).AnyTimes()
-	mockIter.EXPECT().Release()
-	mockIter.EXPECT().Next()
-	mockIter.EXPECT().Release()
-	err := p.prime(mockDb, mockAida)
-	assert.NoError(t, err)
-}
-
-//go:generate mockgen -source=primer_test.go -destination=primer_mock.go -package=primer
-type ProxyIterator interface {
-	iterator.Iterator
-}
-
-func TestStateDbPrimerExtension_GetFirstPrimableBlock_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	sdb := db.NewMockSubstateDB(ctrl)
-	udb := db.NewMockUpdateDB(ctrl)
-	srcDbBlock := uint64(100)
-
-	testcases := []struct {
-		name           string
-		isExistingDb   bool
-		substateBlock  uint64
-		updateSetBlock uint64
-		primableBlock uint64
-	}{
-		{"Success_StartFromZero", false, uint64(0), uint64(0), uint64(0)}, // The first non-empty block is block 10, assume no priming is needed.
-		{"Success_StartFromUpdaetSet", false, uint64(11), uint64(10), uint64(10)} // The first non-empty block is block 1, genesis is in updateset.
-		{"Success_StartFromSubstate", false, uint64(10), uint64(11), uint64(10)} // The first non-empty block is block 1, genesis is in substate.
-		{"Success_StartFromExistingDb", true, uint64(10), uint64(11), srcDbBlock+1}, // use state-db at lblock 100, priming starts at 101
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := &utils.Config{
-				IsExistingStateDb: tc.isExistingDb,
-				StateDbSrc:      t.TempDir(),
-			}
-			if tc.isExistingDb {
-				err := utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, srcDbBlock, common.Hash{}, true)
-				assert.NoError(t, err, "failed to write state db info")
-
-				pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
-				assert.NoError(t, err, "failed to get first primable block")
-				assert.Equal(t, tc.primableBlock, pfb, "first primable block mismatch")
-			} else {
-				substatedb.EXPECT().GetFirstSubstate().Return(&substate.Substate{Block: tc.substateBlock})
-				updatedb.EXPECT().GetFirstKey().Return(tc.updateSetBlock, nil)
-
-				pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
-				assert.NoError(t, err, "failed to get first primable block")
-				assert.Equal(t, tc.primableBlock, pfb, "first primable block mismatch")
-			}
-		})
-	}
-}
-
-func TestStateDbPrimerExtension_GetFirstPrimableBlock_Error(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	sdb := db.NewMockSubstateDB(ctrl)
-	udb := db.NewMockUpdateDB(ctrl)
-
-	testcases := []struct {
-		name        string
-		isExisting  bool
-		expectedError error
-	}{
-		{"Error_SubstateEmpty", false, errors.New("substate db is empty")},
-		{"Error_StateInfoMissing", true, errors.New("cannot read state db info; failed to read statedb_info.json; open statedb_info.json: no such file or directory")},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := &utils.Config{
-				IsExistingStateDb: tc.isExisting,
-			}
-
-			if !tc.isExisting {
-				if tc.substateErr != nil {
-					sdb.EXPECT().GetFirstSubstate().Return(nil).Times(1)
-				}
-			}
-
-			pfb, err := getFirstPrimableBlock(cfg, sdb, udb)
-			assert.Error(t, err, "expected error but got none")
-			assert.EqualError(t, err, tc.expectedError.Error(), "unexpected error message")
-			assert.Equal(t, uint64(0), pfb, "expected zero block number on error")
 		})
 	}
 }

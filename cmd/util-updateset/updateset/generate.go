@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
@@ -206,8 +207,8 @@ func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db
 		if !(err == nil || errors.Is(err, leveldb.ErrNotFound)) {
 			return err
 		}
-		utils.ClearAccountStorage(update, destroyed)
-		utils.ClearAccountStorage(update, resurrected)
+		prime.ClearAccountStorage(update, destroyed)
+		prime.ClearAccountStorage(update, resurrected)
 		destroyedAccounts = append(destroyedAccounts, destroyed...)
 		destroyedAccounts = append(destroyedAccounts, resurrected...)
 

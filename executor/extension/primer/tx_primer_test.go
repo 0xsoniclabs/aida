@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
@@ -39,7 +40,7 @@ func TestTxPrimer_PreTransaction(t *testing.T) {
 	mockDb := state.NewMockStateDB(ctrl)
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{
-		primeCtx: utils.NewPrimeContext(cfg, mockDb, log),
+		primeCtx: prime.NewPrimeContext(cfg, mockDb, log),
 		cfg:      cfg,
 		log:      log,
 	}
