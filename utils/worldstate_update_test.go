@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/rlp"
