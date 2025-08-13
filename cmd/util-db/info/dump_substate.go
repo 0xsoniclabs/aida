@@ -59,7 +59,12 @@ func dumpSubstateAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func() {
+		err = sdb.Close()
+		if err != nil {
+			fmt.Printf("could not close database: %v", err)
+		}
+	}()
 
 	// set encoding type
 	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)

@@ -3,6 +3,7 @@ package info
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"

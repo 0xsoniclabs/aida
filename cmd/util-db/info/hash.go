@@ -2,13 +2,14 @@ package info
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"strconv"
-	"strings"
 )
 
 var printStateHashCommand = cli.Command{
@@ -68,9 +69,14 @@ func printTableHashAction(ctx *cli.Context) error {
 		return err
 	}
 
-	defer database.Close()
-
 	log := logger.NewLogger(cfg.LogLevel, "printTableHash")
+	defer func() {
+		err = database.Close()
+		if err != nil {
+			log.Warningf("could not close database: %v", err)
+		}
+	}()
+
 	log.Info("Inspecting database...")
 	err = utildb.TableHash(cfg, database, log)
 	if err != nil {
@@ -105,7 +111,12 @@ func printPrefixHashAction(ctx *cli.Context) error {
 		return err
 	}
 
-	defer database.Close()
+	defer func() {
+		err = database.Close()
+		if err != nil {
+			log.Warningf("could not close database: %v", err)
+		}
+	}()
 
 	if ctx.Args().Len() == 0 || ctx.Args().Len() >= 2 {
 		return fmt.Errorf("generate-prefix-hash command requires exactly 1 argument")
@@ -123,7 +134,7 @@ func printHash(ctx *cli.Context, hashType string) error {
 		return argErr
 	}
 
-	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-"+strings.Title(hashType))
+	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Print-"+strings.ToUpper(hashType))
 
 	if ctx.Args().Len() != 1 {
 		return fmt.Errorf("%s command requires exactly 1 argument", hashType)

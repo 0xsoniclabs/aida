@@ -3,12 +3,13 @@ package info
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
