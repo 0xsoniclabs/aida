@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utildb
+package update
 
 import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
-	"errors"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,9 +33,31 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/cockroachdb/errors"
+	"github.com/urfave/cli/v2"
 )
+
+// Command downloads aida-db and new patches
+var Command = cli.Command{
+	Action: updateAction,
+	Name:   "update",
+	Usage:  "download aida-db patches",
+	Flags: []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.ChainIDFlag,
+		&logger.LogLevelFlag,
+		&utils.CompactDbFlag,
+		&utils.DbTmpFlag,
+		&utils.UpdateTypeFlag,
+		&utils.SubstateEncodingFlag,
+	},
+	Description: ` 
+Updates aida-db by downloading patches from aida-db generation server.
+`,
+}
 
 const (
 	maxNumberOfDownloadAttempts = 5
@@ -43,8 +66,21 @@ const (
 	stateHashPatchFileName      = "state-hashes_0-68940000"
 )
 
-// Update implements updating command to be called from various commands and automatically downloads aida-db patches.
-func Update(cfg *utils.Config) error {
+// updateAction updates aida-db by downloading patches from aida-db generation server.
+func updateAction(ctx *cli.Context) error {
+	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	if err != nil {
+		return err
+	}
+	if err = update(cfg); err != nil {
+		return err
+	}
+
+	return utildb.PrintMetadata(cfg.AidaDb)
+}
+
+// update implements updating command to be called from various commands and automatically downloads aida-db patches.
+func update(cfg *utils.Config) error {
 	log := logger.NewLogger(cfg.LogLevel, "DB Update")
 	start := time.Now()
 
@@ -87,7 +123,7 @@ func Update(cfg *utils.Config) error {
 }
 
 // getTargetDbBlockRange initialize aidaMetadata of targetDB
-func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
+func getTargetDbBlockRange(cfg *utils.Config) (firstAidaDbBlock uint64, lastAidaDbBlock uint64, finalErr error) {
 	// load stats of current aida-db to download just latest patches
 	_, err := os.Stat(cfg.AidaDb)
 	if err != nil {
@@ -103,7 +139,9 @@ func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
 		if err != nil {
 			return 0, 0, err
 		}
-		defer sdb.Close()
+		defer func() {
+			finalErr = errors.Join(finalErr, sdb.Close())
+		}()
 		firstAidaDbBlock, lastAidaDbBlock, ok := utils.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			return 0, 0, fmt.Errorf("cannot find blocks in substate; is substate present in given db? %v", cfg.AidaDb)
@@ -219,7 +257,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 					}
 				}
 
-				m := NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
+				m := utildb.NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
 
 				err = m.Merge()
 				if err != nil {
@@ -327,15 +365,15 @@ func downloadPatch(cfg *utils.Config, patchesChan chan utils.PatchJson) (chan ut
 			log.Debugf("Finished downloading %s!", patch.FileName)
 
 			log.Debugf("Calculating %s md5...", patch.FileName)
-			md5, err := calculateMD5Sum(compressedPatchPath)
+			sum, err := calculateMD5Sum(compressedPatchPath)
 			if err != nil {
 				errChan <- fmt.Errorf("archive %v; unable to calculate md5sum; %v", patch.FileName, err)
 				return
 			}
 
 			// Compare whether downloaded file matches expected md5
-			if strings.Compare(md5, patch.TarHash) != 0 {
-				errChan <- fmt.Errorf("archive %v doesn't have matching md5; archive %v, expected %v", patch.FileName, md5, patch.TarHash)
+			if strings.Compare(sum, patch.TarHash) != 0 {
+				errChan <- fmt.Errorf("archive %v doesn't have matching md5; archive %v, expected %v", patch.FileName, sum, patch.TarHash)
 				return
 			}
 
@@ -343,6 +381,35 @@ func downloadPatch(cfg *utils.Config, patchesChan chan utils.PatchJson) (chan ut
 		}
 	}()
 	return downloadedPatchChan, errChan
+}
+
+// calculateMD5Sum calculates MD5 hash of given file
+func calculateMD5Sum(filePath string) (md5Sum string, finalErr error) {
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("unable open file %s; %v", filePath, err.Error())
+	}
+	defer func() {
+		finalErr = errors.Join(finalErr, file.Close())
+	}()
+
+	// Create a new MD5 hash instance
+	hash := md5.New()
+
+	// Copy the file content into the hash instance
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return "", fmt.Errorf("unable to calculate md5; %v", err)
+	}
+
+	// Calculate the MD5 checksum as a byte slice
+	checksum := hash.Sum(nil)
+
+	// Convert the checksum to a hexadecimal string
+	md5sum := hex.EncodeToString(checksum)
+
+	return md5sum, nil
 }
 
 // pushPatchToChanel used to pipe strings into channel
@@ -434,11 +501,12 @@ func (a ByToBlock) Less(i, j int) bool {
 func appendFirstPatch(cfg *utils.Config, availablePatches []utils.PatchJson, patchesToDownload []utils.PatchJson) ([]utils.PatchJson, error) {
 	var expectedFileName string
 
-	if cfg.ChainID == utils.MainnetChainID {
+	switch cfg.ChainID {
+	case utils.MainnetChainID:
 		expectedFileName = firstMainnetPatchFileName
-	} else if cfg.ChainID == utils.TestnetChainID {
+	case utils.TestnetChainID:
 		expectedFileName = firstTestnetPatchFileName
-	} else {
+	default:
 		return nil, errors.New("please choose chain-id with --chainid")
 	}
 
@@ -483,7 +551,7 @@ func deleteOperaWorldStateFromUpdateSet(dbPath string) error {
 }
 
 // downloadFile downloads file - used for downloading individual patches.
-func downloadFile(filePath string, parentPath string, url string) error {
+func downloadFile(filePath string, parentPath string, url string) (finalErr error) {
 	// Create parent directories if they don't exist
 	err := os.MkdirAll(parentPath, 0755)
 	if err != nil {
@@ -495,7 +563,9 @@ func downloadFile(filePath string, parentPath string, url string) error {
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, file.Close())
+	}()
 
 	// Get the current file size
 	fileInfo, err := file.Stat()
@@ -542,11 +612,11 @@ func getFileContentsFromUrl(url string, startSize int64, out *bufio.Writer) erro
 		startSize += written
 	}
 
-	return fmt.Errorf("failed after %v attempts; %s", maxNumberOfDownloadAttempts, err.Error())
+	return fmt.Errorf("failed after %v attempts; %s", maxNumberOfDownloadAttempts, err)
 }
 
 // downloadFileContents downloads file contents from given start
-func downloadFileContents(url string, startSize int64, out *bufio.Writer) (int64, error) {
+func downloadFileContents(url string, startSize int64, out *bufio.Writer) (size int64, finalErr error) {
 	// Set the "Range" header to resume the download from the current size
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -561,7 +631,9 @@ func downloadFileContents(url string, startSize int64, out *bufio.Writer) (int64
 	if err != nil {
 		return 0, fmt.Errorf("error making request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, resp.Body.Close())
+	}()
 
 	// Check server response again
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusRequestedRangeNotSatisfiable {
@@ -573,20 +645,27 @@ func downloadFileContents(url string, startSize int64, out *bufio.Writer) (int64
 }
 
 // extractTarGz extracts tar file contents into location of output folder
-func extractTarGz(tarGzFile, outputFolder string) error {
+func extractTarGz(tarGzFile, outputFolder string) (finalErr error) {
 	// Open the tar.gz file
 	file, err := os.Open(tarGzFile)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, file.Close())
+	}()
 
 	// Create the gzip readerÏ
 	gr, err := gzip.NewReader(file)
 	if err != nil {
 		return err
 	}
-	defer gr.Close()
+	defer func() {
+		err = gr.Close()
+		if err != nil {
+			finalErr = errors.Join(finalErr, err)
+		}
+	}()
 
 	// Create the tar reader
 	tr := tar.NewReader(gr)
@@ -610,13 +689,13 @@ func extractTarGz(tarGzFile, outputFolder string) error {
 
 		// Make sure that path does not contain ".."
 		if strings.Contains(targetPath, "..") {
-			return fmt.Errorf("Tarfile is attempting to use path containing ..: %s", targetPath)
+			return fmt.Errorf("tarfile is attempting to use path containing ..: %s", targetPath)
 		}
 
 		// Make sure that output file does not overwrite existing files
 		_, err = os.Stat(targetPath)
 		if err == nil || os.IsExist(err) {
-			return fmt.Errorf("Tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
+			return fmt.Errorf("tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
 		}
 
 		// Check if it's a directory
