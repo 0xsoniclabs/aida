@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// cloneDbCommand enables creation of aida-db read or subset
+// cloneDbCommand enables creation of aida-db clone or subset
 var cloneDbCommand = cli.Command{
 	Action:    cloneDbAction,
 	Name:      "db",

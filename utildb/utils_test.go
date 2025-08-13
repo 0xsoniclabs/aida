@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpenSourceDatabases(t *testing.T) {
+func TestUtils_OpenSourceDatabases(t *testing.T) {
 	ss1, path1 := utils.CreateTestSubstateDb(t)
 	ss2, path2 := utils.CreateTestSubstateDb(t)
 	ss3, path3 := utils.CreateTestSubstateDb(t)
@@ -33,7 +33,7 @@ func TestOpenSourceDatabases(t *testing.T) {
 	require.NoError(t, gotSs3.Equal(ss3))
 }
 
-func TestOpenSourceDatabases_Error(t *testing.T) {
+func TestUtils_OpenSourceDatabases_Error(t *testing.T) {
 	tests := []struct {
 		name        string
 		sourcePaths []string
@@ -59,7 +59,7 @@ func TestOpenSourceDatabases_Error(t *testing.T) {
 
 }
 
-func TestCalculateMD5Sum(t *testing.T) {
+func TestUtils_CalculateMD5Sum(t *testing.T) {
 	name := t.TempDir() + "/testfile"
 	f, err := os.Create(name)
 	require.NoError(t, err)
