@@ -17,7 +17,6 @@
 package utildb
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -72,33 +71,6 @@ func MustCloseDB(db db.BaseDB) {
 			}
 		}
 	}
-}
-
-// calculateMD5Sum calculates MD5 hash of given file
-func calculateMD5Sum(filePath string) (string, error) {
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("unable open file %s; %v", filePath, err.Error())
-	}
-	defer file.Close()
-
-	// Create a new MD5 hash instance
-	hash := md5.New()
-
-	// Copy the file content into the hash instance
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return "", fmt.Errorf("unable to calculate md5; %v", err)
-	}
-
-	// Calculate the MD5 checksum as a byte slice
-	checksum := hash.Sum(nil)
-
-	// Convert the checksum to a hexadecimal string
-	md5sum := hex.EncodeToString(checksum)
-
-	return md5sum, nil
 }
 
 // GetDbSize retrieves database size
