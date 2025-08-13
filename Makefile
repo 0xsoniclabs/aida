@@ -118,8 +118,8 @@ install-dev-tools:
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact
+	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact ./cmd/util-db/info
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact ./cmd/util-db/info
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/util-db/compact ./cmd/util-db/info

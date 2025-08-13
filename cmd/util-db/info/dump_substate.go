@@ -14,22 +14,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package info
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
 	"github.com/urfave/cli/v2"
 )
 
-// SubstateDumpCommand returns content in substates in json format
-var SubstateDumpCommand = cli.Command{
-	Action:    substateDumpAction,
+// dumpSubstateCommand returns content in substates in json format
+var dumpSubstateCommand = cli.Command{
+	Action:    dumpSubstateAction,
 	Name:      "dump-substate",
-	Usage:     "returns content in substates in json format",
+	Usage:     "prints content in substates in json format",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
@@ -44,8 +45,8 @@ The aida-vm dump command requires two arguments:
 last block of the inclusive range of blocks to replay transactions.`,
 }
 
-// substateDumpAction prepares config and arguments before SubstateDumpAction
-func substateDumpAction(ctx *cli.Context) error {
+// dumpSubstateAction prepares config and arguments before SubstateDumpAction
+func dumpSubstateAction(ctx *cli.Context) error {
 	var err error
 
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
@@ -58,7 +59,12 @@ func substateDumpAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func() {
+		err = sdb.Close()
+		if err != nil {
+			fmt.Printf("could not close database: %v", err)
+		}
+	}()
 
 	// set encoding type
 	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
@@ -67,8 +73,35 @@ func substateDumpAction(ctx *cli.Context) error {
 	}
 
 	// run substate dump task
-	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", utildb.SubstateDumpTask, cfg.First, cfg.Last, ctx)
+	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", substateDumpTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()
 
 	return err
+}
+
+// substateDumpTask dumps substate data
+func substateDumpTask(block uint64, tx int, recording *substate.Substate, taskPool *db.SubstateTaskPool) error {
+	InputSubstate := recording.InputSubstate
+	inputEnv := recording.Env
+	inputMessage := recording.Message
+
+	outputAlloc := recording.OutputSubstate
+	outputResult := recording.Result
+
+	out := fmt.Sprintf("block: %v Transaction: %v\n", block, tx)
+	var jbytes []byte
+	jbytes, _ = json.MarshalIndent(InputSubstate, "", " ")
+	out += fmt.Sprintf("Recorded input substate:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(inputEnv, "", " ")
+	out += fmt.Sprintf("Recorded input environmnet:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(inputMessage, "", " ")
+	out += fmt.Sprintf("Recorded input message:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(outputAlloc, "", " ")
+	out += fmt.Sprintf("Recorded output substate:\n%s\n", jbytes)
+	jbytes, _ = json.MarshalIndent(outputResult, "", " ")
+	out += fmt.Sprintf("Recorded output result:\n%s\n", jbytes)
+
+	fmt.Println(out)
+
+	return nil
 }
