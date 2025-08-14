@@ -110,6 +110,10 @@ func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
 	ss := GetTestSubstate("protobuf")
 	err = db.PutSubstate(ss)
 	require.NoError(t, err)
+
+	md := NewAidaDbMetadata(db, "CRITICAL")
+	require.NoError(t, md.genMetadata(ss.Block-1, ss.Block+1, 0, 0, SonicMainnetChainID, []byte{}))
+
 	require.NoError(t, db.Close())
 
 	return ss, path

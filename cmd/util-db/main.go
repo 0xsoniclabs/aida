@@ -17,10 +17,11 @@
 package main
 
 import (
-	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"log"
 	"os"
 
+	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
+	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
@@ -34,7 +35,7 @@ var UtilDbApp = cli.App{
 	Usage:     "merge source data into profiling database",
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
-		&db.CloneCommand,
+		&clone.Command,
 		&compact.Command,
 		&db.ExtractEthereumGenesisCommand,
 		&db.MergeCommand,
