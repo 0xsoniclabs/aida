@@ -1140,7 +1140,7 @@ func TestInfo_PrintExceptionForBlock_AidaDbDoesNotExists(t *testing.T) {
 }
 
 func TestCommands(t *testing.T) {
-	ss, dbPath := utils.CreateTestSubstateDb(t)
+	ss, dbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	addr := types.Address{0x1, 0x12}
 
 	tests := []struct {

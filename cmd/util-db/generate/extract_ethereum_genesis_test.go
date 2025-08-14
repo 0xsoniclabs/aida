@@ -1,9 +1,11 @@
-package utildb
+package generate
 
 import (
 	"encoding/hex"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/stretchr/testify/assert"
@@ -11,9 +13,9 @@ import (
 
 func TestLoadEthereumGenesisWorldState(t *testing.T) {
 	// Create a temporary file to store the genesis JSON
-	tempFile, err := os.CreateTemp("", "genesis.json")
-	assert.NoError(t, err)
-	defer os.Remove(tempFile.Name())
+	tempFilePath := t.TempDir() + "/genesis.json"
+	tempFile, err := os.Create(tempFilePath)
+	require.NoError(t, err)
 
 	// minimum JSON data to test
 	genesisData := `{
@@ -43,7 +45,7 @@ func TestLoadEthereumGenesisWorldState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Call the function
-	worldState, err := LoadEthereumGenesisWorldState(tempFile.Name())
+	worldState, err := loadEthereumGenesisWorldState(tempFile.Name())
 	assert.NoError(t, err)
 
 	// Validate the world state
