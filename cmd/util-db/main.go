@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
 	"log"
 	"os"
 
@@ -36,14 +37,12 @@ var UtilDbApp = cli.App{
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
 		&clone.Command,
+		&info.Command,
 		&compact.Command,
-		&db.ExtractEthereumGenesisCommand,
+		&generate.Command,
 		&db.MergeCommand,
 		&db.UpdateCommand,
-		&info.Command,
 		&db.ValidateCommand,
-		&db.GenDeletedAccountsCommand,
-		&db.GenerateDbHashCommand,
 		&db.ScrapeCommand,
 		&db.MetadataCommand,
 

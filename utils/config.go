@@ -897,7 +897,13 @@ func (cc *configContext) adjustMissingConfigValues() error {
 
 	// if AidaDB path is given, redirect source path to AidaDB.
 	if found := directoryExists(cfg.AidaDb); found {
-		OverwriteDbPathsByAidaDb(cfg)
+		if !cc.ctx.IsSet(UpdateDbFlag.Name) {
+			cfg.UpdateDb = cfg.AidaDb
+		}
+		if !cc.ctx.IsSet(DeletionDbFlag.Name) {
+			cfg.DeletionDb = cfg.AidaDb
+		}
+		cfg.SubstateDb = cfg.AidaDb
 	}
 
 	// in-memory StateDB cannot be kept after run.
@@ -912,13 +918,6 @@ func (cc *configContext) adjustMissingConfigValues() error {
 		cfg.DbTmp = os.TempDir()
 	}
 	return nil
-}
-
-// OverwriteDbPathsByAidaDb overwrites the paths of the DBs by the AidaDb path
-func OverwriteDbPathsByAidaDb(cfg *Config) {
-	cfg.UpdateDb = cfg.AidaDb
-	cfg.DeletionDb = cfg.AidaDb
-	cfg.SubstateDb = cfg.AidaDb
 }
 
 // reportNewConfig logs out the state of config in current run
