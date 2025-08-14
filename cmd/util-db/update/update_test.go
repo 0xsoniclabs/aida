@@ -49,27 +49,6 @@ func TestUpdate_Command(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUpdate_update(t *testing.T) {
-	aidaDbPath := t.TempDir() + "/aida-db"
-	utils.AidaDbRepositoryUrl = utils.AidaDbRepositoryTestUrl
-	defer func() {
-		utils.AidaDbRepositoryUrl = ""
-	}()
-	err := update(&utils.Config{
-		AidaDb:     aidaDbPath,
-		UpdateType: "nightly",
-		DbTmp:      t.TempDir(),
-	})
-	var aidaDb db.SubstateDB
-	aidaDb, err = db.NewDefaultSubstateDB(aidaDbPath)
-	require.NoError(t, err)
-	ss := aidaDb.GetFirstSubstate()
-	assert.Equal(t, uint64(1), ss.Block)
-	ss, err = aidaDb.GetLastSubstate()
-	require.NoError(t, err)
-	assert.Equal(t, uint64(210080), ss.Block)
-}
-
 func TestUpdate_getTargetDbBlockRange(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -167,4 +146,25 @@ func TestUpdate_retrievePatchesToDownload(t *testing.T) {
 	}, 0, 28_000_000)
 	require.NoError(t, err)
 	require.NotEmpty(t, patches)
+}
+
+func TestUpdate_update(t *testing.T) {
+	aidaDbPath := t.TempDir() + "/aida-db"
+	utils.AidaDbRepositoryUrl = utils.AidaDbRepositoryTestUrl
+	defer func() {
+		utils.AidaDbRepositoryUrl = ""
+	}()
+	err := update(&utils.Config{
+		AidaDb:     aidaDbPath,
+		UpdateType: "nightly",
+		DbTmp:      t.TempDir(),
+	})
+	require.NoError(t, err)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
+	require.NoError(t, err)
+	ss := aidaDb.GetFirstSubstate()
+	assert.Equal(t, uint64(1), ss.Block)
+	ss, err = aidaDb.GetLastSubstate()
+	require.NoError(t, err)
+	assert.Equal(t, uint64(210080), ss.Block)
 }
