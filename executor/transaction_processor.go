@@ -19,6 +19,7 @@ package executor
 import (
 	"errors"
 	"fmt"
+	"github.com/0xsoniclabs/sonic/evmcore"
 	"math/big"
 	"slices"
 	"strings"
