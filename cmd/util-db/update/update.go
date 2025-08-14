@@ -61,8 +61,6 @@ Updates aida-db by downloading patches from aida-db generation server.
 
 const (
 	maxNumberOfDownloadAttempts = 5
-	firstMainnetPatchFileName   = "5577-46750.tar.gz"
-	firstTestnetPatchFileName   = "" // todo fill with first testnet patch once lachesis patch for testnet is released
 	stateHashPatchFileName      = "state-hashes_0-68940000"
 )
 
