@@ -95,13 +95,13 @@ func Must[T any](value T, err error) T {
 }
 
 // CreateTestSubstateDb creates a test substate database with a predefined substate.
-func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
+func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSchema) (*substate.Substate, string) {
 	path := t.TempDir()
 	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
 	require.NoError(t, err)
-	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+	require.NoError(t, db.SetSubstateEncoding(encoding))
 
-	ss := GetTestSubstate("protobuf")
+	ss := GetTestSubstate(string(encoding))
 	err = db.PutSubstate(ss)
 	require.NoError(t, err)
 

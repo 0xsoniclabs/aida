@@ -313,7 +313,7 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 }
 
 func TestClone_Commands(t *testing.T) {
-	ss, srcDbPath := utils.CreateTestSubstateDb(t)
+	ss, srcDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	tests := []struct {
 		cmdName  string
 		testName string

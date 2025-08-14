@@ -19,13 +19,15 @@ package compact
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/substate/db"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
 func TestCmd_Compact(t *testing.T) {
-	_, path := utils.CreateTestSubstateDb(t)
+	_, path := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Action = compactAction
 	app.Flags = []cli.Flag{

@@ -49,7 +49,7 @@ func TestUtils_Must(t *testing.T) {
 }
 
 func TestUtils_CreateTestSubstateDb(t *testing.T) {
-	ss, path := CreateTestSubstateDb(t)
+	ss, path := CreateTestSubstateDb(t, substateDb.ProtobufEncodingSchema)
 	sdb, err := substateDb.NewDefaultSubstateDB(path)
 	require.NoError(t, err)
 	gotSs, err := sdb.GetSubstate(ss.Block, ss.Transaction)
