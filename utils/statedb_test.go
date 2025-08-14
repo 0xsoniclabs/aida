@@ -233,7 +233,7 @@ func TestStatedb_PrepareStateDB(t *testing.T) {
 			defer func(path string) {
 				err = os.RemoveAll(path)
 				if err != nil {
-
+					t.Fatal(err)
 				}
 			}(cfg.StateDbSrc)
 
