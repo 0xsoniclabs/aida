@@ -17,7 +17,6 @@
 package utildb
 
 import (
-	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -73,16 +72,4 @@ func TestUtils_OpenSourceDatabases_Error(t *testing.T) {
 		})
 	}
 
-}
-
-func TestUtils_CalculateMD5Sum(t *testing.T) {
-	name := t.TempDir() + "/testfile"
-	f, err := os.Create(name)
-	require.NoError(t, err)
-	_, err = f.Write([]byte("test"))
-	require.NoError(t, err)
-	require.NoError(t, f.Close())
-	md5Sum, err := calculateMD5Sum(name)
-	require.NoError(t, err)
-	require.Equal(t, md5Sum, "098f6bcd4621d373cade4e832627b4f6")
 }
