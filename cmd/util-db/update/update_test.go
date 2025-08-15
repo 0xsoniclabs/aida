@@ -275,7 +275,7 @@ func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
 
 func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
 	want, patchPath := utils.CreateTestSubstateDb(t)
-	want, targetPath := utils.CreateTestSubstateDb(t)
+	_, targetPath := utils.CreateTestSubstateDb(t)
 	targetDb, err := db.NewDefaultBaseDB(targetPath)
 	require.NoError(t, err)
 	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
