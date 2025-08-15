@@ -17,6 +17,8 @@ package executor
 
 import (
 	"errors"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"math/big"
 	"testing"
 
@@ -155,13 +157,7 @@ func openSubstateDb(path string, t *testing.T) Provider[txcontext.TxContext] {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	iterator, err := OpenSubstateProvider(&cfg, nil, aidaDb)
-	if err != nil {
-		t.Errorf("fail to open substate provide; %v", err)
-	}
-
-	return iterator
+	return OpenSubstateProvider(&cfg, nil, aidaDb)
 }
 
 func createSubstateDb(t *testing.T, path string) error {
@@ -221,30 +217,16 @@ func TestExecutor_OpenSubstateProvider(t *testing.T) {
 			AidaDb: "testdb",
 		}
 		ctxt := cli.NewContext(nil, nil, nil)
+		kv := &testutil.KeyValue{}
 
 		mockBaseDb := db.NewMockBaseDB(ctrl)
 		mockDb := db.NewMockDbAdapter(ctrl)
+		// Try catch mechanism for finding encoding
+		mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewArrayIterator(kv)).MinTimes(1)
 		mockBaseDb.EXPECT().GetBackend().Return(mockDb)
 
-		provider, err := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
-		assert.NoError(t, err)
+		provider := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
 		assert.NotNil(t, provider)
-	})
-
-	t.Run("error on setting encoding", func(t *testing.T) {
-		cfg := &utils.Config{
-			AidaDb:           "testdb",
-			SubstateEncoding: "invalid_encoding",
-		}
-		ctxt := cli.NewContext(nil, nil, nil)
-
-		mockBaseDb := db.NewMockBaseDB(ctrl)
-		mockDb := db.NewMockDbAdapter(ctrl)
-		mockBaseDb.EXPECT().GetBackend().Return(mockDb)
-
-		provider, err := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
-		assert.Error(t, err)
-		assert.Nil(t, provider)
 	})
 }
 

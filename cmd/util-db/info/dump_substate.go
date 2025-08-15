@@ -66,12 +66,6 @@ func dumpSubstateAction(ctx *cli.Context) error {
 		}
 	}()
 
-	// set encoding type
-	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-	if err != nil {
-		return fmt.Errorf("cannot set substate encoding; %w", err)
-	}
-
 	// run substate dump task
 	taskPool := sdb.NewSubstateTaskPool("aida-vm dump", substateDumpTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()
