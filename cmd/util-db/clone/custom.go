@@ -20,6 +20,7 @@ var cloneCustomCommand = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 clone custom is a specialized clone tool which copies specific components in aida-db from 
@@ -34,7 +35,7 @@ func cloneCustomAction(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
