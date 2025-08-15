@@ -43,7 +43,7 @@ func FindBlockRangeInUpdate(udb db.UpdateDB) (uint64, uint64, error) {
 }
 
 // FindBlockRangeInDeleted finds the first and last block in the deleted accounts
-func FindBlockRangeInDeleted(ddb *db.DestroyedAccountDB) (uint64, uint64, error) {
+func FindBlockRangeInDeleted(ddb db.DestroyedAccountDB) (uint64, uint64, error) {
 	firstBlock, err := ddb.GetFirstKey()
 	if err != nil {
 		return 0, 0, fmt.Errorf("cannot get first deleted accounts; %w", err)

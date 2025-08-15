@@ -161,7 +161,7 @@ func TestPrime_PrimeStateDB(t *testing.T) {
 
 			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
-			err = pc.PrimeStateDB(ws, sDB)
+			err = pc.PrimeStateDB(ws)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -270,7 +270,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 
 			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB
-			err = pc.PrimeStateDB(ws, sDB)
+			err = pc.PrimeStateDB(ws)
 			if err != nil {
 				t.Fatalf("failed to prime state DB: %v", err)
 			}
@@ -380,7 +380,7 @@ func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
 
 			pc2 := prime.NewPrimeContext(cfg, sDB2, log)
 			// Priming state DB
-			err = pc2.PrimeStateDB(ws2, sDB2)
+			err = pc2.PrimeStateDB(ws2)
 			if err != nil {
 				t.Fatalf("failed to prime state DB2: %v", err)
 			}

@@ -809,7 +809,7 @@ func TestValidateStateDb_ValidationDoesNotFail(t *testing.T) {
 			// Create new prime context
 			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB with given world state
-			if err = pc.PrimeStateDB(ws, sDB); err != nil {
+			if err = pc.PrimeStateDB(ws); err != nil {
 				t.Fatal(err)
 			}
 
@@ -860,7 +860,7 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 			// Create new prime context
 			pc := prime.NewPrimeContext(cfg, sDB, log)
 			// Priming state DB with given world state
-			pc.PrimeStateDB(ws, sDB)
+			pc.PrimeStateDB(ws)
 
 			// create new random address
 			addr := common.BytesToAddress(utils.MakeRandomByteSlice(t, 40))

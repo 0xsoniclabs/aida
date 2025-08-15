@@ -26,8 +26,9 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	baseDb := substateDb.NewMockBaseDB(ctrl)
-	mockDb := substateDb.NewMockDbAdapter(ctrl)
+	sdb := substateDb.NewMockSubstateDB(ctrl)
+	ddb := substateDb.NewMockDestroyedAccountDB(ctrl)
+	adapter := substateDb.NewMockDbAdapter(ctrl)
 
 	input := utils.GetTestSubstate("default")
 	input.Block = 0
@@ -45,55 +46,19 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	kv := &testutil.KeyValue{}
 	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
 	iter := iterator.NewArrayIterator(kv)
-	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
-	baseDb.EXPECT().GetBackend().Return(mockDb)
-	baseDb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
+	adapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
+	adapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	ddb.EXPECT().GetBackend().Return(adapter)
+	ddb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
 
 	set, i, err := generateUpdateSet(0, 2, &utils.Config{
 		Workers:          1,
 		SubstateEncoding: "rlp",
-	}, baseDb)
+	}, sdb, ddb)
 	assert.NoError(t, err)
 	assert.NotNil(t, set)
 	assert.Equal(t, 1, len(set))
 	assert.Equal(t, 3, len(i))
-}
-
-func TestWorldStateUpdate_GenerateWorldStateFromUpdateDB(t *testing.T) {
-	src := t.TempDir() + "/test.db"
-	db, err := createTestUpdateDB(src)
-	if err != nil {
-		t.Fatalf("Failed to create test substate db: %v", err)
-	}
-	err = db.PutUpdateSet(testUpdateSet, testDeletedAccounts)
-	if err != nil {
-		t.Fatalf("Failed to put substate to test substate db: %v", err)
-	}
-	err = db.Close()
-	if err != nil {
-		t.Fatalf("Failed to close test substate db: %v", err)
-	}
-	dst := t.TempDir() + "/test2.db"
-	db2, err := createTestUpdateDB(dst)
-	if err != nil {
-		t.Fatalf("Failed to create test substate db: %v", err)
-	}
-	err = db2.Close()
-	if err != nil {
-		t.Fatalf("Failed to close test substate db: %v", err)
-	}
-
-	// create mock db
-	// case error
-	cfg := &utils.Config{
-		AidaDb:     src,
-		DeletionDb: dst,
-		Workers:    1,
-	}
-	ws, err := generateWorldStateFromUpdateDB(cfg, uint64(100))
-	assert.NoError(t, err)
-	assert.NotNil(t, ws)
 }
 
 func TestWorldStateUpdate_ClearAccountStorage(t *testing.T) {
@@ -210,61 +175,67 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			cfg.DeletionDb = deletedAccountsDir
 
 			// Initializing backend DB for storing destroyed accounts
-			base, err := substateDb.NewDefaultBaseDB(deletedAccountsDir)
+			aidaDb, err := substateDb.NewDefaultBaseDB(deletedAccountsDir)
 			if err != nil {
 				t.Fatalf("failed to create backend DB: %s; %v", deletedAccountsDir, err)
 			}
 
 			// Creating new destroyed accounts DB
-			daDB := substateDb.MakeDefaultDestroyedAccountDBFromBaseDB(base)
+			ddb := substateDb.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
-			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
+			err = ddb.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
 			if err != nil {
 				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
 			}
 
-			defer func(daDB *substateDb.DestroyedAccountDB) {
+			defer func(daDB substateDb.DestroyedAccountDB) {
 				e := daDB.Close()
 				if e != nil {
 					t.Fatalf("failed to close destroyed accounts DB: %v", e)
 				}
-			}(daDB)
+			}(ddb)
 
 			// Initialization of state DB
-			sDB, _, err := utils.PrepareStateDB(cfg)
+			stateDb, _, err := utils.PrepareStateDB(cfg)
 			if err != nil {
 				t.Fatalf("failed to create state DB: %v", err)
 			}
 
 			log := logger.NewLogger("INFO", "TestStateDb")
 
-			p := MakePrimer(cfg, sDB, log)
+			p := &primer{
+				cfg:    cfg,
+				log:    log,
+				ctx:    NewPrimeContext(cfg, stateDb, log),
+				aidadb: aidaDb,
+				ddb:    ddb,
+			}
 			// Priming state DB with given world state
-			err = p.ctx.PrimeStateDB(ws, sDB)
+			err = p.ctx.PrimeStateDB(ws)
 			if err != nil {
 				t.Fatalf("cannot prime statedb; %v", err)
 			}
 
 			// Call for removal of destroyed accounts from state DB
-			err = p.mayDeleteDestroyedAccountsFromStateDB(5, base)
+			err = p.mayDeleteDestroyedAccountsFromStateDB(5)
 			if err != nil {
 				t.Fatalf("failed to delete accounts from the state DB: %v", err)
 			}
 
-			err = state.BeginCarmenDbTestContext(sDB)
+			err = state.BeginCarmenDbTestContext(stateDb)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// check if accounts are not present anymore
 			for _, da := range destroyedAccounts {
-				if sDB.Exist(common.Address(da)) {
+				if stateDb.Exist(common.Address(da)) {
 					t.Fatalf("failed to delete destroyed accounts from the state DB")
 				}
 			}
 
-			err = state.CloseCarmenDbTestContext(sDB)
+			err = state.CloseCarmenDbTestContext(stateDb)
 			if err != nil {
 				t.Fatal(err)
 			}
