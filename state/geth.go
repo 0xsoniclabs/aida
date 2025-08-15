@@ -312,7 +312,12 @@ func (s *gethStateDB) Close() error {
 	if err := tdb.Close(); err != nil {
 		return err
 	}
-	return s.backend.Close()
+	// backend can be nil if we are using an in-memory version of gethDb (offTheChainDb)
+	// as this version of StateDB does not require a file system.
+	if s.backend != nil {
+		return s.backend.Close()
+	}
+	return nil
 }
 
 func (s *gethStateDB) AddRefund(gas uint64) {
