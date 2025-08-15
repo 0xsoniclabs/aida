@@ -10,8 +10,8 @@ import (
 
 func TestCloner_stop(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockDbSrc := db.NewMockBaseDB(ctrl)
-	mockDbTarget := db.NewMockBaseDB(ctrl)
+	mockDbSrc := db.NewMockSubstateDB(ctrl)
+	mockDbTarget := db.NewMockSubstateDB(ctrl)
 
 	mockDbSrc.EXPECT().Close()
 	mockDbTarget.EXPECT().Close()
