@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -65,13 +66,17 @@ func genDeletedAccountsAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 
 	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.Output)
 	if err != nil {
 		return err
 	}
-	defer ddb.Close()
+	defer func(ddb *db.DestroyedAccountDB) {
+		err = errors.Join(err, ddb.Close())
+	}(ddb)
 
 	return utildb.GenDeletedAccountsAction(cfg, sdb, ddb, cfg.First, cfg.Last)
 }

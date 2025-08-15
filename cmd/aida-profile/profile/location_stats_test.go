@@ -14,7 +14,7 @@ func TestCmd_RunGetLocationStatsCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&GetLocationStatsCommand}
 	args := utils.NewArgs("test").

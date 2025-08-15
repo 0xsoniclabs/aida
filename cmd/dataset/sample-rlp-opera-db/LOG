@@ -1,8 +1,0 @@
-=============== Aug 15, 2025 (+07) ===============
-19:10:08.098971 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-19:10:08.109611 db@open opening
-19:10:08.109981 version@stat F·[] S·0B[] Sc·[]
-19:10:08.111228 db@janitor F·2 G·0
-19:10:08.111261 db@open done T·1.636459ms
-19:10:08.111489 db@close closing
-19:10:08.111581 db@close done T·76.151µs

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -18,8 +17,8 @@ func TestCmd_RunMergeCommand(t *testing.T) {
 	outputPath := filepath.Join(tempDir, "output-db")
 	sourceDb1 := filepath.Join(tempDir, "aida-db-1")
 	sourceDb2 := filepath.Join(tempDir, "aida-db-2")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", sourceDb1))
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", sourceDb2))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", sourceDb1))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", sourceDb2))
 
 	// given
 	app := cli.NewApp()
@@ -38,6 +37,34 @@ func TestCmd_RunMergeCommand(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
-	_, err = os.Stat(outputPath)
-	assert.NoError(t, err)
+	assert.DirExists(t, outputPath)
+}
+
+func TestCmd_RunMergeCommandError(t *testing.T) {
+	tempDir := t.TempDir()
+	outputPath := filepath.Join(tempDir, "output-db")
+	sourceDb1 := filepath.Join(tempDir, "aida-db-1")
+	sourceDb2 := filepath.Join(tempDir, "aida-db-2")
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", sourceDb1))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", sourceDb2))
+
+	// given
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&MergeCommand}
+	args := utils.NewArgs("test").
+		Arg(MergeCommand.Name).
+		Flag(utils.SubstateEncodingFlag.Name, "protobuf").
+		Flag(utils.AidaDbFlag.Name, outputPath).
+		Flag(flags.SkipMetadata.Name, false).
+		Arg(sourceDb1).
+		Arg(sourceDb2).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	// TODO maybe bug
+	assert.Error(t, err)
+	assert.DirExists(t, outputPath)
 }

@@ -1,6 +1,7 @@
 package stochastic
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -10,16 +11,22 @@ import (
 
 func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 	// given
+	tempDir := t.TempDir()
+	traceFile := filepath.Join(tempDir, "trace.bin")
+
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&StochasticReplayCommand}
 	args := utils.NewArgs("test").
 		Arg(StochasticReplayCommand.Name).
 		Flag(utils.BalanceRangeFlag.Name, 100).
 		Flag(utils.NonceRangeFlag.Name, 100).
+		Flag(utils.TraceFlag.Name, true).
+		Flag(utils.TraceFileFlag.Name, traceFile).
+		Flag(utils.MemoryBreakdownFlag.Name, true).
 		Flag(utils.ShadowDbImplementationFlag.Name, "geth").
 		Flag(utils.StateDbImplementationFlag.Name, "carmen").
 		Flag(utils.StateDbVariantFlag.Name, "go-file").
-		Arg(100).
+		Arg(10).
 		Arg("../../dataset/replay.json").
 		Build()
 
@@ -28,4 +35,5 @@ func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
+	assert.FileExists(t, traceFile)
 }

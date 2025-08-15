@@ -4,9 +4,7 @@ import (
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUtils_createTestUpdateDB(t *testing.T) {
@@ -53,23 +51,4 @@ func TestArgsBuilder_NewArgs(t *testing.T) {
 	assert.Equal(t, "0", args[8])
 	assert.Equal(t, "--f4", args[9])
 	assert.Equal(t, 10, len(args))
-}
-
-// CreateTestSubstateDb creates a test substate database with a predefined substate.
-func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
-	path := t.TempDir()
-	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
-	require.NoError(t, err)
-	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
-
-	ss := GetTestSubstate("protobuf")
-	err = db.PutSubstate(ss)
-	require.NoError(t, err)
-
-	md := NewAidaDbMetadata(db, "CRITICAL")
-	require.NoError(t, md.genMetadata(ss.Block-1, ss.Block+1, 0, 0, SonicMainnetChainID, []byte{}))
-
-	require.NoError(t, db.Close())
-
-	return ss, path
 }

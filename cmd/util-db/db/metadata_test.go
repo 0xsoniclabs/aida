@@ -1,19 +1,3 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
 package db
 
 import (
@@ -21,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
@@ -48,7 +33,7 @@ func TestCmd_PrintMetadataCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&MetadataCommand}
 
@@ -69,7 +54,7 @@ func TestCmd_GenerateMetadataCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&MetadataCommand}
 
@@ -91,30 +76,76 @@ func TestCmd_InsertMetadataCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&MetadataCommand}
+	params := map[string]string{
+		utils.FirstBlockPrefix:  "0",
+		utils.LastBlockPrefix:   "0",
+		utils.FirstEpochPrefix:  "0",
+		utils.LastEpochPrefix:   "0",
+		utils.TypePrefix:        "0",
+		utils.ChainIDPrefix:     "0",
+		utils.TimestampPrefix:   "0",
+		utils.DbHashPrefix:      "1234",
+		db.UpdatesetIntervalKey: "0",
+		db.UpdatesetSizeKey:     "0",
+	}
+	for param := range params {
+		args := utils.NewArgs("test").
+			Arg(MetadataCommand.Name).
+			Arg(InsertMetadataCommand.Name).
+			Flag(utils.AidaDbFlag.Name, aidaDbPath).
+			Arg(param[2:]).
+			Arg(params[param]).
+			Build()
 
-	args := utils.NewArgs("test").
-		Arg(MetadataCommand.Name).
-		Arg(InsertMetadataCommand.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Arg("ty"). // key argument
-		Arg("0").  // value argument
-		Build()
+		err := app.Run(args)
 
-	// when
-	err := app.Run(args)
+		// then
+		assert.NoError(t, err)
+	}
+}
 
-	// then
-	assert.NoError(t, err)
+func TestCmd_InsertMetadataCommandError(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&MetadataCommand}
+	params := map[string]string{
+		utils.FirstBlockPrefix:  "a",
+		utils.LastBlockPrefix:   "b",
+		utils.FirstEpochPrefix:  "c",
+		utils.LastEpochPrefix:   "d",
+		utils.TypePrefix:        "e",
+		utils.ChainIDPrefix:     "f",
+		utils.DbHashPrefix:      "0",
+		db.UpdatesetIntervalKey: "h",
+		db.UpdatesetSizeKey:     "i",
+	}
+	for param := range params {
+		args := utils.NewArgs("test").
+			Arg(MetadataCommand.Name).
+			Arg(InsertMetadataCommand.Name).
+			Flag(utils.AidaDbFlag.Name, aidaDbPath).
+			Arg(param[2:]).
+			Arg(params[param]).
+			Build()
+
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	}
 }
 
 func TestCmd_RemoveMetadataCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&MetadataCommand}
 

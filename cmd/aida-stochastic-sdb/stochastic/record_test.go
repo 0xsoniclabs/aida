@@ -15,7 +15,7 @@ func TestCmd_RunStochasticRecordCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	outputFile := filepath.Join(tempDir, "test_events.json")
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&StochasticRecordCommand}

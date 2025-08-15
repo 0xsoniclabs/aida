@@ -1,23 +1,6 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
 package db
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -31,7 +14,7 @@ func TestCmd_GenDeletedAccountsCommand(t *testing.T) {
 	// given
 	tempDir := t.TempDir()
 	aidaDbPath := filepath.Join(tempDir, "aida-db")
-	require.NoError(t, utils.CopyDir("../../dataset/aida-db-0-1k-protobuf", aidaDbPath))
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
 	deletionDbPath := filepath.Join(tempDir, "deletion-db")
 
 	app := cli.NewApp()
@@ -52,6 +35,63 @@ func TestCmd_GenDeletedAccountsCommand(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
-	_, err = os.Stat(deletionDbPath)
-	assert.NoError(t, err)
+	assert.DirExists(t, deletionDbPath)
+}
+
+func TestCmd_GenDeletedAccountsCommandError(t *testing.T) {
+	t.Run("no block range", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&GenDeletedAccountsCommand}
+
+		args := utils.NewArgs("test").
+			Arg(GenDeletedAccountsCommand.Name).
+			Flag(utils.AidaDbFlag.Name, "").
+			Arg("ab").
+			Arg("cd").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
+
+	t.Run("no output", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&GenDeletedAccountsCommand}
+
+		args := utils.NewArgs("test").
+			Arg(GenDeletedAccountsCommand.Name).
+			Flag(utils.AidaDbFlag.Name, "").
+			Arg("1").
+			Arg("100").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
+
+	t.Run("no aida", func(t *testing.T) {
+
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&GenDeletedAccountsCommand}
+
+		args := utils.NewArgs("test").
+			Arg(GenDeletedAccountsCommand.Name).
+			Flag(utils.OutputFlag.Name, "abcd").
+			Flag(utils.AidaDbFlag.Name, "").
+			Arg("1").
+			Arg("100").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
 }

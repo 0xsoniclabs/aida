@@ -19,6 +19,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,8 +29,7 @@ import (
 )
 
 var (
-	testTraceFile = "trace-test/trace.dat"
-	testTraceDir  = "trace-test"
+	testTraceDir = "trace-test"
 )
 
 // TestMain runs global setup, test cases then global teardown
@@ -46,13 +46,19 @@ func setup() {
 	// download and extract substate.test
 	err := setupTestSubstateDB()
 	if err != nil {
-		fmt.Errorf("unable to load substatedb. %v", err)
+		err = fmt.Errorf("unable to load substatedb. %v", err)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// create trace directory
 	err = os.Mkdir(testTraceDir, 0700)
 	if err != nil {
-		fmt.Errorf("unable to create direcotry. %v", err)
+		err = fmt.Errorf("unable to create direcotry. %v", err)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	fmt.Printf("Setup completed\n")
@@ -61,8 +67,14 @@ func setup() {
 // teardown removes temp directories
 func teardown() {
 	// Do something here.
-	os.RemoveAll(testTraceDir)
-	os.RemoveAll("substate.test")
+	err := os.RemoveAll(testTraceDir)
+	if err != nil {
+		panic(err)
+	}
+	err = os.RemoveAll("substate.test")
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("Teardown completed\n")
 }
 
@@ -81,7 +93,9 @@ func setupTestSubstateDB() error {
 	if err != nil {
 		return err
 	}
-	defer gzipStream.Close()
+	defer func(gzipStream *gzip.Reader) {
+		err = errors.Join(err, gzipStream.Close())
+	}(gzipStream)
 
 	tarReader := tar.NewReader(gzipStream)
 
@@ -105,7 +119,9 @@ func setupTestSubstateDB() error {
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
+			defer func(outFile *os.File) {
+				err = errors.Join(err, outFile.Close())
+			}(outFile)
 			if _, err = io.Copy(outFile, tarReader); err != nil {
 				return err
 			}

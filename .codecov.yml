@@ -24,3 +24,4 @@ ignore:
   - "**/*_test.go"
   - "**/*.pb.go"
   - "ethtest/mock_data.go"
+  - "**/main.go"

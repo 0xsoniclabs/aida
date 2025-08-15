@@ -78,7 +78,9 @@ func generateMetadata(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func(base db.BaseDB) {
+		err = errors.Join(err, base.Close())
+	}(base)
 	sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
 	fb, lb, ok := utils.FindBlockRangeInSubstate(sdb)
 	if !ok {
@@ -135,7 +137,9 @@ func insertMetadata(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func(base db.BaseDB) {
+		err = errors.Join(err, base.Close())
+	}(base)
 
 	md := utils.NewAidaDbMetadata(base, "INFO")
 
@@ -247,7 +251,9 @@ func removeMetadata(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func(base db.BaseDB) {
+		err = errors.Join(err, base.Close())
+	}(base)
 	md := utils.NewAidaDbMetadata(base, "DEBUG")
 	md.DeleteMetadata()
 
