@@ -1,8 +1,11 @@
 package prime
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -13,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -32,49 +36,49 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	mockErr := errors.New("mock error")
 
 	// case success
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
-	prime := &PrimeContext{
+	p := &PrimeContext{
 		cfg:        nil,
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
 		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
-	mockBulkLoad.EXPECT().Close().Return(nil)
-	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulkLoad, nil)
-	err := prime.mayApplyBulkLoad()
+	mockBulk.EXPECT().Close().Return(nil)
+	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulk, nil)
+	err := p.mayApplyBulkLoad()
 	assert.NoError(t, err)
 
 	// case success
-	prime.operations = 0
-	err = prime.mayApplyBulkLoad()
+	p.operations = 0
+	err = p.mayApplyBulkLoad()
 	assert.Nil(t, err)
 
 	// case error on close
-	prime = &PrimeContext{
+	p = &PrimeContext{
 		cfg:        nil,
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
 		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
-	mockBulkLoad.EXPECT().Close().Return(mockErr)
-	err = prime.mayApplyBulkLoad()
+	mockBulk.EXPECT().Close().Return(mockErr)
+	err = p.mayApplyBulkLoad()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), err.Error())
 
 	// case error on start bulk load
-	prime = &PrimeContext{
+	p = &PrimeContext{
 		cfg:        nil,
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
 		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 	}
-	mockBulkLoad.EXPECT().Close().Return(nil)
+	mockBulk.EXPECT().Close().Return(nil)
 	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, mockErr)
-	err = prime.mayApplyBulkLoad()
+	err = p.mayApplyBulkLoad()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), err.Error())
 }
@@ -83,7 +87,7 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockStateDb := state.NewMockStateDB(ctrl)
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 
 	testcases := []struct {
 		name       string
@@ -104,12 +108,12 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup the PrimeContext
-			prime := &PrimeContext{
+			p := &PrimeContext{
 				cfg: &utils.Config{
 					PrimeRandom:       tc.primRandom,
 					IsExistingStateDb: tc.useSrcDb,
 				},
-				load:       mockBulkLoad,
+				load:       mockBulk,
 				db:         mockStateDb,
 				operations: 0,
 				log:        logger.NewLogger("ERROR", "Test"),
@@ -124,29 +128,49 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 				mockStateDb.EXPECT().EndTransaction().Return(nil).AnyTimes()
 				mockStateDb.EXPECT().EndBlock().Return(nil).AnyTimes()
 			}
-			mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
-			mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
-			mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
-			mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
-			mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
-			mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-			mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
+			mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).AnyTimes()
+			mockBulk.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
+			mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulk.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+			mockBulk.EXPECT().Close().Return(nil).AnyTimes()
 
-			err := prime.PrimeStateDB(ws, mockStateDb)
+			err := p.PrimeStateDB(ws)
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestPrimeContext_PrimeStateDB_EmptyWorldState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	p := &PrimeContext{
+		cfg:        &utils.Config{},
+		load:       mockBulk,
+		db:         mockStateDb,
+		operations: 0,
+		log:        logger.NewLogger("ERROR", "Test"),
+		exist:      make(map[common.Address]bool),
+	}
+	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).AnyTimes()
+	mockBulk.EXPECT().Close().Return(nil).AnyTimes()
+	emptyWs := txcontext.NewWorldState(map[common.Address]txcontext.Account{})
+	err := p.PrimeStateDB(emptyWs)
+	assert.NoError(t, err)
 }
 
 func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
-	prime := &PrimeContext{
+	p := &PrimeContext{
 		cfg:        nil,
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
 		operations: 0,
 		log:        logger.NewLogger("ERROR", "Test"),
@@ -154,26 +178,34 @@ func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 		exist:      map[common.Address]bool{},
 	}
 	acc := makeTestAccount(t)
-	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
-	mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
-	mockStateDb.EXPECT().Exist(gomock.Any()).Return(true)
-	mockStateDb.EXPECT().EndTransaction().Return(nil)
-	mockStateDb.EXPECT().EndBlock().Return(nil)
-	err := prime.loadExistingAccountsIntoCache(txcontext.NewWorldState(map[common.Address]txcontext.Account{
+
+	// Case 1: normal flow
+	gomock.InOrder(
+		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil),
+		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil),
+		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true),
+		mockStateDb.EXPECT().EndTransaction().Return(nil),
+		mockStateDb.EXPECT().EndBlock().Return(nil),
+	)
+	err := p.loadExistingAccountsIntoCache(txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
 	}))
 	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), p.block)
+
+	// Case 2: no accounts
+
 }
 
 func TestPrimeContext_primeOneAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
-	prime := &PrimeContext{
+	p := &PrimeContext{
 		cfg:        nil,
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
 		operations: 0,
 		log:        logger.NewLogger("ERROR", "Test"),
@@ -181,12 +213,12 @@ func TestPrimeContext_primeOneAccount(t *testing.T) {
 		exist:      map[common.Address]bool{},
 	}
 	acc := makeTestAccount(t)
-	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return()
-	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return()
-	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return()
-	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return()
-	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	err := prime.primeOneAccount(common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"), acc, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
+	mockBulk.EXPECT().CreateAccount(gomock.Any()).Return()
+	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return()
+	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return()
+	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return()
+	mockBulk.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+	err := p.primeOneAccount(common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"), acc, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
 	assert.Nil(t, err)
 }
 
@@ -195,14 +227,14 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 	acc1 := makeTestAccount(t)
 	acc2 := makeTestAccount(t)
 	mockWs := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc1,
 		common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): acc2,
 	})
-	prime := &PrimeContext{
+	p := &PrimeContext{
 		cfg: &utils.Config{
 			RandomSeed: 0,
 		},
@@ -216,14 +248,14 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 			common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
 		},
 	}
-	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
-	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
-	err := prime.PrimeStateDBRandom(mockWs, mockStateDb, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
+	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).AnyTimes()
+	mockBulk.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().Close().Return(nil).AnyTimes()
+	err := p.PrimeStateDBRandom(mockWs, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
 	assert.NoError(t, err)
 }
 
@@ -235,7 +267,7 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 
 		mockStateDb := state.NewMockStateDB(ctrl)
 		mockLogger := logger.NewMockLogger(ctrl)
-		prime := &PrimeContext{
+		p := &PrimeContext{
 			cfg:        nil,
 			load:       nil,
 			db:         mockStateDb,
@@ -257,18 +289,18 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
 		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+		p.SelfDestructAccounts([]substatetypes.Address{
 			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
 			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 		})
-		assert.Equal(t, uint64(1), prime.block)
+		assert.Equal(t, uint64(1), p.block)
 	})
 
 	t.Run("error", func(t *testing.T) {
 
 		mockStateDb := state.NewMockStateDB(ctrl)
 		mockLogger := logger.NewMockLogger(ctrl)
-		prime := &PrimeContext{
+		p := &PrimeContext{
 			cfg:        nil,
 			load:       nil,
 			db:         mockStateDb,
@@ -292,66 +324,216 @@ func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
 		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		prime.SelfDestructAccounts(mockStateDb, []substatetypes.Address{
+		p.SelfDestructAccounts([]substatetypes.Address{
 			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
 			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 		})
-		assert.Equal(t, uint64(1), prime.block)
+		assert.Equal(t, uint64(1), p.block)
 	})
 
 }
 
 func TestPrimeContext_GetBlock(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockStateDb := state.NewMockStateDB(ctrl)
-	prime := &PrimeContext{
-		cfg:        nil,
-		load:       nil,
-		db:         mockStateDb,
-		operations: 0,
-		log:        logger.NewLogger("ERROR", "Test"),
-		block:      0,
+	target := uint64(5)
+	p := &PrimeContext{
+		log:   logger.NewLogger("ERROR", "Test"),
+		block: 0,
 	}
-	block := prime.GetBlock()
+	block := p.GetBlock()
 	assert.Equal(t, uint64(0), block)
+	p.SetBlock(target)
+	block = p.GetBlock()
+	assert.Equal(t, target, block)
 }
 
-func TestPrimeContext_HasPrimed(t *testing.T) {
+func TestPrimeContext_HasPrimedIsUpdatedAfterPrimeStateDb(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	// case success
-	mockBulkLoad := state.NewMockBulkLoad(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
 	acc := makeTestAccount(t)
 	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
 	})
-	prime := &PrimeContext{
+	p := &PrimeContext{
 		cfg:        &utils.Config{},
-		load:       mockBulkLoad,
+		load:       mockBulk,
 		db:         mockStateDb,
-		operations: 0,
+		operations: utils.OperationThreshold + 1,
 		log:        logger.NewLogger("ERROR", "Test"),
 		exist:      make(map[common.Address]bool),
 	}
 
-	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulkLoad, nil).AnyTimes()
-	mockBulkLoad.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
-	mockBulkLoad.EXPECT().Close().Return(nil).AnyTimes()
+	mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).AnyTimes()
+	mockBulk.EXPECT().CreateAccount(gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
+	mockBulk.EXPECT().Close().Return(nil).AnyTimes()
 
-	err := prime.PrimeStateDB(ws, mockStateDb)
-	assert.Nil(t, err)
-	assert.False(t, prime.HasPrimed())
-
-	prime.operations = utils.OperationThreshold + 1
-	err = prime.PrimeStateDB(ws, mockStateDb)
+	err := p.PrimeStateDB(ws)
 	assert.NoError(t, err)
-	assert.True(t, prime.HasPrimed())
+	assert.True(t, p.HasPrimed())
+}
+
+func TestPrimeContext_PrimeStateDB_RealData(t *testing.T) {
+	log := logger.NewLogger("Warning", "TestPrimeStateDB")
+	for _, tc := range utils.GetStateDbTestCases() {
+		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
+			cfg := utils.MakeTestConfig(tc)
+
+			// Initialization of state DB
+			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
+			defer os.RemoveAll(sDbDir)
+
+			require.NoError(t, err, "failed to create state DB")
+
+			// Closing of state DB
+			defer func(sDB state.StateDB) {
+				err = state.CloseCarmenDbTestContext(sDB)
+				require.NoError(t, err, "cannot close carmen test context")
+			}(sDB)
+
+			// Generating randomized world state
+			ws, _ := utils.MakeWorldState(t)
+
+			pc := NewPrimeContext(cfg, sDB, log)
+			// Priming state DB
+			err = pc.PrimeStateDB(ws)
+			require.NoError(t, err)
+
+			err = sDB.BeginBlock(uint64(2))
+			require.NoError(t, err, "cannot begin block")
+			err = sDB.BeginTransaction(uint32(0))
+			require.NoError(t, err, "cannot begin transaction")
+
+			// Checks if state DB was primed correctly
+			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+				assert.Equal(t, 0, sDB.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; have: %v; want: %v", sDB.GetBalance(addr), acc.GetBalance())
+				assert.Equal(t, sDB.GetNonce(addr), acc.GetNonce(), "failed to prime account nonce; have: %v; want: %v", sDB.GetNonce(addr), acc.GetNonce())
+				assert.Equal(t, 0, bytes.Compare(sDB.GetCode(addr), acc.GetCode()), "failed to prime account code; have: %v; want: %v", sDB.GetCode(addr), acc.GetCode())
+
+				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+					assert.Equal(t, sDB.GetState(addr, keyHash), valueHash, "failed to prime account storage; have: %v; want: %v", sDB.GetState(addr, keyHash), valueHash)
+				})
+			})
+
+		})
+	}
+}
+
+// make sure that the stateDb contains data from both the first and the second priming
+func TestPrimeContext_PrimeStateDB_ContinuousPrimingFromSrcDB(t *testing.T) {
+	log := logger.NewLogger("Warning", "TestPrimeStateDB")
+	srcDbBlock := uint64(8)
+	for _, tc := range utils.GetStateDbTestCases() {
+		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
+			cfg := utils.MakeTestConfig(tc)
+
+			// Initialization of state DB
+			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
+			defer os.RemoveAll(sDbDir)
+
+			require.NoError(t, err, "failed to create state DB")
+
+			// Generating randomized world state
+			alloc, _ := utils.MakeWorldState(t)
+			ws := txcontext.NewWorldState(alloc)
+
+			pc := NewPrimeContext(cfg, sDB, log)
+			// Priming state DB
+			err = pc.PrimeStateDB(ws)
+			require.NoError(t, err, "failed to prime state DB")
+
+			err = state.BeginCarmenDbTestContext(sDB)
+			require.NoError(t, err, "failed to begin carmen db test context")
+
+			// Checks if state DB was primed correctly
+			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+				assert.Equal(t, 0, sDB.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; have: %v; want: %v", sDB.GetBalance(addr), acc.GetBalance())
+				assert.Equal(t, sDB.GetNonce(addr), acc.GetNonce(), "failed to prime account nonce; have: %v; want: %v", sDB.GetNonce(addr), acc.GetNonce())
+				assert.Equal(t, 0, bytes.Compare(sDB.GetCode(addr), acc.GetCode()), "failed to prime account code; have: %v; want: %v", sDB.GetCode(addr), acc.GetCode())
+
+				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+					assert.Equal(t, sDB.GetState(addr, keyHash), valueHash, "failed to prime account storage; have: %v; want: %v", sDB.GetState(addr, keyHash), valueHash)
+				})
+			})
+
+			rootHash, err := sDB.GetHash()
+			require.NoError(t, err, "failed to get root hash")
+			// Closing of state DB
+
+			err = state.CloseCarmenDbTestContext(sDB)
+			require.NoError(t, err, "failed to close state DB")
+
+			cfg.StateDbSrc = sDbDir
+			// Call for json creation and writing into it
+			err = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, srcDbBlock, rootHash, true)
+			require.NoError(t, err, "failed to write into DB info json file")
+			cfg.IsExistingStateDb = true
+
+			// Initialization of state DB
+			sDB2, sDbDir2, err := utils.PrepareStateDB(cfg)
+			defer os.RemoveAll(sDbDir2)
+			require.NoError(t, err, "failed to create state DB2")
+
+			defer func() {
+				err = state.CloseCarmenDbTestContext(sDB2)
+				require.NoError(t, err, "failed to close state DB2")
+			}()
+
+			err = sDB2.BeginBlock(srcDbBlock - 1)
+			require.NoError(t, err, "cannot begin block")
+
+			err = sDB2.BeginTransaction(uint32(0))
+			require.NoError(t, err, "cannot begin transaction")
+
+			// Checks if state DB was primed correctly
+			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+				assert.Equal(t, 0, sDB2.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; have: %v; want: %v", sDB2.GetBalance(addr), acc.GetBalance())
+				assert.Equal(t, sDB2.GetNonce(addr), acc.GetNonce(), "failed to prime account nonce; have: %v; want: %v", sDB2.GetNonce(addr), acc.GetNonce())
+				assert.Equal(t, 0, bytes.Compare(sDB2.GetCode(addr), acc.GetCode()), "failed to prime account code; have: %v; want: %v", sDB2.GetCode(addr), acc.GetCode())
+
+				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+					assert.Equal(t, sDB2.GetState(addr, keyHash), valueHash, "failed to prime account storage; have: %v; want: %v", sDB2.GetState(addr, keyHash), valueHash)
+				})
+			})
+
+			err = sDB2.EndTransaction()
+			require.NoError(t, err, "cannot end transaction")
+
+			err = sDB2.EndBlock()
+			require.NoError(t, err, "cannot end block sDB 2")
+
+			// Generating randomized world state
+			alloc2, _ := utils.MakeWorldState(t)
+			ws2 := txcontext.NewWorldState(alloc2)
+
+			pc2 := NewPrimeContext(cfg, sDB2, log)
+			pc2.block = srcDbBlock
+			// Priming state DB
+			err = pc2.PrimeStateDB(ws2)
+			require.NoError(t, err, "failed to prime state DB2")
+
+			err = sDB2.BeginBlock(srcDbBlock + 2)
+			require.NoError(t, err, "cannot begin block")
+
+			err = sDB2.BeginTransaction(uint32(0))
+			require.NoError(t, err, "cannot begin transaction")
+
+			// Checks if state DB was primed correctly
+			ws2.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+				assert.Equal(t, 0, sDB2.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; have: %v; want: %v", sDB2.GetBalance(addr), acc.GetBalance())
+				assert.Equal(t, sDB2.GetNonce(addr), acc.GetNonce(), "failed to prime account nonce; have: %v; want: %v", sDB2.GetNonce(addr), acc.GetNonce())
+				assert.Equal(t, 0, bytes.Compare(sDB2.GetCode(addr), acc.GetCode()), "failed to prime account code; have: %v; want: %v", sDB2.GetCode(addr), acc.GetCode())
+
+				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+					assert.Equal(t, sDB2.GetState(addr, keyHash), valueHash, "failed to prime account storage; have: %v; want: %v", sDB2.GetState(addr, keyHash), valueHash)
+				})
+			})
+		})
+	}
 }

@@ -7,94 +7,77 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
-	substateDb "github.com/0xsoniclabs/substate/db"
-	"github.com/0xsoniclabs/substate/rlp"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
-	substatetypes "github.com/0xsoniclabs/substate/types"
-	trlp "github.com/0xsoniclabs/substate/types/rlp"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/testutil"
+
+	//"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
 )
 
 func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
-	// TODO Protobuf encoding not supported yet
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	baseDb := substateDb.NewMockBaseDB(ctrl)
-	mockDb := substateDb.NewMockDbAdapter(ctrl)
+	cfg := &utils.Config{}
+	// mockStateDb := state.NewMockStateDB(ctrl)
+	mockSubstateDb := db.NewMockSubstateDB(ctrl)
+	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)
+	mockSubstateIter := db.NewMockIIterator[*substate.Substate](ctrl)
 
-	input := utils.GetTestSubstate("default")
-	input.Block = 0
-	input.Transaction = 1
-	encoded, err := trlp.EncodeToBytes(rlp.NewRLP(input))
-	if err != nil {
-		t.Fatalf("Failed to encode substate: %v", err)
+	substateBlk2 := &substate.Substate{
+		OutputSubstate: substate.NewWorldState().Add(types.Address{3}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:          2,
+		Transaction:    0,
 	}
 
-	expectedDestroyed := []substatetypes.Address{{1}, {2}}
-	expectedResurrected := []substatetypes.Address{{3}}
-	list := substateDb.SuicidedAccountLists{DestroyedAccounts: expectedDestroyed, ResurrectedAccounts: expectedResurrected}
-	value, _ := trlp.EncodeToBytes(list)
+	mockDestroyed := []types.Address{{1}, {2}}
+	mockResurrected := []types.Address{{3}}
 
-	kv := &testutil.KeyValue{}
-	iter1 := iterator.NewArrayIterator(kv)
-	iter2 := iterator.NewArrayIterator(kv)
-	iter3 := iterator.NewArrayIterator(kv)
-	iter4 := iterator.NewArrayIterator(kv)
-	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
-	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	// Encoding is being checked against iterator - that's why we need multiple iterators
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter3)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter4)
-	baseDb.EXPECT().GetBackend().Return(mockDb)
-	baseDb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
-
-	set, i, err := generateUpdateSet(0, 2, &utils.Config{
-		Workers: 1,
-	}, baseDb)
-	assert.NoError(t, iter1.Error())
-	assert.NoError(t, iter2.Error())
-	assert.NoError(t, iter3.Error())
-	assert.NoError(t, iter4.Error())
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk2),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(2), 0).Return(mockDestroyed, mockResurrected, nil),
+		mockSubstateIter.EXPECT().Next().Return(false),
+		mockSubstateIter.EXPECT().Release(),
+	)
+	retUpdateSet, retDestroyed, err := generateUpdateSet(0, 2, cfg, mockSubstateDb, mockDeletionDb)
 	assert.NoError(t, err)
-	assert.NotNil(t, set)
-	assert.Equal(t, 1, len(set))
-	assert.Equal(t, 3, len(i))
+	assert.NotNil(t, retUpdateSet)
+	assert.Equal(t, len(substateBlk2.OutputSubstate), len(retUpdateSet))
+	assert.Equal(t, len(mockDestroyed)+len(mockResurrected), len(retDestroyed))
 }
 
 func TestWorldStateUpdate_ClearAccountStorage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	addr := substatetypes.BytesToAddress([]byte("test"))
+	addr := types.BytesToAddress([]byte("test"))
 	ws := substate.WorldState{}
 	ws[addr] = &substate.Account{
 		Nonce:   1,
 		Balance: nil,
-		Storage: map[substatetypes.Hash]substatetypes.Hash{
-			substatetypes.BytesToHash([]byte("key1")): substatetypes.BytesToHash([]byte("value1")),
+		Storage: map[types.Hash]types.Hash{
+			types.BytesToHash([]byte("key1")): types.BytesToHash([]byte("value1")),
 		},
 		Code: nil,
 	}
-	ClearAccountStorage(ws, []substatetypes.Address{addr})
+	ClearAccountStorage(ws, []types.Address{addr})
 	assert.Equal(t, 0, len(ws[addr].Storage))
 }
 
 var testUpdateSet = &updateset.UpdateSet{
 	WorldState: substate.WorldState{
-		substatetypes.Address{1}: &substate.Account{
+		types.Address{1}: &substate.Account{
 			Nonce:   1,
 			Balance: new(uint256.Int).SetUint64(1),
 		},
-		substatetypes.Address{2}: &substate.Account{
+		types.Address{2}: &substate.Account{
 			Nonce:   2,
 			Balance: new(uint256.Int).SetUint64(2),
 		},
@@ -102,10 +85,10 @@ var testUpdateSet = &updateset.UpdateSet{
 	Block: 1,
 }
 
-var testDeletedAccounts = []substatetypes.Address{{3}, {4}}
+var testDeletedAccounts = []types.Address{{3}, {4}}
 
-func createTestUpdateDB(dbPath string) (substateDb.UpdateDB, error) {
-	db, err := substateDb.NewUpdateDB(dbPath, nil, nil, nil)
+func createTestUpdateDB(dbPath string) (db.UpdateDB, error) {
+	db, err := db.NewUpdateDB(dbPath, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,25 +105,25 @@ func TestStatedb_DeleteDestroyedAccountsFromWorldState(t *testing.T) {
 			// Init directory for destroyed accounts DB
 			deletionDb := t.TempDir()
 			// Pick two account which will represent destroyed ones
-			destroyedAccounts := []substatetypes.Address{
-				substatetypes.Address(addrList[0]),
-				substatetypes.Address(addrList[50]),
+			destroyedAccounts := []types.Address{
+				types.Address(addrList[0]),
+				types.Address(addrList[50]),
 			}
 
 			// Update config to enable removal of destroyed accounts
 			cfg.DeletionDb = deletionDb
 
 			// Initializing backend DB for storing destroyed accounts
-			daBackend, err := substateDb.NewDefaultBaseDB(deletionDb)
+			daBackend, err := db.NewDefaultBaseDB(deletionDb)
 			if err != nil {
 				t.Fatalf("failed to create backend DB: %s; %v", deletionDb, err)
 			}
 
 			// Creating new destroyed accounts DB
-			daDB := substateDb.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
+			daDB := db.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
-			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
+			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []types.Address{})
 			if err != nil {
 				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
 			}
@@ -175,70 +158,76 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			// Init directory for destroyed accounts DB
 			deletedAccountsDir := t.TempDir()
 			// Pick two account which will represent destroyed ones
-			destroyedAccounts := []substatetypes.Address{
-				substatetypes.Address(addrList[0]),
-				substatetypes.Address(addrList[50]),
+			destroyedAccounts := []types.Address{
+				types.Address(addrList[0]),
+				types.Address(addrList[50]),
 			}
 
 			// Update config to enable removal of destroyed accounts
 			cfg.DeletionDb = deletedAccountsDir
 
 			// Initializing backend DB for storing destroyed accounts
-			base, err := substateDb.NewDefaultBaseDB(deletedAccountsDir)
+			aidaDb, err := db.NewDefaultBaseDB(deletedAccountsDir)
 			if err != nil {
 				t.Fatalf("failed to create backend DB: %s; %v", deletedAccountsDir, err)
 			}
 
 			// Creating new destroyed accounts DB
-			daDB := substateDb.MakeDefaultDestroyedAccountDBFromBaseDB(base)
+			ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
-			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
+			err = ddb.SetDestroyedAccounts(5, 1, destroyedAccounts, []types.Address{})
 			if err != nil {
 				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
 			}
 
-			defer func(daDB *substateDb.DestroyedAccountDB) {
+			defer func(daDB db.DestroyedAccountDB) {
 				e := daDB.Close()
 				if e != nil {
 					t.Fatalf("failed to close destroyed accounts DB: %v", e)
 				}
-			}(daDB)
+			}(ddb)
 
 			// Initialization of state DB
-			sDB, _, err := utils.PrepareStateDB(cfg)
+			stateDb, _, err := utils.PrepareStateDB(cfg)
 			if err != nil {
 				t.Fatalf("failed to create state DB: %v", err)
 			}
 
 			log := logger.NewLogger("INFO", "TestStateDb")
 
-			p := MakePrimer(cfg, sDB, log)
+			p := &primer{
+				cfg:    cfg,
+				log:    log,
+				ctx:    NewPrimeContext(cfg, stateDb, log),
+				aidadb: aidaDb,
+				ddb:    ddb,
+			}
 			// Priming state DB with given world state
-			err = p.ctx.PrimeStateDB(ws, sDB)
+			err = p.ctx.PrimeStateDB(ws)
 			if err != nil {
 				t.Fatalf("cannot prime statedb; %v", err)
 			}
 
 			// Call for removal of destroyed accounts from state DB
-			err = p.mayDeleteDestroyedAccountsFromStateDB(5, base)
+			err = p.mayDeleteDestroyedAccountsFromStateDB(5)
 			if err != nil {
 				t.Fatalf("failed to delete accounts from the state DB: %v", err)
 			}
 
-			err = state.BeginCarmenDbTestContext(sDB)
+			err = state.BeginCarmenDbTestContext(stateDb)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// check if accounts are not present anymore
 			for _, da := range destroyedAccounts {
-				if sDB.Exist(common.Address(da)) {
+				if stateDb.Exist(common.Address(da)) {
 					t.Fatalf("failed to delete destroyed accounts from the state DB")
 				}
 			}
 
-			err = state.CloseCarmenDbTestContext(sDB)
+			err = state.CloseCarmenDbTestContext(stateDb)
 			if err != nil {
 				t.Fatal(err)
 			}

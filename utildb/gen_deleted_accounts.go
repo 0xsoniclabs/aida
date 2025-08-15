@@ -81,7 +81,7 @@ func readAccounts(ch chan proxy.ContractLiveliness, deleteHistory *map[common.Ad
 func genDeletedAccountsTask(
 	tx *substate.Substate,
 	processor *executor.TxProcessor,
-	ddb *db.DestroyedAccountDB,
+	ddb db.DestroyedAccountDB,
 	deleteHistory *map[common.Address]bool,
 	cfg *utils.Config,
 ) error {
@@ -136,7 +136,7 @@ func genDeletedAccountsTask(
 }
 
 // GenDeletedAccountsAction replays transactions and record self-destructed accounts and resurrected accounts.
-func GenDeletedAccountsAction(cfg *utils.Config, sdb db.SubstateDB, ddb *db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
+func GenDeletedAccountsAction(cfg *utils.Config, sdb db.SubstateDB, ddb db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
 	var err error
 
 	err = utils.StartCPUProfile(cfg)

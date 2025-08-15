@@ -36,22 +36,26 @@ func TestTxPrimer_PreRun(t *testing.T) {
 func TestTxPrimer_PreTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	cfg := &utils.Config{}
 	mockDb := state.NewMockStateDB(ctrl)
+	mockTxContext := txcontext.NewMockTxContext(ctrl)
+
+	cfg := &utils.Config{}
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{
 		primeCtx: prime.NewPrimeContext(cfg, mockDb, log),
 		cfg:      cfg,
 		log:      log,
 	}
-	mockTxContext := txcontext.NewMockTxContext(ctrl)
 	alloc, _ := utils.MakeWorldState(t)
 	ws := txcontext.NewWorldState(alloc)
 	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1, Data: mockTxContext}
 	ctx := &executor.Context{}
-	mockTxContext.EXPECT().GetInputState().Return(ws)
 	mockErr := errors.New("mock error")
-	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(mockErr).Times(1)
+
+	mockTxContext.EXPECT().GetInputState().Return(ws)
+	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(nil, mockErr)
+
 	err := ext.PreTransaction(st, ctx)
 	assert.Error(t, err)
+	assert.ErrorContains(t, err, "mock error")
 }

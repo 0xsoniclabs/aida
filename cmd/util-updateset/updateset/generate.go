@@ -127,7 +127,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 }
 
 // GenUpdateSet generates a series of update sets from substate db
-func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db.DestroyedAccountDB, first, last uint64, interval uint64) error {
+func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb db.DestroyedAccountDB, first, last uint64, interval uint64) error {
 	var (
 		err               error
 		destroyedAccounts []substatetypes.Address

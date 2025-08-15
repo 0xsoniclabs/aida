@@ -17,444 +17,556 @@
 package prime
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/types/rlp"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
 )
 
-// TestStatedb_PrimeStateDB tests priming fresh state DB with randomized world state data
-func TestPrime_PrimeStateDB(t *testing.T) {
-	log := logger.NewLogger("Warning", "TestPrimeStateDB")
-	for _, tc := range utils.GetStateDbTestCases() {
-		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
-			cfg := utils.MakeTestConfig(tc)
-
-			// Initialization of state DB
-			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir)
-
-			if err != nil {
-				t.Fatalf("failed to create state DB: %v", err)
-			}
-
-			// Closing of state DB
-			defer func(sDB state.StateDB) {
-				err = state.CloseCarmenDbTestContext(sDB)
-				if err != nil {
-					t.Fatalf("cannot close carmen test context; %v", err)
-				}
-			}(sDB)
-
-			// Generating randomized world state
-			ws, _ := utils.MakeWorldState(t)
-
-			pc := NewPrimeContext(cfg, sDB, log)
-			// Priming state DB
-			err = pc.PrimeStateDB(ws, sDB)
-			require.NoError(t, err, "failed to prime state DB")
-
-			err = sDB.BeginBlock(uint64(2))
-			require.NoError(t, err, "cannot begin block")
-			err = sDB.BeginTransaction(uint32(0))
-			require.NoError(t, err, "cannot begin transaction")
-
-			// Checks if state DB was primed correctly
-			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-
-				if sDB.GetBalance(addr).Cmp(acc.GetBalance()) != 0 {
-					t.Fatalf("failed to prime account balance; Is: %v; Should be: %v", sDB.GetBalance(addr), acc.GetBalance())
-				}
-
-				if sDB.GetNonce(addr) != acc.GetNonce() {
-					t.Fatalf("failed to prime account nonce; Is: %v; Should be: %v", sDB.GetNonce(addr), acc.GetNonce())
-				}
-
-				if !bytes.Equal(sDB.GetCode(addr), acc.GetCode()) {
-					t.Fatalf("failed to prime account code; Is: %v; Should be: %v", sDB.GetCode(addr), acc.GetCode())
-				}
-
-				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-					if sDB.GetState(addr, keyHash) != valueHash {
-						t.Fatalf("failed to prime account storage; Is: %v; Should be: %v", sDB.GetState(addr, keyHash), valueHash)
-					}
-				})
-
-			})
-
-		})
-	}
-}
-
-func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-	aidaDbPath := t.TempDir() + "aidadb"
-	stateDb := state.NewMockStateDB(ctrl)
-
-	cfg := &utils.Config{}
-	cfg.SkipPriming = false
-	cfg.StateDbSrc = ""
-	cfg.First = 10
-	cfg.PrimeRandom = true
-	cfg.RandomSeed = 111
-	cfg.PrimeThreshold = 10
-	cfg.UpdateBufferSize = 1024
-
-	p := MakePrimer(cfg, stateDb, log)
-
-	gomock.InOrder(
-		log.EXPECT().Infof("Randomized Priming enabled; Seed: %v, threshold: %v", int64(111), 10),
-		log.EXPECT().Infof("Update buffer size: %v bytes", uint64(1024)),
-		log.EXPECT().Noticef("Priming from block %v...", uint64(0)),
-		log.EXPECT().Noticef("Priming to block %v...", uint64(9)),
-		log.EXPECT().Debugf("\tLoading %d accounts with %d values ..", 0, 0),
-		stateDb.EXPECT().BeginBlock(uint64(0)),
-		stateDb.EXPECT().BeginTransaction(uint32(0)),
-		stateDb.EXPECT().EndTransaction(),
-		stateDb.EXPECT().EndBlock(),
-		stateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, errors.New("stop")),
-	)
-
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
-	require.NoError(t, err)
-
-	err = p.Prime(stateDb, aidaDb)
-	require.Error(t, err, "expected error during priming")
-
-	want := "cannot prime state-db; failed to prime StateDB: stop"
-	require.ErrorIs(t, err, errors.New(want))
-}
-
-// make sure that the stateDb contains data from both the first and the second priming
-func TestStateDbPrimerExtension_ContinuousPrimingFromExistingDb(t *testing.T) {
-	log := logger.NewLogger("Warning", "TestPrimeStateDB")
-	for _, tc := range utils.GetStateDbTestCases() {
-		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
-			cfg := utils.MakeTestConfig(tc)
-
-			// Initialization of state DB
-			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir)
-
-			require.NoError(t, err, "failed to create state DB")
-
-			// Generating randomized world state
-			alloc, _ := utils.MakeWorldState(t)
-			ws := txcontext.NewWorldState(alloc)
-
-			p := MakePrimer(cfg, sDB, log)
-			// Priming state DB using p.Prime
-			aidaDb, err := db.NewDefaultBaseDB(sDbDir)
-			require.NoError(t, err)
-			err = p.Prime(sDB, aidaDb)
-			require.NoError(t, err, "failed to prime state DB")
-
-			err = state.BeginCarmenDbTestContext(sDB)
-			require.NoError(t, err)
-
-			// Checks if state DB was primed correctly
-			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-				assert.Equal(t, 0, sDB.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; Is: %v; Should be: %v", sDB.GetBalance(addr), acc.GetBalance())
-				assert.Equal(t, acc.GetNonce(), sDB.GetNonce(addr), "failed to prime account nonce; Is: %v; Should be: %v", sDB.GetNonce(addr), acc.GetNonce())
-				assert.Equal(t, 0, bytes.Compare(sDB.GetCode(addr), acc.GetCode()), "failed to prime account code; Is: %v; Should be: %v", sDB.GetCode(addr), acc.GetCode())
-				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-					assert.Equal(t, valueHash, sDB.GetState(addr, keyHash), "failed to prime account storage; Is: %v; Should be: %v", sDB.GetState(addr, keyHash), valueHash)
-				})
-			})
-
-			rootHash, err := sDB.GetHash()
-			require.NoError(t, err, "failed to get root hash")
-			// Closing of state DB
-
-			err = state.CloseCarmenDbTestContext(sDB)
-			require.NoError(t, err, "failed to close state DB")
-
-			cfg.StateDbSrc = sDbDir
-			// Call for json creation and writing into it
-			err = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, 2, rootHash, true)
-			require.NoError(t, err, "failed to write into DB info json file")
-
-			// Initialization of state DB
-			sDB2, sDbDir2, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir2)
-			require.NoError(t, err, "failed to create state DB2")
-
-			defer func() {
-				err = state.CloseCarmenDbTestContext(sDB2)
-				require.NoError(t, err, "failed to close state DB")
-			}()
-
-			err = sDB2.BeginBlock(uint64(7))
-			require.NoError(t, err, "cannot begin block")
-
-			err = sDB2.BeginTransaction(uint32(0))
-			require.NoError(t, err, "cannot begin transaction")
-
-			// Checks if state DB was primed correctly
-			ws.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-				assert.Equal(t, 0, sDB2.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; Is: %v; Should be: %v", sDB2.GetBalance(addr), acc.GetBalance())
-				assert.Equal(t, acc.GetNonce(), sDB2.GetNonce(addr), "failed to prime account nonce; Is: %v; Should be: %v", sDB2.GetNonce(addr), acc.GetNonce())
-				assert.Equal(t, 0, bytes.Compare(sDB2.GetCode(addr), acc.GetCode()), "failed to prime account code; Is: %v; Should be: %v", sDB2.GetCode(addr), acc.GetCode())
-				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-					assert.Equal(t, valueHash, sDB2.GetState(addr, keyHash), "failed to prime account storage; Is: %v; Should be: %v", sDB2.GetState(addr, keyHash), valueHash)
-				})
-			})
-
-			err = sDB2.EndTransaction()
-			require.NoError(t, err, "cannot end transaction")
-
-			err = sDB2.EndBlock()
-			require.NoError(t, err, "cannot end block sDB2")
-
-			// Generating randomized world state
-			alloc2, _ := utils.MakeWorldState(t)
-			ws2 := txcontext.NewWorldState(alloc2)
-
-			cfg.IsExistingStateDb = true
-			p2 := MakePrimer(cfg, sDB2, log)
-			aidaDb2, err := db.NewDefaultBaseDB(sDbDir2)
-			require.NoError(t, err)
-			// Priming state DB using p2.Prime
-			err = p2.Prime(sDB2, aidaDb2)
-			require.NoError(t, err, "failed to prime state DB2")
-
-			err = sDB2.BeginBlock(uint64(10))
-			require.NoError(t, err, "cannot begin block")
-
-			err = sDB2.BeginTransaction(uint32(0))
-			require.NoError(t, err, "cannot begin transaction")
-
-			// Checks if state DB was primed correctly
-			ws2.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-				assert.Equal(t, 0, sDB2.GetBalance(addr).Cmp(acc.GetBalance()), "failed to prime account balance; Is: %v; Should be: %v", sDB2.GetBalance(addr), acc.GetBalance())
-				assert.Equal(t, acc.GetNonce(), sDB2.GetNonce(addr), "failed to prime account nonce; Is: %v; Should be: %v", sDB2.GetNonce(addr), acc.GetNonce())
-				assert.Equal(t, 0, bytes.Compare(sDB2.GetCode(addr), acc.GetCode()), "failed to prime account code; Is: %v; Should be: %v", sDB2.GetCode(addr), acc.GetCode())
-				acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-					assert.Equal(t, valueHash, sDB2.GetState(addr, keyHash), "failed to prime account storage; Is: %v; Should be: %v", sDB2.GetState(addr, keyHash), valueHash)
-				})
-			})
-
-			err = sDB2.EndTransaction()
-			require.NoError(t, err, "cannot end transaction")
-
-			err = sDB2.EndBlock()
-			require.NoError(t, err, "cannot end block sDB2")
-		})
-	}
-}
-
-func TestStateDbPrimer_Prime(t *testing.T) {
+func TestPrime_NewPrimer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	log := logger.NewLogger("Info", "TestStateDbPrimer")
+
+	log := logger.NewLogger("Info", "TestPrime")
 
 	cfg := &utils.Config{}
-	cfg.SkipPriming = false
-	cfg.StateDbSrc = ""
-	cfg.First = 0
-	mockDb := state.NewMockStateDB(ctrl)
-	mockAida := db.NewMockBaseDB(ctrl)
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockAidaDb := db.NewMockBaseDB(ctrl)
 	mockAdapter := db.NewMockDbAdapter(ctrl)
-	mockBulk := state.NewMockBulkLoad(ctrl)
-	p := &primer{
-		log: log,
-		ctx: NewPrimeContext(cfg, mockDb, log),
-		cfg: cfg,
-	}
-	mockAida.EXPECT().GetBackend().Return(mockAdapter)
-	mockIter := NewMockProxyIterator(ctrl)
-	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
-	mockAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]uint8{1, 2, 3}, nil)
-	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(nil).Times(3)
-	mockDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil).Times(3)
-	mockDb.EXPECT().EndTransaction().Return(nil).Times(3)
-	mockDb.EXPECT().EndBlock().Return(nil).Times(3)
-	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).Times(2)
-	mockBulk.EXPECT().Close().Times(2)
-	mockDb.EXPECT().BeginSyncPeriod(gomock.Any())
-	mockDb.EXPECT().EndSyncPeriod()
-	mockDb.EXPECT().Exist(gomock.Any()).Return(false)
-	mockAida.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
-	mockIter.EXPECT().Next().Return(true)
-	mockIter.EXPECT().Next().Return(false)
-	mockBulk.EXPECT().CreateAccount(gomock.Any())
-	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any())
-	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any())
-	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any())
-	blockNum := uint64(12345)
-	key := db.UpdateDBKey(blockNum)
-	value, _ := rlp.EncodeToBytes(updateset.UpdateSetRLP{
-		WorldState: updateset.UpdateSet{
-			WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
-			Block:           0,
-			DeletedAccounts: []types.Address{},
-		}.ToWorldStateRLP(),
-		DeletedAccounts: []types.Address{},
-	})
-	mockIter.EXPECT().Key().Return(key).AnyTimes()
-	mockIter.EXPECT().Value().Return(value).AnyTimes()
-	mockIter.EXPECT().Release()
-	mockIter.EXPECT().Next()
-	mockIter.EXPECT().Release()
-	err := p.Prime(mockDb, mockAida)
-	assert.NoError(t, err)
-}
+	kv := &testutil.KeyValue{}
+	iter := iterator.NewArrayIterator(kv)
 
-// TODO remove and use Substate IIterator mock?
-//
-//go:generate mockgen -source=prime_test.go -destination=prime_mock.go -package=prime
-type ProxyIterator interface {
-	iterator.Iterator
-}
+	mockAidaDb.EXPECT().GetBackend().Return(mockAdapter).AnyTimes()
+	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter).AnyTimes()
 
-// Edge case: mayPrimeFromUpdateSet with empty iterator
-func TestStateDbPrimer_MayPrimeFromUpdateSet_EmptyIterator(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	mockUpdateDb := db.NewMockUpdateDB(ctrl)
-	mockIter := NewMockProxyIterator(ctrl)
-	cfg := &utils.Config{UpdateBufferSize: 1024}
-	log := logger.NewLogger("Info", "Test")
-	p := &primer{
-		cfg: cfg,
-		log: log,
-		ctx: NewPrimeContext(cfg, mockStateDb, log),
-	}
-	mockUpdateDb.EXPECT().NewUpdateSetIterator(uint64(0), gomock.Any()).Return(mockIter)
-	mockIter.EXPECT().Next().Return(false)
-	mockIter.EXPECT().Release()
-	err := p.mayPrimeFromUpdateSet(mockStateDb, mockUpdateDb)
-	assert.NoError(t, err)
+	p := NewPrimer(cfg, mockStateDb, mockAidaDb, log)
+
+	assert.NotNil(t, p)
+	assert.Equal(t, cfg, p.cfg)
+	assert.Equal(t, log, p.log)
+	assert.Equal(t, mockStateDb, p.ctx.db)
 	assert.Equal(t, uint64(0), p.block)
+	assert.Equal(t, uint64(0), p.first)
 }
 
-// Edge case: mayPrimeFromUpdateSet with PrimeStateDB error
-func TestStateDbPrimer_MayPrimeFromUpdateSet_PrimeStateDBError(t *testing.T) {
+func TestPrime_Prime(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	log := logger.NewLogger("Info", "TestPrime")
+
+	cfg := &utils.Config{}
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockSubstateDb := db.NewMockSubstateDB(ctrl)
+	mockUpdateDb := db.NewMockUpdateDB(ctrl)
+	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	mockUpdateIter := db.NewMockIIterator[*updateset.UpdateSet](ctrl)
+	mockSubstateIter := db.NewMockIIterator[*substate.Substate](ctrl)
+	p := &primer{
+		log:   log,
+		ctx:   NewPrimeContext(cfg, mockStateDb, log),
+		cfg:   cfg,
+		sdb:   mockSubstateDb,
+		udb:   mockUpdateDb,
+		ddb:   mockDeletionDb,
+		block: 5,
+		first: 10,
+	}
+
+	// mock data
+	// prime using updateset for block 5 then prime using substate for block 9. Block 6-8 are empty.
+	update := &updateset.UpdateSet{
+		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:           5,
+		DeletedAccounts: []types.Address{},
+	}
+	substateBlk9 := &substate.Substate{
+		InputSubstate: substate.NewWorldState().Add(types.Address{3}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:         9,
+		Transaction:   0,
+	}
+	// expectations
+	retError := errors.New("Test Error")
+
+	// Normal priming flow
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(true),
+		mockUpdateIter.EXPECT().Value().Return(update),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil),
+		mockBulk.EXPECT().Close().Return(nil),
+		mockUpdateIter.EXPECT().Next().Return(false),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil),
+		mockBulk.EXPECT().CreateAccount(gomock.Any()),
+		mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any()),
+		mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any()),
+		mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()),
+		mockBulk.EXPECT().Close().Return(nil),
+		mockUpdateIter.EXPECT().Release(),
+
+		// try to prime with substate
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk9),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(9), 0).Return([]types.Address{}, []types.Address{}, nil),
+		mockSubstateIter.EXPECT().Next().Return(false),
+		mockSubstateIter.EXPECT().Release(),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil),
+		mockBulk.EXPECT().Close().Return(nil),
+
+		// try remove suicided accounts
+		mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{}, nil),
+	)
+	err := p.Prime()
+	assert.NoError(t, err)
+
+	//Edge case: skip priming when the first primable block is greater than first block
+	p.block = 15
+	err = p.Prime()
+	assert.NoError(t, err)
+
+	// Edge case: mayPrimeFromUpdateSet fails
+	p.block = 5
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(true),
+		mockUpdateIter.EXPECT().Value().Return(update),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, retError),
+		mockUpdateIter.EXPECT().Release(),
+	)
+	err = p.Prime()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot prime from update-set")
+
+	// Edge case: mayPrimeFromSubstate fails
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(false),
+		mockUpdateIter.EXPECT().Release(),
+
+		// try to prime with substate
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk9),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(9), 0).Return([]types.Address{}, []types.Address{}, retError),
+		mockSubstateIter.EXPECT().Release(),
+	)
+	err = p.Prime()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot prime from substate")
+
+	// Edge case: mayDeleteDestroyedAccountsFromStateDB fails
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(false),
+		mockUpdateIter.EXPECT().Release(),
+
+		// try to prime with substate
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk9),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(9), 0).Return([]types.Address{}, []types.Address{}, nil),
+		mockSubstateIter.EXPECT().Next().Return(false),
+		mockSubstateIter.EXPECT().Release(),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil),
+		mockBulk.EXPECT().Close().Return(nil),
+
+		// try remove suicided accounts
+		mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{}, retError),
+	)
+	err = p.Prime()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot delete destroyed accounts from state-db")
+}
+
+func TestPrime_MayPrimeFromUpdateSet_EdgeCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	log := logger.NewLogger("Info", "TestPrime")
+
+	cfg := &utils.Config{}
+
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockUpdateDb := db.NewMockUpdateDB(ctrl)
-	mockIter := NewMockProxyIterator(ctrl)
-	cfg := &utils.Config{UpdateBufferSize: 1} // force priming
-	log := logger.NewLogger("Info", "Test")
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	mockUpdateIter := db.NewMockIIterator[*updateset.UpdateSet](ctrl)
 	p := &primer{
-		cfg: cfg,
-		log: log,
-		ctx: NewPrimeContext(cfg, mockStateDb, log),
+		log:   log,
+		ctx:   NewPrimeContext(cfg, mockStateDb, log),
+		cfg:   cfg,
+		udb:   mockUpdateDb,
+		block: 5,
+		first: 10,
 	}
-	mockUpdateDb.EXPECT().NewUpdateSetIterator(uint64(0), gomock.Any()).Return(mockIter)
-	mockIter.EXPECT().Next().Return(true)
-	mockIter.EXPECT().Value().Return(&updateset.UpdateSet{Block: 0, WorldState: substate.WorldState{}})
-	mockIter.EXPECT().Release()
-	p.ctx = NewPrimeContext(cfg, mockStateDb, log)
-	err := p.mayPrimeFromUpdateSet(mockStateDb, mockUpdateDb)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "prime error")
-}
 
-// Edge case: mayPrimeFromSubstate with GenerateUpdateSet error
-func TestStateDbPrimer_MayPrimeFromSubstate_GenerateUpdateSetError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	cfg := &utils.Config{}
-	log := logger.NewLogger("Info", "Test")
-	p := &primer{
-		cfg: cfg,
-		log: log,
-		ctx: NewPrimeContext(cfg, mockStateDb, log),
+	// Prepare mock data
+	updateBlk5 := &updateset.UpdateSet{
+		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:           5,
+		DeletedAccounts: []types.Address{},
 	}
-	// Patch GenerateUpdateSet to return error
-	err := p.mayPrimeFromSubstate(mockStateDb, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "generate error")
-}
+	updateBlk15 := &updateset.UpdateSet{
+		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:           15,
+		DeletedAccounts: []types.Address{},
+	}
 
-// Edge case: mayPrimeFromSubstate with deletedAccounts and HasPrimed true
-func TestStateDbPrimer_MayPrimeFromSubstate_DeletedAccounts(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	cfg := &utils.Config{}
-	log := logger.NewLogger("Info", "Test")
-	p := &primer{
-		cfg: cfg,
-		log: log,
-		ctx: NewPrimeContext(cfg, mockStateDb, log),
-	}
-	err := p.mayPrimeFromSubstate(mockStateDb, nil)
+	// expectations
+	retError := errors.New("Test Error")
+
+	// Case 1: Prime stops when block > first
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(true),
+		mockUpdateIter.EXPECT().Value().Return(updateBlk15),
+		mockUpdateIter.EXPECT().Release(),
+	)
+	err := p.mayPrimeFromUpdateSet()
 	assert.NoError(t, err)
+
+	// Case 2: no iterations
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(false),
+		mockUpdateIter.EXPECT().Release(),
+	)
+	err = p.mayPrimeFromUpdateSet()
+	assert.NoError(t, err)
+
+	// Case 3: PrimeStateDB fails
+	gomock.InOrder(
+		// try to prime with updateset
+		mockUpdateDb.EXPECT().NewUpdateSetIterator(gomock.Any(), gomock.Any()).Return(mockUpdateIter),
+		mockUpdateIter.EXPECT().Next().Return(true),
+		mockUpdateIter.EXPECT().Value().Return(updateBlk5),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, retError),
+		mockUpdateIter.EXPECT().Release(),
+	)
+	err = p.mayPrimeFromUpdateSet()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot prime state-db")
 }
 
-// Error handling in prime: mayPrimeFromUpdateSet returns error
-func TestStateDbPrimer_Prime_MayPrimeFromUpdateSetError(t *testing.T) {
+func TestPrime_MayPrimeFromSubstate_EdgeCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	mockAidaDb := db.NewMockBaseDB(ctrl)
+	log := logger.NewLogger("Info", "TestPrime")
+
 	cfg := &utils.Config{}
-	log := logger.NewLogger("Info", "Test")
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockSubstateDb := db.NewMockSubstateDB(ctrl)
+	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	mockSubstateIter := db.NewMockIIterator[*substate.Substate](ctrl)
 	p := &primer{
-		cfg: cfg,
-		log: log,
-		ctx: NewPrimeContext(cfg, mockStateDb, log),
+		log:   log,
+		ctx:   NewPrimeContext(cfg, mockStateDb, log),
+		cfg:   cfg,
+		sdb:   mockSubstateDb,
+		ddb:   mockDeletionDb,
+		block: 5,
+		first: 10,
 	}
-	err := p.Prime(mockStateDb, mockAidaDb)
+
+	// mock data
+	substateBlk9 := &substate.Substate{
+		InputSubstate: substate.NewWorldState().Add(types.Address{3}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:         9,
+		Transaction:   0,
+	}
+	substateBlk11 := &substate.Substate{
+		InputSubstate: substate.NewWorldState().Add(types.Address{3}, 1, new(uint256.Int).SetUint64(1), nil),
+		Block:         11,
+		Transaction:   0,
+	}
+	// expectations
+	retError := errors.New("Test Error")
+
+	// Case 1: No priming because first substate block is larger than the first block
+	gomock.InOrder(
+		// try to prime with substate
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk11),
+		mockSubstateIter.EXPECT().Release(),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil),
+		mockBulk.EXPECT().Close().Return(nil),
+	)
+	err := p.mayPrimeFromSubstate()
+	assert.NoError(t, err)
+
+	// Case 2: generateUpdateSet fails
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk9),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(9), 0).Return([]types.Address{}, []types.Address{}, retError),
+		mockSubstateIter.EXPECT().Release(),
+	)
+	err = p.mayPrimeFromSubstate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "update set error")
+	assert.Contains(t, err.Error(), "cannot generate update-set")
+
+	// Case 3: PrimeStateDB fails
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().NewSubstateIterator(gomock.Any(), gomock.Any()).Return(mockSubstateIter).AnyTimes(),
+		mockSubstateIter.EXPECT().Next().Return(true),
+		mockSubstateIter.EXPECT().Value().Return(substateBlk9),
+		mockDeletionDb.EXPECT().GetDestroyedAccounts(uint64(9), 0).Return([]types.Address{}, []types.Address{}, nil),
+		mockSubstateIter.EXPECT().Next().Return(false),
+		mockSubstateIter.EXPECT().Release(),
+		mockStateDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, retError),
+	)
+	err = p.mayPrimeFromSubstate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot prime state-db")
 }
 
-// Error handling in prime: mayPrimeFromSubstate returns error
-func TestStateDbPrimer_Prime_MayPrimeFromSubstateError(t *testing.T) {
+func TestPrime_MayDeleteDestroyedAccountsFromStateDB_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	mockAidaDb := db.NewMockBaseDB(ctrl)
+	log := logger.NewLogger("Info", "TestPrime")
+
 	cfg := &utils.Config{}
-	log := logger.NewLogger("Info", "Test")
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)
 	p := &primer{
-		cfg: cfg,
 		log: log,
 		ctx: NewPrimeContext(cfg, mockStateDb, log),
+		cfg: cfg,
+		ddb: mockDeletionDb,
 	}
-	err := p.Prime(mockStateDb, mockAidaDb)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "substate error")
+	acc1 := types.Address{1}
+	acc2 := types.Address{2}
+
+	// Case 1: remove accounts
+	gomock.InOrder(
+		mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1, acc2}, nil),
+		mockStateDb.EXPECT().BeginSyncPeriod(uint64(0)),
+		// prime block start from block 0
+		mockStateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
+		mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil),
+		mockStateDb.EXPECT().SelfDestruct(common.Address(acc1)),
+		mockStateDb.EXPECT().SelfDestruct(common.Address(acc2)),
+		mockStateDb.EXPECT().EndTransaction().Return(nil),
+		mockStateDb.EXPECT().EndBlock().Return(nil),
+		mockStateDb.EXPECT().EndSyncPeriod(),
+	)
+	err := p.mayDeleteDestroyedAccountsFromStateDB(9)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), p.ctx.block)
+
+	// Case 2: shortcut, no accounts to delete, no block increment
+	p.ctx.block = 0
+	gomock.InOrder(
+		mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{}, nil),
+	)
+	err = p.mayDeleteDestroyedAccountsFromStateDB(9)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(0), p.ctx.block)
 }
 
-// Error handling in prime: MayDeleteDestroyedAccountsFromStateDB returns error
-func TestStateDbPrimer_Prime_MayDeleteDestroyedAccountsError(t *testing.T) {
+func TestPrime_MayDeleteDestroyedAccountsFromStateDB_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockStateDb := state.NewMockStateDB(ctrl)
-	mockAidaDb := db.NewMockBaseDB(ctrl)
+	log := logger.NewLogger("Info", "TestPrime")
+
 	cfg := &utils.Config{}
-	log := logger.NewLogger("Info", "Test")
+
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)
 	p := &primer{
-		cfg: cfg,
 		log: log,
 		ctx: NewPrimeContext(cfg, mockStateDb, log),
+		cfg: cfg,
+		ddb: mockDeletionDb,
 	}
-	err := p.Prime(mockStateDb, mockAidaDb)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "destroyed accounts error")
+	retError := errors.New("Test Error")
+	acc1 := types.Address{1}
+
+	testcases := []struct {
+		name       string
+		setupMocks func()
+	}{
+		{
+			name: "GetAccountsDestroyedInRange",
+			setupMocks: func() {
+				gomock.InOrder(
+					mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1}, retError),
+				)
+			},
+		},
+		{
+			name: "BeginBlock",
+			setupMocks: func() {
+				gomock.InOrder(
+					mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1}, nil),
+					mockStateDb.EXPECT().BeginSyncPeriod(uint64(0)),
+					mockStateDb.EXPECT().BeginBlock(uint64(0)).Return(retError),
+				)
+			},
+		},
+		{
+			name: "BeginTransaction",
+			setupMocks: func() {
+				gomock.InOrder(
+					mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1}, nil),
+					mockStateDb.EXPECT().BeginSyncPeriod(uint64(0)),
+					mockStateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
+					mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(retError),
+				)
+			},
+		},
+		{
+			name: "EndTransaction",
+			setupMocks: func() {
+				gomock.InOrder(
+					mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1}, nil),
+					mockStateDb.EXPECT().BeginSyncPeriod(uint64(0)),
+					mockStateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
+					mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil),
+					mockStateDb.EXPECT().SelfDestruct(common.Address(acc1)),
+					mockStateDb.EXPECT().EndTransaction().Return(retError),
+				)
+			},
+		},
+		{
+			name: "EndBlock",
+			setupMocks: func() {
+				gomock.InOrder(
+					mockDeletionDb.EXPECT().GetAccountsDestroyedInRange(uint64(0), uint64(9)).Return([]types.Address{acc1}, nil),
+					mockStateDb.EXPECT().BeginSyncPeriod(uint64(0)),
+					mockStateDb.EXPECT().BeginBlock(uint64(0)).Return(nil),
+					mockStateDb.EXPECT().BeginTransaction(uint32(0)).Return(nil),
+					mockStateDb.EXPECT().SelfDestruct(common.Address(acc1)),
+					mockStateDb.EXPECT().EndTransaction().Return(nil),
+					mockStateDb.EXPECT().EndBlock().Return(retError),
+				)
+			},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setupMocks()
+			err := p.mayDeleteDestroyedAccountsFromStateDB(9)
+			assert.Error(t, err, tc.name+" does not fail.")
+			assert.Contains(t, err.Error(), "Test Error")
+			assert.Equal(t, uint64(0), p.ctx.block)
+		})
+	}
+}
+
+func TestPrime_TrySetBlocks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cfg := &utils.Config{
+		First: 0,
+	}
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockUpdateDb := db.NewMockUpdateDB(ctrl)
+	mockSubstateDb := db.NewMockSubstateDB(ctrl)
+	mockLog := logger.NewMockLogger(ctrl)
+
+	// Existing state db returns error
+	p := newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	cfg.IsExistingStateDb = true
+	cfg.StateDbSrc = t.TempDir()
+	mockLog.EXPECT().Warningf("cannot read state db info; %v", gomock.Any())
+	p.trySetBlocks()
+	assert.Equal(t, uint64(1), p.block)
+	assert.Equal(t, uint64(1), p.first)
+
+	// Existing state db success
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	_ = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, uint64(9), common.Hash{}, true)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(10), p.block)
+	assert.Equal(t, uint64(10), p.first)
+
+	// Non-existing state db, empty substate db
+	cfg.IsExistingStateDb = false
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	mockLog.EXPECT().Warning("cannot get first substate; substate db is empty")
+	mockSubstateDb.EXPECT().GetFirstSubstate().Return(nil)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(0), p.block)
+	assert.Equal(t, uint64(0), p.first)
+
+	// Non-existing state db, substate first < update-set first
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	mockSubstate := &substate.Substate{Block: uint64(10)}
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().GetFirstSubstate().Return(mockSubstate),
+		mockUpdateDb.EXPECT().GetFirstKey().Return(uint64(20), nil),
+	)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(10), p.block)
+	assert.Equal(t, uint64(10), p.first)
+
+	// Non-existing state db, substate first > update-set first
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	mockSubstate = &substate.Substate{Block: uint64(30)}
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().GetFirstSubstate().Return(mockSubstate),
+		mockUpdateDb.EXPECT().GetFirstKey().Return(uint64(20), nil),
+	)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(20), p.block)
+	assert.Equal(t, uint64(30), p.first)
+
+	// State db exist, first processable block is cfg.First
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	cfg.First = 100
+	cfg.IsExistingStateDb = true
+	cfg.StateDbSrc = t.TempDir()
+	_ = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, uint64(9), common.Hash{}, true)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(10), p.block)
+	assert.Equal(t, uint64(100), p.first)
+
+	// Non-existing state db, first processable block is cfg.First
+	p = newTestPrimer(cfg, mockStateDb, mockUpdateDb, mockSubstateDb, mockLog)
+	cfg.First = 100
+	cfg.IsExistingStateDb = false
+	mockSubstate = &substate.Substate{Block: uint64(20)}
+	gomock.InOrder(
+		mockSubstateDb.EXPECT().GetFirstSubstate().Return(mockSubstate),
+		mockUpdateDb.EXPECT().GetFirstKey().Return(uint64(20), nil),
+	)
+	p.trySetBlocks()
+	assert.Equal(t, uint64(20), p.block)
+	assert.Equal(t, uint64(100), p.first)
+}
+
+func newTestPrimer(cfg *utils.Config, mockStateDb state.StateDB, mockUpdateDb db.UpdateDB, mockSubstateDb db.SubstateDB, mockLog logger.Logger) *primer {
+	return &primer{
+		cfg: cfg,
+		log: mockLog,
+		ctx: NewPrimeContext(cfg, mockStateDb, mockLog),
+		udb: mockUpdateDb,
+		sdb: mockSubstateDb,
+	}
 }
