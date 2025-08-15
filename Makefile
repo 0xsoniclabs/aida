@@ -122,4 +122,4 @@ format:
 	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/**
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./cmd/...
