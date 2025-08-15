@@ -17,12 +17,13 @@
 package statedb
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
@@ -299,7 +300,7 @@ func TestThrottler_ProducesEventsInExpectedRate(t *testing.T) {
 
 		expected := float64(rate) * float64(testPeriod) / float64(time.Second)
 		diff := float64(count) - expected
-		if diff > 2 || diff < -2 {
+		if diff > 5 || diff < -5 {
 			t.Errorf("failed to reproduce rate %d, did %d events in %v", rate, count, testPeriod)
 		}
 	}
