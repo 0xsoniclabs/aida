@@ -190,17 +190,14 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 	for {
 		select {
 		case err, ok := <-errChan:
-			{
-				if ok {
-					return err
-				}
+			if ok {
+				return err
 			}
 		case extractedPatchPath, ok := <-decompressChan:
-			{
-				// no more data then return
-				if !ok {
-					return nil
-				}
+			// no more data then return
+			if !ok {
+				return nil
+			}
 
 				// firstRun is triggered only when applying first patch
 				// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
@@ -220,16 +217,23 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 						}
 					}
 					// patch was already applied before opening targetDb hence we don't need to merge it anymore
-					if isNewDb {
-						continue
+					if !isNewDb {
+						if err = mergeToExistingAidaDb(cfg, targetMD, extractedPatchPath); err != nil {
+							return err
+						}
 					}
 				}
+			}
+		}
+	}
+}
 
-				// merge newly extracted patch
-				patchDb, err := db.NewReadOnlySubstateDB(extractedPatchPath)
-				if err != nil {
-					return fmt.Errorf("cannot open patchDb; %v", err)
-				}
+func mergeToExistingAidaDb(cfg *utils.Config, targetMD *utils.AidaDbMetadata, extractedPatchPath string) error {
+	// merge newly extracted patch
+	patchDb, err := db.NewReadOnlySubstateDB(extractedPatchPath)
+	if err != nil {
+		return fmt.Errorf("cannot open patchDb; %v", err)
+	}
 
 				// we only check metadata if not applying stateHashPatch
 				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
@@ -259,14 +263,12 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				}
 				m.CloseSourceDbs()
 
-				// remove patch
-				err = os.RemoveAll(extractedPatchPath)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	// remove patch
+	err = os.RemoveAll(extractedPatchPath)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 // decompressPatch takes tar.gz archives and decompresses them, then sends them for further processing
@@ -281,38 +283,33 @@ func decompressPatch(cfg *utils.Config, patchChan chan utils.PatchJson, errChan 
 		for {
 			select {
 			case err, ok := <-errChan:
-				{
-					if ok {
-						errDecompressChan <- err
-						return
-					}
+				if ok {
+					errDecompressChan <- err
+					return
 				}
 			case patch, ok := <-patchChan:
-				{
-					if !ok {
-						return
-					}
-					log.Debugf("Decompressing %v...", patch.FileName)
+				if !ok {
+					return
+				}
+				log.Debugf("Decompressing %v...", patch.FileName)
 
-					compressedPatchPath := filepath.Join(cfg.DbTmp, patch.FileName)
-					err := extractTarGz(compressedPatchPath, cfg.DbTmp)
-					if err != nil {
-						errDecompressChan <- err
-						return
-					}
-
-					// extracted patch is folder without the .tar.gz extension
-					extractedPatchPath := strings.TrimSuffix(compressedPatchPath, ".tar.gz")
-
-					decompressedPatchChan <- extractedPatchPath
-					// remove compressed patch
-					err = os.RemoveAll(compressedPatchPath)
-					if err != nil {
-						errDecompressChan <- err
-						return
-					}
+				compressedPatchPath := filepath.Join(cfg.DbTmp, patch.FileName)
+				err := extractTarGz(compressedPatchPath, cfg.DbTmp)
+				if err != nil {
+					errDecompressChan <- err
+					return
 				}
 
+				// extracted patch is folder without the .tar.gz extension
+				extractedPatchPath := strings.TrimSuffix(compressedPatchPath, ".tar.gz")
+
+				decompressedPatchChan <- extractedPatchPath
+				// remove compressed patch
+				err = os.RemoveAll(compressedPatchPath)
+				if err != nil {
+					errDecompressChan <- err
+					return
+				}
 			}
 		}
 	}()
