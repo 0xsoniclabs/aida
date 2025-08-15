@@ -25,42 +25,43 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var runVmApp = &cli.App{
+	Action:    RunVm,
+	Name:      "EVM evaluation tool",
+	HelpName:  "aida-vm",
+	Copyright: "(c) 2023 Fantom Foundation",
+	ArgsUsage: "<blockNumFirst> <blockNumLast>",
+	// TODO: derive supported flags from utilized executor extensions.
+	Flags: []cli.Flag{
+		&utils.WorkersFlag,
+		//&substate.SkipTransferTxsFlag,
+		//&substate.SkipCallTxsFlag,
+		//&substate.SkipCreateTxsFlag,
+		&utils.ChainIDFlag,
+		//&utils.ProfileEVMCallFlag,
+		//&utils.MicroProfilingFlag,
+		//&utils.BasicBlockProfilingFlag,
+		//&utils.ProfilingDbNameFlag,
+		&utils.ChannelBufferSizeFlag,
+		&utils.EvmImplementation,
+		&utils.VmImplementation,
+		&utils.ValidateTxStateFlag,
+		&utils.ValidateFlag,
+		//&utils.OnlySuccessfulFlag,
+		&utils.CpuProfileFlag,
+		&utils.DiagnosticServerFlag,
+		&utils.AidaDbFlag,
+		&logger.LogLevelFlag,
+		&utils.ErrorLoggingFlag,
+		&utils.StateDbImplementationFlag,
+		&utils.StateDbLoggingFlag,
+		&utils.CacheFlag,
+		&utils.SubstateEncodingFlag,
+	},
+}
+
 func main() {
-	app := &cli.App{
-		Action:    RunVm,
-		Name:      "EVM evaluation tool",
-		HelpName:  "aida-vm",
-		Copyright: "(c) 2023 Fantom Foundation",
-		ArgsUsage: "<blockNumFirst> <blockNumLast>",
-		// TODO: derive supported flags from utilized executor extensions.
-		Flags: []cli.Flag{
-			&utils.WorkersFlag,
-			//&substate.SkipTransferTxsFlag,
-			//&substate.SkipCallTxsFlag,
-			//&substate.SkipCreateTxsFlag,
-			&utils.ChainIDFlag,
-			//&utils.ProfileEVMCallFlag,
-			//&utils.MicroProfilingFlag,
-			//&utils.BasicBlockProfilingFlag,
-			//&utils.ProfilingDbNameFlag,
-			&utils.ChannelBufferSizeFlag,
-			&utils.EvmImplementation,
-			&utils.VmImplementation,
-			&utils.ValidateTxStateFlag,
-			&utils.ValidateFlag,
-			//&utils.OnlySuccessfulFlag,
-			&utils.CpuProfileFlag,
-			&utils.DiagnosticServerFlag,
-			&utils.AidaDbFlag,
-			&logger.LogLevelFlag,
-			&utils.ErrorLoggingFlag,
-			&utils.StateDbImplementationFlag,
-			&utils.StateDbLoggingFlag,
-			&utils.CacheFlag,
-			&utils.SubstateEncodingFlag,
-		},
-	}
-	if err := app.Run(os.Args); err != nil {
+	if err := runVmApp.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

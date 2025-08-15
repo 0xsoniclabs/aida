@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package compact
 
 import (
 	"fmt"
@@ -25,9 +25,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// CompactCommand compact given database
-var CompactCommand = cli.Command{
-	Action: compact,
+// Command compact given database
+var Command = cli.Command{
+	Action: compactAction,
 	Name:   "compact",
 	Usage:  "compact target db",
 	Flags: []cli.Flag{
@@ -38,8 +38,8 @@ Compacts target database.
 `,
 }
 
-// compact compacts database
-func compact(ctx *cli.Context) error {
+// compactAction compacts database
+func compactAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
 	if err != nil {
 		return err

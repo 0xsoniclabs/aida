@@ -20,9 +20,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
+	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,19 +35,15 @@ var UtilDbApp = cli.App{
 	Usage:     "merge source data into profiling database",
 	Copyright: "(c) 2022 Fantom Foundation",
 	Commands: []*cli.Command{
-		&db.CloneCommand,
-		&db.CompactCommand,
+		&clone.Command,
+		&compact.Command,
 		&db.ExtractEthereumGenesisCommand,
 		&db.MergeCommand,
 		&db.UpdateCommand,
-		&db.InfoCommand,
+		&info.Command,
 		&db.ValidateCommand,
 		&db.GenDeletedAccountsCommand,
-		&db.SubstateDumpCommand,
 		&db.GenerateDbHashCommand,
-		&db.PrintDbHashCommand,
-		&db.PrintPrefixHashCommand,
-		&db.PrintTableHashCommand,
 		&db.ScrapeCommand,
 		&db.MetadataCommand,
 

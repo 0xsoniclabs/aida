@@ -42,7 +42,7 @@ func TestEthTest_CreateTransactionThatFailsBlobGasExceedCheck(t *testing.T) {
 	assert.NotNil(t, st.msg)
 	assert.GreaterOrEqual(t, len(st.msg.BlobHashes), 19)
 	assert.NotNil(t, st.env)
-	assert.Equal(t, "cancun", st.env.fork)
+	assert.Equal(t, "cancun", st.env.GetFork())
 }
 
 func TestEthTest_CreateTestTransactionWithHash(t *testing.T) {
@@ -62,7 +62,7 @@ func TestEthTest_CreateTransactionWithInvalidTxBytes(t *testing.T) {
 	assert.NotNil(t, st.txBytes)
 	assert.NotNil(t, st.msg)
 	assert.NotNil(t, st.env)
-	assert.Equal(t, "cancun", st.env.fork)
+	assert.Equal(t, "cancun", st.env.GetFork())
 }
 
 func TestEthTest_CreateTransactionThatFailsSenderValidation(t *testing.T) {
@@ -73,5 +73,5 @@ func TestEthTest_CreateTransactionThatFailsSenderValidation(t *testing.T) {
 	assert.NotNil(t, st.txBytes)
 	assert.NotNil(t, st.msg)
 	assert.NotNil(t, st.env)
-	assert.Equal(t, "Shanghai", st.env.fork)
+	assert.Equal(t, "Shanghai", st.env.GetFork())
 }
