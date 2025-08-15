@@ -35,6 +35,7 @@ var cloneDbCommand = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Creates clone db is used to create subset of aida-db to have more compact database, but still fully usable for desired block range.
@@ -48,7 +49,7 @@ func cloneDbAction(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}

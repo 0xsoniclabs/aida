@@ -19,9 +19,10 @@ package clone
 import (
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/types/hash"
 	"os"
 	"time"
+
+	"github.com/0xsoniclabs/substate/types/hash"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
@@ -55,7 +56,7 @@ type rawEntry struct {
 }
 
 // clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType) error {
+func clone(cfg *utils.Config, aidaDb, cloneDb db.SubstateDB, cloneType utils.AidaDbType) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb clone")
 
@@ -480,7 +481,7 @@ func (c *cloner) readDataCustom() error {
 }
 
 // openCloningDbs prepares aida and target databases
-func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, error) {
+func openCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.SubstateEncodingSchema) (db.SubstateDB, db.SubstateDB, error) {
 	var err error
 
 	// if source db doesn't exist raise error
@@ -574,7 +575,7 @@ func (c *cloner) cloneCodes() error {
 // putCode puts code into the cloneDb and increments the count
 func (c *cloner) putCode(code []byte) error {
 	// skip empty codes
-	if code == nil || len(code) == 0 {
+	if len(code) == 0 {
 		return nil
 	}
 	c.count++
