@@ -312,7 +312,10 @@ func (s *gethStateDB) Close() error {
 	if err := tdb.Close(); err != nil {
 		return err
 	}
-	return s.backend.Close()
+	if s.backend != nil {
+		return s.backend.Close()
+	}
+	return nil
 }
 
 func (s *gethStateDB) AddRefund(gas uint64) {
