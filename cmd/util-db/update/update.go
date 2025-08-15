@@ -91,7 +91,7 @@ func update(cfg *utils.Config) error {
 	log.Noticef("Last block of your AidaDb: #%v", targetDbLastBlock)
 
 	// retrieve available patches from aida-db generation server
-	patches, err := retrievePatchesToDownload(cfg, targetDbFirstBlock, targetDbLastBlock)
+	patches, err := retrievePatchesToDownload(cfg, targetDbLastBlock)
 	if err != nil {
 		return fmt.Errorf("unable to prepare list of aida-db patches for download; %v", err)
 	}
@@ -172,7 +172,6 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
 	var (
 		err      error
-		patchDb  db.BaseDB
 		targetMD *utils.AidaDbMetadata
 		isNewDb  bool
 		log      = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
@@ -187,103 +186,104 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 	for {
 		select {
 		case err, ok := <-errChan:
-			{
-				if ok {
-					return err
-				}
+			if ok {
+				return err
 			}
 		case extractedPatchPath, ok := <-decompressChan:
-			{
-				// no more data then return
-				if !ok {
-					return nil
-				}
+			// no more data then return
+			if !ok {
+				return nil
+			}
 
-				// firstRun is triggered only when applying first patch
-				// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
-				// before opening database for writing
-				if firstRun {
-					firstRun = false
-					// first patch to empty database is moved to target right away
-					// this way we can skip iteration and metadata inserts
-					if isNewDb {
-						log.Noticef("AIDA-DB was empty - directly saving first patch")
-						// move extracted patch to target location - first attempting with os.Rename because it is fastest
-						if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
-							// attempting with deep copy - needed when moving across different disks
-							if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
-								return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
-							}
+			// firstRun is triggered only when applying first patch
+			// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
+			// before opening database for writing
+			if firstRun {
+				firstRun = false
+				// first patch to empty database is moved to target right away
+				// this way we can skip iteration and metadata inserts
+				if isNewDb {
+					log.Noticef("AIDA-DB was empty - directly saving first patch")
+					// move extracted patch to target location - first attempting with os.Rename because it is fastest
+					if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
+						// attempting with deep copy - needed when moving across different disks
+						if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
+							return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
 						}
-					}
-
-					// open targetDB only after there is already first patch or any existing previous data
-					targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
-					if err != nil {
-						return fmt.Errorf("can't open aidaDb; %v", err)
-					}
-					targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
-
-					errOldAida := targetMD.UpdateMetadataInOldAidaDb(cfg.ChainID, firstAidaDbBlock, lastAidaDbBlock)
-					if errOldAida != nil {
-						log.Warningf("error UpdateMetadataInOldAidaDb; %v", errOldAida)
-					}
-
-					defer func() {
-						if err = targetMD.Db.Close(); err != nil {
-							log.Warningf("patchesDownloader: cannot close targetDb; %v", err)
-						}
-					}()
-
-					// patch was already applied before opening targetDb hence we don't need to merge it anymore
-					if isNewDb {
-						continue
 					}
 				}
 
-				// merge newly extracted patch
-				patchDb, err = db.NewReadOnlyBaseDB(extractedPatchPath)
+				// open targetDB only after there is already first patch or any existing previous data
+				targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
 				if err != nil {
-					return fmt.Errorf("cannot open targetDb; %v", err)
+					return fmt.Errorf("can't open aidaDb; %v", err)
+				}
+				targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+
+				errOldAida := targetMD.UpdateMetadataInOldAidaDb(cfg.ChainID, firstAidaDbBlock, lastAidaDbBlock)
+				if errOldAida != nil {
+					log.Warningf("error UpdateMetadataInOldAidaDb; %v", errOldAida)
 				}
 
-				// we only check metadata if not applying stateHashPatch
-				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					err = targetMD.CheckUpdateMetadata(cfg, patchDb)
-					if err != nil {
+				defer func() {
+					if err = targetMD.Db.Close(); err != nil {
+						log.Warningf("patchesDownloader: cannot close targetDb; %v", err)
+					}
+				}()
+
+				// patch was already applied before opening targetDb hence we don't need to merge it anymore
+				if !isNewDb {
+					if err = mergeToExistingAidaDb(cfg, targetMD, extractedPatchPath); err != nil {
 						return err
 					}
-				}
-
-				m := utildb.NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
-
-				err = m.Merge()
-				if err != nil {
-					return fmt.Errorf("unable to merge %v; %v", extractedPatchPath, err)
-				}
-
-				// we only set metadata if not applying stateHashPatch
-				if strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					err = targetMD.SetHasHashPatch()
-					if err != nil {
-						return fmt.Errorf("cannot set has-hash-patch; %v", err)
-					}
-				} else {
-					err = targetMD.SetAll()
-					if err != nil {
-						return fmt.Errorf("cannot set metadata; %v", err)
-					}
-				}
-				m.CloseSourceDbs()
-
-				// remove patch
-				err = os.RemoveAll(extractedPatchPath)
-				if err != nil {
-					return err
 				}
 			}
 		}
 	}
+}
+
+func mergeToExistingAidaDb(cfg *utils.Config, targetMD *utils.AidaDbMetadata, extractedPatchPath string) error {
+	// merge newly extracted patch
+	patchDb, err := db.NewReadOnlyBaseDB(extractedPatchPath)
+	if err != nil {
+		return fmt.Errorf("cannot open targetDb; %v", err)
+	}
+
+	// we only check metadata if not applying stateHashPatch
+	if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
+		err = targetMD.CheckUpdateMetadata(cfg, patchDb)
+		if err != nil {
+			return err
+		}
+	}
+
+	m := utildb.NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
+
+	err = m.Merge()
+	if err != nil {
+		return fmt.Errorf("unable to merge %v; %v", extractedPatchPath, err)
+	}
+
+	// we only set metadata if not applying stateHashPatch
+	if strings.Contains(extractedPatchPath, stateHashPatchFileName) {
+		err = targetMD.SetHasHashPatch()
+		if err != nil {
+			return fmt.Errorf("cannot set has-hash-patch; %v", err)
+		}
+	} else {
+		err = targetMD.SetAll()
+		if err != nil {
+			return fmt.Errorf("cannot set metadata; %v", err)
+		}
+	}
+	m.CloseSourceDbs()
+
+	// remove patch
+	err = os.RemoveAll(extractedPatchPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // decompressPatch takes tar.gz archives and decompresses them, then sends them for further processing
@@ -298,38 +298,33 @@ func decompressPatch(cfg *utils.Config, patchChan chan utils.PatchJson, errChan 
 		for {
 			select {
 			case err, ok := <-errChan:
-				{
-					if ok {
-						errDecompressChan <- err
-						return
-					}
+				if ok {
+					errDecompressChan <- err
+					return
 				}
 			case patch, ok := <-patchChan:
-				{
-					if !ok {
-						return
-					}
-					log.Debugf("Decompressing %v...", patch.FileName)
+				if !ok {
+					return
+				}
+				log.Debugf("Decompressing %v...", patch.FileName)
 
-					compressedPatchPath := filepath.Join(cfg.DbTmp, patch.FileName)
-					err := extractTarGz(compressedPatchPath, cfg.DbTmp)
-					if err != nil {
-						errDecompressChan <- err
-						return
-					}
-
-					// extracted patch is folder without the .tar.gz extension
-					extractedPatchPath := strings.TrimSuffix(compressedPatchPath, ".tar.gz")
-
-					decompressedPatchChan <- extractedPatchPath
-					// remove compressed patch
-					err = os.RemoveAll(compressedPatchPath)
-					if err != nil {
-						errDecompressChan <- err
-						return
-					}
+				compressedPatchPath := filepath.Join(cfg.DbTmp, patch.FileName)
+				err := extractTarGz(compressedPatchPath, cfg.DbTmp)
+				if err != nil {
+					errDecompressChan <- err
+					return
 				}
 
+				// extracted patch is folder without the .tar.gz extension
+				extractedPatchPath := strings.TrimSuffix(compressedPatchPath, ".tar.gz")
+
+				decompressedPatchChan <- extractedPatchPath
+				// remove compressed patch
+				err = os.RemoveAll(compressedPatchPath)
+				if err != nil {
+					errDecompressChan <- err
+					return
+				}
 			}
 		}
 	}()
@@ -423,7 +418,7 @@ func pushPatchToChanel(strings []utils.PatchJson) chan utils.PatchJson {
 }
 
 // retrievePatchesToDownload retrieves all available patches from aida-db generation server.
-func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, targetDbLastBlock uint64) ([]utils.PatchJson, error) {
+func retrievePatchesToDownload(cfg *utils.Config, targetDbLastBlock uint64) ([]utils.PatchJson, error) {
 	if cfg.UpdateType != "stable" && cfg.UpdateType != "nightly" {
 		return nil, fmt.Errorf("please choose correct data-type with --data-type flag (stable/nightly)")
 	}
