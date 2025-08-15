@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -34,8 +35,8 @@ var GenDeletedAccountsCommand = cli.Command{
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,
 		&utils.AidaDbFlag,
+		&utils.OutputFlag,
 		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
 		&utils.CpuProfileFlag,
 		&logger.LogLevelFlag,
 	},
@@ -53,11 +54,11 @@ func genDeletedAccountsAction(ctx *cli.Context) error {
 		return err
 	}
 
-	if cfg.DeletionDb == "" {
+	if cfg.Output == "" {
 		return fmt.Errorf("you need to specify where you want deletion-db to save (--deletion-db)")
 	}
 
-	if cfg.SubstateDb == "" {
+	if cfg.AidaDb == "" {
 		return fmt.Errorf("you need to specify path to existing substate (--substate-db)")
 	}
 
@@ -65,13 +66,17 @@ func genDeletedAccountsAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 
-	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.DeletionDb)
+	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.Output)
 	if err != nil {
 		return err
 	}
-	defer ddb.Close()
+	defer func(ddb *db.DestroyedAccountDB) {
+		err = errors.Join(err, ddb.Close())
+	}(ddb)
 
 	return utildb.GenDeletedAccountsAction(cfg, sdb, ddb, cfg.First, cfg.Last)
 }

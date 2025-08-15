@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"math/big"
+	"strconv"
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
@@ -89,6 +91,54 @@ func GetTestSubstate(encoding string) *substate.Substate {
 		ss.Message.SetCodeAuthorizations = nil
 	}
 	return ss
+}
+
+// ArgsBuilder helps create []string for CLI testing in a type-safe way
+type ArgsBuilder struct {
+	args []string
+}
+
+func NewArgs(cmd string) *ArgsBuilder {
+	return &ArgsBuilder{args: []string{cmd}}
+}
+
+func (b *ArgsBuilder) Flag(name string, value interface{}) *ArgsBuilder {
+	switch v := value.(type) {
+	case string:
+		b.args = append(b.args, "--"+name, v)
+	case int:
+		b.args = append(b.args, "--"+name, strconv.Itoa(v))
+	case bool:
+		if v {
+			b.args = append(b.args, "--"+name)
+		}
+	// You can add more types here (float, time.Duration, etc.)
+	default:
+		panic(fmt.Sprintf("unsupported flag type %T", v))
+	}
+	return b
+}
+
+func (b *ArgsBuilder) Arg(value interface{}) *ArgsBuilder {
+	switch v := value.(type) {
+	case string:
+		b.args = append(b.args, v)
+	case int:
+		b.args = append(b.args, strconv.Itoa(v))
+	case bool:
+		if v {
+			b.args = append(b.args, "true")
+		} else {
+			b.args = append(b.args, "false")
+		}
+	default:
+		panic(fmt.Sprintf("unsupported arg type %T", v))
+	}
+	return b
+}
+
+func (b *ArgsBuilder) Build() []string {
+	return b.args
 }
 
 // Must is a helper function that takes a value of any type and an error.

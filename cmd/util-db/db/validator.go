@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -50,6 +51,9 @@ func generateDbHashCmd(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "DbHashGenerateCMD")
 
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	if err != nil {
+		return fmt.Errorf("cannot parse config; %v", err)
+	}
 
 	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
 	if err != nil {
@@ -132,7 +136,7 @@ func validateCmd(ctx *cli.Context) error {
 		return err
 	}
 
-	if bytes.Compare(expectedHash, trueHash) != 0 {
+	if !bytes.Equal(expectedHash, trueHash) {
 		return fmt.Errorf("hashes are different! expected: %v; your aida-db:%v", hex.EncodeToString(expectedHash), hex.EncodeToString(trueHash))
 	}
 

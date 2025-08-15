@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -52,7 +53,9 @@ func scrapePrepare(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error opening stateHash leveldb %s: %v", cfg.TargetDb, err)
 	}
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+	}(database)
 
 	err = utils.StateAndBlockHashScraper(ctx.Context, cfg.ChainID, cfg.ClientDb, database, cfg.First, cfg.Last, log)
 	if err != nil {

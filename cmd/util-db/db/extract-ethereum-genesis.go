@@ -17,6 +17,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -61,7 +62,9 @@ func extractEthereumGenesis(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer udb.Close()
+	defer func(udb db.UpdateDB) {
+		err = errors.Join(err, udb.Close())
+	}(udb)
 
 	log.Noticef("PutUpdateSet(0, %v, []common.Address{})", ws)
 
