@@ -57,7 +57,6 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 	}
 
 	p.log.Infof("Update buffer size: %v bytes", p.cfg.UpdateBufferSize)
-
-	primer := prime.MakePrimer(p.cfg, ctx.State, p.log)
-	return primer.Prime(ctx.State, ctx.AidaDb)
+	primer := prime.NewPrimer(p.cfg, ctx.State, ctx.AidaDb, p.log)
+	return primer.Prime()
 }

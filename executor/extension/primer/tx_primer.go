@@ -48,5 +48,5 @@ func (p *txPrimer) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.C
 
 // PreTransaction primes StateDb
 func (p *txPrimer) PreTransaction(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	return p.primeCtx.PrimeStateDB(state.Data.GetInputState(), ctx.State)
+	return p.primeCtx.PrimeStateDB(state.Data.GetInputState())
 }
