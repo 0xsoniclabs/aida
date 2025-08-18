@@ -1,11 +1,12 @@
 package merge
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-	"testing"
 )
 
 func TestMergeCommand(t *testing.T) {
