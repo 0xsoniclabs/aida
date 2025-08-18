@@ -18,6 +18,7 @@ package generate
 
 import (
 	"fmt"
+	substatetypes "github.com/0xsoniclabs/substate/types"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -25,7 +26,6 @@ import (
 	"github.com/0xsoniclabs/aida/state/proxy"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/substate"
-	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -194,61 +194,55 @@ func recordDeletedAccountsFromTx(
 	}
 
 	close(ch)
-	des, res := readAccounts(ch, deleteHistory)
-	if len(des)+len(res) > 0 {
-		// if transaction completed successfully, put destroyed accounts
-		// and resurrected accounts to a database
-		if tx.Result.Status == types.ReceiptStatusSuccessful {
-			var destroyed, resurrected []substatetypes.Address
-			for _, addr := range des {
-				destroyed = append(destroyed, substatetypes.Address(addr))
-			}
-
-			for _, addr := range res {
-				resurrected = append(destroyed, substatetypes.Address(addr))
-			}
-			err = ddb.SetDestroyedAccounts(tx.Block, tx.Transaction, destroyed, resurrected)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return writeDeletedAccounts(ddb, tx, ch, deleteHistory)
 }
 
-// readAccounts reads contracts which were suicided or created and adds them to lists
-func readAccounts(ch chan proxy.ContractLiveliness, deleteHistory *map[common.Address]bool) ([]common.Address, []common.Address) {
-	des := make(map[common.Address]bool)
-	res := make(map[common.Address]bool)
+// writeDeletedAccounts reads contracts which were suicided or created and adds them to lists
+func writeDeletedAccounts(
+	ddb *db.DestroyedAccountDB,
+	ss *substate.Substate,
+	ch chan proxy.ContractLiveliness,
+	deleteHistory *map[common.Address]bool,
+) error {
+	deletedAccounts := make(map[common.Address]bool)
+	resurrectedAccounts := make(map[common.Address]bool)
 	for contract := range ch {
 		addr := contract.Addr
 		if contract.IsDeleted {
 			// if a contract was resurrected before suicided in the same tx,
 			// only keep the last action.
-			delete(res, addr)
+			delete(resurrectedAccounts, addr)
 			(*deleteHistory)[addr] = true // meta list
-			des[addr] = true
+			deletedAccounts[addr] = true
 		} else {
 			// if a contract was suicided before resurrected in the same tx,
 			// only keep the last action.
-			delete(des, addr)
+			delete(deletedAccounts, addr)
 			// an account is considered as resurrected if it was recently deleted.
 			if recentlyDeleted, found := (*deleteHistory)[addr]; found && recentlyDeleted {
 				(*deleteHistory)[addr] = false
-				res[addr] = true
+				resurrectedAccounts[addr] = true
 			}
 		}
 	}
 
-	var deletedAccounts []common.Address
-	var resurrectedAccounts []common.Address
+	if len(deletedAccounts)+len(resurrectedAccounts) > 0 {
+		// if transaction completed successfully, put destroyed accounts
+		// and resurrected accounts to a database
+		if ss.Result.Status == types.ReceiptStatusSuccessful {
+			var destroyed, resurrected []substatetypes.Address
+			for addr, _ := range deletedAccounts {
+				destroyed = append(destroyed, substatetypes.Address(addr))
+			}
 
-	for addr := range des {
-		deletedAccounts = append(deletedAccounts, addr)
+			for addr, _ := range resurrectedAccounts {
+				resurrected = append(resurrected, substatetypes.Address(addr))
+			}
+			err := ddb.SetDestroyedAccounts(ss.Block, ss.Transaction, destroyed, resurrected)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	for addr := range res {
-		resurrectedAccounts = append(resurrectedAccounts, addr)
-	}
-	return deletedAccounts, resurrectedAccounts
+	return nil
 }
