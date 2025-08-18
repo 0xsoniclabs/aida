@@ -101,7 +101,6 @@ func TestMergeCommand_Errors(t *testing.T) {
 				"pb",
 			}, test.srcDb...))
 			require.ErrorContains(t, err, test.wantErr)
-
 		})
 	}
 

@@ -72,19 +72,16 @@ func mergeAction(ctx *cli.Context) error {
 			utildb.MustCloseDB(database)
 		}
 	}
-
 	dbs, err = utildb.OpenSourceDatabases(sourcePaths)
 	if err != nil {
 		return err
 	}
 
 	m := utildb.NewMerger(cfg, targetDb, dbs, sourcePaths, md)
-
 	if err = m.Merge(); err != nil {
 		return err
 	}
 
 	m.CloseSourceDbs()
-
 	return m.FinishMerge()
 }
