@@ -18,8 +18,9 @@ package generate
 
 import (
 	"fmt"
-	substatetypes "github.com/0xsoniclabs/substate/types"
 	"time"
+
+	substatetypes "github.com/0xsoniclabs/substate/types"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
@@ -231,11 +232,11 @@ func writeDeletedAccounts(
 		// and resurrected accounts to a database
 		if ss.Result.Status == types.ReceiptStatusSuccessful {
 			var destroyed, resurrected []substatetypes.Address
-			for addr, _ := range deletedAccounts {
+			for addr := range deletedAccounts {
 				destroyed = append(destroyed, substatetypes.Address(addr))
 			}
 
-			for addr, _ := range resurrectedAccounts {
+			for addr := range resurrectedAccounts {
 				resurrected = append(resurrected, substatetypes.Address(addr))
 			}
 			err := ddb.SetDestroyedAccounts(ss.Block, ss.Transaction, destroyed, resurrected)

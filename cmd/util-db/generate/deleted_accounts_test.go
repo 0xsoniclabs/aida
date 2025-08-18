@@ -1,13 +1,14 @@
 package generate
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestDeletedAccounts_writeDeletedAccounts(t *testing.T) {
