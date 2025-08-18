@@ -18,20 +18,48 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 	// Protobuf is not yet supported
 	ss, sdbPath := utils.CreateTestSubstateDb(t, db.RLPEncodingSchema)
 	ddbPath := t.TempDir()
-	app := cli.NewApp()
-	app.Action = generateDeletedAccountsCommand.Action
-	app.Flags = generateDeletedAccountsCommand.Flags
+	tests := []struct {
+		name    string
+		wantErr string
+		args    []string
+	}{
+		{
+			name: "Success",
+			// Transaction fail
+			wantErr: "intrinsic gas too low",
+			args: []string{
+				generateDeletedAccountsCommand.Name,
+				"--aida-db",
+				sdbPath,
+				"--deletion-db",
+				ddbPath,
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+		},
+		{
+			name:    "NoDeletionDb",
+			wantErr: "you need to specify where you want deletion-db to save (--deletion-db)",
+			args: []string{
+				generateDeletedAccountsCommand.Name,
+				"--aida-db",
+				sdbPath,
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := cli.NewApp()
+			app.Action = generateDeletedAccountsCommand.Action
+			app.Flags = generateDeletedAccountsCommand.Flags
 
-	err := app.Run([]string{
-		generateDeletedAccountsCommand.Name,
-		"--aida-db",
-		sdbPath,
-		"--deletion-db",
-		ddbPath,
-		strconv.FormatUint(ss.Block-1, 10),
-		strconv.FormatUint(ss.Block+1, 10),
-	})
-	require.ErrorContains(t, err, "intrinsic gas too low")
+			err := app.Run(test.args)
+			require.ErrorContains(t, err, test.wantErr)
+		})
+	}
+
 }
 
 func TestGenerateDbHash_Command(t *testing.T) {

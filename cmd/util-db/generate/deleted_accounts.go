@@ -66,12 +66,8 @@ func generateDeletedAccountsAction(ctx *cli.Context) (finalErr error) {
 		return err
 	}
 
-	if cfg.DeletionDb == "" {
+	if !ctx.IsSet(utils.DeletionDbFlag.Name) {
 		return fmt.Errorf("you need to specify where you want deletion-db to save (--deletion-db)")
-	}
-
-	if cfg.SubstateDb == "" {
-		return fmt.Errorf("you need to specify path to existing substate (--substate-db)")
 	}
 
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
@@ -106,9 +102,9 @@ func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.Destro
 	if err != nil {
 		return err
 	}
+	defer utils.StopCPUProfile(cfg)
 
 	log := logger.NewLogger(cfg.LogLevel, "Generate Deleted Accounts")
-
 	log.Noticef("Generate deleted accounts from block %v to block %v", firstBlock, lastBlock)
 
 	start := time.Now()
@@ -116,13 +112,17 @@ func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.Destro
 	txCount := uint64(0)
 	lastTxCount := uint64(0)
 	var deleteHistory = make(map[common.Address]bool)
+	// explicitly set to nil to release memory as soon as possible
+	defer func() {
+		deleteHistory = nil
+	}()
 
 	iter := sdb.NewSubstateIterator(int(firstBlock), cfg.Workers)
 	defer iter.Release()
 
 	processor, err := executor.MakeTxProcessor(cfg)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for iter.Next() {
@@ -148,12 +148,6 @@ func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.Destro
 			}
 		}
 	}
-
-	utils.StopCPUProfile(cfg)
-
-	// explicitly set to nil to release memory as soon as possible
-	deleteHistory = nil
-
 	return err
 }
 

@@ -97,8 +97,8 @@ func loadEthereumGenesisWorldState(genesisPath string) (substate.WorldState, err
 		return nil, fmt.Errorf("failed to read genesis file: %account", err)
 	}
 
-	// Unmarshal JSON data
-	if err := json.Unmarshal(jsonData, &jsData); err != nil {
+	err = json.Unmarshal(jsonData, &jsData)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal genesis file: %account", err)
 	}
 
