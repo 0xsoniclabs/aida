@@ -42,11 +42,6 @@ func mergeAction(ctx *cli.Context) error {
 		sourcePaths[i] = ctx.Args().Get(i)
 	}
 
-	// we need a destination where to save merged aida-db
-	if cfg.AidaDb == "" {
-		return fmt.Errorf("you need to specify where you want aida-db to save (--aida-db)")
-	}
-
 	targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
@@ -60,7 +55,7 @@ func mergeAction(ctx *cli.Context) error {
 	if !cfg.SkipMetadata {
 		dbs, err = utildb.OpenSourceDatabases(sourcePaths)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot open source databases: %w", err)
 		}
 		md, err = utils.ProcessMergeMetadata(cfg, targetDb, dbs, sourcePaths)
 		if err != nil {

@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -59,4 +60,49 @@ func TestMergeCommand(t *testing.T) {
 	gotS2, err := aidaDb.GetSubstate(20, 3)
 	require.NoError(t, err)
 	require.NoError(t, gotS2.Equal(s2))
+}
+
+func TestMergeCommand_Errors(t *testing.T) {
+	dstDb := t.TempDir() + "/dstDb"
+	wrongFile := t.TempDir() + "testfile.txt"
+	f, err := os.Create(wrongFile)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+
+	tests := []struct {
+		name    string
+		srcDb   []string
+		wantErr string
+	}{
+		{
+			name:    "No_Source_Dbs",
+			srcDb:   nil,
+			wantErr: "this command requires at least 1 argument",
+		},
+		{
+			name:    "Wrong_Source_Db",
+			srcDb:   []string{wrongFile},
+			wantErr: "cannot open source databases",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := cli.NewApp()
+			app.Action = mergeAction
+			app.Flags = Command.Flags
+
+			err = app.Run(append([]string{
+				Command.Name,
+				"--aida-db",
+				dstDb,
+				"-l",
+				"CRITICAL",
+				"--substate-encoding",
+				"pb",
+			}, test.srcDb...))
+			require.ErrorContains(t, err, test.wantErr)
+
+		})
+	}
+
 }
