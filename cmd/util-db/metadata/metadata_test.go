@@ -3,6 +3,8 @@ package metadata
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
@@ -66,6 +68,25 @@ func TestCmd_GenerateMetadataCommand(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCmd_GenerateMetadataCommand_EmptyAidaDb(t *testing.T) {
+	aidaDbPath := t.TempDir() + "/empty.db"
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&Command}
+
+	args := utils.NewArgs("test").
+		Arg(Command.Name).
+		Arg(generateCommand.Name).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	require.ErrorContains(t, err, "cannot find block range in substate")
+}
+
 func TestCmd_InsertMetadataCommand(t *testing.T) {
 	// given
 	_, aidaDbPath := utils.CreateTestSubstateDb(t)
@@ -99,7 +120,48 @@ func TestCmd_InsertMetadataCommand(t *testing.T) {
 	}
 }
 
-func TestCmd_InsertMetadataCommandError(t *testing.T) {
+func TestCmd_InsertMetadataCommand_Errors(t *testing.T) {
+	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+
+	tests := []struct {
+		name        string
+		argsBuilder *utils.ArgsBuilder
+		wantErr     string
+	}{
+		{
+			name: "NotEnoughArguments",
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(insertCommand.Name).
+				Flag(utils.AidaDbFlag.Name, aidaDbPath),
+			wantErr: "this command requires two arguments",
+		},
+		{
+			name: "UnknownKey",
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(insertCommand.Name).
+				Flag(utils.AidaDbFlag.Name, aidaDbPath).
+				Arg("unknownKey").
+				Arg("123"),
+			wantErr: "incorrect keyArg: unknownKey",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// given
+			app := cli.NewApp()
+			app.Commands = []*cli.Command{&Command}
+			err := app.Run(test.argsBuilder.Build())
+
+			// then
+			assert.ErrorContains(t, err, test.wantErr)
+		})
+	}
+
+}
+
+func TestCmd_InsertMetadataCommand_IncorrectArguments(t *testing.T) {
 	// given
 	_, aidaDbPath := utils.CreateTestSubstateDb(t)
 	app := cli.NewApp()
