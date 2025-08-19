@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-
-	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -148,73 +146,4 @@ func validateCmd(ctx *cli.Context) error {
 	}
 
 	return nil
-}
-
-var PrintDbHashCommand = cli.Command{
-	Action: printDbHash,
-	Name:   "print-db-hash",
-	Usage:  "Prints db-hash (md5) of AidaDb. If this value is not present in metadata it iterates through all of data.",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&flags.ForceFlag,
-	},
-}
-
-func printDbHash(ctx *cli.Context) error {
-	var force = ctx.Bool(flags.ForceFlag.Name)
-
-	aidaDb, err := db.NewReadOnlyBaseDB(ctx.String(utils.AidaDbFlag.Name))
-	if err != nil {
-		return fmt.Errorf("cannot open db; %v", err)
-	}
-
-	defer utildb.MustCloseDB(aidaDb)
-
-	var dbHash []byte
-
-	log := logger.NewLogger("INFO", "AidaDb-Db-Hash")
-
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
-
-	// first try to extract from db
-	dbHash = md.GetDbHash()
-	if len(dbHash) != 0 && !force {
-		log.Infof("Db-Hash (metadata): %v", hex.EncodeToString(dbHash))
-		return nil
-	}
-
-	// if not found in db, we need to iterate and create the hash
-	if dbHash, err = utildb.GenerateDbHash(aidaDb, "INFO"); err != nil {
-		return err
-	}
-
-	fmt.Printf("Db-Hash (calculated): %v", hex.EncodeToString(dbHash))
-	return nil
-}
-
-// PrintTableHashCommand calculates md5 of actual data stored.
-// Using []byte value from database, it decodes it and calculates md5 of the decoded objects.
-var PrintTableHashCommand = cli.Command{
-	Action: printTableHash,
-	Name:   "print-table-hash",
-	Usage:  "Calculates hash of AidaDb table data.",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DbComponentFlag,
-		&utils.SubstateEncodingFlag,
-		&logger.LogLevelFlag,
-	},
-	Description: `
-Creates hash of substates, updatesets, deletion and state-hashes using decoded objects from database rather than []byte value representation, because that is not deterministic.
-`,
-}
-
-var PrintPrefixHashCommand = cli.Command{
-	Action:    printPrefixHash,
-	Name:      "print-prefix-hash",
-	Usage:     "Prints hash of data inside AidaDb for given prefix.",
-	ArgsUsage: "<prefix>",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-	},
 }

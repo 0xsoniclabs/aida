@@ -17,7 +17,6 @@
 package statedb
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -26,6 +25,8 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
@@ -91,4 +92,11 @@ func Test_ethStateTestDbPrepper_PreBlock_FailsWithUnknownFork(t *testing.T) {
 
 	err := ext.PreBlock(executor.State[txcontext.TxContext]{Data: testData}, new(executor.Context))
 	require.ErrorContains(t, err, "cannot init chain config")
+}
+
+func Test_ethStateTestDbPrepper_MakeEthStateTestDbPrepper(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestDbPrepper(cfg)
+	_, ok := ext.(*ethStateTestDbPrepper)
+	assert.True(t, ok)
 }

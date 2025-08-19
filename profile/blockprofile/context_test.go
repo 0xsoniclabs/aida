@@ -33,7 +33,7 @@ import (
 )
 
 // checkContext returns true if the context is consistent; otherwise false.
-func (ctx *Context) checkContext() bool {
+func (ctx *context) checkContext() bool {
 	return ctx.n == len(ctx.txAddresses) && ctx.n == len(ctx.tCompletion) && ctx.n == len(ctx.txDependencies)
 }
 

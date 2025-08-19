@@ -40,9 +40,11 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 		return err
 	}
 
+	reportFrequency := time.Minute
+
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		log.Info("Generating Substate hash...")
-		aidaDbSubstateHash, count, err := GetSubstateHash(cfg, base, log)
+		aidaDbSubstateHash, count, err := GetSubstateHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -51,7 +53,7 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
 		log.Info("Generating Deletion hash...")
-		aidaDbDeletionHash, count, err := GetDeletionHash(cfg, base, log)
+		aidaDbDeletionHash, count, err := GetDeletionHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -69,7 +71,7 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		log.Info("Generating State-Hashes hash...")
-		aidaDbStateHashesHash, count, err := GetStateRootHashesHash(cfg, base, log)
+		aidaDbStateHashesHash, count, err := GetStateRootHashesHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -78,7 +80,7 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
 		log.Info("Generating Block-Hashes hash...")
-		aidaDbBlockHashesHash, count, err := GetBlockHashesHash(cfg, base, log)
+		aidaDbBlockHashesHash, count, err := GetBlockHashesHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -87,7 +89,7 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
 		log.Info("Generating Exception hash...")
-		exceptionHash, count, err := GetExceptionDbHash(cfg, base, log)
+		exceptionHash, count, err := GetExceptionDbHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -115,8 +117,13 @@ func combineJson(in chan any, out chan []byte, errChan chan error) {
 	}
 }
 
-func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetSubstateHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
@@ -154,8 +161,13 @@ func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	return parallelHashComputing(feeder)
 }
 
-func GetDeletionHash(cfg *utils.Config, aidaDb db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetDeletionHash(
+	cfg *utils.Config,
+	aidaDb db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
@@ -238,8 +250,13 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	return parallelHashComputing(feeder)
 }
 
-func GetStateRootHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetStateRootHashesHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
@@ -275,8 +292,13 @@ func GetStateRootHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger
 	return parallelHashComputing(feeder)
 }
 
-func GetBlockHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetBlockHashesHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
@@ -312,8 +334,13 @@ func GetBlockHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 	return parallelHashComputing(feeder)
 }
 
-func GetExceptionDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetExceptionDbHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {

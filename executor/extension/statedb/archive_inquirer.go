@@ -32,13 +32,15 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
+const defaultTickerDuration = 15 * time.Second
+
 // MakeArchiveInquirer creates an extension running historic queries against
 // archive states in the background to the main executor process.
 func MakeArchiveInquirer(cfg *utils.Config) (executor.Extension[txcontext.TxContext], error) {
-	return makeArchiveInquirer(cfg, logger.NewLogger(cfg.LogLevel, "Archive Inquirer"))
+	return makeArchiveInquirer(cfg, logger.NewLogger(cfg.LogLevel, "Archive Inquirer"), nil)
 }
 
-func makeArchiveInquirer(cfg *utils.Config, log logger.Logger) (executor.Extension[txcontext.TxContext], error) {
+func makeArchiveInquirer(cfg *utils.Config, log logger.Logger, duration *time.Duration) (executor.Extension[txcontext.TxContext], error) {
 	if cfg.ArchiveQueryRate <= 0 {
 		return extension.NilExtension[txcontext.TxContext]{}, nil
 	}
@@ -46,10 +48,18 @@ func makeArchiveInquirer(cfg *utils.Config, log logger.Logger) (executor.Extensi
 	if err != nil {
 		return nil, err
 	}
+	tickerDuration := defaultTickerDuration
+	if duration != nil {
+		tickerDuration = *duration
+	}
+	if tickerDuration <= 0 {
+		return nil, fmt.Errorf("duration must greater than 0")
+	}
 	return &archiveInquirer{
 		ArchiveDbTxProcessor: processor,
 		cfg:                  cfg,
 		log:                  log,
+		tickerDuration:       tickerDuration,
 		throttler:            newThrottler(cfg.ArchiveQueryRate),
 		finished:             utils.MakeEvent(),
 		history:              newBuffer[historicTransaction](cfg.ArchiveMaxQueryAge),
@@ -61,9 +71,10 @@ type archiveInquirer struct {
 	extension.NilExtension[txcontext.TxContext]
 	*executor.ArchiveDbTxProcessor
 
-	cfg   *utils.Config
-	log   logger.Logger
-	state state.StateDB
+	cfg            *utils.Config
+	log            logger.Logger
+	state          state.StateDB
+	tickerDuration time.Duration
 
 	// Buffer for historic queries to sample from
 	history      *circularBuffer[historicTransaction]
@@ -240,7 +251,7 @@ func (i *archiveInquirer) runProgressReport() {
 	lastDuration := uint64(0)
 
 	start := time.Now()
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(i.tickerDuration)
 	for {
 		select {
 		case now := <-ticker.C:

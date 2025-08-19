@@ -12,7 +12,7 @@ import (
 )
 
 func TestInfo_Info_FindBlockRangeInStateHash_Success(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	_, _, err := FindBlockRangeInStateHash(testDb, log)
 	if err == nil {
@@ -22,7 +22,7 @@ func TestInfo_Info_FindBlockRangeInStateHash_Success(t *testing.T) {
 }
 
 func TestInfo_FindBlockRangeInStateHash_FirstError(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	first, last, err := FindBlockRangeInStateHash(testDb, log)
 	assert.Error(t, err)
@@ -32,7 +32,7 @@ func TestInfo_FindBlockRangeInStateHash_FirstError(t *testing.T) {
 }
 
 func TestInfo_FindBlockRangeInBlockHash_Success(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
 	first, last, err := FindBlockRangeOfBlockHashes(testDb, log)
 	assert.NoError(t, err)
@@ -54,7 +54,7 @@ func TestInfo_FindBlockRangeInBlockHash_FirstError(t *testing.T) {
 }
 
 func TestInfo_GetStateHashCount_Success(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 11,
 		Last:  20,
@@ -65,7 +65,7 @@ func TestInfo_GetStateHashCount_Success(t *testing.T) {
 }
 
 func TestInfo_GetStateHashCount_Empty(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 1, // Intentionally outside of state hash range
 		Last:  1,
@@ -76,7 +76,7 @@ func TestInfo_GetStateHashCount_Empty(t *testing.T) {
 }
 
 func TestInfo_GetBlockHashCount_Success(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 21,
 		Last:  30,
@@ -87,7 +87,7 @@ func TestInfo_GetBlockHashCount_Success(t *testing.T) {
 }
 
 func TestInfo_GetBlockHashCount_Empty(t *testing.T) {
-	testDb := generateTestAidaDb(t)
+	testDb := GenerateTestAidaDb(t)
 	cfg := &utils.Config{
 		First: 1, // Intentionally outside of block hash range
 		Last:  1,

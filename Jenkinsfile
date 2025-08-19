@@ -55,6 +55,14 @@ pipeline {
                     }
                 }
 
+                stage('Lint') {
+                    steps {
+                        sh "git submodule update --init --recursive"
+                        sh "make install-dev-tools"
+                        sh "make check"
+                    }
+                }
+
                 stage('Build') {
                     steps {
                         script {

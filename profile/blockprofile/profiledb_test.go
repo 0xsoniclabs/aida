@@ -490,7 +490,7 @@ func TestProfileDB_Add(t *testing.T) {
 			t.Fatalf("an error '%s' was not expected when preparing transaction statement", err)
 		}
 
-		pDB := &ProfileDB{
+		pDB := &profileDB{
 			sql:       db,
 			blockStmt: blockStmt,
 			txStmt:    txStmt,
@@ -523,7 +523,7 @@ func TestProfileDB_Add(t *testing.T) {
 		}(db)
 
 		// begin error
-		pDB := &ProfileDB{
+		pDB := &profileDB{
 			sql:    db,
 			buffer: []ProfileData{},
 		}
@@ -555,7 +555,7 @@ func TestProfileDB_Add(t *testing.T) {
 			t.Fatalf("an error '%s' was not expected when preparing block statement", err)
 		}
 		// begin error
-		pDB := &ProfileDB{
+		pDB := &profileDB{
 			sql:       db,
 			blockStmt: blockStmt,
 			buffer:    []ProfileData{},
@@ -598,7 +598,7 @@ func TestProfileDB_Add(t *testing.T) {
 			t.Fatalf("an error '%s' was not expected when preparing transaction statement", err)
 		}
 
-		pDB := &ProfileDB{
+		pDB := &profileDB{
 			sql:       db,
 			blockStmt: blockStmt,
 			txStmt:    txStmt,

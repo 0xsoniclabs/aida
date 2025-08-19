@@ -20,12 +20,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
+
+	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/core/tracing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
@@ -33,9 +31,23 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunEthereumTest(t *testing.T) {
+	app := cli.NewApp()
+	app.Action = RunEthereumTest
+	app.Flags = []cli.Flag{
+		&utils.ChainIDFlag,
+	}
+
+	err := app.Run([]string{RunEthTestsCmd.Name, "--chainid", strconv.Itoa(int(utils.EthTestsChainID)), t.TempDir()})
+	require.NoError(t, err)
+}
 
 func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)

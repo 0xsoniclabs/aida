@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/status-im/keycard-go/hexutils"
 )
@@ -166,7 +167,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	)
 
 	gp = new(core.GasPool).AddGas(math.MaxUint64) // based in opera
-	msg, err = e.args.ToMessage(globalGasCap, e.rules.MinGasPrice)
+	msg, err = e.args.ToMessage(globalGasCap, e.rules.MinGasPrice, log.Root())
 	if err != nil {
 		return nil, err
 	}

@@ -54,8 +54,25 @@ var TypeLabel = map[TxType]string{
 	MaintenanceTx: "maintenance",
 }
 
-// Context stores the book-keeping information for block processing profiling.
-type Context struct {
+// Context defines the interface for block processing profiling.
+//
+//go:generate mockgen -source context.go -destination context_mock.go -package blockprofile
+type Context interface {
+	// RecordTransaction collects addresses and computes earliest time.
+	RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error
+
+	// GetProfileData produces a profile record for the profiling database.
+	GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error)
+
+	// earliestTimeToRun computes the earliest time to run a transaction with given addresses.
+	earliestTimeToRun(addresses AddressSet) time.Duration
+
+	// dependencies finds the transaction dependencies for given addresses.
+	dependencies(addresses AddressSet) graphutil.OrdinalSet
+}
+
+// context stores the book-keeping information for block processing profiling.
+type context struct {
 	n              int                          // number of transactions
 	txDependencies graphutil.StrictPartialOrder // transaction dependencies
 	txAddresses    TxAddresses                  // contract/wallet addresses used in a transaction
@@ -78,8 +95,8 @@ var (
 )
 
 // NewContext returns a new context.
-func NewContext() *Context {
-	return &Context{
+func NewContext() *context {
+	return &context{
 		tCompletion:     TxTime{},
 		txDependencies:  graphutil.StrictPartialOrder{},
 		txAddresses:     TxAddresses{},
@@ -131,7 +148,7 @@ func findTxAddresses(tx executor.State[txcontext.TxContext]) AddressSet {
 }
 
 // earliestTimeToRun computes the earliest time to run the current transaction.
-func (ctx *Context) earliestTimeToRun(addresses AddressSet) time.Duration {
+func (ctx *context) earliestTimeToRun(addresses AddressSet) time.Duration {
 	tEarliest := time.Duration(0)
 	for i := 0; i < ctx.n; i++ {
 		// check whether previous transaction interfere
@@ -147,7 +164,7 @@ func (ctx *Context) earliestTimeToRun(addresses AddressSet) time.Duration {
 }
 
 // dependencies finds the transaction dependencies of the current transaction.
-func (ctx *Context) dependencies(addresses AddressSet) graphutil.OrdinalSet {
+func (ctx *context) dependencies(addresses AddressSet) graphutil.OrdinalSet {
 	dependentOn := graphutil.OrdinalSet{}
 	for i := 0; i < ctx.n; i++ {
 		// check whether previous transaction interfere
@@ -163,7 +180,7 @@ func (ctx *Context) dependencies(addresses AddressSet) graphutil.OrdinalSet {
 }
 
 // RecordTransaction collects addresses and computes earliest time.
-func (ctx *Context) RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error {
+func (ctx *context) RecordTransaction(state executor.State[txcontext.TxContext], tTransaction time.Duration) error {
 	overheadTimer := time.Now()
 
 	// update time for block and transaction
@@ -222,7 +239,7 @@ type ProfileData struct {
 }
 
 // GetProfileData produces a profile record for the profiling database.
-func (ctx *Context) GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error) {
+func (ctx *context) GetProfileData(curBlock uint64, tBlock time.Duration) (*ProfileData, error) {
 
 	// perform consistency check
 	if len(ctx.tTransactions) != len(ctx.gasTransactions) {

@@ -29,7 +29,6 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -234,7 +233,7 @@ func TestStatedb_PrepareStateDB(t *testing.T) {
 			defer func(path string) {
 				err = os.RemoveAll(path)
 				if err != nil {
-
+					t.Fatal(err)
 				}
 			}(cfg.StateDbSrc)
 
@@ -367,7 +366,7 @@ func TestStateDB_useExistingStateDB(t *testing.T) {
 	defer func(path string) {
 		err = os.RemoveAll(path)
 		if err != nil {
-
+			t.Fatal(err)
 		}
 	}(cfg.StateDbSrc)
 
@@ -394,11 +393,11 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 
 	// Define the world state to overwrite
 	ws := substate.WorldState{
-		types.Address{0x01}: &substate.Account{
+		substatetypes.Address{0x01}: &substate.Account{
 			Nonce:   1,
 			Balance: uint256.NewInt(1000),
 			Code:    []byte{0x60, 0x60},
-			Storage: map[types.Hash]types.Hash{{0x01}: {0x02}},
+			Storage: map[substatetypes.Hash]substatetypes.Hash{{0x01}: {0x02}},
 		},
 	}
 

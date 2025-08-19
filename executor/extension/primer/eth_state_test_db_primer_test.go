@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -96,4 +97,12 @@ func Test_EthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *test
 	if err != nil {
 		t.Fatalf("unexpected err; %v", err)
 	}
+}
+
+func TestMakeEthStateTestDbPrimer(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestDbPrimer(cfg)
+
+	_, ok := ext.(*ethStateTestDbPrimer)
+	assert.True(t, ok)
 }

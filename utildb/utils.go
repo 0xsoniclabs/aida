@@ -17,30 +17,33 @@
 package utildb
 
 import (
-	"bufio"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
-	"os/exec"
 	"strconv"
-	"strings"
-	"syscall"
+	"testing"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
-	"github.com/op/go-logging"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // OpenSourceDatabases opens all databases required for merge
 func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 	if len(sourceDbPaths) < 1 {
-		return nil, fmt.Errorf("no source database were specified\n")
+		return nil, fmt.Errorf("no source database were specified")
 	}
 
 	var sourceDbs []db.BaseDB
@@ -48,7 +51,7 @@ func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 		path := sourceDbPaths[i]
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("source database %s; doesn't exist\n", path)
+			return nil, fmt.Errorf("source database %s; doesn't exist", path)
 		}
 		db, err := db.NewReadOnlyBaseDB(path)
 		if err != nil {
@@ -56,7 +59,6 @@ func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 		}
 		sourceDbs = append(sourceDbs, db)
 	}
-
 	return sourceDbs, nil
 }
 
@@ -70,148 +72,6 @@ func MustCloseDB(db db.BaseDB) {
 			}
 		}
 	}
-}
-
-// runCommand wraps cmd execution to distinguish whether to display its output
-func runCommand(cmd *exec.Cmd, resultChan chan string, stopChan chan struct{}, log logger.Logger) error {
-	if resultChan != nil {
-		defer close(resultChan)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("unable to create StdoutPipe; %v", err)
-	}
-	defer stdout.Close()
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("unable to create StderrPipe; %v", err)
-	}
-	defer stderr.Close()
-
-	err = cmd.Start()
-	if err != nil {
-		return fmt.Errorf("unable to start Command %v; %v", cmd, err)
-	}
-
-	merged := io.MultiReader(stderr, stdout)
-	scanner := bufio.NewScanner(merged)
-
-	lastOutputMessagesChan := make(chan string, commandOutputLimit)
-
-	// scannedChan to relay command output into channel to be able to select with stopChan
-	scannedChan := make(chan string)
-	go func() {
-		for scanner.Scan() {
-			scannedChan <- scanner.Text()
-		}
-		close(scannedChan)
-	}()
-
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	// this command expects possibility to be stopped by kill signal from aida
-	for {
-		select {
-		case <-stopChan:
-			// not returning any error other than from failure of kill signal,
-			// because the command was terminated by aida intentionally
-			return killCommand(cmd, log, done)
-		case m, ok := <-scannedChan:
-			if ok {
-				processScannedCommandOutput(m, resultChan, log, lastOutputMessagesChan)
-				break
-			}
-
-			close(lastOutputMessagesChan)
-
-			// wait until command finishes or stopSignal is received
-			select {
-			case <-stopChan:
-				return killCommand(cmd, log, done)
-			case res, ok := <-done:
-				return processCommandResult(res, ok, scanner, lastOutputMessagesChan, resultChan, cmd, log)
-			}
-		}
-	}
-}
-
-// killCommand terminates command gracefully first and then forcefully
-func killCommand(cmd *exec.Cmd, log logger.Logger, done chan error) error {
-	// A stop signal was received; terminate the command.
-	// Attempting to interrupt command gracefully first.
-	// Create a timeout with a 1-minute duration.
-	timeout := time.NewTimer(time.Minute)
-	err := cmd.Process.Signal(syscall.SIGINT)
-	if err != nil {
-		// might be just race condition when process already finished
-		log.Warningf("unable to send SIGINT to Command %v; %v", cmd, err)
-	}
-
-	select {
-	case <-done:
-		log.Noticef("Command %v terminated gracefully", cmd)
-	case <-timeout.C:
-		// Send a kill signal to the process
-		err = cmd.Process.Signal(syscall.SIGKILL)
-		if err != nil {
-			return fmt.Errorf("unable to send SIGKILL to Command %v; %v", cmd, err)
-		}
-		// Wait for cmd.Wait() to return after termination.
-		<-done
-	}
-	return nil
-}
-
-// processScannedCommandOutput output and send it to resultChan if it is listening and keep lastOutputMessagesChan updated
-func processScannedCommandOutput(message string, resultChan chan string, log logger.Logger, lastOutputMessagesChan chan string) {
-	if resultChan != nil {
-		resultChan <- message
-	}
-	if log.IsEnabledFor(logging.DEBUG) {
-		log.Debug(message)
-	} else {
-		// in case debugging is turned off and resultChan doesn't listen to output
-		// we need to keep most recent output lines in case of error
-		if resultChan == nil {
-			// throw out the oldest line in case we are at limit
-			if len(lastOutputMessagesChan) == commandOutputLimit {
-				<-lastOutputMessagesChan
-			}
-			lastOutputMessagesChan <- message
-		}
-	}
-}
-
-// processCommandResult is used to process command result
-func processCommandResult(err error, ok bool, scanner *bufio.Scanner, lastOutputMessagesChan chan string, resultChan chan string, cmd *exec.Cmd, log logger.Logger) error {
-	if !ok {
-		return fmt.Errorf("unexpected doneChan closed error while executing Command %v; %v", cmd, err)
-	}
-	// command failed
-	if err != nil {
-		// print out gathered output since generation failed
-		for {
-			m, ok := <-lastOutputMessagesChan
-			if !ok {
-				break
-			}
-			log.Error(m)
-		}
-
-		// read rest of the output - might not be needed
-		for scanner.Scan() {
-			m := scanner.Text()
-			if resultChan != nil {
-				resultChan <- m
-			}
-			log.Error(m)
-		}
-		return fmt.Errorf("error while executing Command %v; %v", cmd, err)
-	}
-	return nil
 }
 
 // calculateMD5Sum calculates MD5 hash of given file
@@ -239,126 +99,6 @@ func calculateMD5Sum(filePath string) (string, error) {
 	md5sum := hex.EncodeToString(checksum)
 
 	return md5sum, nil
-}
-
-// startOperaIpc starts opera node for ipc requests
-func startOperaIpc(cfg *utils.Config, stopChan chan struct{}) chan error {
-	errChan := make(chan error, 1)
-
-	log := logger.NewLogger(cfg.LogLevel, "Autogen-ipc")
-	log.Noticef("Starting opera ipc %v", cfg.ClientDb)
-
-	resChan := make(chan string, 100)
-	go func() {
-		defer close(errChan)
-
-		//cleanup opera.ipc when node is stopped
-		defer func(name string) {
-			err := os.Remove(name)
-			if !os.IsNotExist(err) && err != nil {
-				log.Errorf("failed to remove ipc file %s; %v", name, err)
-			}
-		}(cfg.ClientDb + "/opera.ipc")
-
-		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.ClientDb, "--maxpeers=0")
-		err := runCommand(cmd, resChan, stopChan, log)
-		if err != nil {
-			errChan <- fmt.Errorf("unable run ipc opera --datadir %v; binary %v; %v", cfg.ClientDb, getOperaBinary(cfg), err)
-		}
-	}()
-
-	log.Noticef("Waiting for ipc to start")
-	errChanParser := make(chan error, 1)
-
-	// wait for ipc to start
-	waitDuration := 10 * time.Second
-	timer := time.NewTimer(waitDuration)
-
-	err := ipcLoadingProcessWait(resChan, errChan, timer, waitDuration, log)
-	if err != nil {
-		errChanParser <- err
-		close(errChanParser)
-		return errChanParser
-	}
-
-	go errorRelayer(resChan, errChan, errChanParser)
-
-	return errChanParser
-}
-
-// errorRelayer non-blocking error relaying while reading from resChan to prevent deadlock
-func errorRelayer(resChan chan string, errChan chan error, errChanParser chan error) {
-	defer close(errChanParser)
-	for {
-		select {
-		// since resChan was used the output still needs to be read to prevent deadlock by chan being full
-		case <-resChan:
-		case err, ok := <-errChan:
-			if ok {
-				// error happened, the opera failed after ipc initialization
-				errChanParser <- fmt.Errorf("opera error after ipc initialization; %v", err)
-			}
-			return
-		}
-	}
-}
-
-// ipcLoadingProcessWait waits for opera ipc to start and returns error if it didn't start in given time
-func ipcLoadingProcessWait(resChan chan string, errChan chan error, timer *time.Timer, waitDuration time.Duration, log logger.Logger) error {
-	for {
-		select {
-		// since resChan was used the output still needs to be read to prevent deadlock by chan being full
-		case res, ok := <-resChan:
-			if ok {
-				// waiting for opera message in output which indicates that ipc is ready for usage
-				if strings.Contains(res, "IPC endpoint opened") {
-					log.Noticef(res)
-					return nil
-				}
-			}
-		case err, ok := <-errChan:
-			if ok {
-				// errChan closed, this means that stopChan signal was called to terminate opera ipc,
-				// which otherwise without an error never stops on its own
-
-				// error happened, the opera ipc didn't start properly
-				return fmt.Errorf("opera error during ipc initialization; %v", err)
-			}
-		case <-timer.C:
-			// if ipc didn't start in given time produce an error
-			return fmt.Errorf("timeout waiting for opera ipc to start after %s", waitDuration.String())
-		}
-	}
-}
-
-// startOperaRecording records substates
-func startOperaRecording(cfg *utils.Config, syncUntilEpoch uint64) chan error {
-	errChan := make(chan error, 1)
-	// todo check if path to aidaDb exists otherwise create the dir
-
-	log := logger.NewLogger(cfg.LogLevel, "autogen-recording")
-	log.Noticef("Starting opera recording %v", cfg.ClientDb)
-
-	go func() {
-		defer close(errChan)
-
-		// syncUntilEpoch +1 because command is off by one
-		cmd := exec.Command(getOperaBinary(cfg), "--datadir", cfg.ClientDb, "--recording", "--substate-db", cfg.SubstateDb, "--exitwhensynced.epoch", strconv.FormatUint(syncUntilEpoch+1, 10))
-		err := runCommand(cmd, nil, nil, log)
-		if err != nil {
-			errChan <- fmt.Errorf("unable to record opera substates %v; binary %v ; %v", cfg.ClientDb, getOperaBinary(cfg), err)
-		}
-	}()
-	return errChan
-}
-
-// getOperaBinary returns path to opera binary
-func getOperaBinary(cfg *utils.Config) string {
-	var operaBin = "opera"
-	if cfg.OperaBinary != "" {
-		operaBin = cfg.OperaBinary
-	}
-	return operaBin
 }
 
 // GetDbSize retrieves database size
@@ -477,18 +217,91 @@ func printDbType(m *utils.AidaDbMetadata) error {
 	return nil
 }
 
-// LogDetailedSize counts and prints all prefix occurrence
-func LogDetailedSize(db db.BaseDB, log logger.Logger) {
-	iter := db.NewIterator(nil, nil)
-	defer iter.Release()
+func GenerateTestAidaDb(t *testing.T) db.BaseDB {
+	tmpDir := t.TempDir() + "/testAidaDb"
+	database, err := db.NewDefaultBaseDB(tmpDir)
+	if err != nil {
+		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
+	}
+	md := utils.NewAidaDbMetadata(database, "ERROR")
+	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
+	assert.NoError(t, err)
 
-	countMap := make(map[string]uint64)
-
-	for iter.Next() {
-		countMap[string(iter.Key()[:2])]++
+	// write substates to the database
+	substateDb := db.MakeDefaultSubstateDBFromBaseDB(database)
+	state := substate.Substate{
+		Block:       10,
+		Transaction: 7,
+		Env: &substate.Env{
+			Number:     11,
+			Difficulty: big.NewInt(1),
+			GasLimit:   uint64(15),
+		},
+		Message: &substate.Message{
+			Value:    big.NewInt(12),
+			GasPrice: big.NewInt(14),
+		},
+		InputSubstate:  substate.WorldState{},
+		OutputSubstate: substate.WorldState{},
+		Result:         &substate.Result{},
 	}
 
-	for key, count := range countMap {
-		log.Noticef("Prefix :%v; Count: %v", key, count)
+	for i := 0; i < 10; i++ {
+		state.Block = uint64(10 + i)
+		err = substateDb.PutSubstate(&state)
+		require.NoError(t, err)
 	}
+
+	udb := db.MakeDefaultUpdateDBFromBaseDB(database)
+	// write update sets to the database
+	for i := 1; i <= 10; i++ {
+		updateSet := &updateset.UpdateSet{
+			WorldState: substate.WorldState{
+				types.Address{1}: &substate.Account{
+					Nonce:   1,
+					Balance: new(uint256.Int).SetUint64(1),
+					Code:    []byte{0x01, 0x02},
+				},
+			},
+			Block: uint64(i),
+		}
+		err = udb.PutUpdateSet(updateSet, []types.Address{})
+		require.NoError(t, err)
+	}
+
+	// write delete accounts to the database
+	for i := 1; i <= 10; i++ {
+		err = database.Put(db.EncodeDestroyedAccountKey(uint64(i), i), []byte("0x1234567812345678123456781234567812345678123456781234567812345678"))
+		require.NoError(t, err)
+	}
+
+	// write state hashes to the database
+	for i := 11; i <= 20; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveStateRoot(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		require.NoError(t, err)
+	}
+
+	// write block hashes to the database
+	for i := 21; i <= 30; i++ {
+		key := "0x" + strconv.FormatInt(int64(i), 16)
+		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		require.NoError(t, err)
+	}
+
+	// write exceptions to the database
+	for i := 31; i <= 40; i++ {
+		exception := &substate.Exception{
+			Block: uint64(i),
+			Data: substate.ExceptionBlock{
+				PreBlock:  &substate.WorldState{types.Address{0x01}: &substate.Account{Nonce: 1, Balance: uint256.NewInt(100)}},
+				PostBlock: &substate.WorldState{types.Address{0x02}: &substate.Account{Nonce: 2, Balance: uint256.NewInt(200)}},
+			},
+		}
+		eDb := db.MakeDefaultExceptionDBFromBaseDB(database)
+		err = eDb.PutException(exception)
+		require.NoError(t, err)
+	}
+
+	return database
 }
