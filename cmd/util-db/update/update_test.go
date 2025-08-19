@@ -37,10 +37,10 @@ func TestUpdate_Command(t *testing.T) {
 
 	app := cli.NewApp()
 	app.Action = updateAction
-	app.Flags = Command.Flags
+	app.Flags = updateDbCommand.Flags
 
 	err = app.Run([]string{
-		Command.Name,
+		updateDbCommand.Name,
 		"--aida-db",
 		aidaDbPath,
 		"-l",
