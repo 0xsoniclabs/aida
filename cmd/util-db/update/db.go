@@ -26,7 +26,7 @@ import (
 
 // updateDbCommand downloads aida-db and new patches
 var updateDbCommand = cli.Command{
-	Action: updateAction,
+	Action: updateDbAction,
 	Name:   "db",
 	Usage:  "download aida-db patches either creating new database or updating existing one",
 	Flags: []cli.Flag{
@@ -48,8 +48,8 @@ const (
 	stateHashPatchFileName      = "state-hashes_0-68940000"
 )
 
-// updateAction updates aida-db by downloading patches from aida-db generation server.
-func updateAction(ctx *cli.Context) error {
+// updateDbAction updates aida-db by downloading patches from aida-db generation server.
+func updateDbAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
 	if err != nil {
 		return err
