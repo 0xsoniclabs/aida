@@ -52,7 +52,7 @@ Extracts WorldState from ethereum genesis.json into first updateset.`,
 func extractEthereumGenesisAction(ctx *cli.Context) (finalErr error) {
 	// process arguments and flags
 	if ctx.Args().Len() != 1 {
-		return fmt.Errorf("ethereum-update command requires exactly 1 arguments")
+		return fmt.Errorf("ethereum-update command requires exactly 1 argument")
 	}
 	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
 	if argErr != nil {
@@ -94,12 +94,12 @@ func loadEthereumGenesisWorldState(genesisPath string) (substate.WorldState, err
 	// Read the content of the JSON file
 	jsonData, err := os.ReadFile(genesisPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read genesis file: %account", err)
+		return nil, fmt.Errorf("failed to read genesis file: %v", err)
 	}
 
 	err = json.Unmarshal(jsonData, &jsData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal genesis file: %account", err)
+		return nil, fmt.Errorf("failed to unmarshal genesis file: %v", err)
 	}
 
 	ssAccounts := make(substate.WorldState)

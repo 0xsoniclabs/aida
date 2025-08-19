@@ -136,3 +136,56 @@ func TestExtractEthereumGenesis_Command(t *testing.T) {
 	_, exists = updateSet.WorldState[types.HexToAddress("0xfbfd6fa9f73ac6a058e01259034c28001bef8247")]
 	assert.True(t, exists)
 }
+
+func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
+	genesisPath := t.TempDir() + "wrong.json"
+	genesisFile, err := os.Create(genesisPath)
+	require.NoError(t, err)
+	_, err = genesisFile.WriteString("some text")
+	require.NoError(t, err)
+	err = genesisFile.Close()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name: "ArgNotPassed",
+			args: []string{
+				extractEthereumGenesisCommand.Name,
+				"-l",
+				"CRITICAL",
+				"--chainid",
+				strconv.FormatInt(int64(utils.EthereumChainID), 10),
+			},
+			wantErr: "ethereum-update command requires exactly 1 argument",
+		},
+		{
+			name: "WrongJsonFormat",
+			args: []string{
+				extractEthereumGenesisCommand.Name,
+				"-l",
+				"CRITICAL",
+				"--chainid",
+				strconv.FormatInt(int64(utils.EthereumChainID), 10),
+				"--update-db",
+				t.TempDir() + "/update.db",
+				genesisPath,
+			},
+			wantErr: "failed to unmarshal genesis file",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			app := cli.NewApp()
+			app.Action = extractEthereumGenesisCommand.Action
+			app.Flags = extractEthereumGenesisCommand.Flags
+
+			err = app.Run(test.args)
+			require.ErrorContains(t, err, test.wantErr)
+		})
+	}
+}
