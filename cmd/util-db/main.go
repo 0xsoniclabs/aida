@@ -45,7 +45,6 @@ var UtilDbApp = cli.App{
 		&db.ValidateCommand,
 		&db.GenDeletedAccountsCommand,
 		&db.GenerateDbHashCommand,
-		&db.ScrapeCommand,
 		&db.MetadataCommand,
 
 		//Priming only
