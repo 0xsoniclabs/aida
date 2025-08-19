@@ -20,7 +20,6 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"strconv"
@@ -28,7 +27,6 @@ import (
 
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/status-im/keycard-go/hexutils"
 )
 
@@ -36,22 +34,6 @@ const (
 	StateRootHashPrefix = "dbh"
 	BlockHashPrefix     = "bh"
 )
-
-// ClientInterface defines the methods that an RPC client must implement.
-type IRpcClient interface {
-	RegisterName(name string, receiver interface{}) error
-	SupportedModules() (map[string]string, error)
-	Close()
-	SetHeader(key, value string)
-	Call(result interface{}, method string, args ...interface{}) error
-	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
-	BatchCall(b []rpc.BatchElem) error
-	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
-	Notify(ctx context.Context, method string, args ...interface{}) error
-	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
-	Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
-	SupportsSubscriptions() bool
-}
 
 type HashProvider interface {
 	GetStateRootHash(blockNumber int) (common.Hash, error)
@@ -123,16 +105,6 @@ func SaveBlockHash(db db.BaseDB, blockNumber string, hash string) error {
 		return fmt.Errorf("unable to put state hash for block %s: %v", blockNumber, err)
 	}
 	return nil
-}
-
-// getBlockByNumber get block from the rpc node
-func getBlockByNumber(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
-	var block map[string]interface{}
-	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get block %s: %v", blockNumber, err)
-	}
-	return block, nil
 }
 
 // StateHashKeyToUint64 converts a state hash key to a uint64
