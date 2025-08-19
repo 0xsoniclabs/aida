@@ -57,3 +57,26 @@ func TestUtils_CreateTestSubstateDb(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, ss.Equal(gotSs))
 }
+func TestArgsBuilder_NewArgs(t *testing.T) {
+	args := NewArgs("test").
+		Arg("a").
+		Arg(0).
+		Arg(false).
+		Arg(true).
+		Flag("f1", "v1").
+		Flag("f2", 0).
+		Flag("f3", false).
+		Flag("f4", true).
+		Build()
+	assert.Equal(t, "test", args[0])
+	assert.Equal(t, "a", args[1])
+	assert.Equal(t, "0", args[2])
+	assert.Equal(t, "false", args[3])
+	assert.Equal(t, "true", args[4])
+	assert.Equal(t, "--f1", args[5])
+	assert.Equal(t, "v1", args[6])
+	assert.Equal(t, "--f2", args[7])
+	assert.Equal(t, "0", args[8])
+	assert.Equal(t, "--f4", args[9])
+	assert.Equal(t, 10, len(args))
+}
