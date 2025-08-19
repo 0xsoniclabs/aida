@@ -74,7 +74,7 @@ func find[T comparable](a []T, x T) int {
 }
 
 // createState creates a stochastic state and primes the StateDB
-func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) *stochasticState {
+func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*stochasticState, error) {
 	// produce random access generators for contract addresses,
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
@@ -102,9 +102,12 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	ss := NewStochasticState(rg, db, contracts, keys, values, e.SnapshotLambda, log)
 
 	// create accounts in StateDB
-	ss.prime()
+	err := ss.prime()
+	if err != nil {
+		return nil, err
+	}
 
-	return &ss
+	return &ss, nil
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
@@ -145,7 +148,10 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 	log.Noticef("using random seed %d", cfg.RandomSeed)
 
 	// create a stochastic state
-	ss := createState(cfg, e, db, rg, log)
+	ss, err := createState(cfg, e, db, rg, log)
+	if err != nil {
+		return err
+	}
 
 	// get stochastic matrix
 	operations, A, state := getStochasticMatrix(e)
@@ -205,7 +211,7 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 		if err := ss.db.Error(); err != nil {
 			errCount++
 			if runErr == nil {
-				runErr = fmt.Errorf("error: stochastic replay failed.")
+				runErr = fmt.Errorf("error: stochastic replay failed")
 			}
 
 			runErr = fmt.Errorf("%v\n\tBlock %v Tx %v: %v", runErr, ss.blockNum, ss.txNum, err)
@@ -256,17 +262,24 @@ func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.In
 }
 
 // prime StateDB accounts using account information
-func (ss *stochasticState) prime() {
+func (ss *stochasticState) prime() error {
 	numInitialAccounts := ss.contracts.NumElem() + 1
 	ss.log.Notice("Start priming...")
 	ss.log.Noticef("\tinitializing %v accounts\n", numInitialAccounts)
 	pt := utils.NewProgressTracker(int(numInitialAccounts), ss.log)
 	db := ss.db
 	db.BeginSyncPeriod(0)
-	db.BeginBlock(0)
-	db.BeginTransaction(0)
+	err := db.BeginBlock(0)
+	if err != nil {
+		return err
+	}
+	err = db.BeginTransaction(0)
+	if err != nil {
+		return err
+	}
 
 	// initialise accounts in memory with balances greater than zero
+	// TODO why not < numInitialAccounts?
 	for i := int64(0); i <= numInitialAccounts; i++ {
 		addr := toAddress(i)
 		db.CreateAccount(addr)
@@ -274,10 +287,17 @@ func (ss *stochasticState) prime() {
 		pt.PrintProgress()
 	}
 	ss.log.Notice("Finalizing...")
-	db.EndTransaction()
-	db.EndBlock()
+	err = db.EndTransaction()
+	if err != nil {
+		return err
+	}
+	err = db.EndBlock()
+	if err != nil {
+		return err
+	}
 	db.EndSyncPeriod()
 	ss.log.Notice("End priming...")
+	return nil
 }
 
 // EnableDebug set traceDebug flag to true, and enable debug message when executing an operation
@@ -340,7 +360,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if ss.traceDebug {
 			ss.log.Infof(" id: %v", ss.blockNum)
 		}
-		db.BeginBlock(ss.blockNum)
+		err := db.BeginBlock(ss.blockNum)
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.txNum = 0
 		ss.selfDestructed = []int64{}
 
@@ -354,7 +377,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if ss.traceDebug {
 			ss.log.Infof(" id: %v", ss.txNum)
 		}
-		db.BeginTransaction(ss.txNum)
+		err := db.BeginTransaction(ss.txNum)
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.snapshot = []int{}
 		ss.selfDestructed = []int64{}
 
@@ -368,7 +394,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		db.Empty(addr)
 
 	case EndBlockID:
-		db.EndBlock()
+		err := db.EndBlock()
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.blockNum++
 		ss.deleteAccounts()
 
@@ -377,7 +406,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		ss.syncPeriodNum++
 
 	case EndTransactionID:
-		db.EndTransaction()
+		err := db.EndTransaction()
+		if err != nil {
+			ss.log.Fatal(err)
+		}
 		ss.txNum++
 		ss.totalTx++
 
