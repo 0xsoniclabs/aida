@@ -12,7 +12,7 @@ import (
 
 var generateDbHashCommand = cli.Command{
 	Action: generateDbHashAction,
-	Name:   "generate-db-hash",
+	Name:   "db-hash",
 	Usage:  "Generates new db-hash. Note that this will overwrite the current AidaDb hash.",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
