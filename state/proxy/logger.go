@@ -66,6 +66,115 @@ type LoggingStateDb struct {
 	state state.StateDB
 }
 
+type loggingBulkLoad struct {
+	nested   state.BulkLoad
+	writeLog func(format string, a ...any)
+}
+
+func (s *LoggingStateDb) Error() error {
+	err := s.state.Error()
+	s.writeLog("Error, %v", err)
+	return err
+}
+
+func (s *LoggingStateDb) BeginBlock(blk uint64) error {
+	s.writeLog("BeginBlock, %v", blk)
+	return s.state.BeginBlock(blk)
+}
+
+func (s *LoggingStateDb) EndBlock() error {
+	s.writeLog("EndBlock")
+	return s.state.EndBlock()
+}
+
+func (s *LoggingStateDb) BeginSyncPeriod(number uint64) {
+	s.writeLog("BeginSyncPeriod, %v", number)
+	s.state.BeginSyncPeriod(number)
+}
+
+func (s *LoggingStateDb) EndSyncPeriod() {
+	s.writeLog("EndSyncPeriod")
+	s.state.EndSyncPeriod()
+}
+
+func (s *LoggingStateDb) GetHash() (common.Hash, error) {
+	hash, err := s.state.GetHash()
+	s.writeLog("GetHash, %v", hash)
+	return hash, err
+}
+
+func (s *LoggingStateDb) Close() error {
+	res := s.state.Close()
+	s.writeLog("Close")
+	// signal and await the close
+	close(s.output)
+	s.wg.Wait()
+	return res
+}
+
+func (s *LoggingStateDb) StartBulkLoad(block uint64) (state.BulkLoad, error) {
+	bl, err := s.state.StartBulkLoad(block)
+	if err != nil {
+		return nil, fmt.Errorf("cannot start bulkload; %w", err)
+	}
+	return &loggingBulkLoad{
+		nested:   bl,
+		writeLog: s.writeLog,
+	}, nil
+}
+
+func (s *LoggingStateDb) GetArchiveState(block uint64) (state.NonCommittableStateDB, error) {
+	archive, err := s.state.GetArchiveState(block)
+	if err != nil {
+		return nil, err
+	}
+	return &loggingNonCommittableStateDb{
+		loggingVmStateDb: loggingVmStateDb{
+			db:     archive,
+			log:    s.log,
+			output: s.output,
+		},
+		nonCommittableStateDB: archive,
+	}, nil
+}
+
+func (s *LoggingStateDb) GetArchiveBlockHeight() (uint64, bool, error) {
+	res, empty, err := s.state.GetArchiveBlockHeight()
+	s.writeLog("GetArchiveBlockHeight, %v, %t, %v", res, empty, err)
+	return res, empty, err
+}
+
+func (s *LoggingStateDb) GetMemoryUsage() *state.MemoryUsage {
+	// no logging in this case
+	return s.state.GetMemoryUsage()
+}
+
+func (s *LoggingStateDb) GetShadowDB() state.StateDB {
+	return s.state.GetShadowDB()
+}
+
+func (s *LoggingStateDb) Finalise(deleteEmptyObjects bool) {
+	s.writeLog("Finalise, %v", deleteEmptyObjects)
+	s.state.Finalise(deleteEmptyObjects)
+}
+
+func (s *LoggingStateDb) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+	res := s.state.IntermediateRoot(deleteEmptyObjects)
+	s.writeLog("IntermediateRoot, %v, %v", deleteEmptyObjects, res)
+	return res
+}
+
+func (s *LoggingStateDb) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
+	hash, err := s.state.Commit(block, deleteEmptyObjects)
+	s.writeLog("Commit, %v, %v, %v", deleteEmptyObjects, hash, err)
+	return hash, err
+}
+
+func (s *LoggingStateDb) PrepareSubstate(substate txcontext.WorldState, block uint64) {
+	s.state.PrepareSubstate(substate, block)
+	s.writeLog("PrepareSubstate, %v", substate.String())
+}
+
 func (s *loggingVmStateDb) CreateAccount(addr common.Address) {
 	s.db.CreateAccount(addr)
 	s.writeLog("CreateAccount, %v", addr)
@@ -188,12 +297,6 @@ func (s *loggingVmStateDb) RevertToSnapshot(id int) {
 	s.writeLog("RevertToSnapshot, %v", id)
 }
 
-func (s *LoggingStateDb) Error() error {
-	err := s.state.Error()
-	s.writeLog("Error, %v", err)
-	return err
-}
-
 func (s *loggingVmStateDb) BeginTransaction(tx uint32) error {
 	s.writeLog("BeginTransaction, %v", tx)
 	return s.db.BeginTransaction(tx)
@@ -207,52 +310,6 @@ func (s *loggingVmStateDb) EndTransaction() error {
 func (s *loggingVmStateDb) Finalise(deleteEmptyObjects bool) {
 	s.writeLog("Finalise, %v", deleteEmptyObjects)
 	s.db.Finalise(deleteEmptyObjects)
-}
-
-func (s *LoggingStateDb) BeginBlock(blk uint64) error {
-	s.writeLog("BeginBlock, %v", blk)
-	return s.state.BeginBlock(blk)
-}
-
-func (s *LoggingStateDb) EndBlock() error {
-	s.writeLog("EndBlock")
-	return s.state.EndBlock()
-}
-
-func (s *LoggingStateDb) BeginSyncPeriod(number uint64) {
-	s.writeLog("BeginSyncPeriod, %v", number)
-	s.state.BeginSyncPeriod(number)
-}
-
-func (s *LoggingStateDb) EndSyncPeriod() {
-	s.writeLog("EndSyncPeriod")
-	s.state.EndSyncPeriod()
-}
-
-func (s *LoggingStateDb) GetHash() (common.Hash, error) {
-	hash, err := s.state.GetHash()
-	s.writeLog("GetHash, %v", hash)
-	return hash, err
-}
-
-func (s *loggingNonCommittableStateDb) GetHash() (common.Hash, error) {
-	hash, err := s.nonCommittableStateDB.GetHash()
-	if err != nil {
-		s.writeLog("GetHash, %v", err)
-		return common.Hash{}, err
-	} else {
-		s.writeLog("GetHash, %v", hash)
-	}
-	return hash, nil
-}
-
-func (s *LoggingStateDb) Close() error {
-	res := s.state.Close()
-	s.writeLog("Close")
-	// signal and await the close
-	close(s.output)
-	s.wg.Wait()
-	return res
 }
 
 func (s *loggingVmStateDb) AddRefund(amount uint64) {
@@ -323,31 +380,9 @@ func (s *loggingVmStateDb) Witness() *stateless.Witness {
 	return res
 }
 
-func (s *LoggingStateDb) Finalise(deleteEmptyObjects bool) {
-	s.writeLog("Finalise, %v", deleteEmptyObjects)
-	s.state.Finalise(deleteEmptyObjects)
-}
-
-func (s *LoggingStateDb) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	res := s.state.IntermediateRoot(deleteEmptyObjects)
-	s.writeLog("IntermediateRoot, %v, %v", deleteEmptyObjects, res)
-	return res
-}
-
-func (s *LoggingStateDb) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
-	hash, err := s.state.Commit(block, deleteEmptyObjects)
-	s.writeLog("Commit, %v, %v, %v", deleteEmptyObjects, hash, err)
-	return hash, err
-}
-
 func (s *loggingVmStateDb) SetTxContext(thash common.Hash, ti int) {
 	s.db.SetTxContext(thash, ti)
 	s.writeLog("SetTxContext, %v, %v", thash, ti)
-}
-
-func (s *LoggingStateDb) PrepareSubstate(substate txcontext.WorldState, block uint64) {
-	s.state.PrepareSubstate(substate, block)
-	s.writeLog("PrepareSubstate, %v", substate.String())
 }
 
 func (s *loggingVmStateDb) GetSubstatePostAlloc() txcontext.WorldState {
@@ -367,47 +402,6 @@ func (s *loggingVmStateDb) AccessEvents() *geth.AccessEvents {
 	return res
 }
 
-func (s *LoggingStateDb) StartBulkLoad(block uint64) (state.BulkLoad, error) {
-	bl, err := s.state.StartBulkLoad(block)
-	if err != nil {
-		return nil, fmt.Errorf("cannot start bulkload; %w", err)
-	}
-	return &loggingBulkLoad{
-		nested:   bl,
-		writeLog: s.writeLog,
-	}, nil
-}
-
-func (s *LoggingStateDb) GetArchiveState(block uint64) (state.NonCommittableStateDB, error) {
-	archive, err := s.state.GetArchiveState(block)
-	if err != nil {
-		return nil, err
-	}
-	return &loggingNonCommittableStateDb{
-		loggingVmStateDb: loggingVmStateDb{
-			db:     archive,
-			log:    s.log,
-			output: s.output,
-		},
-		nonCommittableStateDB: archive,
-	}, nil
-}
-
-func (s *LoggingStateDb) GetArchiveBlockHeight() (uint64, bool, error) {
-	res, empty, err := s.state.GetArchiveBlockHeight()
-	s.writeLog("GetArchiveBlockHeight, %v, %t, %v", res, empty, err)
-	return res, empty, err
-}
-
-func (s *LoggingStateDb) GetMemoryUsage() *state.MemoryUsage {
-	// no logging in this case
-	return s.state.GetMemoryUsage()
-}
-
-func (s *LoggingStateDb) GetShadowDB() state.StateDB {
-	return s.state.GetShadowDB()
-}
-
 func (s *loggingVmStateDb) CreateContract(addr common.Address) {
 	s.writeLog("CreateContract, %v", addr)
 	s.db.CreateContract(addr)
@@ -425,15 +419,26 @@ func (s *loggingVmStateDb) GetStorageRoot(addr common.Address) common.Hash {
 	return res
 }
 
-func (s *loggingNonCommittableStateDb) Release() error {
-	s.writeLog("Release")
-	s.nonCommittableStateDB.Release()
-	return nil
+func (s *loggingVmStateDb) writeLog(format string, a ...any) {
+	str := fmt.Sprintf(format, a...)
+	s.output <- str
+	s.log.Debug(str)
 }
 
-type loggingBulkLoad struct {
-	nested   state.BulkLoad
-	writeLog func(format string, a ...any)
+func (s *loggingNonCommittableStateDb) GetHash() (common.Hash, error) {
+	hash, err := s.nonCommittableStateDB.GetHash()
+	if err != nil {
+		s.writeLog("GetHash, %v", err)
+		return common.Hash{}, err
+	} else {
+		s.writeLog("GetHash, %v", hash)
+	}
+	return hash, nil
+}
+
+func (s *loggingNonCommittableStateDb) Release() error {
+	s.writeLog("Release")
+	return s.nonCommittableStateDB.Release()
 }
 
 func (l *loggingBulkLoad) CreateAccount(addr common.Address) {
@@ -464,10 +469,4 @@ func (l *loggingBulkLoad) Close() error {
 	res := l.nested.Close()
 	l.writeLog("Bulk, Close, %v", res)
 	return res
-}
-
-func (s *loggingVmStateDb) writeLog(format string, a ...any) {
-	str := fmt.Sprintf(format, a...)
-	s.output <- str
-	s.log.Debug(str)
 }
