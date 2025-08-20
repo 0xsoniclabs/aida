@@ -130,11 +130,6 @@ func GetSubstateHash(
 		defer close(feederChan)
 
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-		err := sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			errChan <- err
-			return
-		}
 		it := sdb.NewSubstateIterator(int(cfg.First), 10)
 		defer it.Release()
 

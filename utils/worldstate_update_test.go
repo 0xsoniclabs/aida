@@ -3,6 +3,8 @@ package utils
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/rlp"
 	"github.com/0xsoniclabs/substate/substate"
@@ -36,17 +38,27 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	value, _ := trlp.EncodeToBytes(list)
 
 	kv := &testutil.KeyValue{}
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
+	iter3 := iterator.NewArrayIterator(kv)
+	iter4 := iterator.NewArrayIterator(kv)
 	kv.PutU(db.SubstateDBKey(input.Block, input.Transaction), encoded)
-	iter := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	// Encoding is being checked against iterator - that's why we need multiple iterators
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter3)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter4)
 	baseDb.EXPECT().GetBackend().Return(mockDb)
 	baseDb.EXPECT().Get(gomock.Any()).Return(value, nil).AnyTimes()
 
 	set, i, err := GenerateUpdateSet(0, 2, &Config{
-		Workers:          1,
-		SubstateEncoding: "rlp",
+		Workers: 1,
 	}, baseDb)
+	require.NoError(t, iter1.Error())
+	require.NoError(t, iter2.Error())
+	require.NoError(t, iter3.Error())
+	require.NoError(t, iter4.Error())
 	assert.NoError(t, err)
 	assert.NotNil(t, set)
 	assert.Equal(t, 1, len(set))
