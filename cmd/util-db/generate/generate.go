@@ -9,6 +9,6 @@ var Command = cli.Command{
 	Subcommands: []*cli.Command{
 		&generateDbHashCommand,
 		&generateDeletedAccountsCommand,
-		&extractEthereumGenesisCommand,
+		&generateEthereumGenesisCommand,
 	},
 }

@@ -41,8 +41,8 @@ const channelSize = 100000 // size of deletion channel
 
 var generateDeletedAccountsCommand = cli.Command{
 	Action:    generateDeletedAccountsAction,
-	Name:      "gen-deleted-accounts",
-	Usage:     "executes full state transitions and record suicided accounts",
+	Name:      "deleted-accounts",
+	Usage:     "executes full state transitions and record suicided and resurrected accounts",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.WorkersFlag,

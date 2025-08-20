@@ -36,9 +36,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var extractEthereumGenesisCommand = cli.Command{
-	Action: extractEthereumGenesisAction,
-	Name:   "extract-ethereum-genesis",
+var generateEthereumGenesisCommand = cli.Command{
+	Action: generateEthereumGenesisAction,
+	Name:   "ethereum-genesis",
 	Usage:  "Extracts WorldState from json into first updateset",
 	Flags: []cli.Flag{
 		&utils.ChainIDFlag,
@@ -49,7 +49,7 @@ var extractEthereumGenesisCommand = cli.Command{
 Extracts WorldState from ethereum genesis.json into first updateset.`,
 }
 
-func extractEthereumGenesisAction(ctx *cli.Context) (finalErr error) {
+func generateEthereumGenesisAction(ctx *cli.Context) (finalErr error) {
 	// process arguments and flags
 	if ctx.Args().Len() != 1 {
 		return fmt.Errorf("ethereum-update command requires exactly 1 argument")
