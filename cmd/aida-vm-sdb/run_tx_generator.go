@@ -95,7 +95,8 @@ func runTransactions(
 		profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
 		profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
 		validator.MakeShadowDbValidator(cfg),
-		statedb.MakeTxGeneratorBlockEventEmitter[txcontext.TxContext](),
+		statedb.MakeBlockEventEmitter[txcontext.TxContext](),
+		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 	}
 
 	extensionList = append(extensionList, extra...)
@@ -105,7 +106,7 @@ func runTransactions(
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last),
 			State:                  stateDb,
-			ParallelismGranularity: executor.TransactionLevel,
+			ParallelismGranularity: executor.BlockLevel,
 		},
 		processor,
 		extensionList,

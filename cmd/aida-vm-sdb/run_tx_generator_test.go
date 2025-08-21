@@ -77,6 +77,7 @@ func TestVmSdb_TxGenerator_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		// Block 2
 		// Tx 1
 		db.EXPECT().BeginBlock(uint64(2)),
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 		db.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
@@ -88,28 +89,35 @@ func TestVmSdb_TxGenerator_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
 		db.EXPECT().EndTransaction(),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 		db.EXPECT().EndBlock(),
+
+		//db.EXPECT().EndBlock(),
 
 		// Block 3
 		// Tx 1
 		db.EXPECT().BeginBlock(uint64(3)),
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 		db.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		db.EXPECT().EndTransaction(),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 		db.EXPECT().EndBlock(),
 
 		// Block 4
 		// Tx 1
 		db.EXPECT().BeginBlock(uint64(4)),
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		db.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, 1), gomock.Any()),
 		db.EXPECT().EndTransaction(),
-		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](4), gomock.Any(), nil),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		db.EXPECT().EndBlock(),
+		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](4), gomock.Any(), nil),
 
 		// db_manager closes the db
 		db.EXPECT().GetHash(),
