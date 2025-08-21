@@ -215,7 +215,7 @@ func TestFakeRpcClient_CodeAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0x123")
 	expectedCode := []byte{0x60, 0x80, 0x60, 0x40}
 
@@ -253,49 +253,49 @@ func TestFakeRpcClient_CodeAt(t *testing.T) {
 }
 
 func TestFakeRpcClient_CallContract(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	ret, err := client.CallContract(context.Background(), ethereum.CallMsg{}, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
 }
 
 func TestFakeRpcClient_HeaderByNumber(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	header, err := client.HeaderByNumber(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &types.Header{}, header)
 }
 
 func TestFakeRpcClient_PendingNonceAt(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	nonce, err := client.PendingNonceAt(context.Background(), common.Address{})
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(0), nonce)
 }
 
 func TestFakeRpcClient_SuggestGasTipCap(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	tipCap, err := client.SuggestGasTipCap(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, big.NewInt(0), tipCap)
 }
 
 func TestFakeRpcClient_FilterLogs(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{})
 	assert.NoError(t, err)
 	assert.Nil(t, logs)
 }
 
 func TestFakeRpcClient_SubscribeFilterLogs(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	sub, err := client.SubscribeFilterLogs(context.Background(), ethereum.FilterQuery{}, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, sub)
 }
 
 func TestFakeRpcClient_Call(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	err := client.Call(nil, "")
 	assert.NoError(t, err)
 }
@@ -305,7 +305,7 @@ func TestFakeRpcClient_NonceAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0xabc")
 	expectedNonce := uint64(5)
 
@@ -347,7 +347,7 @@ func TestFakeRpcClient_BalanceAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0xdef")
 	expectedBalance := uint256.NewInt(1000)
 
@@ -405,7 +405,7 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 			consumedSender = sender
 			return nil
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 
 		txData := []byte{0x60, 0x01, 0x60, 0x02}
 		gas := uint64(21000)
@@ -443,7 +443,7 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 			consumedSender = sender
 			return nil
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 		initialPendingCodesCount := len(client.pendingCodes)
 
 		toAddress := common.HexToAddress("0xRecipient")
@@ -472,7 +472,7 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
 			return expectedErr
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 
 		tx := types.NewTx(&types.LegacyTx{Nonce: 0, To: &common.Address{}}) // Minimal valid tx
 		signedTx, err := types.SignTx(tx, signer, privateKey)
@@ -482,4 +482,25 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, expectedErr, err)
 	})
+}
+
+func TestFakeRpcClient_ChainID(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 123)
+	chainId, err := client.ChainID(context.Background())
+	assert.Equal(t, chainId, 123)
+	assert.Nil(t, err)
+}
+
+func TestFakeRpcClient_TransactionReceipt(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 0)
+	receipt, err := client.TransactionReceipt(context.Background(), common.Hash{})
+	assert.Nil(t, receipt)
+	assert.Nil(t, err)
+}
+
+func TestFakeRpcClient_WaitTransactionReceipt(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 0)
+	receipt, err := client.WaitTransactionReceipt(common.Hash{})
+	assert.Nil(t, receipt)
+	assert.Nil(t, err)
 }
