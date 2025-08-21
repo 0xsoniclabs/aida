@@ -144,9 +144,11 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 
 	kv := &testutil.KeyValue{}
 	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
-	iter := iterator.NewArrayIterator(kv)
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
 
 	gomock.InOrder(
 		// live state check goes through
@@ -187,9 +189,11 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 
 	kv := &testutil.KeyValue{}
 	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
-	iter := iterator.NewArrayIterator(kv)
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
 
 	db.EXPECT().GetHash().Return(common.Hash([]byte(exampleHashA)), nil)
 	hashProvider.EXPECT().GetStateRootHash(2).Return(common.Hash([]byte(exampleHashA)), nil)
@@ -406,9 +410,15 @@ func TestStateHashValidator_CheckArchiveHashesBlocksErrorSkippedAtEmptyBlocks(t 
 	blockNumber := 1
 
 	kv := &testutil.KeyValue{}
-	iter := iterator.NewArrayIterator(kv)
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
+	iter3 := iterator.NewArrayIterator(kv)
+	iter4 := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter3)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter4)
 
 	cfg := &utils.Config{}
 	cfg.DbImpl = "carmen"
@@ -470,9 +480,11 @@ func TestStateHashValidator_CheckArchiveHashesErrorHandled(t *testing.T) {
 
 	kv := &testutil.KeyValue{}
 	kv.PutU(substateDb.SubstateDBKey(input.Block, input.Transaction), encoded)
-	iter := iterator.NewArrayIterator(kv)
+	iter1 := iterator.NewArrayIterator(kv)
+	iter2 := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(encoded, nil).AnyTimes()
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
+	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
 
 	cfg := &utils.Config{}
 	cfg.DbImpl = "carmen"

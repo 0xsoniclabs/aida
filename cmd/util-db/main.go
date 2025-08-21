@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
+	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
 	"github.com/urfave/cli/v2"
 )
@@ -37,10 +38,10 @@ var UtilDbApp = cli.App{
 	Commands: []*cli.Command{
 		&clone.Command,
 		&compact.Command,
-		&db.ExtractEthereumGenesisCommand,
-		&db.MergeCommand,
-		&db.UpdateCommand,
+		&merge.Command,
 		&info.Command,
+		&db.ExtractEthereumGenesisCommand,
+		&db.UpdateCommand,
 		&db.ValidateCommand,
 		&db.GenDeletedAccountsCommand,
 		&db.GenerateDbHashCommand,
