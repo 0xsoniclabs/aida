@@ -26,7 +26,8 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/txcontext/txgenerator"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/Fantom-foundation/Norma/load/app"
+	"github.com/0xsoniclabs/norma/driver/rpc"
+	"github.com/0xsoniclabs/norma/load/app"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -35,8 +36,8 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// treasureAccountPrivateKey is the private key of the treasure account.
-const treasureAccountPrivateKey = "1234567890123456789012345678901234567890123456789012345678901234"
+// PrivateKey is the fakenet validator id=1
+const PrivateKey = "163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7"
 
 // normaConsumer is a consumer of norma transactions.
 type normaConsumer func(*types.Transaction, *common.Address) error
@@ -58,8 +59,8 @@ func NewNormaTxProvider(cfg *utils.Config, stateDb state.StateDB) Provider[txcon
 
 // Run runs the norma tx provider.
 func (p normaTxProvider) Run(from int, to int, consumer Consumer[txcontext.TxContext]) error {
-	// initialize the treasure account
-	primaryAccount, err := p.initializeTreasureAccount(from)
+	// initialize the primary account
+	primaryAccount, err := app.NewAccount(0, PrivateKey, nil, int64(p.cfg.ChainID))
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (p normaTxProvider) Run(from int, to int, consumer Consumer[txcontext.TxCon
 		return nil
 	}
 
-	fakeRpc := newFakeRpcClient(p.stateDb, nc)
+	fakeRpc := newFakeRpcClient(p.stateDb, nc, int64(p.cfg.ChainID))
 	defer fakeRpc.Close()
 
 	// initialize the list of app types
@@ -102,21 +103,27 @@ func (p normaTxProvider) Run(from int, to int, consumer Consumer[txcontext.TxCon
 		appTypes = []string{"erc20", "counter", "store", "uniswap"}
 	}
 
+	// initialize app context
+	appContext, err := app.NewContext(
+		fakeRpcClientFactory{client: fakeRpc},
+		primaryAccount,
+	)
+	if err != nil {
+		return err
+	}
+
 	// create users for each app type
 	users := make([]app.User, 0)
 	for ix, appType := range appTypes {
-		application, err := app.NewApplication(appType, fakeRpc, primaryAccount, 1, uint32(ix), uint32(ix))
+		application, err := app.NewApplication(appType, appContext, uint32(ix), uint32(ix))
 		if err != nil {
 			return err
 		}
-		user, err := application.CreateUser(fakeRpc)
+		user, err := application.CreateUsers(appContext, 1)
 		if err != nil {
 			return err
 		}
-		if err = application.WaitUntilApplicationIsDeployed(fakeRpc); err != nil {
-			return err
-		}
-		users = append(users, user)
+		users = append(users, user[0])
 	}
 
 	// generate transactions until the `to` block is reached
@@ -134,8 +141,12 @@ func (p normaTxProvider) Run(from int, to int, consumer Consumer[txcontext.TxCon
 				return err
 			}
 			// apply tx to the consumer
-			addr := user.SenderAddress()
-			if err = nc(tx, &addr); err != nil {
+			from, err := types.Sender(types.NewLondonSigner(big.NewInt(int64(p.cfg.ChainID))), tx)
+			if err != nil {
+				return err
+			}
+
+			if err = nc(tx, &from); err != nil {
 				return err
 			}
 		}
@@ -156,7 +167,7 @@ func (p normaTxProvider) Close() {
 // the accounts and deploy the contract.
 func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account, error) {
 	// extract the address from the treasure account private key
-	privateKey, err := crypto.HexToECDSA(treasureAccountPrivateKey)
+	privateKey, err := crypto.HexToECDSA(PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +201,17 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 		return nil, fmt.Errorf("cannot end block; %w", err)
 	}
 
-	return app.NewAccount(0, treasureAccountPrivateKey, int64(p.cfg.ChainID))
+	return app.NewAccount(0, PrivateKey, nil, int64(p.cfg.ChainID))
+}
+
+// fakeRpcClientFactory implements RpcClientFactory and returns
+// a client when called DialRandomRpc()
+type fakeRpcClientFactory struct {
+	client rpc.Client
+}
+
+func (fcf fakeRpcClientFactory) DialRandomRpc() (rpc.Client, error) {
+	return fcf.client, nil
 }
 
 // fakeRpcClient is a fake RPC client that generates fake data. It is used to provide
@@ -202,14 +223,17 @@ type fakeRpcClient struct {
 	consumer normaConsumer
 	// pendingCodes is a map of pending codes.
 	pendingCodes map[common.Address][]byte
+	// chainId
+	chainId *big.Int
 }
 
 // newFakeRpcClient creates a new fakeRpcClient.
-func newFakeRpcClient(stateDb state.StateDB, consumer normaConsumer) fakeRpcClient {
+func newFakeRpcClient(stateDb state.StateDB, consumer normaConsumer, chainId int64) fakeRpcClient {
 	return fakeRpcClient{
 		stateDb:      stateDb,
 		consumer:     consumer,
 		pendingCodes: make(map[common.Address][]byte),
+		chainId:      big.NewInt(chainId),
 	}
 }
 
@@ -339,6 +363,25 @@ func (f fakeRpcClient) FilterLogs(_ context.Context, _ ethereum.FilterQuery) ([]
 // SubscribeFilterLogs creates a background log filtering operation, returning
 // a subscription immediately, which can be used to stream the found events.
 func (f fakeRpcClient) SubscribeFilterLogs(_ context.Context, _ ethereum.FilterQuery, _ chan<- types.Log) (ethereum.Subscription, error) {
+	// not used
+	return nil, nil
+}
+
+// ChainID is implemented to conform with ethRpcClient as required by norma codebase
+// ethRpcClient is a subset of the Ethereum client interface that is used by the application.
+func (f fakeRpcClient) ChainID(_ context.Context) (*big.Int, error) {
+	return f.chainId, nil
+}
+
+// TransactionReceipt is implemented to conform with ethRpcClient as required by norma codebase
+// ethRpcClient is a subset of the Ethereum client interface that is used by the application.
+func (f fakeRpcClient) TransactionReceipt(_ context.Context, _ common.Hash) (*types.Receipt, error) {
+	// not used
+	return nil, nil
+}
+
+// WaitTransactionReceipt is implemented to conform with norma's exponential backoff before declaring timeout.
+func (f fakeRpcClient) WaitTransactionReceipt(_ common.Hash) (*types.Receipt, error) {
 	// not used
 	return nil, nil
 }
