@@ -88,7 +88,7 @@ func TestQueue_Classify(t *testing.T) {
 
 	// Recent value (not the most recent)
 	id, idx = queue.Classify(1)
-	if id != RecentValueID || idx != 0 {
+	if id != RecentValueID || idx != 1 {
 		t.Fatalf("expected RecentValueID for recent value, got id=%d idx=%d", id, idx)
 	}
 }

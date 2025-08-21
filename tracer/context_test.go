@@ -71,7 +71,7 @@ func TestContext_WriteAddressOp(t *testing.T) {
 
 		// The address is known although not previous are used - written as idx
 		fw.EXPECT().WriteUint16(uint16(100)),
-		fw.EXPECT().WriteUint8(uint8(0)),
+		fw.EXPECT().WriteUint8(uint8(1)),
 		fw.EXPECT().WriteData(byteData),
 	)
 
@@ -123,8 +123,8 @@ func TestContext_WriteKeyOp(t *testing.T) {
 
 		// Everything is known although not previous are used - everything is written as idx
 		fw.EXPECT().WriteUint16(uint16(2120)),
-		fw.EXPECT().WriteUint8(uint8(0)),
-		fw.EXPECT().WriteUint8(uint8(0)),
+		fw.EXPECT().WriteUint8(uint8(1)),
+		fw.EXPECT().WriteUint8(uint8(1)),
 		fw.EXPECT().WriteData(byteData),
 	)
 
@@ -176,9 +176,9 @@ func TestContext_WriteValueOp(t *testing.T) {
 
 		// Everything is known although not previous are used - everything is written as idx
 		fw.EXPECT().WriteUint16(uint16(2749)),
-		fw.EXPECT().WriteUint8(uint8(0)),
-		fw.EXPECT().WriteUint8(uint8(0)),
 		fw.EXPECT().WriteUint8(uint8(1)),
+		fw.EXPECT().WriteUint8(uint8(1)),
+		fw.EXPECT().WriteUint8(uint8(2)),
 	)
 
 	err = ctx.WriteValueOp(SetStateID, &addrData1, &keyData1, &valueData1)

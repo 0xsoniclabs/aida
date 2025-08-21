@@ -96,6 +96,6 @@ func (q *Queue[T]) Classify(item T) (uint8, int) {
 	} else if idx == 0 {
 		return PreviousValueID, -1
 	} else {
-		return RecentValueID, idx - 1
+		return RecentValueID, idx
 	}
 }

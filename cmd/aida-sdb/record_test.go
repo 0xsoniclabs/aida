@@ -17,8 +17,6 @@
 package main
 
 import (
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
 	"math/big"
 	"testing"
 
@@ -27,6 +25,8 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
