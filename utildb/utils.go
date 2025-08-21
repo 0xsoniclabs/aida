@@ -119,6 +119,7 @@ func PrintMetadata(pathToDb string) error {
 	if err != nil {
 		return err
 	}
+	defer MustCloseDB(base)
 
 	md := utils.NewAidaDbMetadata(base, "INFO")
 
