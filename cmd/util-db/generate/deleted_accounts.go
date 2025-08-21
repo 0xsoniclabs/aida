@@ -78,11 +78,6 @@ func generateDeletedAccountsAction(ctx *cli.Context) (finalErr error) {
 		finalErr = errors.Join(finalErr, sdb.Close())
 	}()
 
-	err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-	if err != nil {
-		return err
-	}
-
 	ddb, err := db.NewDefaultDestroyedAccountDB(cfg.DeletionDb)
 	if err != nil {
 		return err
