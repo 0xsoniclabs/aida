@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func TestMergeCommand(t *testing.T) {
+func TestMerge_Command(t *testing.T) {
 	path1 := t.TempDir() + "/sdb1"
 	sdb1, err := db.NewDefaultSubstateDB(path1)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestMergeCommand(t *testing.T) {
 	require.NoError(t, gotS2.Equal(s2))
 }
 
-func TestMergeCommand_Errors(t *testing.T) {
+func TestMerge_Command_Errors(t *testing.T) {
 	dstDb := t.TempDir() + "/dstDb"
 	wrongFile := t.TempDir() + "testfile.txt"
 	f, err := os.Create(wrongFile)
@@ -103,5 +103,4 @@ func TestMergeCommand_Errors(t *testing.T) {
 			require.ErrorContains(t, err, test.wantErr)
 		})
 	}
-
 }
