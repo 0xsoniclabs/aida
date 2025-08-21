@@ -48,6 +48,19 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 				strconv.FormatUint(ss.Block+1, 10),
 			},
 		},
+		{
+			name:    "IncorrectConfig",
+			wantErr: "cannot set chain id: unknown chain id 11111",
+			args: []string{
+				generateDeletedAccountsCommand.Name,
+				"--aida-db",
+				sdbPath,
+				"--chainid",
+				strconv.FormatInt(11111, 10),
+				strconv.FormatUint(ss.Block-1, 10),
+				strconv.FormatUint(ss.Block+1, 10),
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -110,11 +123,11 @@ func TestExtractEthereumGenesis_Command(t *testing.T) {
 
 	udbPath := t.TempDir()
 	app := cli.NewApp()
-	app.Action = extractEthereumGenesisCommand.Action
-	app.Flags = extractEthereumGenesisCommand.Flags
+	app.Action = generateEthereumGenesisCommand.Action
+	app.Flags = generateEthereumGenesisCommand.Flags
 
 	err = app.Run([]string{
-		extractEthereumGenesisCommand.Name,
+		generateEthereumGenesisCommand.Name,
 		"--update-db",
 		udbPath,
 		"-l",
@@ -154,7 +167,7 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 		{
 			name: "ArgNotPassed",
 			args: []string{
-				extractEthereumGenesisCommand.Name,
+				generateEthereumGenesisCommand.Name,
 				"-l",
 				"CRITICAL",
 				"--chainid",
@@ -163,9 +176,21 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 			wantErr: "ethereum-update command requires exactly 1 argument",
 		},
 		{
+			name: "IncorrectConfig",
+			args: []string{
+				generateEthereumGenesisCommand.Name,
+				"-l",
+				"CRITICAL",
+				"--chainid",
+				strconv.FormatInt(11111, 10),
+				genesisPath,
+			},
+			wantErr: "cannot set chain id: unknown chain id 11111",
+		},
+		{
 			name: "WrongJsonFormat",
 			args: []string{
-				extractEthereumGenesisCommand.Name,
+				generateEthereumGenesisCommand.Name,
 				"-l",
 				"CRITICAL",
 				"--chainid",
@@ -181,8 +206,8 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := cli.NewApp()
-			app.Action = extractEthereumGenesisCommand.Action
-			app.Flags = extractEthereumGenesisCommand.Flags
+			app.Action = generateEthereumGenesisCommand.Action
+			app.Flags = generateEthereumGenesisCommand.Flags
 
 			err = app.Run(test.args)
 			require.ErrorContains(t, err, test.wantErr)
