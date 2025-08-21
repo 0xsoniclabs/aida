@@ -19,10 +19,11 @@ package main
 import (
 	"log"
 	"os"
-	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
+
 	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
