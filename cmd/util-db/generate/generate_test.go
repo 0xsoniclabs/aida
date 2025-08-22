@@ -2,10 +2,11 @@ package generate
 
 import (
 	"encoding/hex"
-	"github.com/0xsoniclabs/aida/logger"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/logger"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
