@@ -17,23 +17,21 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	substatetypes "github.com/0xsoniclabs/substate/types"
-
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/cockroachdb/errors"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v2"
 )
 
