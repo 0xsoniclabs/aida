@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package validate
 
 import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -27,55 +28,18 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var GenerateDbHashCommand = cli.Command{
-	Action: generateDbHashCmd,
-	Name:   "generate-db-hash",
-	Usage:  "Generates new db-hash. Note that this will overwrite the current AidaDb hash.",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-	},
-}
-
-var ValidateCommand = cli.Command{
-	Action: validateCmd,
+var Command = cli.Command{
+	Action: validateAction,
 	Name:   "validate",
 	Usage:  "Validates AidaDb using md5 DbHash.",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
+		&utils.ChainIDFlag,
 	},
 }
 
-// validateCmd calculates the dbHash for given AidaDb and saves it.
-func generateDbHashCmd(ctx *cli.Context) error {
-	log := logger.NewLogger("INFO", "DbHashGenerateCMD")
-
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
-
-	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open db; %v", err)
-	}
-
-	defer utildb.MustCloseDB(aidaDb)
-
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
-
-	log.Noticef("Starting DbHash generation for %v; this may take several hours...", cfg.AidaDb)
-	hash, err := utildb.GenerateDbHash(aidaDb, "INFO")
-	if err != nil {
-		return err
-	}
-
-	err = md.SetDbHash(hash)
-	if err != nil {
-		return fmt.Errorf("cannot set db-hash; %v", err)
-	}
-
-	return nil
-}
-
-// validateCmd calculates the dbHash for given AidaDb and compares it to expected hash either found in metadata or online
-func validateCmd(ctx *cli.Context) error {
+// validateAction calculates the dbHash for given AidaDb and compares it to expected hash either found in metadata or online
+func validateAction(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "ValidateCMD")
 
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
@@ -104,15 +68,7 @@ func validateCmd(ctx *cli.Context) error {
 		return fmt.Errorf("validation cannot be performed - your db type (%v) cannot be validated; aborting", dbType)
 	}
 
-	// we need to make sure aida-db starts from beginning, otherwise validation is impossible
-	// todo simplify condition once lachesis patch is ready for testnet
-	md.FirstBlock = md.GetFirstBlock()
-	if (md.ChainId == utils.MainnetChainID && md.FirstBlock != 0) || (md.ChainId == utils.TestnetChainID && md.FirstBlock != utildb.FirstOperaTestnetBlock) {
-		return fmt.Errorf("validation cannot be performed - your db does not start at block 0; your first block: %v", md.FirstBlock)
-	}
-
 	var saveHash = false
-
 	// if db hash is not present, look for it in patches.json
 	expectedHash := md.GetDbHash()
 	if len(expectedHash) == 0 {
@@ -120,7 +76,7 @@ func validateCmd(ctx *cli.Context) error {
 		saveHash = true
 		expectedHash, err = utildb.FindDbHashOnline(md.ChainId, log, md)
 		if err != nil {
-			return fmt.Errorf("validation cannot be performed; %v", err)
+			return fmt.Errorf("validation cannot be performed - could not find expected db hash; %v", err)
 		}
 	}
 
@@ -132,7 +88,7 @@ func validateCmd(ctx *cli.Context) error {
 		return err
 	}
 
-	if bytes.Compare(expectedHash, trueHash) != 0 {
+	if !bytes.Equal(expectedHash, trueHash) {
 		return fmt.Errorf("hashes are different! expected: %v; your aida-db:%v", hex.EncodeToString(expectedHash), hex.EncodeToString(trueHash))
 	}
 
