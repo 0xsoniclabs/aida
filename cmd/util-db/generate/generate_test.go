@@ -34,8 +34,8 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 				Arg(generateDeletedAccountsCommand.Name).
 				Flag(utils.AidaDbFlag.Name, sdbPath).
 				Flag(utils.DeletionDbFlag.Name, ddbPath).
-				Arg(ss.Block - 1).
-				Arg(ss.Block + 1),
+				Arg(int(ss.Block - 1)).
+				Arg(int(ss.Block + 1)),
 		},
 		{
 			name:    "NoDeletionDb",
