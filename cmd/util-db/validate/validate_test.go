@@ -29,7 +29,7 @@ import (
 
 func TestCmd_ValidateCommand(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 
@@ -109,7 +109,7 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, aidaDbPath := utils.CreateTestSubstateDb(t)
+			_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 			test.setup(aidaDbPath)
 			app := cli.NewApp()
 			app.Commands = []*cli.Command{&Command}

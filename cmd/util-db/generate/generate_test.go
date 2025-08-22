@@ -2,6 +2,7 @@ package generate
 
 import (
 	"encoding/hex"
+	"github.com/0xsoniclabs/aida/logger"
 	"os"
 	"strconv"
 	"testing"
@@ -19,56 +20,51 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 	ss, sdbPath := utils.CreateTestSubstateDb(t, db.RLPEncodingSchema)
 	ddbPath := t.TempDir()
 	tests := []struct {
-		name    string
-		wantErr string
-		args    []string
+		name        string
+		wantErr     string
+		argsBuilder *utils.ArgsBuilder
 	}{
 		{
 			name: "Success",
 			// Transaction fail
 			wantErr: "intrinsic gas too low",
-			args: []string{
-				generateDeletedAccountsCommand.Name,
-				"--aida-db",
-				sdbPath,
-				"--deletion-db",
-				ddbPath,
-				strconv.FormatUint(ss.Block-1, 10),
-				strconv.FormatUint(ss.Block+1, 10),
-			},
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateDeletedAccountsCommand.Name).
+				Flag(utils.AidaDbFlag.Name, sdbPath).
+				Flag(utils.DeletionDbFlag.Name, ddbPath).
+				Arg(ss.Block - 1).
+				Arg(ss.Block + 1),
 		},
 		{
 			name:    "NoDeletionDb",
 			wantErr: "you need to specify where you want deletion-db to save (--deletion-db)",
-			args: []string{
-				generateDeletedAccountsCommand.Name,
-				"--aida-db",
-				sdbPath,
-				strconv.FormatUint(ss.Block-1, 10),
-				strconv.FormatUint(ss.Block+1, 10),
-			},
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateDeletedAccountsCommand.Name).
+				Flag(utils.AidaDbFlag.Name, sdbPath).
+				Arg(strconv.FormatUint(ss.Block-1, 10)).
+				Arg(strconv.FormatUint(ss.Block+1, 10)),
 		},
 		{
 			name:    "IncorrectConfig",
-			wantErr: "cannot set chain id: unknown chain id 11111",
-			args: []string{
-				generateDeletedAccountsCommand.Name,
-				"--aida-db",
-				sdbPath,
-				"--chainid",
-				strconv.FormatInt(11111, 10),
-				strconv.FormatUint(ss.Block-1, 10),
-				strconv.FormatUint(ss.Block+1, 10),
-			},
+			wantErr: "cannot set chain id: unknown chain id 9990099",
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateDeletedAccountsCommand.Name).
+				Flag(utils.ChainIDFlag.Name, 9990099).
+				Flag(utils.AidaDbFlag.Name, sdbPath).
+				Flag(utils.DeletionDbFlag.Name, ddbPath).
+				Arg(strconv.FormatUint(ss.Block-1, 10)).
+				Arg(strconv.FormatUint(ss.Block+1, 10)),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := cli.NewApp()
-			app.Action = generateDeletedAccountsCommand.Action
-			app.Flags = generateDeletedAccountsCommand.Flags
-
-			err := app.Run(test.args)
+			app.Commands = []*cli.Command{&Command}
+			// when
+			err := app.Run(test.argsBuilder.Build())
 			require.ErrorContains(t, err, test.wantErr)
 		})
 	}
@@ -77,11 +73,15 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 
 func TestGenerateDbHash_Command(t *testing.T) {
 	_, path := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
-	app := cli.NewApp()
-	app.Action = generateDbHashCommand.Action
-	app.Flags = generateDbHashCommand.Flags
 
-	err := app.Run([]string{generateDbHashCommand.Name, "--aida-db", path})
+	argsBuilder := utils.NewArgs("test").
+		Arg(Command.Name).
+		Arg(generateDbHashCommand.Name).
+		Flag(utils.AidaDbFlag.Name, path)
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&Command}
+	// when
+	err := app.Run(argsBuilder.Build())
 	require.NoError(t, err)
 
 	aidaDb, err := db.NewDefaultBaseDB(path)
@@ -122,20 +122,17 @@ func TestExtractEthereumGenesis_Command(t *testing.T) {
 	require.NoError(t, err)
 
 	udbPath := t.TempDir()
+	argsBuilder := utils.NewArgs("test").
+		Arg(Command.Name).
+		Arg(generateEthereumGenesisCommand.Name).
+		Flag(utils.UpdateDbFlag.Name, udbPath).
+		Flag(logger.LogLevelFlag.Name, "CRITICAL").
+		Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)).
+		Arg(genesisPath)
 	app := cli.NewApp()
-	app.Action = generateEthereumGenesisCommand.Action
-	app.Flags = generateEthereumGenesisCommand.Flags
-
-	err = app.Run([]string{
-		generateEthereumGenesisCommand.Name,
-		"--update-db",
-		udbPath,
-		"-l",
-		"CRITICAL",
-		"--chainid",
-		strconv.FormatInt(int64(utils.EthereumChainID), 10),
-		genesisPath,
-	})
+	app.Commands = []*cli.Command{&Command}
+	// when
+	err = app.Run(argsBuilder.Build())
 	require.NoError(t, err)
 
 	udb, err := db.NewDefaultUpdateDB(udbPath)
@@ -160,45 +157,38 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name    string
-		args    []string
-		wantErr string
+		name        string
+		wantErr     string
+		argsBuilder *utils.ArgsBuilder
 	}{
 		{
 			name: "ArgNotPassed",
-			args: []string{
-				generateEthereumGenesisCommand.Name,
-				"-l",
-				"CRITICAL",
-				"--chainid",
-				strconv.FormatInt(int64(utils.EthereumChainID), 10),
-			},
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateEthereumGenesisCommand.Name).
+				Flag(logger.LogLevelFlag.Name, "CRITICAL").
+				Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)),
 			wantErr: "ethereum-update command requires exactly 1 argument",
 		},
 		{
 			name: "IncorrectConfig",
-			args: []string{
-				generateEthereumGenesisCommand.Name,
-				"-l",
-				"CRITICAL",
-				"--chainid",
-				strconv.FormatInt(11111, 10),
-				genesisPath,
-			},
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateEthereumGenesisCommand.Name).
+				Flag(logger.LogLevelFlag.Name, "CRITICAL").
+				Flag(utils.ChainIDFlag.Name, 11111).
+				Arg(genesisPath),
 			wantErr: "cannot set chain id: unknown chain id 11111",
 		},
 		{
 			name: "WrongJsonFormat",
-			args: []string{
-				generateEthereumGenesisCommand.Name,
-				"-l",
-				"CRITICAL",
-				"--chainid",
-				strconv.FormatInt(int64(utils.EthereumChainID), 10),
-				"--update-db",
-				t.TempDir() + "/update.db",
-				genesisPath,
-			},
+			argsBuilder: utils.NewArgs("test").
+				Arg(Command.Name).
+				Arg(generateEthereumGenesisCommand.Name).
+				Flag(logger.LogLevelFlag.Name, "CRITICAL").
+				Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)).
+				Flag(utils.UpdateDbFlag.Name, t.TempDir()+"/update.db").
+				Arg(genesisPath),
 			wantErr: "failed to unmarshal genesis file",
 		},
 	}
@@ -206,10 +196,9 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			app := cli.NewApp()
-			app.Action = generateEthereumGenesisCommand.Action
-			app.Flags = generateEthereumGenesisCommand.Flags
-
-			err = app.Run(test.args)
+			app.Commands = []*cli.Command{&Command}
+			// when
+			err := app.Run(test.argsBuilder.Build())
 			require.ErrorContains(t, err, test.wantErr)
 		})
 	}
