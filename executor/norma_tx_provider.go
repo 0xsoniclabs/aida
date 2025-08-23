@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 )
 
@@ -231,7 +230,13 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	// fund the treasure account directly in the state database
-	amount := uint256.NewInt(0).Mul(uint256.NewInt(params.Ether), uint256.NewInt(2_000_000_000))
+	toFtm := func(ftm uint64) *uint256.Int {
+		ftmBig := new(big.Int).SetUint64(ftm)
+		wei := new(big.Int).Mul(ftmBig, big.NewInt(1e18))
+		return new(uint256.Int).SetBytes(wei.Bytes())
+	}
+	amount := toFtm(2_000_000_000_000)
+
 	// we need to begin and end the block and transaction to be able to create an account
 	// and add balance to it (otherwise the account would not be funded for geth storage implementation)
 	err = p.stateDb.BeginBlock(uint64(blkNumber))
