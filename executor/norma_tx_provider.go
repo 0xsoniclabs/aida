@@ -235,7 +235,7 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 		wei := new(big.Int).Mul(ftmBig, big.NewInt(1e18))
 		return new(uint256.Int).SetBytes(wei.Bytes())
 	}
-	amount := toFtm(2_000_000_000_000)
+	amount := toFtm(10_000_000_000_000_000_000)
 
 	// we need to begin and end the block and transaction to be able to create an account
 	// and add balance to it (otherwise the account would not be funded for geth storage implementation)
