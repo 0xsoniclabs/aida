@@ -17,6 +17,8 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/utils"
@@ -24,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func TestCmd_RunReplay(t *testing.T) {

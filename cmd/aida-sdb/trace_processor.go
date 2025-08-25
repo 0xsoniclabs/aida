@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/txcontext"

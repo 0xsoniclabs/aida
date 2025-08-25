@@ -18,6 +18,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
+
+	"github.com/cockroachdb/errors"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -31,8 +36,6 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
-	"os"
-	"time"
 )
 
 var (
@@ -86,7 +89,7 @@ last block of the inclusive range of blocks to replay storage traces.`,
 	}
 )
 
-func RunReplay(ctx *cli.Context) error {
+func RunReplay(ctx *cli.Context) (finalErr error) {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
@@ -99,7 +102,10 @@ func RunReplay(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
 		}
-		defer aidaDb.Close()
+		defer func() {
+			finalErr = errors.Join(finalErr, aidaDb.Close())
+		}()
+
 	}
 
 	log := aidaLogger.NewLogger(cfg.LogLevel, "Trace_Replay")

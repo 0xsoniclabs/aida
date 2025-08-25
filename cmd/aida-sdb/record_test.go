@@ -59,8 +59,10 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		Run(10, 12, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: 3, Data: substatecontext.NewTxContext(emptyTx)})
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+				err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: 3, Data: substatecontext.NewTxContext(emptyTx)})
+				require.NoError(t, err)
+				err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+				require.NoError(t, err)
 			}
 			return nil
 		})

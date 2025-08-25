@@ -1,6 +1,10 @@
 package main
 
 import (
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
@@ -11,12 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
@@ -149,7 +149,8 @@ func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
 	proxy.IntermediateRoot(boolVal)
 	_, err = proxy.Commit(block, boolVal)
 	require.NoError(t, err)
-	proxy.GetHash()
+	_, err = proxy.GetHash()
+	require.NoError(t, err)
 	proxy.GetSubstatePostAlloc()
 	proxy.PrepareSubstate(ws, block)
 
@@ -198,13 +199,7 @@ func TestAidaSdbRecordAndReplay_AllCalls(t *testing.T) {
 	}()
 
 	err = provider.Run(0, 101, func(info executor.TransactionInfo[tracer.Operation]) error {
-		err = tp.Process(executor.State[tracer.Operation]{
-			Block:       info.Block,
-			Transaction: info.Transaction,
-			Data:        info.Data,
-		}, ctx)
-		assert.NoErrorf(t, err, "%s failed", tracer.OpText[info.Data.Op])
-		return nil
+		return tp.Process(executor.State[tracer.Operation](info), ctx)
 	})
 	close(done)
 	require.NoError(t, err)

@@ -17,7 +17,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -69,7 +71,7 @@ The trace replay-substate command requires two arguments:
 last block of the inclusive range of blocks to replay storage traces.`,
 }
 
-func RunReplaySubstate(ctx *cli.Context) error {
+func RunReplaySubstate(ctx *cli.Context) (finalErr error) {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
@@ -79,7 +81,9 @@ func RunReplaySubstate(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer aidaDb.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, aidaDb.Close())
+	}()
 
 	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()
@@ -119,8 +123,7 @@ func makeSubstateProcessor(operationProvider executor.Provider[tracer.Operation]
 
 type substateProcessor struct {
 	traceProcessor
-	operationProvider      executor.Provider[tracer.Operation]
-	currentBlockOperations []tracer.Operation
+	operationProvider executor.Provider[tracer.Operation]
 }
 
 func (p substateProcessor) Process(state executor.State[txcontext.TxContext], ctx *executor.Context) error {

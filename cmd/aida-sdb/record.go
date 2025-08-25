@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cockroachdb/errors"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
@@ -62,7 +64,7 @@ The trace record command requires two arguments:
 last block of the inclusive range of blocks to trace transactions.`,
 }
 
-func RunRecord(ctx *cli.Context) error {
+func RunRecord(ctx *cli.Context) (finalErr error) {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
@@ -75,7 +77,9 @@ func RunRecord(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer aidaDb.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, aidaDb.Close())
+	}()
 
 	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()
