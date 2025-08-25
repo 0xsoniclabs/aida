@@ -26,20 +26,60 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/txcontext/txgenerator"
 	"github.com/0xsoniclabs/aida/utils"
-	"github.com/Fantom-foundation/Norma/load/app"
+	"github.com/0xsoniclabs/norma/driver/rpc"
+	"github.com/0xsoniclabs/norma/load/app"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 )
 
-// treasureAccountPrivateKey is the private key of the treasure account.
-const treasureAccountPrivateKey = "1234567890123456789012345678901234567890123456789012345678901234"
+// PrivateKey is the fakenet validator id=1
+const PrivateKey = "163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7"
 
-// normaConsumer is a consumer of norma transactions.
-type normaConsumer func(*types.Transaction, *common.Address) error
+// normaConsumer is a consumer of norma transactions, returns a bool whether its configured consumption is satisfied
+type normaConsumer func(*types.Transaction, *common.Address) (bool, error)
+
+type normaConsumerConfig struct {
+	fromBlock   int
+	toBlock     int
+	blockLength uint64
+	fork        string
+}
+
+func newNormaConsumer(consumer Consumer[txcontext.TxContext], cfg normaConsumerConfig) normaConsumer {
+	currentBlock := cfg.fromBlock
+	nextTxNumber := 0
+
+	return func(tx *types.Transaction, sender *common.Address) (bool, error) {
+		data, err := txgenerator.NewNormaTxContext(tx, uint64(currentBlock), sender, cfg.fork)
+		if err != nil {
+			return false, err
+		}
+
+		err = consumer(TransactionInfo[txcontext.TxContext]{
+			Block:       currentBlock,
+			Transaction: nextTxNumber,
+			Data:        data,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		// increment the transaction number for next transaction
+		nextTxNumber++
+
+		// if we reached the maximum number of transactions per block, increment the block number
+		// greater or equal, because transactions are indexed from 0
+		if uint64(nextTxNumber) >= cfg.blockLength {
+			currentBlock++
+			nextTxNumber = 0
+		}
+
+		return currentBlock <= cfg.toBlock, nil
+	}
+}
 
 // normaTxProvider is a Provider that generates transactions using the norma
 // transactions generator.
@@ -56,94 +96,116 @@ func NewNormaTxProvider(cfg *utils.Config, stateDb state.StateDB) Provider[txcon
 	}
 }
 
+// generateUsers create a single user for each application type and returns it
+func generateUsers(appContext app.AppContext, apps []string) ([]app.User, error) {
+	// appTypes = ["all"] is shorthand for one of each type
+	appTypes := apps
+	if len(apps) == 1 && apps[0] == "all" {
+		appTypes = []string{"erc20", "counter", "store", "uniswap"}
+	}
+
+	users := make([]app.User, len(appTypes))
+	for ix, appType := range appTypes {
+		application, err := app.NewApplication(appType, appContext, uint32(ix), uint32(ix))
+		if err != nil {
+			return users, err
+		}
+
+		user, err := application.CreateUsers(appContext, 1)
+		if err != nil {
+			return users, err
+		}
+
+		users[ix] = user[0]
+	}
+
+	return users, nil
+}
+
+// generateTx makes the provided user generates a tx and sends it
+func generateNormaTx(user app.User, chainId *big.Int) (*types.Transaction, *common.Address, error) {
+	// generate tx
+	tx, err := user.GenerateTx()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// get sender address
+	from, err := types.Sender(types.NewLondonSigner(chainId), tx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return tx, &from, nil
+}
+
+// RoundRobinSelector get next item in slice, wraps-around
+func RoundRobinSelector[T any](items []T) func() T {
+	i, n := 0, len(items)
+	return func() T {
+		defer func() { i = (i + 1) % n }()
+		return items[i]
+	}
+}
+
 // Run runs the norma tx provider.
-func (p normaTxProvider) Run(from int, to int, consumer Consumer[txcontext.TxContext]) error {
-	// initialize the treasure account
+func (p normaTxProvider) Run(from, to int, consumer Consumer[txcontext.TxContext]) error {
+	// initialize the primary account
+	// the first block "from" is dedicated to all initialization of the
+	// treasure account.
 	primaryAccount, err := p.initializeTreasureAccount(from)
 	if err != nil {
 		return err
 	}
 
-	// define the current block and transaction numbers,
-	// we start from the next block after the `from` block
-	// because on the `from` block we initialized and funded
-	// the treasure account
-	currentBlock := from + 1
-	nextTxNumber := 0
+	// initialize normaConsumer that will be used to consume transactions
+	// normaConsumer is responsible for incrementing block and tx numbers
+	nc := newNormaConsumer(consumer, normaConsumerConfig{
+		// we start from the next block after the `from` block
+		// because on the `from` block we initialized and funded
+		// the treasure account
+		fromBlock:   from + 1,
+		toBlock:     to,
+		blockLength: p.cfg.BlockLength,
+		fork:        p.cfg.Fork,
+	})
 
-	// define norma consumer that will be used to consume transactions
-	// this is the only place that is responsible for incrementing block and tx numbers
-	nc := func(tx *types.Transaction, sender *common.Address) error {
-		data, err := txgenerator.NewNormaTxContext(tx, uint64(currentBlock), sender, p.cfg.Fork)
-		if err != nil {
-			return err
-		}
-		err = consumer(TransactionInfo[txcontext.TxContext]{Block: currentBlock, Transaction: nextTxNumber, Data: data})
-		if err != nil {
-			return err
-		}
-		// increment the transaction number for next transaction
-		// if we reached the maximum number of transactions per block, increment the block number
-		nextTxNumber++
-		// greater or equal, because transactions are indexed from 0
-		if uint64(nextTxNumber) >= p.cfg.BlockLength {
-			currentBlock++
-			nextTxNumber = 0
-		}
-		return nil
-	}
-
-	fakeRpc := newFakeRpcClient(p.stateDb, nc)
+	// initialize app context
+	fakeRpc := newFakeRpcClient(p.stateDb, nc, int64(p.cfg.ChainID))
 	defer fakeRpc.Close()
-
-	// initialize the list of app types
-	appTypes := p.cfg.TxGeneratorType
-	if len(appTypes) == 1 && appTypes[0] == "all" {
-		appTypes = []string{"erc20", "counter", "store", "uniswap"}
+	appContext, err := app.NewContext(
+		fakeRpcClientFactory{client: fakeRpc},
+		primaryAccount,
+	)
+	if err != nil {
+		return err
 	}
 
-	// create users for each app type
-	users := make([]app.User, 0)
-	for ix, appType := range appTypes {
-		application, err := app.NewApplication(appType, fakeRpc, primaryAccount, 1, uint32(ix), uint32(ix))
+	// initialize users
+	users, err := generateUsers(appContext, p.cfg.TxGeneratorType)
+	if err != nil {
+		return err
+	}
+
+	return p.run(users, nc)
+}
+
+// run runs the norma tx provider.
+func (p normaTxProvider) run(users []app.User, nc normaConsumer) error {
+	chainId := big.NewInt(int64(p.cfg.ChainID))
+	nextUser := RoundRobinSelector[app.User](users)
+	continueGeneratingTx := true
+	for continueGeneratingTx {
+		tx, from, err := generateNormaTx(nextUser(), chainId)
 		if err != nil {
 			return err
 		}
-		user, err := application.CreateUser(fakeRpc)
+
+		continueGeneratingTx, err = nc(tx, from)
 		if err != nil {
 			return err
 		}
-		if err = application.WaitUntilApplicationIsDeployed(fakeRpc); err != nil {
-			return err
-		}
-		users = append(users, user)
 	}
-
-	// generate transactions until the `to` block is reached
-	// `currentBlock` is incremented in the `nc` function
-	shouldBreak := false
-	for {
-		for _, user := range users {
-			if currentBlock > to {
-				shouldBreak = true
-				break
-			}
-			// generate tx
-			tx, err := user.GenerateTx()
-			if err != nil {
-				return err
-			}
-			// apply tx to the consumer
-			addr := user.SenderAddress()
-			if err = nc(tx, &addr); err != nil {
-				return err
-			}
-		}
-		if shouldBreak {
-			break
-		}
-	}
-
 	return nil
 }
 
@@ -156,7 +218,7 @@ func (p normaTxProvider) Close() {
 // the accounts and deploy the contract.
 func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account, error) {
 	// extract the address from the treasure account private key
-	privateKey, err := crypto.HexToECDSA(treasureAccountPrivateKey)
+	privateKey, err := crypto.HexToECDSA(PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +230,13 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	// fund the treasure account directly in the state database
-	amount := uint256.NewInt(0).Mul(uint256.NewInt(params.Ether), uint256.NewInt(2_000_000_000))
+	toFtm := func(ftm uint64) *uint256.Int {
+		ftmBig := new(big.Int).SetUint64(ftm)
+		wei := new(big.Int).Mul(ftmBig, big.NewInt(1e18))
+		return new(uint256.Int).SetBytes(wei.Bytes())
+	}
+	amount := toFtm(10_000_000_000_000_000_000)
+
 	// we need to begin and end the block and transaction to be able to create an account
 	// and add balance to it (otherwise the account would not be funded for geth storage implementation)
 	err = p.stateDb.BeginBlock(uint64(blkNumber))
@@ -190,7 +258,17 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 		return nil, fmt.Errorf("cannot end block; %w", err)
 	}
 
-	return app.NewAccount(0, treasureAccountPrivateKey, int64(p.cfg.ChainID))
+	return app.NewAccount(0, PrivateKey, nil, int64(p.cfg.ChainID))
+}
+
+// fakeRpcClientFactory implements RpcClientFactory and returns
+// a client when called DialRandomRpc()
+type fakeRpcClientFactory struct {
+	client rpc.Client
+}
+
+func (fcf fakeRpcClientFactory) DialRandomRpc() (rpc.Client, error) {
+	return fcf.client, nil
 }
 
 // fakeRpcClient is a fake RPC client that generates fake data. It is used to provide
@@ -202,14 +280,17 @@ type fakeRpcClient struct {
 	consumer normaConsumer
 	// pendingCodes is a map of pending codes.
 	pendingCodes map[common.Address][]byte
+	// chainId
+	chainId *big.Int
 }
 
 // newFakeRpcClient creates a new fakeRpcClient.
-func newFakeRpcClient(stateDb state.StateDB, consumer normaConsumer) fakeRpcClient {
+func newFakeRpcClient(stateDb state.StateDB, consumer normaConsumer, chainId int64) fakeRpcClient {
 	return fakeRpcClient{
 		stateDb:      stateDb,
 		consumer:     consumer,
 		pendingCodes: make(map[common.Address][]byte),
+		chainId:      big.NewInt(chainId),
 	}
 }
 
@@ -219,7 +300,7 @@ func (f fakeRpcClient) SendTransaction(_ context.Context, tx *types.Transaction)
 	// in the pending codes map
 	if tx.To() == nil {
 		// extract sender from tx
-		sender, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
+		sender, err := types.Sender(types.NewLondonSigner(tx.ChainId()), tx)
 		if err != nil {
 			return err
 		}
@@ -228,7 +309,8 @@ func (f fakeRpcClient) SendTransaction(_ context.Context, tx *types.Transaction)
 		// store the code in the pending codes map
 		f.pendingCodes[contractAddress] = tx.Data()
 	}
-	return f.consumer(tx, nil)
+	_, err := f.consumer(tx, nil)
+	return err
 }
 
 func (f fakeRpcClient) Call(_ interface{}, _ string, _ ...interface{}) error {
@@ -341,4 +423,21 @@ func (f fakeRpcClient) FilterLogs(_ context.Context, _ ethereum.FilterQuery) ([]
 func (f fakeRpcClient) SubscribeFilterLogs(_ context.Context, _ ethereum.FilterQuery, _ chan<- types.Log) (ethereum.Subscription, error) {
 	// not used
 	return nil, nil
+}
+
+// ChainID is implemented to conform with ethRpcClient as required by norma codebase
+// ethRpcClient is a subset of the Ethereum client interface that is used by the application.
+func (f fakeRpcClient) ChainID(_ context.Context) (*big.Int, error) {
+	return f.chainId, nil
+}
+
+// TransactionReceipt is implemented to conform with ethRpcClient as required by norma codebase
+// ethRpcClient is a subset of the Ethereum client interface that is used by the application.
+func (f fakeRpcClient) TransactionReceipt(_ context.Context, _ common.Hash) (*types.Receipt, error) {
+	return &types.Receipt{Status: types.ReceiptStatusSuccessful}, nil
+}
+
+// WaitTransactionReceipt is implemented to conform with norma's exponential backoff before declaring timeout.
+func (f fakeRpcClient) WaitTransactionReceipt(_ common.Hash) (*types.Receipt, error) {
+	return &types.Receipt{Status: types.ReceiptStatusSuccessful}, nil
 }

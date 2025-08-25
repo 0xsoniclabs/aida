@@ -23,63 +23,48 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/norma/load/app"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
-func TestNormaTxProvider_Run(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	dbMock := state.NewMockStateDB(ctrl)
-
-	cfg := &utils.Config{
-		BlockLength:     uint64(3),
-		TxGeneratorType: []string{"counter"},
-		ChainID:         297,
-	}
-	provider := NewNormaTxProvider(cfg, dbMock)
-	consumer := NewMockTxConsumer(ctrl)
-
+func Expect_initializeTreasureAccount(dbMock *state.MockStateDB) {
 	gomock.InOrder(
-		// treasure account initialization
 		dbMock.EXPECT().BeginBlock(gomock.Any()),
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().CreateAccount(gomock.Any()),
 		dbMock.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()),
 		dbMock.EXPECT().EndTransaction(),
 		dbMock.EXPECT().EndBlock(),
+	)
+}
 
+func Expect_initializeAppContext(dbMock *state.MockStateDB) {
+	gomock.InOrder(
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+	)
+}
+
+func Expect_initializeApp_Counter(dbMock *state.MockStateDB) {
+	gomock.InOrder(
 		// contract deployment
-
-		// expected on block 2, because block 1 is treasure account initialization
-		// and we are starting from block 1
-		consumer.EXPECT().Consume(2, 0, gomock.Any()).Return(nil),
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
 
 		// funding accounts
-		// we return a lot of tokens, so we don't have to "fund" them
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(0).Mul(uint256.NewInt(params.Ether), uint256.NewInt(1_000_000))),
-		dbMock.EXPECT().EndTransaction(),
-		// nonce for account deploying the contract has to be 1
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(1)),
-		dbMock.EXPECT().EndTransaction(),
-		// nonce for funded accounts has to be 0
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(0).Mul(uint256.NewInt(params.Ether), uint256.NewInt(1_000_000))),
 		dbMock.EXPECT().EndTransaction(),
 
 		// waiting for contract deployment requires checking the nonce
@@ -87,126 +72,208 @@ func TestNormaTxProvider_Run(t *testing.T) {
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
-
-		// generating transactions, starting from transaction 1 (0 was contract deployment)
-		consumer.EXPECT().Consume(2, 1, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(2, 2, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 0, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 1, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 2, gomock.Any()).Return(nil),
 	)
-
-	err := provider.Run(1, 3, toSubstateConsumer(consumer))
-	if err != nil {
-		t.Fatalf("failed to run provider: %v", err)
-	}
 }
 
-func TestNormaTxProvider_RunAll(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	dbMock := state.NewMockStateDB(ctrl)
-
-	cfg := &utils.Config{
-		BlockLength:     uint64(5),
-		TxGeneratorType: []string{"erc20", "counter", "store"},
-		ChainID:         297,
-	}
-	provider := NewNormaTxProvider(cfg, dbMock)
-	consumer := NewMockTxConsumer(ctrl)
-
-	balance := uint256.NewInt(0).Mul(uint256.NewInt(params.Ether), uint256.NewInt(1_000_000))
-
+func Expect_initializeApp_Erc20(dbMock *state.MockStateDB) {
 	gomock.InOrder(
-		// treasure account initialization
-		dbMock.EXPECT().BeginBlock(gomock.Any()),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().CreateAccount(gomock.Any()),
-		dbMock.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().EndBlock(),
-
-		// contract deployment in order: erc20 -> counter -> store
-
-		// expected on block 2, because block 1 is treasure account initialization
-		// and we are starting from block 1
-
-		// ERC 20
-		consumer.EXPECT().Consume(2, 0, gomock.Any()).Return(nil),
+		// contract deployment
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(1)),
-		dbMock.EXPECT().EndTransaction(),
+
 		// funding accounts
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
-		// mint nf tokens
-		consumer.EXPECT().Consume(2, 1, gomock.Any()).Return(nil),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(1)),
-		dbMock.EXPECT().EndTransaction(),
-		// COUNTER
-		consumer.EXPECT().Consume(2, 2, gomock.Any()).Return(nil),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(1)),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(2)),
-		dbMock.EXPECT().EndTransaction(),
-		// funding accounts
+
+		// waiting for contract deployment requires checking the nonce
+		// of funded accounts, since we did no funding, then nonce is 0
 		dbMock.EXPECT().BeginTransaction(gomock.Any()),
 		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
 		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(1)),
-		dbMock.EXPECT().EndTransaction(),
-		// STORE
-		consumer.EXPECT().Consume(2, 3, gomock.Any()).Return(nil),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(2)),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(3)),
-		dbMock.EXPECT().EndTransaction(),
-		// funding accounts
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetBalance(gomock.Any()).Return(balance),
-		dbMock.EXPECT().EndTransaction(),
-		dbMock.EXPECT().BeginTransaction(gomock.Any()),
-		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(2)),
-		dbMock.EXPECT().EndTransaction(),
-		// generating transactions
-		consumer.EXPECT().Consume(2, 4, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 0, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 1, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 2, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 3, gomock.Any()).Return(nil),
-		consumer.EXPECT().Consume(3, 4, gomock.Any()).Return(nil),
 	)
+}
 
-	err := provider.Run(1, 3, toSubstateConsumer(consumer))
-	if err != nil {
-		t.Fatalf("failed to run provider: %v", err)
+func Expect_initializeApp_Store(dbMock *state.MockStateDB) {
+	gomock.InOrder(
+		// contract deployment
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+
+		// funding accounts
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+
+		// waiting for contract deployment requires checking the nonce
+		// of funded accounts, since we did no funding, then nonce is 0
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+	)
+}
+
+func Expect_initializeApp_Uniswap(dbMock *state.MockStateDB) {
+	gomock.InOrder(
+		// deploy router
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+
+		// deploy tokens, deploy pairs
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+
+		// funding accounts
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+
+		// waiting for contract deployment requires checking the nonce
+		// of funded accounts, since we did no funding, then nonce is 0
+		dbMock.EXPECT().BeginTransaction(gomock.Any()),
+		dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)),
+		dbMock.EXPECT().EndTransaction(),
+	)
+}
+
+func TestNormaTxProvider_Run(t *testing.T) {
+	tests := []struct {
+		name string
+		from int
+		to   int
+		cfg  utils.Config
+	}{
+		{
+			name: "simple-counter",
+			from: 1,
+			to:   3,
+			cfg: utils.Config{
+				BlockLength:     uint64(3),
+				TxGeneratorType: []string{"counter"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "simple-erc20",
+			from: 1,
+			to:   3,
+			cfg: utils.Config{
+				BlockLength:     uint64(3),
+				TxGeneratorType: []string{"erc20"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "simple-store",
+			from: 1,
+			to:   3,
+			cfg: utils.Config{
+				BlockLength:     uint64(3),
+				TxGeneratorType: []string{"store"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "simple-uniswap",
+			from: 1,
+			to:   10,
+			cfg: utils.Config{
+				BlockLength:     uint64(3),
+				TxGeneratorType: []string{"uniswap"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "pair-long",
+			from: 1,
+			to:   234,
+			cfg: utils.Config{
+				BlockLength:     uint64(5),
+				TxGeneratorType: []string{"erc20", "counter"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "legacy-run-all",
+			from: 1,
+			to:   3,
+			cfg: utils.Config{
+				BlockLength:     uint64(5),
+				TxGeneratorType: []string{"erc20", "counter", "store"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+		{
+			name: "run-all",
+			from: 1,
+			to:   50,
+			cfg: utils.Config{
+				BlockLength:     uint64(30),
+				TxGeneratorType: []string{"all"},
+				ChainID:         297,
+				Fork:            "fork",
+			},
+		},
+	}
+
+	expectFunc := map[string]func(dbMock *state.MockStateDB){
+		"counter": Expect_initializeApp_Counter,
+		"erc20":   Expect_initializeApp_Erc20,
+		"store":   Expect_initializeApp_Store,
+		"uniswap": Expect_initializeApp_Uniswap,
+		"all": func(dbMock *state.MockStateDB) {
+			Expect_initializeApp_Erc20(dbMock)
+			Expect_initializeApp_Counter(dbMock)
+			Expect_initializeApp_Store(dbMock)
+			Expect_initializeApp_Uniswap(dbMock)
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			dbMock := state.NewMockStateDB(ctrl)
+
+			provider := NewNormaTxProvider(&test.cfg, dbMock)
+			consumer := NewMockTxConsumer(ctrl)
+
+			Expect_initializeTreasureAccount(dbMock)
+			Expect_initializeAppContext(dbMock)
+			for _, appType := range test.cfg.TxGeneratorType {
+				expectFunc[appType](dbMock)
+			}
+
+			// make sure that each Consume is called
+			var calls []any
+			for block := test.from + 1; block <= test.to; block++ {
+				for tx := 0; tx < int(test.cfg.BlockLength); tx++ {
+					call := consumer.EXPECT().Consume(block, tx, gomock.Any()).Return(nil)
+					calls = append(calls, call)
+				}
+			}
+			gomock.InOrder(calls...)
+
+			err := provider.Run(test.from, test.to, toSubstateConsumer(consumer))
+			if err != nil {
+				t.Fatalf("failed to run provider: %v", err)
+			}
+		})
 	}
 }
 
@@ -215,7 +282,7 @@ func TestFakeRpcClient_CodeAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0x123")
 	expectedCode := []byte{0x60, 0x80, 0x60, 0x40}
 
@@ -253,49 +320,49 @@ func TestFakeRpcClient_CodeAt(t *testing.T) {
 }
 
 func TestFakeRpcClient_CallContract(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	ret, err := client.CallContract(context.Background(), ethereum.CallMsg{}, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
 }
 
 func TestFakeRpcClient_HeaderByNumber(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	header, err := client.HeaderByNumber(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &types.Header{}, header)
 }
 
 func TestFakeRpcClient_PendingNonceAt(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	nonce, err := client.PendingNonceAt(context.Background(), common.Address{})
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(0), nonce)
 }
 
 func TestFakeRpcClient_SuggestGasTipCap(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	tipCap, err := client.SuggestGasTipCap(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, big.NewInt(0), tipCap)
 }
 
 func TestFakeRpcClient_FilterLogs(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{})
 	assert.NoError(t, err)
 	assert.Nil(t, logs)
 }
 
 func TestFakeRpcClient_SubscribeFilterLogs(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	sub, err := client.SubscribeFilterLogs(context.Background(), ethereum.FilterQuery{}, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, sub)
 }
 
 func TestFakeRpcClient_Call(t *testing.T) {
-	client := newFakeRpcClient(nil, nil)
+	client := newFakeRpcClient(nil, nil, 0)
 	err := client.Call(nil, "")
 	assert.NoError(t, err)
 }
@@ -305,7 +372,7 @@ func TestFakeRpcClient_NonceAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0xabc")
 	expectedNonce := uint64(5)
 
@@ -347,7 +414,7 @@ func TestFakeRpcClient_BalanceAt(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStateDb := state.NewMockStateDB(ctrl)
-	client := newFakeRpcClient(mockStateDb, nil)
+	client := newFakeRpcClient(mockStateDb, nil, 0)
 	addr := common.HexToAddress("0xdef")
 	expectedBalance := uint256.NewInt(1000)
 
@@ -394,18 +461,18 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 	senderAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	chainID := big.NewInt(297) // Example Chain ID from normaTxProvider
-	signer := types.NewEIP155Signer(chainID)
+	signer := types.NewLondonSigner(chainID)
 
 	t.Run("ContractDeployment_Success", func(t *testing.T) {
 		var consumedTx *types.Transaction
 		var consumedSender *common.Address
 
-		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) (bool, error) {
 			consumedTx = tx
 			consumedSender = sender
-			return nil
+			return true, nil
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 
 		txData := []byte{0x60, 0x01, 0x60, 0x02}
 		gas := uint64(21000)
@@ -438,12 +505,12 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 		var consumedTx *types.Transaction
 		var consumedSender *common.Address
 
-		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) (bool, error) {
 			consumedTx = tx
 			consumedSender = sender
-			return nil
+			return true, nil
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 		initialPendingCodesCount := len(client.pendingCodes)
 
 		toAddress := common.HexToAddress("0xRecipient")
@@ -469,10 +536,10 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 
 	t.Run("ConsumerError", func(t *testing.T) {
 		expectedErr := errors.New("consumer failed")
-		mockConsumer := func(tx *types.Transaction, sender *common.Address) error {
-			return expectedErr
+		mockConsumer := func(tx *types.Transaction, sender *common.Address) (bool, error) {
+			return false, expectedErr
 		}
-		client := newFakeRpcClient(nil, mockConsumer)
+		client := newFakeRpcClient(nil, mockConsumer, 0)
 
 		tx := types.NewTx(&types.LegacyTx{Nonce: 0, To: &common.Address{}}) // Minimal valid tx
 		signedTx, err := types.SignTx(tx, signer, privateKey)
@@ -482,4 +549,205 @@ func TestFakeRpcClient_SendTransaction(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, expectedErr, err)
 	})
+}
+
+func TestFakeRpcClient_ChainID(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 123)
+	chainId, err := client.ChainID(context.Background())
+	assert.Equal(t, chainId, big.NewInt(int64(123)))
+	assert.Nil(t, err)
+}
+
+func TestFakeRpcClient_TransactionReceipt(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 0)
+	receipt, err := client.TransactionReceipt(context.Background(), common.Hash{})
+	assert.Equal(t, receipt, &types.Receipt{Status: types.ReceiptStatusSuccessful})
+	require.NoError(t, err)
+}
+
+func TestFakeRpcClient_WaitTransactionReceipt(t *testing.T) {
+	client := newFakeRpcClient(nil, nil, 0)
+	receipt, err := client.WaitTransactionReceipt(common.Hash{})
+	assert.Equal(t, receipt, &types.Receipt{Status: types.ReceiptStatusSuccessful})
+	require.NoError(t, err)
+}
+
+func TestGenerateUsers(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       utils.Config
+		userCount int
+	}{
+		{
+			name: "single-counter",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"counter"},
+				ChainID:         297,
+			},
+			userCount: 1,
+		},
+		{
+			name: "double-counter",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"counter", "counter"},
+				ChainID:         297,
+			},
+			userCount: 2,
+		},
+		{
+			name: "all",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"all"},
+				ChainID:         297,
+			},
+			userCount: 4,
+		},
+		{
+			name: "all-supported-app-types",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"counter", "erc20", "store", "uniswap"},
+				ChainID:         297,
+			},
+			userCount: 4,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+
+			dbMock := state.NewMockStateDB(ctrl)
+			dbMock.EXPECT().BeginTransaction(gomock.Any()).AnyTimes()
+			dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)).AnyTimes()
+			dbMock.EXPECT().EndTransaction().AnyTimes()
+
+			primaryAccount, err := app.NewAccount(0, PrivateKey, nil, int64(test.cfg.ChainID))
+			if err != nil {
+				t.Fatalf("failed to create primary account: %v", err)
+			}
+
+			doNothing := func(tx *types.Transaction, sender *common.Address) (bool, error) {
+				return true, nil
+			}
+			doNothingRpc := newFakeRpcClient(dbMock, doNothing, int64(test.cfg.ChainID))
+			defer doNothingRpc.Close()
+
+			appContext, err := app.NewContext(fakeRpcClientFactory{client: doNothingRpc}, primaryAccount)
+			if err != nil {
+				t.Fatalf("failed to create app context: %v", err)
+			}
+
+			users, err := generateUsers(appContext, test.cfg.TxGeneratorType)
+			if err != nil {
+				t.Fatalf("failed to create users: %v", err)
+			}
+
+			assert.Equal(t, len(users), test.userCount)
+		})
+	}
+}
+
+func TestRoundRobinSelector(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  utils.Config
+	}{
+		{
+			name: "single-counter",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"counter"},
+			},
+		},
+		{
+			name: "all-supported-app-types",
+			cfg: utils.Config{
+				TxGeneratorType: []string{"counter", "erc20", "store", "uniswap"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			nextType := RoundRobinSelector[string](test.cfg.TxGeneratorType)
+
+			n := len(test.cfg.TxGeneratorType)
+			for i := 0; i < 300; i++ {
+				assert.Equal(t, nextType(), test.cfg.TxGeneratorType[i%n])
+			}
+		})
+	}
+}
+
+func TestNormaConsumerBoundary(t *testing.T) {
+	tests := []struct {
+		name  string
+		cfg   normaConsumerConfig
+		types []string
+	}{
+		{
+			name: "mini-blocks",
+			cfg: normaConsumerConfig{
+				fromBlock:   1,
+				toBlock:     5,
+				blockLength: 3,
+			},
+		},
+		{
+			name: "long-blocks",
+			cfg: normaConsumerConfig{
+				fromBlock:   1,
+				toBlock:     10_000,
+				blockLength: 2,
+			},
+		},
+		{
+			name: "wide-blocks",
+			cfg: normaConsumerConfig{
+				fromBlock:   1,
+				toBlock:     5,
+				blockLength: 297,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			dbMock := state.NewMockStateDB(ctrl)
+			dbMock.EXPECT().BeginTransaction(gomock.Any()).AnyTimes()
+			dbMock.EXPECT().GetNonce(gomock.Any()).Return(uint64(0)).AnyTimes()
+			dbMock.EXPECT().EndTransaction().AnyTimes()
+
+			provider := &normaTxProvider{
+				cfg: &utils.Config{
+					BlockLength: test.cfg.blockLength,
+					ChainID:     297,
+				},
+				stateDb: dbMock,
+			}
+
+			// Generate a new private key for the sender
+			privateKey, err := crypto.GenerateKey()
+			require.NoError(t, err)
+			tx := types.NewTx(&types.DynamicFeeTx{ChainID: big.NewInt(297)})
+			signedTx, err := types.SignTx(tx, types.NewLondonSigner(big.NewInt(297)), privateKey)
+			require.NoError(t, err)
+
+			mockUser := app.NewMockUser(ctrl)
+			mockUser.EXPECT().GenerateTx().Return(signedTx, nil).AnyTimes()
+
+			consumeCount := int(0)
+			counter := func(TransactionInfo[txcontext.TxContext]) error {
+				consumeCount++
+				return nil
+			}
+			normaConsumer := newNormaConsumer(counter, test.cfg)
+
+			provider.run([]app.User{mockUser}, normaConsumer)
+
+			// expected: block length * (from - to + 1)
+			expected := int(test.cfg.blockLength) * (test.cfg.toBlock - test.cfg.fromBlock + 1)
+			assert.Equal(t, expected, consumeCount)
+		})
+	}
 }
