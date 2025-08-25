@@ -326,6 +326,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get recent address from contracts queue: %w", err)
 		}
+		p.prevAddrIdx = p.contracts.Find(addr)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong address class: %d", addrCl)
 	}
@@ -354,6 +355,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get recent key from keys queue: %w", err)
 		}
+		p.prevKeyIdx = p.keys.Find(key)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong key class: %d", keyCl)
 	}
@@ -382,6 +384,7 @@ func (p *traceProvider) readOperation(argOp uint16) (tracer.Operation, error) {
 		if err != nil {
 			return tracer.Operation{}, fmt.Errorf("cannot get recent value from values queue: %w", err)
 		}
+		p.prevValIdx = p.values.Find(val)
 	default:
 		return tracer.Operation{}, fmt.Errorf("wrong value class: %d", valueCl)
 	}
