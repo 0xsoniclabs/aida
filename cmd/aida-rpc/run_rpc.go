@@ -115,7 +115,7 @@ func run(
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last) + 1,
 			NumWorkers:             cfg.Workers,
-			ParallelismGranularity: executor.TransactionLevel,
+			ParallelismGranularity: executor.BlockLevel,
 			State:                  stateDb,
 		},
 		processor,
