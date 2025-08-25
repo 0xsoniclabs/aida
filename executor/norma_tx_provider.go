@@ -37,6 +37,7 @@ import (
 
 // PrivateKey is the fakenet validator id=1
 const PrivateKey = "163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac7"
+const test = "163f5f0f9a621d72fedd85ffca3d08d131ab4e812181e0d30ffd1c885d20aac8"
 
 // normaConsumer is a consumer of norma transactions, returns a bool whether its configured consumption is satisfied
 type normaConsumer func(*types.Transaction, *common.Address) (bool, error)
@@ -182,12 +183,47 @@ func (p normaTxProvider) Run(from, to int, consumer Consumer[txcontext.TxContext
 	}
 
 	// initialize users
-	users, err := generateUsers(appContext, p.cfg.TxGeneratorType)
+	// extract the address from the treasure account private key
+	pk, err := crypto.HexToECDSA(PrivateKey)
 	if err != nil {
 		return err
 	}
+	pubkey := pk.Public()
+	publicKeyECDSA, ok := pubkey.(*ecdsa.PublicKey)
+	if !ok {
+		return fmt.Errorf("failed to cast public key to ECDSA")
+	}
+	treasureAddr := crypto.PubkeyToAddress(*publicKeyECDSA)
+	fmt.Println("treasure addr:", treasureAddr, p.stateDb.GetNonce(treasureAddr))
 
-	return p.run(users, nc)
+	p.stateDb.SetNonce(treasureAddr, 5, 0)
+	fmt.Println("treasure addr:", treasureAddr, p.stateDb.GetNonce(treasureAddr))
+
+	testPk, err := crypto.HexToECDSA(test)
+	if err != nil {
+		return err
+	}
+	testPubkey := testPk.Public()
+	testPublicKeyECDSA, ok := testPubkey.(*ecdsa.PublicKey)
+	if !ok {
+		return fmt.Errorf("failed to cast public key to ECDSA")
+	}
+	testAddr := crypto.PubkeyToAddress(*testPublicKeyECDSA)
+	fmt.Println("test addr:", testAddr, p.stateDb.GetNonce(testAddr))
+
+	appContext.FundAccounts([]common.Address{testAddr}, big.NewInt(1_000_000))
+
+	/*
+		_, err = generateUsers(appContext, p.cfg.TxGeneratorType)
+			//users, err := generateUsers(appContext, p.cfg.TxGeneratorType)
+
+			if err != nil {
+				return err
+			}
+
+			   return p.run(users, nc)
+	*/
+	return nil
 }
 
 // run runs the norma tx provider.
@@ -235,7 +271,7 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 		wei := new(big.Int).Mul(ftmBig, big.NewInt(1e18))
 		return new(uint256.Int).SetBytes(wei.Bytes())
 	}
-	amount := toFtm(10_000_000_000_000_000_000)
+	amount := toFtm(1_000_000_000)
 
 	// we need to begin and end the block and transaction to be able to create an account
 	// and add balance to it (otherwise the account would not be funded for geth storage implementation)
@@ -258,6 +294,8 @@ func (p normaTxProvider) initializeTreasureAccount(blkNumber int) (*app.Account,
 		return nil, fmt.Errorf("cannot end block; %w", err)
 	}
 
+	fmt.Println(p.stateDb.GetNonce(fromAddress))
+	fmt.Println("================================")
 	return app.NewAccount(0, PrivateKey, nil, int64(p.cfg.ChainID))
 }
 
@@ -304,6 +342,8 @@ func (f fakeRpcClient) SendTransaction(_ context.Context, tx *types.Transaction)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("SendTx: %+v\n", sender)
+
 		// get the expected contract address
 		contractAddress := crypto.CreateAddress(sender, tx.Nonce())
 		// store the code in the pending codes map
@@ -324,6 +364,7 @@ func (f fakeRpcClient) NonceAt(_ context.Context, account common.Address, _ *big
 		return 0, err
 	}
 	nonce := f.stateDb.GetNonce(account)
+	fmt.Printf("Nonce: %+v\n", nonce)
 	err = f.stateDb.EndTransaction()
 	if err != nil {
 		return 0, err
@@ -337,6 +378,7 @@ func (f fakeRpcClient) BalanceAt(_ context.Context, account common.Address, _ *b
 		return nil, err
 	}
 	balance := f.stateDb.GetBalance(account)
+	fmt.Printf("Balance: %+v\n=> %+v\n", account, balance)
 	err = f.stateDb.EndTransaction()
 	if err != nil {
 		return nil, err

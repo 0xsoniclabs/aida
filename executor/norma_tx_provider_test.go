@@ -19,6 +19,7 @@ package executor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -570,6 +571,36 @@ func TestFakeRpcClient_WaitTransactionReceipt(t *testing.T) {
 	receipt, err := client.WaitTransactionReceipt(common.Hash{})
 	assert.Equal(t, receipt, &types.Receipt{Status: types.ReceiptStatusSuccessful})
 	require.NoError(t, err)
+}
+
+func TestInitializePrimaryAccount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	dbMock := state.NewMockStateDB(ctrl)
+
+	provider := &normaTxProvider{
+		cfg:     &utils.Config{ChainID: 297},
+		stateDb: dbMock,
+	}
+
+	var ws txcontext.WorldState
+	updateWorldState := func(info TransactionInfo[txcontext.TxContext]) error {
+		fmt.Println("Updated!")
+		ws = info.Data.GetOutputState()
+		return nil
+	}
+	nc := newNormaConsumer(updateWorldState, normaConsumerConfig{})
+	rpcClient := newFakeRpcClient(dbMock, nc, int64(provider.cfg.ChainID))
+	defer rpcClient.Close()
+
+	Expect_initializeTreasureAccount(dbMock)
+
+	_, err := provider.initializeTreasureAccount(0)
+	require.NoError(t, err)
+
+	if ws == nil {
+		t.Fatalf("failed to create world state: %v", err)
+	}
+	ws.String()
 }
 
 func TestGenerateUsers(t *testing.T) {

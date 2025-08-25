@@ -45,6 +45,8 @@ func RunTxGenerator(ctx *cli.Context) error {
 		return err
 	}
 
+	cfg.Workers = 1
+	cfg.TxGeneratorType = []string{"counter"}
 	cfg.StateValidationMode = utils.SubsetCheck
 	cfg.ChainID = utils.EthTestsChainID // Use EthTests chain ID for configurable forks
 
