@@ -17,6 +17,7 @@
 package state
 
 import (
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -105,4 +106,26 @@ func TestGethDbReloadData(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatalf("Failed to close DB: %v", err)
 	}
+}
+
+func TestGethDb_CreateAccountIsProtected(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First create the account
+	db.CreateAccount(addr)
+	// Then recall it - it must not panic
+	db.CreateAccount(addr)
+}
+
+func TestGethDb_CreateContractIsProtected(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First create the contract
+	db.CreateContract(addr)
+	// Then recall it - it must not panic
+	db.CreateContract(addr)
 }
