@@ -116,7 +116,8 @@ func RunReplay(ctx *cli.Context) error {
 		}
 
 		if cfg.First < first {
-			return fmt.Errorf("chosen first block %d is less than the first block %d in the trace file %s", cfg.First, first, filename)
+			log.Warningf("updating first block to %d as it is larger than chosen %d", first, cfg.First)
+			cfg.First = first
 		}
 
 		provider := executor.NewTraceProvider(file)

@@ -172,9 +172,6 @@ func TestQueue_ClassifyGet(t *testing.T) {
 	cl, _ = queue.Classify(item6)
 	require.Equal(t, NewValueID, cl)
 
-	//idxFind := queue.Find(item1)
-	//require.Equal(t, 0, idxFind)
-
 	// then find the indexes
 	cl, idx1 := queue.Classify(item1)
 	require.Equal(t, RecentValueID, cl)
@@ -206,5 +203,4 @@ func TestQueue_ClassifyGet(t *testing.T) {
 	item, err = queue.Get(idx5)
 	require.NoError(t, err)
 	require.Equal(t, item5, item)
-
 }

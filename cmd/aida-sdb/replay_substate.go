@@ -69,7 +69,6 @@ The trace replay-substate command requires two arguments:
 last block of the inclusive range of blocks to replay storage traces.`,
 }
 
-// todo: will be handled in upcoming PR
 func RunReplaySubstate(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {

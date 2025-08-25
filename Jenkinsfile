@@ -21,7 +21,6 @@ pipeline {
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
         PROFILE = '--cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown'
-        // todo add substate encoding for replay
 
         // Other parameters
         TRACEDIR = 'tracefiles'

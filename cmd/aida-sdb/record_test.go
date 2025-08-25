@@ -30,7 +30,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestCmd_RunSubstate(t *testing.T) {
+func TestCmd_RunRecord(t *testing.T) {
 	_, path := utils.CreateTestSubstateDb(t)
 	app := cli.NewApp()
 	app.Action = RunRecord
