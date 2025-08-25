@@ -123,7 +123,11 @@ type rpcProcessInfo struct {
 }
 
 func (rp *registerRequestProgress) PreRun(executor.State[*rpc.RequestAndResults], *executor.Context) error {
-	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", rp.id.GetId()))
+	id, err := rp.id.GetId()
+	if err != nil {
+		return err
+	}
+	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", id))
 	rp.log.Noticef("Registering to: %s", connection)
 
 	// 1. if directory does not exists -> fatal, throw error
