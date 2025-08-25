@@ -19,8 +19,10 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -28,46 +30,48 @@ import (
 )
 
 var (
-	testTraceFile = "trace-test/trace.dat"
-	testTraceDir  = "trace-test"
+	testTraceDir = "trace-test"
 )
 
 // TestMain runs global setup, test cases then global teardown
 func TestMain(m *testing.M) {
-	setup()
+	err := setup()
+	if err != nil {
+		log.Fatal(err)
+	}
 	code := m.Run()
-	teardown()
+	err = teardown()
+	if err != nil {
+		log.Fatal(err)
+	}
 	os.Exit(code)
 }
 
 // setup prepares
 // substateDB and creates trace directory
-func setup() {
+func setup() error {
 	// download and extract substate.test
 	err := setupTestSubstateDB()
 	if err != nil {
-		fmt.Errorf("unable to load substatedb. %v", err)
+		return fmt.Errorf("unable to load substatedb. %v", err)
 	}
 
 	// create trace directory
 	err = os.Mkdir(testTraceDir, 0700)
 	if err != nil {
-		fmt.Errorf("unable to create direcotry. %v", err)
+		return fmt.Errorf("unable to create direcotry. %v", err)
 	}
 
-	fmt.Printf("Setup completed\n")
+	return nil
 }
 
 // teardown removes temp directories
-func teardown() {
-	// Do something here.
-	os.RemoveAll(testTraceDir)
-	os.RemoveAll("substate.test")
-	fmt.Printf("Teardown completed\n")
+func teardown() error {
+	return errors.Join(os.RemoveAll("substate.test"), os.RemoveAll(testTraceDir))
 }
 
 // setupTestSubstateDB downloads compressed substates and extract in local directory
-func setupTestSubstateDB() error {
+func setupTestSubstateDB() (finalErr error) {
 	// download substate.test from url
 	// set timeout to 1 minutes
 	client := http.Client{Timeout: 60 * time.Second}
@@ -81,7 +85,9 @@ func setupTestSubstateDB() error {
 	if err != nil {
 		return err
 	}
-	defer gzipStream.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, gzipStream.Close())
+	}()
 
 	tarReader := tar.NewReader(gzipStream)
 
@@ -105,7 +111,9 @@ func setupTestSubstateDB() error {
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
+			defer func() {
+				finalErr = errors.Join(finalErr, outFile.Close())
+			}()
 			if _, err = io.Copy(outFile, tarReader); err != nil {
 				return err
 			}

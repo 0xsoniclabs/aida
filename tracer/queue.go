@@ -16,6 +16,8 @@
 
 package tracer
 
+import "errors"
+
 const QueueLen = 257
 
 // Queue data structure for a generic FIFO queue.
@@ -80,6 +82,26 @@ func (q *Queue[T]) Find(item T) int {
 		// go one element back
 		i = (i - 1 + QueueLen) % QueueLen
 	}
+}
+
+func (q *Queue[T]) Get(idx int) (T, error) {
+	var zero T
+
+	// If queue is empty
+	if q.top == -1 {
+		return zero, errors.New("queue is empty")
+	}
+
+	// Compute queue length
+	length := (q.top-q.rear+QueueLen)%QueueLen + 1
+
+	if idx < 0 || idx >= length {
+		return zero, errors.New("index out of bounds")
+	}
+
+	// Calculate the actual index in the data array
+	actualIndex := (q.top - idx + QueueLen) % QueueLen
+	return q.data[actualIndex], nil
 }
 
 func (q *Queue[T]) Classify(item T) (uint8, int) {

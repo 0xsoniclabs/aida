@@ -19,16 +19,16 @@ package statedb
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/tracer"
-	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/state/proxy"
+	"github.com/0xsoniclabs/aida/tracer"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // MakeTracerProxyPrepper creates an extension which
