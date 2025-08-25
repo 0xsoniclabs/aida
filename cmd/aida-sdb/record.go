@@ -39,6 +39,8 @@ var RecordCommand = cli.Command{
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.UpdateBufferSizeFlag,
+		&utils.SubstateEncodingFlag,
+		&utils.DbTmpFlag,
 		&utils.CpuProfileFlag,
 		&utils.SyncPeriodLengthFlag,
 		&utils.WorkersFlag,
@@ -73,11 +75,7 @@ func RecordStateDbTrace(ctx *cli.Context) error {
 	}
 	defer aidaDb.Close()
 
-	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open substate provider; %w", err)
-	}
-
+	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)

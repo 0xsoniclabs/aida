@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -89,11 +90,13 @@ func RunEthereumTest(ctx *cli.Context) error {
 
 	cfg.StateValidationMode = utils.SubsetCheck
 	cfg.ValidateTxState = true
-	cfg.ChainID = utils.EthTestsChainID
 
 	processor, err := executor.MakeEthTestProcessor(cfg)
 	if err != nil {
 		return err
+	}
+	if !ctx.IsSet(utils.ChainIDFlag.Name) {
+		return fmt.Errorf("please specify chain ID using --%s flag (1337 for most cases for this tool)", utils.ChainIDFlag.Name)
 	}
 
 	return runEth(cfg, executor.NewEthStateTestProvider(cfg), nil, processor, nil)
@@ -129,7 +132,6 @@ func runEth(
 		validator.MakeShadowDbValidator(cfg),
 		validator.MakeEthStateTestStateHashValidator(cfg),
 		statedb.MakeEthStateScopeTestEventEmitter(),
-		statedb.NewParentBlockHashProcessor(cfg),
 		validator.MakeEthStateTestErrorValidator(cfg),
 		validator.MakeEthStateTestLogHashValidator(cfg),
 	)

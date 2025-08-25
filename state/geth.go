@@ -316,7 +316,12 @@ func (s *gethStateDB) Close() error {
 	if err := tdb.Close(); err != nil {
 		return err
 	}
-	return s.backend.Close()
+	// backend can be nil if we are using an in-memory version of gethDb (offTheChainDb)
+	// as this version of StateDB does not require a file system.
+	if s.backend != nil {
+		return s.backend.Close()
+	}
+	return nil
 }
 
 func (s *gethStateDB) AddRefund(gas uint64) {
@@ -358,9 +363,9 @@ func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
 	return s.accessEvents
 }
 
-func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash) []*types.Log {
+func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	if db, ok := s.db.(*geth.StateDB); ok {
-		return db.GetLogs(hash, block, blockHash)
+		return db.GetLogs(hash, block, blockHash, blkTimestamp)
 	}
 	return []*types.Log{}
 }

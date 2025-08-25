@@ -19,8 +19,6 @@ package executor
 //go:generate mockgen -source substate_provider.go -destination substate_provider_mocks.go -package executor
 
 import (
-	"fmt"
-
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
@@ -33,18 +31,13 @@ import (
 // ----------------------------------------------------------------------------
 
 // OpenSubstateProvider opens a substate database as configured in the given parameters.
-func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB) (Provider[txcontext.TxContext], error) {
+func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB) Provider[txcontext.TxContext] {
 	substateDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-	err := substateDb.SetSubstateEncoding(db.SubstateEncodingSchema(cfg.SubstateEncoding))
-	if err != nil {
-		return nil, fmt.Errorf("failed to set substate encoding; %w", err)
-	}
-
 	return &substateProvider{
 		db:                  substateDb,
 		ctxt:                ctxt,
 		numParallelDecoders: cfg.Workers,
-	}, nil
+	}
 }
 
 // substateProvider is an adapter of Aida's SubstateProvider interface defined above to the
@@ -60,9 +53,11 @@ func (s substateProvider) Run(from int, to int, consumer Consumer[txcontext.TxCo
 	for iter.Next() {
 		tx := iter.Value()
 		if tx.Block >= uint64(to) {
+			// TODO bug not release
 			return nil
 		}
 		if err := consumer(TransactionInfo[txcontext.TxContext]{int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)}); err != nil {
+			// TODO bug not release
 			return err
 		}
 	}

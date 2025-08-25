@@ -5,6 +5,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -16,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -112,6 +114,8 @@ func testEthereumSystemContractStorageException(t *testing.T, address common.Add
 		db.EXPECT().GetBalance(address).Return(uint256.NewInt(1)),
 		db.EXPECT().GetState(address, common.HexToHash("0x1")),
 		db.EXPECT().SetState(address, common.HexToHash("0x1"), common.HexToHash("0x2")),
+		db.EXPECT().EndTransaction().Return(nil),
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
 	)
 
 	ext := makeEthereumDbPreTransactionUpdater(cfg, log)
@@ -169,4 +173,26 @@ func createDaoForkAddressTestTransaction() txcontext.TxContext {
 			},
 		},
 	})
+}
+
+func TestEthereumDbPreTransactionUpdater_PreRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	cfg := &utils.Config{}
+	st := executor.State[txcontext.TxContext]{}
+	ctx := new(executor.Context)
+	log.EXPECT().Warning(gomock.Any())
+	ext := &ethereumDbPreTransactionUpdater{
+		cfg: cfg,
+		log: log,
+	}
+	err := ext.PreRun(st, ctx)
+	assert.NoError(t, err)
+}
+
+func TestEthereumDbPreTransactionUpdater_MakeEthereumDbPreTransactionUpdater(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.ChainID = utils.PseudoTx
+	ext := MakeEthereumDbPreTransactionUpdater(cfg)
+	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }

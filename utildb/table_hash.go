@@ -40,9 +40,11 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 		return err
 	}
 
+	reportFrequency := time.Minute
+
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
 		log.Info("Generating Substate hash...")
-		aidaDbSubstateHash, count, err := GetSubstateHash(cfg, base, log)
+		aidaDbSubstateHash, count, err := GetSubstateHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -51,7 +53,7 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
 		log.Info("Generating Deletion hash...")
-		aidaDbDeletionHash, count, err := GetDeletionHash(cfg, base, log)
+		aidaDbDeletionHash, count, err := GetDeletionHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
@@ -69,11 +71,29 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
 		log.Info("Generating State-Hashes hash...")
-		aidaDbStateHashesHash, count, err := GetStateHashesHash(cfg, base, log)
+		aidaDbStateHashesHash, count, err := GetStateRootHashesHash(cfg, base, reportFrequency, log)
 		if err != nil {
 			return err
 		}
 		log.Infof("State-Hashes hash: %x; count %v", aidaDbStateHashesHash, count)
+	}
+
+	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
+		log.Info("Generating Block-Hashes hash...")
+		aidaDbBlockHashesHash, count, err := GetBlockHashesHash(cfg, base, reportFrequency, log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Block-Hashes hash: %x; count %v", aidaDbBlockHashesHash, count)
+	}
+
+	if dbComponent == dbcomponent.Exception || dbComponent == dbcomponent.All {
+		log.Info("Generating Exception hash...")
+		exceptionHash, count, err := GetExceptionDbHash(cfg, base, reportFrequency, log)
+		if err != nil {
+			return err
+		}
+		log.Infof("Exception hash: %x; count %v", exceptionHash, count)
 	}
 
 	return nil
@@ -97,19 +117,19 @@ func combineJson(in chan any, out chan []byte, errChan chan error) {
 	}
 }
 
-func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetSubstateHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
 		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-		err := sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			errChan <- err
-			return
-		}
 		it := sdb.NewSubstateIterator(int(cfg.First), 10)
 		defer it.Release()
 
@@ -136,8 +156,13 @@ func GetSubstateHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	return parallelHashComputing(feeder)
 }
 
-func GetDeletionHash(cfg *utils.Config, aidaDb db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetDeletionHash(
+	cfg *utils.Config,
+	aidaDb db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
@@ -220,24 +245,28 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	return parallelHashComputing(feeder)
 }
 
-func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
-	ticker := time.NewTicker(1 * time.Minute)
+func GetStateRootHashesHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := utils.MakeStateHashProvider(base)
+		provider := utils.MakeHashProvider(base)
 
-		var i = cfg.First
-		for ; i <= cfg.Last; i++ {
+		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
 			case <-ticker.C:
-				log.Infof("Stat-Hashes hash progress: %v/%v", i, cfg.Last)
+				log.Infof("State-Hashes hash progress: %v/%v", i, cfg.Last)
 			default:
 			}
 
-			h, err := provider.GetStateHash(int(i))
+			h, err := provider.GetStateRootHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue
@@ -255,6 +284,98 @@ func GetStateHashesHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([
 		}
 	}
 
+	return parallelHashComputing(feeder)
+}
+
+func GetBlockHashesHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
+	defer ticker.Stop()
+
+	feeder := func(feederChan chan any, errChan chan error) {
+		defer close(feederChan)
+
+		provider := utils.MakeHashProvider(base)
+
+		for i := cfg.First; i <= cfg.Last; i++ {
+			select {
+			case <-ticker.C:
+				log.Infof("Block-Hashes hash progress: %v/%v", i, cfg.Last)
+			default:
+			}
+
+			h, err := provider.GetBlockHash(int(i))
+			if err != nil {
+				if errors.Is(err, leveldb.ErrNotFound) {
+					continue
+				}
+				errChan <- err
+				return
+			}
+
+			select {
+			case err = <-errChan:
+				errChan <- err
+				return
+			case feederChan <- h:
+			}
+		}
+	}
+
+	return parallelHashComputing(feeder)
+}
+
+func GetExceptionDbHash(
+	cfg *utils.Config,
+	base db.BaseDB,
+	progressLoggerFrequency time.Duration,
+	log logger.Logger,
+) ([]byte, uint64, error) {
+	ticker := time.NewTicker(progressLoggerFrequency)
+	defer ticker.Stop()
+
+	feeder := func(feederChan chan any, errChan chan error) {
+		defer close(feederChan)
+
+		startingBlockBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
+
+		edb := db.MakeDefaultExceptionDBFromBaseDB(base)
+		iter := edb.NewIterator([]byte(db.ExceptionDBPrefix), startingBlockBytes)
+		defer iter.Release()
+
+		i := 0
+		for iter.Next() {
+			i++
+			select {
+			case <-ticker.C:
+				log.Infof("Exception hash progress: %v/%v", i, cfg.Last)
+			default:
+			}
+
+			block, err := db.DecodeExceptionDBKey(iter.Key())
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if block > cfg.Last {
+				break
+			}
+
+			// make copy of value before sending to channel
+			value := bytes.Clone(iter.Value())
+			select {
+			case err = <-errChan:
+				errChan <- err
+				return
+			case feederChan <- value:
+			}
+		}
+	}
 	return parallelHashComputing(feeder)
 }
 

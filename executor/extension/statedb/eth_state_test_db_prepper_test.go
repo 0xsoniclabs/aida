@@ -25,6 +25,8 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ethStateTestDbPrepper_PreBlockPreparesStateDB(t *testing.T) {
@@ -78,4 +80,23 @@ func Test_ethStateTestDbPrepper_PostBlockCleansTmpDir(t *testing.T) {
 	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
 		t.Fatalf("tmp dir not removed")
 	}
+}
+
+func Test_ethStateTestDbPrepper_PreBlock_FailsWithUnknownFork(t *testing.T) {
+	cfg := &utils.Config{
+		ChainID:  utils.EthTestsChainID,
+		LogLevel: "critical",
+	}
+	ext := ethStateTestDbPrepper{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrepper")}
+	testData := ethtest.CreateTestTransactionWithUnknownFork(t)
+
+	err := ext.PreBlock(executor.State[txcontext.TxContext]{Data: testData}, new(executor.Context))
+	require.ErrorContains(t, err, "cannot init chain config")
+}
+
+func Test_ethStateTestDbPrepper_MakeEthStateTestDbPrepper(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestDbPrepper(cfg)
+	_, ok := ext.(*ethStateTestDbPrepper)
+	assert.True(t, ok)
 }

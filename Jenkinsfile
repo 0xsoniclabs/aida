@@ -55,6 +55,14 @@ pipeline {
                     }
                 }
 
+                stage('Lint') {
+                    steps {
+                        sh "git submodule update --init --recursive"
+                        sh "make install-dev-tools"
+                        sh "make check"
+                    }
+                }
+
                 stage('Build') {
                     steps {
                         script {
@@ -71,7 +79,7 @@ pipeline {
                     }
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                             sh 'go test ./... -coverprofile=coverage.txt'
+                             sh 'go test ./... -coverprofile=coverage.txt -coverpkg=./...'
                              sh ('codecov upload-process -r 0xsoniclabs/aida -f ./coverage.txt -t ${CODECOV_TOKEN}')
                         }
                     }
@@ -168,6 +176,7 @@ pipeline {
                                 --vm-impl geth \
                                 --db-impl geth \
                                 ${TMPDB} \
+                                --chainid 1337 \
                                 --fork Cancun \
                                 ${env.WORKSPACE}/eth-test-package/GeneralStateTests/stTransactionTest"""
                         }

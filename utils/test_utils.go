@@ -1,13 +1,18 @@
 package utils
 
 import (
+	"encoding/hex"
+	"fmt"
 	"math/big"
+	"strconv"
+	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
 )
 
 var testUpdateSet = &updateset.UpdateSet{
@@ -34,7 +39,7 @@ func createTestUpdateDB(dbPath string) (substateDb.UpdateDB, error) {
 	return db, nil
 }
 
-func getTestSubstate(encoding string) *substate.Substate {
+func GetTestSubstate(encoding string) *substate.Substate {
 	txType := int32(substate.SetCodeTxType)
 	ss := &substate.Substate{
 		InputSubstate:  substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
@@ -87,4 +92,83 @@ func getTestSubstate(encoding string) *substate.Substate {
 		ss.Message.SetCodeAuthorizations = nil
 	}
 	return ss
+}
+
+// Must is a helper function that takes a value of any type and an error.
+// If the error is nil, it returns the value; if the error is non-nil, it panics.
+func Must[T any](value T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+// CreateTestSubstateDb creates a test substate database with a predefined substate.
+func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
+	path := t.TempDir()
+	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+
+	ss := GetTestSubstate("protobuf")
+	err = db.PutSubstate(ss)
+	require.NoError(t, err)
+
+	md := NewAidaDbMetadata(db, "CRITICAL")
+	dbHash, err := hex.DecodeString("a0d4f7616f3007bf8c02f816a60b2526")
+	require.NoError(t, err)
+
+	require.NoError(t, md.genMetadata(ss.Block-1, ss.Block+1, 0, 0, SonicMainnetChainID, dbHash))
+
+	require.NoError(t, db.Close())
+
+	return ss, path
+}
+
+// ArgsBuilder helps create []string for CLI testing in a type-safe way
+type ArgsBuilder struct {
+	args []string
+}
+
+func NewArgs(cmd string) *ArgsBuilder {
+	return &ArgsBuilder{args: []string{cmd}}
+}
+
+func (b *ArgsBuilder) Flag(name string, value interface{}) *ArgsBuilder {
+	switch v := value.(type) {
+	case string:
+		b.args = append(b.args, "--"+name, v)
+	case int:
+		b.args = append(b.args, "--"+name, strconv.Itoa(v))
+	case bool:
+		if v {
+			b.args = append(b.args, "--"+name)
+		}
+	// You can add more types here (float, time.Duration, etc.)
+	default:
+		panic(fmt.Sprintf("unsupported flag type %T", v))
+	}
+	return b
+}
+
+func (b *ArgsBuilder) Arg(value interface{}) *ArgsBuilder {
+	switch v := value.(type) {
+	case string:
+		b.args = append(b.args, v)
+	case int:
+		b.args = append(b.args, strconv.Itoa(v))
+	case bool:
+		if v {
+			b.args = append(b.args, "true")
+		} else {
+			b.args = append(b.args, "false")
+		}
+	default:
+		panic(fmt.Sprintf("unsupported arg type %T", v))
+	}
+	return b
+}
+
+func (b *ArgsBuilder) Build() []string {
+	return b.args
 }

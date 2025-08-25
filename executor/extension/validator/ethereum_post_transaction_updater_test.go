@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -116,6 +117,8 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().GetCode(common.HexToAddress("0x1")),
 		db.EXPECT().GetState(common.HexToAddress("0x1"), common.HexToHash("0x1")),
 		db.EXPECT().SetState(common.HexToAddress("0x1"), common.HexToHash("0x1"), common.HexToHash("0x2")),
+		db.EXPECT().EndTransaction().Return(nil),
+		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
 	)
 
 	gomock.InOrder(
@@ -160,4 +163,26 @@ func getEthereumExceptionBlock() int {
 		return key
 	}
 	return -1
+}
+
+func TestEthereumDbPostTransactionUpdater_PreRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	log := logger.NewMockLogger(ctrl)
+	cfg := &utils.Config{}
+	st := executor.State[txcontext.TxContext]{}
+	ctx := new(executor.Context)
+	log.EXPECT().Warning(gomock.Any())
+	ext := &ethereumDbPostTransactionUpdater{
+		cfg: cfg,
+		log: log,
+	}
+	err := ext.PreRun(st, ctx)
+	assert.NoError(t, err)
+}
+
+func TestEthereumDbPostTransactionUpdater_MakeEthereumDbPostTransactionUpdater(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.ChainID = utils.PseudoTx
+	ext := MakeEthereumDbPostTransactionUpdater(cfg)
+	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }

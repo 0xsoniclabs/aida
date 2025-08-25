@@ -34,7 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-	gomock "go.uber.org/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/exp/maps"
 )
 
@@ -85,6 +86,12 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 		mockStateDB := state.NewMockStateDB(ctrl)
 		mockCtx := executor.Context{State: mockStateDB}
 		prepareMockStateDbOnce(mockStateDB)
+		mockPrinter := utils.NewMockPrinter(ctrl)
+		for i := 0; i < len(ext.ps); i++ {
+			ext.ps[i] = utils.NewCustomPrinters([]utils.Printer{mockPrinter})
+		}
+		mockPrinter.EXPECT().Print().AnyTimes()
+		mockPrinter.EXPECT().Close().AnyTimes()
 
 		// PRE BLOCK
 		ext.PreRun(executor.State[any]{}, &mockCtx)
@@ -201,6 +208,12 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 			mockStateDB := state.NewMockStateDB(ctrl)
 			mockCtx := executor.Context{State: mockStateDB}
 			prepareMockStateDb(mockStateDB)
+			mockPrinter := utils.NewMockPrinter(ctrl)
+			for i := 0; i < len(ext.ps); i++ {
+				ext.ps[i] = utils.NewCustomPrinters([]utils.Printer{mockPrinter})
+			}
+			mockPrinter.EXPECT().Print().AnyTimes()
+			mockPrinter.EXPECT().Close().AnyTimes()
 
 			totalSeenOpCount, totalGeneratedOpCount := 0, 0
 			intervalGeneratedOpCount := 0
@@ -300,6 +313,7 @@ func TestOperationProfiler_WithMalformedConfig(t *testing.T) {
 func getStateDbFuncs(db state.StateDB) []func() {
 	mockAddress := common.HexToAddress("0x00000F1")
 	mockHash := common.BigToHash(big.NewInt(0))
+	mockTimestamp := uint64(0)
 	return []func(){
 		func() { db.CreateAccount(mockAddress) },
 		func() { db.CreateContract(mockAddress) },
@@ -349,7 +363,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.BeginSyncPeriod(0) },
 		func() { db.EndSyncPeriod() },
 		func() { db.AddLog(nil) },
-		func() { db.GetLogs(mockHash, uint64(0), mockHash) },
+		func() { db.GetLogs(mockHash, uint64(0), mockHash, mockTimestamp) },
 		func() { db.PointCache() },
 		func() { db.Witness() },
 		func() { db.AddPreimage(mockHash, []byte{0}) },
@@ -403,7 +417,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
 	m.EXPECT().EndSyncPeriod().AnyTimes()
 	m.EXPECT().AddLog(gomock.Any()).AnyTimes()
-	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().PointCache().AnyTimes()
 	m.EXPECT().Witness().AnyTimes()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any()).AnyTimes()
@@ -456,7 +470,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().BeginSyncPeriod(gomock.Any())
 	m.EXPECT().EndSyncPeriod()
 	m.EXPECT().AddLog(gomock.Any())
-	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any())
+	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().PointCache()
 	m.EXPECT().Witness()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any())
@@ -472,4 +486,73 @@ func getRandomStateDbFunc(db state.StateDB, r *rand.Rand) func() {
 	funcs := getStateDbFuncs(db)
 	funcCount := len(funcs)
 	return funcs[r.Intn(funcCount)]
+}
+
+func TestOperationProfiler_sqlite3(t *testing.T) {
+	// Setup mock data
+	mockOps := map[byte]string{
+		1: "Operation1",
+		2: "Operation2",
+	}
+
+	// Create mock analytics with known values
+	analytics1 := analytics.NewIncrementalAnalytics(3)
+
+	// Create profiler with controlled test values
+	o := &operationProfiler[int]{
+		ops:                      mockOps,
+		anlts:                    []*analytics.IncrementalAnalytics{analytics1, analytics1, analytics1},
+		interval:                 utils.NewInterval(100, 200, 10),
+		lastProcessedBlock:       150,
+		lastProcessedTransaction: 5,
+	}
+
+	// Test for IntervalLevel
+	conn, createStmt, insertStmt, valueFunc := o.sqlite3("test.db", IntervalLevel)
+
+	// Verify connection string
+	assert.Equal(t, "test.db", conn, "Connection string should match")
+
+	// Verify create statement
+	assert.Equal(t, sqlite3_Interval_CreateTableIfNotExist, createStmt, "Create table statement should match for IntervalLevel")
+
+	// Verify insert statement
+	assert.Equal(t, sqlite3_Interval_InsertOrReplace, insertStmt, "Insert statement should match for IntervalLevel")
+
+	// Verify values function
+	values := valueFunc()
+	assert.NotNil(t, values)
+
+	// Test for BlockLevel
+	conn, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", BlockLevel)
+
+	// Verify create statement
+	assert.Equal(t, sqlite3_Block_CreateTableIfNotExist, createStmt, "Create table statement should match for BlockLevel")
+
+	// Verify insert statement
+	assert.Equal(t, sqlite3_Block_InsertOrReplace, insertStmt, "Insert statement should match for BlockLevel")
+
+	// Verify values function
+	values = valueFunc()
+	assert.NotNil(t, values)
+
+	// Test for TransactionLevel
+	conn, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", TransactionLevel)
+
+	// Verify create statement
+	assert.Equal(t, sqlite3_Transaction_CreateTableIfNotExist, createStmt, "Create table statement should match for TransactionLevel")
+
+	// Verify insert statement
+	assert.Equal(t, sqlite3_Transaction_InsertOrReplace, insertStmt, "Insert statement should match for TransactionLevel")
+
+	// Verify values function
+	values = valueFunc()
+	assert.NotNil(t, values)
+
+	// Test invalid depth - should return empty values
+	conn, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", ProfileDepth(999))
+	assert.Empty(t, conn, "Connection string should be empty for invalid depth")
+	assert.Empty(t, createStmt, "Create statement should be empty for invalid depth")
+	assert.Empty(t, insertStmt, "Insert statement should be empty for invalid depth")
+	assert.Nil(t, valueFunc, "Value function should be nil for invalid depth")
 }

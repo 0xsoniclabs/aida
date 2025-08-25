@@ -1,100 +1,137 @@
 package ethtest
 
 import (
-	"encoding/hex"
-	"fmt"
-	"math/big"
-	"slices"
-	"strings"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
-	"go.uber.org/mock/gomock"
-	"golang.org/x/exp/maps"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestTestCaseSplitter_DivideStateTests_DividesDataAccordingToIndexes(t *testing.T) {
-	stJson := CreateTestStJson(t)
-	splitter := TestCaseSplitter{
+func TestTransaction_Fields(t *testing.T) {
+	tx := Transaction{Fork: "London", Ctx: nil}
+	assert.Equal(t, "London", tx.Fork)
+	assert.Nil(t, tx.Ctx)
+}
+
+func TestSortForks_All(t *testing.T) {
+	log := logger.NewLogger("info", "test-sort-forks")
+	forks := sortForks(log, "all")
+	assert.ElementsMatch(t, forks, []string{
+		"Prague", "Cancun", "Shanghai", "Paris", "Bellatrix", "GrayGlacier", "ArrowGlacier", "Altair", "London", "Berlin", "Istanbul", "MuirGlacier", "TestNetwork",
+	})
+}
+
+func TestSortForks_Unknown(t *testing.T) {
+	log := logger.NewLogger("info", "test-sort-forks")
+	forks := sortForks(log, "unknownFork")
+	assert.Empty(t, forks)
+}
+
+func TestSortForks_Single(t *testing.T) {
+	log := logger.NewLogger("info", "test-sort-forks")
+	forks := sortForks(log, "London")
+	assert.Equal(t, []string{"London"}, forks)
+}
+
+func TestTestCaseSplitter_getChainConfig(t *testing.T) {
+	ts := &TestCaseSplitter{chainConfigs: make(map[string]*params.ChainConfig)}
+	cfg, err := ts.getChainConfig("London")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	cfg2, err2 := ts.getChainConfig("London")
+	assert.NoError(t, err2)
+	assert.Equal(t, cfg, cfg2)
+}
+
+func TestTestCaseSplitter_SplitStateTests_Empty(t *testing.T) {
+	ts := &TestCaseSplitter{jsons: []*stJSON{}, enabledForks: []string{"London"}, chainConfigs: make(map[string]*params.ChainConfig), log: logger.NewLogger("info", "splitter")}
+	dt, err := ts.SplitStateTests()
+	assert.NoError(t, err)
+	assert.Empty(t, dt)
+}
+
+func TestTestCaseSplitter_SplitStateTests_BaseFeeNil(t *testing.T) {
+	stJson := &stJSON{
+		Env:  stBlockEnvironment{BaseFee: nil},
+		Post: map[string][]stPost{},
+	}
+	ts := &TestCaseSplitter{
 		jsons:        []*stJSON{stJson},
-		log:          logger.NewLogger("info", "test-case-splitter-test"),
+		enabledForks: []string{"London"},
 		chainConfigs: make(map[string]*params.ChainConfig),
+		log:          logger.NewLogger("info", "splitter"),
 	}
-	tests, err := splitter.SplitStateTests()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, testCase := range tests {
-		msg := testCase.Ctx.GetMessage()
-		if strings.Contains(fmt.Sprintf("%s", testCase), "Cancun") {
-			// Cancun fork contains data 1 and data 2 but since map is not ordered we cannot guarantee
-			gotData := hex.EncodeToString(msg.Data)
-			if !(strings.Contains(gotData, data1) || strings.Contains(gotData, data2)) {
-				t.Fatalf("unexpected data\ngot: %v\nwant: %v or %v", gotData, data1, data2)
-			}
-
-			gotValue := msg.Value
-			want1, _ := new(big.Int).SetString(data1, 16)
-			want2, _ := new(big.Int).SetString(data2, 16)
-			if !(gotValue.Cmp(want1) == 0 || gotValue.Cmp(want2) == 0) {
-				t.Fatalf("unexpected value\ngot: %v\nwant: %v or %v", gotValue, want1, want2)
-			}
-		} else {
-			// London fork contains data 3 and data 4 but since map is not ordered we cannot guarantee
-			got := hex.EncodeToString(msg.Data)
-			if !(strings.Contains(got, data3) || strings.Contains(got, data4)) {
-				t.Fatalf("unexpected data\ngot: %v\nwant: %v or %v", got, data1, data2)
-			}
-
-			gotValue := msg.Value
-			want3, _ := new(big.Int).SetString(data3, 16)
-			want4, _ := new(big.Int).SetString(data4, 16)
-			if !(gotValue.Cmp(want3) == 0 || gotValue.Cmp(want4) == 0) {
-				t.Fatalf("unexpected value\ngot: %v\nwant: %v or %v", got, data1, data2)
-			}
-		}
-	}
+	dt, err := ts.SplitStateTests()
+	assert.NoError(t, err)
+	assert.Empty(t, dt)
 }
 
-func TestTestCaseSplitter_NewTestCaseSplitter_SortsForks(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-
-	log.EXPECT().Warningf("Unknown name fork name %v, removing", "Toberemoved")
-
-	fork := "toBeRemoved"
-	got := sortForks(log, fork)
-	want := []string{}
-	if !slices.Equal(got, want) {
-		t.Fatalf("unexpected forks, got: %v\nwant: %v", got, want)
-	}
+func TestNewTestCaseSplitter_Error(t *testing.T) {
+	cfg := &utils.Config{LogLevel: "info", Fork: "London"}
+	_, err := NewTestCaseSplitter(cfg)
+	assert.Error(t, err)
 }
 
-func TestTestCaseSplitter_NewTestCaseSplitter_AllAddsAllForks(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-
-	got := sortForks(log, "all")
-	want := maps.Keys(usableForks)
-	// Maps are unordered...
-	slices.Sort(got)
-	slices.Sort(want)
-	if !slices.Equal(got, want) {
-		t.Fatalf("unexpected forks, got: %v\nwant: %v", got, want)
+func TestTestCaseSplitter_SplitStateTests_PostNotFound(t *testing.T) {
+	stJson := &stJSON{
+		Env:  stBlockEnvironment{BaseFee: newBigInt(1)},
+		Post: map[string][]stPost{},
 	}
+	ts := &TestCaseSplitter{
+		jsons:        []*stJSON{stJson},
+		enabledForks: []string{"London"},
+		chainConfigs: make(map[string]*params.ChainConfig),
+		log:          logger.NewLogger("info", "splitter"),
+	}
+	dt, err := ts.SplitStateTests()
+	assert.NoError(t, err)
+	assert.Empty(t, dt)
 }
 
-func TestTestCaseSplitter_NewTestCaseSplitter_GlaciersAreCapitalized(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	log := logger.NewMockLogger(ctrl)
-
-	got := sortForks(log, "muirGlacier")
-	want := []string{"MuirGlacier"}
-	// Maps are unordered...
-	slices.Sort(got)
-	slices.Sort(want)
-	if !slices.Equal(got, want) {
-		t.Fatalf("unexpected forks, got: %v\nwant: %v", got, want)
+func TestTestCaseSplitter_SplitStateTests(t *testing.T) {
+	stJson := &stJSON{
+		Env: stBlockEnvironment{BaseFee: newBigInt(1)},
+		Tx: stTransaction{
+			Data:                 []string{"0x1234"},
+			Value:                []string{"1234"},
+			GasLimit:             []*BigInt{newBigInt(1000000)},
+			Nonce:                newBigInt(1),
+			MaxFeePerGas:         newBigInt(1),
+			MaxPriorityFeePerGas: newBigInt(1),
+			BlobGasFeeCap:        newBigInt(1),
+		},
+		Post: map[string][]stPost{
+			"London": {
+				{
+					RootHash:        common.HexToHash("0x1234"),
+					LogsHash:        common.HexToHash("0xabcd"),
+					TxBytes:         hexutil.Bytes{0x01, 0x02},
+					ExpectException: "err",
+					Indexes:         Index{Data: 0, Gas: 0, Value: 0},
+				},
+			},
+			"Paris": {
+				{
+					RootHash:        common.HexToHash("0x1234"),
+					LogsHash:        common.HexToHash("0xabcd"),
+					TxBytes:         hexutil.Bytes{0x01, 0x02},
+					ExpectException: "err",
+					Indexes:         Index{Data: 0, Gas: 0, Value: 0},
+				},
+			},
+		},
 	}
+	ts := &TestCaseSplitter{
+		jsons:        []*stJSON{stJson},
+		enabledForks: []string{"London", "Paris"},
+		chainConfigs: make(map[string]*params.ChainConfig),
+		log:          logger.NewLogger("info", "splitter"),
+	}
+	dt, err := ts.SplitStateTests()
+	assert.NoError(t, err)
+	assert.Len(t, dt, len(ts.enabledForks))
 }

@@ -32,10 +32,25 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
 
 var testingAddress = common.Address{1}
+
+func TestCmd_RunVm(t *testing.T) {
+	_, path := utils.CreateTestSubstateDb(t)
+	app := cli.NewApp()
+	app.Action = RunVm
+	app.Flags = []cli.Flag{
+		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
+	}
+
+	err := app.Run([]string{runVmApp.Name, "--aida-db", path, "--substate-encoding", "pb", "first", "last"})
+	require.ErrorContains(t, err, "intrinsic gas too low")
+}
 
 func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -71,7 +86,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		// Tx 2
 		db.EXPECT().BeginTransaction(uint32(2)),
@@ -80,7 +95,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().RevertToSnapshot(17),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 2)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		// Block 3
 		db.EXPECT().BeginTransaction(uint32(1)),
@@ -89,7 +104,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		db.EXPECT().GetCode(gomock.Any()).Return(nil),
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().RevertToSnapshot(19),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		// Pseudo Tx
 		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
@@ -260,7 +275,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 	)
 
 	// Code may be fetched at any time.
@@ -312,7 +327,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 	)
 
 	db.EXPECT().GetCode(gomock.Any()).AnyTimes().Return([]byte{})
@@ -416,7 +431,9 @@ func TestVm_ValidationFailsOnInvalidTransaction_Parallel(t *testing.T) {
 
 // emptyTx is a dummy substate that will be processed without crashing.
 var emptyTx = &substate.Substate{
-	Env: &substate.Env{},
+	Env: &substate.Env{
+		Timestamp: uint64(10),
+	},
 	Message: &substate.Message{
 		Gas:      10000,
 		GasPrice: big.NewInt(0),
@@ -430,7 +447,9 @@ var emptyTx = &substate.Substate{
 // testTx is a dummy substate used for testing validation.
 var testTx = &substate.Substate{
 	InputSubstate: substate.WorldState{substatetypes.Address(testingAddress): substate.NewAccount(1, uint256.NewInt(1), []byte{})},
-	Env:           &substate.Env{},
+	Env: &substate.Env{
+		Timestamp: uint64(10),
+	},
 	Message: &substate.Message{
 		GasPrice: big.NewInt(12),
 		Value:    big.NewInt(1),

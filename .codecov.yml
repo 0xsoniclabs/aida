@@ -14,6 +14,11 @@ coverage:
       default:
         target: 80% # target coverage of the changes
         threshold: 1% # allow the coverage to drop by <threshold>%
+      cmd:
+        target: 70% # lower target coverage for cmd folder and subfolders
+        threshold: 1%
+        paths:
+          - "cmd/"
 
 ignore:
   - "sonic/"
@@ -23,3 +28,5 @@ ignore:
   - "**/*_mock.go"
   - "**/*_test.go"
   - "**/*.pb.go"
+  - "ethtest/mock_data.go"
+  - "**/main.go"

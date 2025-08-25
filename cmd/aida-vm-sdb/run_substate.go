@@ -54,10 +54,7 @@ func RunSubstate(ctx *cli.Context) error {
 	}
 	defer aidaDb.Close()
 
-	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
-	if err != nil {
-		return fmt.Errorf("cannot open substate provider; %w", err)
-	}
+	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
@@ -115,6 +112,7 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 		statedb.NewParentBlockHashProcessor(cfg),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 		validator.MakeEthereumDbPreTransactionUpdater(cfg),
+		statedb.MakeStateDbCorrector(cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		validator.MakeEthereumDbPostTransactionUpdater(cfg),
 		profiler.MakeOperationProfiler[txcontext.TxContext](cfg),

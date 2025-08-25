@@ -42,14 +42,14 @@ func Test_GetLastKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to convert key to uint64: %v", err)
 	}
-	key, err := GetLastKey(mockDB, StateHashPrefix)
+	key, err := GetLastKey(mockDB, StateRootHashPrefix)
 	assert.Nil(t, err)
 	assert.Equal(t, expected, key)
 
 	// case 2
 	mockDB = NewMockethDatabase(ctrl)
 	mockDB.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewEmptyIterator(nil)).Times(8)
-	key, err = GetLastKey(mockDB, StateHashPrefix)
+	key, err = GetLastKey(mockDB, StateRootHashPrefix)
 	assert.Error(t, err)
 	assert.Equal(t, uint64(0), key)
 
@@ -58,7 +58,7 @@ func Test_GetLastKey(t *testing.T) {
 	mockDB.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewEmptyIterator(nil)).Times(7)
 	mockDB.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewArrayIterator(kv))
 	mockDB.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewArrayIterator(kv)).AnyTimes()
-	key, err = GetLastKey(mockDB, StateHashPrefix)
+	key, err = GetLastKey(mockDB, StateRootHashPrefix)
 	assert.Error(t, err)
 	assert.Equal(t, uint64(0), key)
 
@@ -69,7 +69,7 @@ func Test_GetLastKey(t *testing.T) {
 		DoAndReturn(func(prefix, start []byte) ethdb.Iterator {
 			return iterator.NewArrayIterator(kv)
 		}).AnyTimes()
-	key, err = GetLastKey(mockDB, StateHashPrefix)
+	key, err = GetLastKey(mockDB, StateRootHashPrefix)
 	assert.Error(t, err)
 	assert.Equal(t, uint64(0), key)
 
@@ -133,7 +133,7 @@ func TestSearchableDB_getLongestEncodedKeyZeroPrefixLength(t *testing.T) {
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewEmptyIterator(nil)).Times(2)
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewArrayIterator(kv))
 
-	result, err := db.getLongestEncodedKeyZeroPrefixLength(StateHashPrefix)
+	result, err := db.getLongestEncodedKeyZeroPrefixLength(StateRootHashPrefix)
 
 	assert.Nil(t, err)
 	assert.Equal(t, byte(2), result)
@@ -141,7 +141,7 @@ func TestSearchableDB_getLongestEncodedKeyZeroPrefixLength(t *testing.T) {
 	// Case: Not found
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewEmptyIterator(nil)).Times(8)
 
-	result, err = db.getLongestEncodedKeyZeroPrefixLength(StateHashPrefix)
+	result, err = db.getLongestEncodedKeyZeroPrefixLength(StateRootHashPrefix)
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "unable to find prefix")

@@ -23,6 +23,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -58,4 +59,39 @@ func TestEthStateScopeEventEmitter_PostBlockCallsEndBlockAndEndTransaction(t *te
 	if err != nil {
 		t.Fatalf("unexpected err; %v", err)
 	}
+}
+
+func TestEthStateScopeEventEmitter_MakeEthStateScopeTestEventEmitter(t *testing.T) {
+	ext := MakeEthStateScopeTestEventEmitter()
+	_, ok := ext.(executor.Extension[txcontext.TxContext])
+	assert.True(t, ok)
+}
+
+func TestEthStateScopeEventEmitter_PreBlockError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := state.NewMockStateDB(ctrl)
+
+	ext := ethStateScopeEventEmitter{}
+
+	db.EXPECT().BeginBlock(uint64(1)).Return(assert.AnError)
+
+	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1, Data: ethtest.CreateTestTransaction(t)}
+	ctx := &executor.Context{State: db}
+	err := ext.PreBlock(st, ctx)
+	assert.Error(t, err)
+	assert.Equal(t, assert.AnError, err)
+}
+func TestEthStateScopeEventEmitter_PostBlockError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := state.NewMockStateDB(ctrl)
+
+	ext := ethStateScopeEventEmitter{}
+
+	db.EXPECT().EndTransaction().Return(assert.AnError)
+
+	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1, Data: ethtest.CreateTestTransaction(t)}
+	ctx := &executor.Context{State: db}
+	err := ext.PostBlock(st, ctx)
+	assert.Error(t, err)
+	assert.Equal(t, assert.AnError, err)
 }

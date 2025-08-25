@@ -17,6 +17,7 @@
 package statedb
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"slices"
@@ -36,6 +37,49 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
+	t.Run("no duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		ext, err := makeArchiveInquirer(&cfg, log, nil)
+		assert.NoError(t, err)
+		out, ok := ext.(*archiveInquirer)
+		assert.True(t, ok)
+		assert.Equal(t, defaultTickerDuration, out.tickerDuration)
+	})
+
+	t.Run("valid duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		duration := 150 * time.Second
+		ext, err := makeArchiveInquirer(&cfg, log, &duration)
+		assert.NoError(t, err)
+		out, ok := ext.(*archiveInquirer)
+		assert.True(t, ok)
+		assert.Equal(t, duration, out.tickerDuration)
+	})
+
+	t.Run("invalid duration", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		log := logger.NewMockLogger(ctrl)
+		cfg := utils.Config{}
+		cfg.ChainID = utils.MainnetChainID
+		cfg.ArchiveQueryRate = 100
+		duration := -150 * time.Second
+		ext, err := makeArchiveInquirer(&cfg, log, &duration)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "duration must greater than 0")
+		assert.Nil(t, ext)
+	})
+
+}
+
 func TestArchiveInquirer_DisabledIfNoQueryRateIsGiven(t *testing.T) {
 	config := utils.Config{}
 	ext, err := MakeArchiveInquirer(&config)
@@ -53,7 +97,7 @@ func TestArchiveInquirer_ReportsErrorIfNoArchiveIsPresent(t *testing.T) {
 	cfg := utils.Config{}
 	cfg.ChainID = utils.MainnetChainID
 	cfg.ArchiveQueryRate = 100
-	ext, err := makeArchiveInquirer(&cfg, log)
+	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -75,7 +119,7 @@ func TestArchiveInquirer_CanStartUpAndShutdownGracefully(t *testing.T) {
 	cfg.ChainID = utils.MainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
-	ext, err := makeArchiveInquirer(&cfg, log)
+	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -125,7 +169,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	archive.EXPECT().SetCode(gomock.Any(), gomock.Any()).AnyTimes()
 	archive.EXPECT().GetRefund().AnyTimes()
 	archive.EXPECT().RevertToSnapshot(gomock.Any()).AnyTimes()
-	archive.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	archive.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	archive.EXPECT().EndTransaction().AnyTimes()
 	archive.EXPECT().Release().MinTimes(1)
 	archive.EXPECT().GetStorageRoot(gomock.Any()).AnyTimes()
@@ -133,7 +177,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	archive.EXPECT().CreateContract(gomock.Any()).AnyTimes()
 	archive.EXPECT().Prepare(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	ext, err := makeArchiveInquirer(cfg, log)
+	ext, err := makeArchiveInquirer(cfg, log, nil)
 	if err != nil {
 		t.Fatalf("failed to create inquirer: %v", err)
 	}
@@ -259,4 +303,63 @@ func TestThrottler_ProducesEventsInExpectedRate(t *testing.T) {
 			t.Errorf("failed to reproduce rate %d, did %d events in %v", rate, count, testPeriod)
 		}
 	}
+}
+
+func TestArchiveInquirer_RunProgressReport(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLog := logger.NewMockLogger(ctrl)
+
+	duration := 1 * time.Second
+	inquirer := &archiveInquirer{
+		log:            mockLog,
+		finished:       utils.MakeEvent(),
+		tickerDuration: duration,
+	}
+
+	initialTxCount := uint64(20)
+	initialGasCount := uint64(300_000_000) // 300 M Gas
+	initialDurationMs := uint64(1000)      // 1000 ms (1 second)
+
+	inquirer.transactionCounter.Store(initialTxCount)
+	inquirer.gasCounter.Store(initialGasCount)
+	inquirer.totalQueryTimeMilliseconds.Store(initialDurationMs)
+
+	inquirer.done.Add(1) // For the runProgressReport goroutine
+
+	formatString := "Archive throughput: t=%ds, %.2f Tx/s, %.2f MGas/s, average duration %.2f ms"
+
+	// Expect at least one call to Infof.
+	// We capture the arguments to verify them after the goroutine finishes.
+	mockLog.EXPECT().Infof(formatString, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(format string, args ...interface{}) {
+			if len(args) == 4 {
+				var ok bool
+				_, ok = args[0].(int)
+				if !ok {
+					t.Logf("Failed to cast loggedTotalTime: %v", args[0])
+				}
+				_, ok = args[1].(float64)
+				if !ok {
+					t.Logf("Failed to cast loggedTPS: %v", args[1])
+				}
+				_, ok = args[2].(float64)
+				if !ok {
+					t.Logf("Failed to cast loggedMGPS: %v", args[2])
+				}
+				_, ok = args[3].(float64)
+				if !ok {
+					t.Logf("Failed to cast loggedAvgDuration: %v", args[3])
+				}
+			} else {
+				t.Logf("Infof called with unexpected number of arguments: %d", len(args))
+			}
+		}).MinTimes(1)
+
+	go inquirer.runProgressReport()
+
+	time.Sleep(duration)
+
+	inquirer.finished.Signal()
+	inquirer.done.Wait() // Wait for runProgressReport to complete
 }

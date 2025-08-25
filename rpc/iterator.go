@@ -134,12 +134,12 @@ func (i *iterator) read() (*RequestAndResults, error) {
 		return nil, err
 	}
 
-	method, err := hdr.Method()
+	namespace, err := hdr.Namespace()
 	if err != nil {
 		return nil, err
 	}
 
-	namespace, err := hdr.Namespace()
+	method, err := hdr.Method()
 	if err != nil {
 		return nil, err
 	}

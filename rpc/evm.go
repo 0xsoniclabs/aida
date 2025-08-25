@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -31,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/status-im/keycard-go/hexutils"
 )
@@ -144,7 +144,12 @@ func (e *EvmExecutor) newEVM(msg *core.Message, hashErr *error) *vm.EVM {
 		Time:        e.timestamp,
 	}
 
-	vmConfig = opera.DefaultVMConfig
+	// The default rules only work until there are blocks that have been created
+	// using the single-proposer mode. The crucial difference in the VM setup is
+	// that in the single-proposer mode the charging of excess gas is disabled,
+	// while in the distributed-proposer mode (the default mode), it is enabled.
+	defaultVmConfig := opera.GetVmConfig(opera.Rules{})
+	vmConfig = defaultVmConfig
 	vmConfig.NoBaseFee = true
 	vmConfig.Interpreter = e.vmImpl
 
@@ -162,7 +167,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	)
 
 	gp = new(core.GasPool).AddGas(math.MaxUint64) // based in opera
-	msg, err = e.args.ToMessage(globalGasCap, e.rules.MinGasPrice)
+	msg, err = e.args.ToMessage(globalGasCap, e.rules.MinGasPrice, log.Root())
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +176,9 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	evm = e.newEVM(msg, hashErr)
 
 	executionResult, err = core.ApplyMessage(evm, msg, gp)
+	if err != nil {
+		return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
+	}
 	if executionResult.Err != nil {
 		return nil, fmt.Errorf("execution returned err; %w", executionResult.Err)
 	}
@@ -183,9 +191,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 	if evm.Cancelled() {
 		return nil, fmt.Errorf("execution aborted: timeout")
 	}
-	if err != nil {
-		return executionResult, fmt.Errorf("err: %v (supplied gas %v)", err, e.args.Gas)
-	}
+
 	return executionResult, nil
 
 }
@@ -193,46 +199,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 // sendEstimateGas executes estimateGas method in the EvmExecutor
 // It calculates how much gas would transaction need if it was executed
 func (e *EvmExecutor) sendEstimateGas() (hexutil.Uint64, error) {
-	hi, lo, cap, err := e.findHiLoCap()
-	if err != nil {
-		return 0, err
-	}
-
-	// Execute the binary search and hone in on an executable gas limit
-	for lo+1 < hi {
-		mid := (hi + lo) / 2
-		failed, _, err := e.executable(mid)
-
-		// If the error is not nil(consensus error), it means the provided message
-		// call or transaction will never be accepted no matter how much gas it is
-		// assigned. Return the error directly, don't struggle anymore.
-		if err != nil {
-			return 0, err
-		}
-		if failed {
-			lo = mid
-		} else {
-			hi = mid
-		}
-	}
-	// Reject the transaction as invalid if it still fails at the highest allowance
-	if hi == cap {
-		failed, result, err := e.executable(hi)
-		if err != nil {
-			return 0, err
-		}
-		if failed {
-			if result != nil && result.Err != vm.ErrOutOfGas {
-				if len(result.Revert()) > 0 {
-					return 0, result.Err
-				}
-				return 0, result.Err
-			}
-			// Otherwise, the specified gas cap is too low
-			return 0, fmt.Errorf("gas required exceeds allowance (%d)", cap)
-		}
-	}
-	return hexutil.Uint64(hi), nil
+	panic("not implemented")
 }
 
 // executable tries to execute call with given gas into EVM. This func is used for estimateGas calculation
@@ -248,64 +215,4 @@ func (e *EvmExecutor) executable(gas uint64) (bool, *core.ExecutionResult, error
 		return true, nil, err // Bail out
 	}
 	return result.Failed(), result, nil
-}
-
-func (e *EvmExecutor) findHiLoCap() (uint64, uint64, uint64, error) {
-	// Binary search the gas requirement, as it may be higher than the amount used
-	var (
-		lo  = params.TxGas - 1
-		hi  uint64
-		cap uint64
-	)
-
-	// Use zero address if sender unspecified.
-	if e.args.From == nil {
-		e.args.From = new(common.Address)
-	}
-	// Determine the highest gas limit can be used during the estimation.
-	if e.args.Gas != nil && uint64(*e.args.Gas) >= params.TxGas {
-		hi = uint64(*e.args.Gas)
-	} else {
-		hi = maxGasLimit
-	}
-	// Normalize the max fee per gas the call is willing to spend.
-	var feeCap *big.Int
-	if e.args.GasPrice != nil && (e.args.MaxFeePerGas != nil || e.args.MaxPriorityFeePerGas != nil) {
-		return 0, 0, 0, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
-	} else if e.args.GasPrice != nil {
-		feeCap = e.args.GasPrice.ToInt()
-	} else if e.args.MaxFeePerGas != nil {
-		feeCap = e.args.MaxFeePerGas.ToInt()
-	} else {
-		feeCap = common.Big0
-	}
-	// Recap the highest gas limit with account's available balance.
-	if feeCap.BitLen() != 0 {
-		balance := e.archive.GetBalance(*e.args.From) // from can't be nil
-		available := balance.ToBig()
-		if e.args.Value != nil {
-			if e.args.Value.ToInt().Cmp(available) >= 0 {
-				return 0, 0, 0, errors.New("insufficient funds for transfer")
-			}
-			available.Sub(available, e.args.Value.ToInt())
-		}
-		allowance := new(big.Int).Div(available, feeCap)
-
-		// If the allowance is larger than maximum uint64, skip checking
-		if allowance.IsUint64() && hi > allowance.Uint64() {
-			transfer := e.args.Value
-			if transfer == nil {
-				transfer = new(hexutil.Big)
-			}
-			hi = allowance.Uint64()
-		}
-	}
-
-	// Recap the highest gas allowance with specified gascap.
-	if hi > globalGasCap {
-		hi = globalGasCap
-	}
-	cap = hi
-
-	return hi, lo, cap, nil
 }

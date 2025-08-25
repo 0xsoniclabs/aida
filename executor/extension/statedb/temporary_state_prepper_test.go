@@ -19,7 +19,11 @@ package statedb
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTemporaryStatePrepper_DefaultDbImplementationIsOffTheChainStateDb(t *testing.T) {
@@ -55,4 +59,39 @@ func TestTemporaryStatePrepper_InMemoryDbImplementation(t *testing.T) {
 	if _, ok := ext.(*temporaryInMemoryStatePrepper); !ok {
 		t.Fatal("unexpected extension type")
 	}
+}
+
+func TestTemporaryStatePrepper_PreTransaction(t *testing.T) {
+	tt := &temporaryInMemoryStatePrepper{
+		extension.NilExtension[txcontext.TxContext]{},
+	}
+	ss := executor.State[txcontext.TxContext]{
+		Data: makeValidSubstate(),
+	}
+	err := tt.PreTransaction(ss, &executor.Context{})
+	assert.NoError(t, err)
+}
+
+func TestTemporaryOffTheChainStatePrepper_PreRun(t *testing.T) {
+	tt := &temporaryOffTheChainStatePrepper{
+		cfg: &utils.Config{
+			ChainID: utils.MainnetChainID,
+		},
+		chainConduit: nil,
+	}
+	err := tt.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{})
+	assert.NoError(t, err)
+}
+
+func TestTemporaryOffTheChainStatePrepper_PreTransaction(t *testing.T) {
+	tt := &temporaryOffTheChainStatePrepper{
+		cfg: &utils.Config{
+			ChainID: utils.MainnetChainID,
+		},
+		chainConduit: nil,
+	}
+	err := tt.PreTransaction(executor.State[txcontext.TxContext]{
+		Data: makeValidSubstate(),
+	}, &executor.Context{})
+	assert.NoError(t, err)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
@@ -49,4 +50,16 @@ func TestEthStateTestLogger_PostRunLogsOverall(t *testing.T) {
 		t.Fatalf("post-run failed: %v", err)
 	}
 
+}
+
+func TestEthStateTestLogger_MakeEthStateTestLogger(t *testing.T) {
+	cfg := &utils.Config{}
+	ext := MakeEthStateTestLogger(cfg, 0)
+
+	if _, ok := ext.(*ethStateTestLogger); !ok {
+		t.Fatal("unexpected extension type")
+	}
+	if ext.(*ethStateTestLogger).reportFrequency != defaultReportFrequency {
+		t.Fatal("default report frequency is not set")
+	}
 }

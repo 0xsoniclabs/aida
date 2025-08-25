@@ -18,11 +18,12 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+
+	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/core/tracing"
 
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
@@ -30,9 +31,23 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
+
+func TestCmd_RunEthereumTest(t *testing.T) {
+	app := cli.NewApp()
+	app.Action = RunEthereumTest
+	app.Flags = []cli.Flag{
+		&utils.ChainIDFlag,
+	}
+
+	err := app.Run([]string{RunEthTestsCmd.Name, "--chainid", strconv.Itoa(int(utils.EthTestsChainID)), t.TempDir()})
+	require.NoError(t, err)
+}
 
 func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -63,7 +78,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 0)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 0)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 
@@ -76,7 +91,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 	)
@@ -215,7 +230,7 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 		db.EXPECT().GetBalance(gomock.Any()).Return(uint256.NewInt(1000)),
 		db.EXPECT().SubBalance(gomock.Any(), gomock.Any(), tracing.BalanceDecreaseGasBuy),
 		db.EXPECT().RevertToSnapshot(15),
-		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2))),
+		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 2, 1)), uint64(2), common.HexToHash(fmt.Sprintf("0x%016d", 2)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 		db.EXPECT().GetHash(),
@@ -286,4 +301,17 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 	if !strings.Contains(err.Error(), "pre alloc validation failed") {
 		t.Fatalf("unexpected error\ngot: %v\n want: %v", err, "pre alloc validation failed")
 	}
+}
+
+func TestVmSdb_EthTest_FailsWhenChainIDIsNotSet(t *testing.T) {
+	flagSet := flag.NewFlagSet("utils_config_test", 0)
+	flagSet.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "Chain ID.")
+	err := flagSet.Parse([]string{t.TempDir()})
+	require.NoError(t, err)
+
+	ctx := cli.NewContext(cli.NewApp(), flagSet, nil)
+	ctx.Command = &cli.Command{Name: "test_command"}
+
+	err = RunEthereumTest(ctx)
+	require.ErrorContains(t, err, fmt.Sprintf("please specify chain ID using --%s flag (1337 for most cases for this tool)", utils.ChainIDFlag.Name))
 }

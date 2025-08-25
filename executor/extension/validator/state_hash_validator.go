@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -51,7 +52,7 @@ type stateHashValidator[T any] struct {
 	log                     logger.Logger
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
-	hashProvider            utils.StateHashProvider
+	hashProvider            utils.HashProvider
 }
 
 func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
@@ -67,7 +68,7 @@ func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 		return errors.New("state-hash-validation only works with db-impl carmen or geth")
 	}
 
-	e.hashProvider = utils.MakeStateHashProvider(ctx.AidaDb)
+	e.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
 	return nil
 }
 
@@ -94,7 +95,7 @@ func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor
 	// Check the ArchiveDB
 	if e.cfg.ArchiveMode {
 		e.lastProcessedBlock = state.Block
-		if err = e.checkArchiveHashes(ctx.State); err != nil {
+		if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 			return err
 		}
 	}
@@ -110,7 +111,7 @@ func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Conte
 	// Complete processing remaining archive blocks.
 	if e.cfg.ArchiveMode {
 		for e.nextArchiveBlockToCheck < e.lastProcessedBlock {
-			if err = e.checkArchiveHashes(ctx.State); err != nil {
+			if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 				return err
 			}
 			if e.nextArchiveBlockToCheck < e.lastProcessedBlock {
@@ -121,9 +122,10 @@ func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Conte
 	return nil
 }
 
-func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
+func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb db.BaseDB) error {
 	// Note: the archive may be lagging behind the life DB, so block hashes need
 	// to be checked as they become available.
+
 	height, empty, err := state.GetArchiveBlockHeight()
 	if err != nil {
 		return fmt.Errorf("failed to get archive block height: %v", err)
@@ -131,7 +133,6 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 
 	cur := uint64(e.nextArchiveBlockToCheck)
 	for !empty && cur <= height {
-
 		want, err := e.getStateHash(int(cur))
 		if err != nil {
 			return err
@@ -150,7 +151,19 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 			return fmt.Errorf("cannot GetHash; %w", err)
 		}
 		if want != got {
-			return fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
+			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
+
+			sDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+			block, blockErr := sDb.GetBlockSubstates(cur)
+			if blockErr != nil {
+				return fmt.Errorf("cannot get substates for block %d; %v; archive-hash-error: %w", cur, blockErr, unexpectedHashErr)
+			}
+			// skip check if block is empty, because it could have been trailing an exception block
+			if len(block) > 0 {
+				return unexpectedHashErr
+			}
+			e.log.Warningf("Empty block %d has mismatch hash; %v", cur, unexpectedHashErr)
+
 		}
 
 		cur++
@@ -160,7 +173,7 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB) error {
 }
 
 func (e *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, error) {
-	want, err := e.hashProvider.GetStateHash(blockNumber)
+	want, err := e.hashProvider.GetStateRootHash(blockNumber)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return common.Hash{}, fmt.Errorf("state hash for block %v is not present in the db", blockNumber)

@@ -47,7 +47,7 @@ type ethStateTestDbPrepper struct {
 	log logger.Logger
 }
 
-func (e ethStateTestDbPrepper) PreBlock(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
+func (e ethStateTestDbPrepper) PreBlock(s executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	var err error
 	cfg := e.cfg
 	// We reduce the node cache size to be used by Carmen to 1 MB
@@ -55,6 +55,11 @@ func (e ethStateTestDbPrepper) PreBlock(_ executor.State[txcontext.TxContext], c
 	// the processing time of each transaction.
 	cfg.CarmenStateCacheSize = 1000
 	cfg.CarmenNodeCacheSize = (16 << 20) // = 16 MiB
+	// Init the chain config with current tests fork
+	cfg.ChainCfg, err = cfg.GetChainConfig(s.Data.GetBlockEnvironment().GetFork())
+	if err != nil {
+		return fmt.Errorf("cannot init chain config: %w", err)
+	}
 	ctx.State, ctx.StateDbPath, err = utils.PrepareStateDB(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statedb; %v", err)

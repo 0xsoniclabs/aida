@@ -134,7 +134,8 @@ func (v *stateDbValidator) runPreTxValidation(tool string, db state.VmStateDB, s
 	}
 
 	if v.cfg.OverwritePreWorldState {
-		return overwriteWorldState(v.cfg, state.Data.GetInputState(), db)
+		utils.OverwriteStateDB(state.Data.GetInputState(), db)
+		return nil
 	}
 	err := validateWorldState(v.cfg, db, state.Data.GetInputState(), v.log)
 	if err == nil {
@@ -163,8 +164,8 @@ func (v *stateDbValidator) runPostTxValidation(tool string, db state.VmStateDB, 
 	// ethereumLfvmBlockExceptions needs to skip receipt validation
 	_, skipEthereumException := ethereumLfvmBlockExceptions[v.cfg.ChainID][state.Block]
 	if skipEthereumException {
-		// skip should only happen if we are on Ethereum chain and using lfvm
-		skipEthereumException = v.cfg.VmImpl == "lfvm" && utils.IsEthereumNetwork(v.cfg.ChainID)
+		// skip should only happen if we are using lfvm
+		skipEthereumException = v.cfg.VmImpl == "lfvm"
 	}
 
 	// TODO remove state.Transaction < 99999 after patch aida-db

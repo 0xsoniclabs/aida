@@ -327,7 +327,7 @@ var (
 		Usage: "Depth of snapshot history",
 		Value: 100,
 	}
-	OperaDbFlag = cli.PathFlag{
+	ClientDbFlag = cli.PathFlag{
 		Name:    "db",
 		Aliases: []string{"datadir"},
 		Usage:   "Path to the opera database",
@@ -433,12 +433,12 @@ var (
 	}
 	ForkFlag = cli.StringFlag{
 		Name:  "fork",
-		Usage: "defines a fork to get executed by the eth-tests (\"all\", \"cancun\", \"shanghai\", \"paris\", \"bellatrix\", \"grayglacier\", \"arrowglacier\", \"altair\", \"london\", \"berlin\", \"istanbul\", \"muirglacier\")",
+		Usage: "defines a fork to get executed by the eth-tests (\"all\", \"prague\", \"cancun\", \"shanghai\", \"paris\", \"bellatrix\", \"grayglacier\", \"arrowglacier\", \"altair\", \"london\", \"berlin\", \"istanbul\", \"muirglacier\")",
 		Value: "All",
 	}
 	DbComponentFlag = cli.StringFlag{
 		Name:     "db-component",
-		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\")",
+		Usage:    "db component to be used (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")",
 		Required: true,
 	}
 	TxGeneratorTypeFlag = cli.StringSliceFlag{

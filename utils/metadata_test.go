@@ -23,7 +23,7 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
-	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
+	gethleveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
 	"go.uber.org/mock/gomock"
@@ -1143,7 +1143,7 @@ func TestHasStateHashPatch(t *testing.T) {
 	})
 
 	t.Run("case exist", func(t *testing.T) {
-		eDb, err := geth_leveldb.New(path, 1024, 100, "profiling", false)
+		eDb, err := gethleveldb.New(path, 1024, 100, "profiling", false)
 		if err != nil {
 			t.Fatalf("failed to open leveldb: %v", err)
 		}
@@ -1169,4 +1169,14 @@ func TestProcessMergeMetadata(t *testing.T) {
 	out, err := ProcessMergeMetadata(cfg, mockAidaDb, []db.BaseDB{mockSourceDb}, []string{})
 	assert.Error(t, err)
 	assert.Nil(t, out)
+}
+
+func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
+	for chainID := range EthereumChainIDs {
+		md := &AidaDbMetadata{ChainId: chainID}
+		assert.NoError(t, md.findEpochs())
+		// Epochs must be unchange
+		assert.Equal(t, md.FirstEpoch, uint64(0))
+		assert.Equal(t, md.LastEpoch, uint64(0))
+	}
 }

@@ -18,14 +18,19 @@
 package blockprofile
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func tempFile(require *require.Assertions) string {
@@ -453,4 +458,166 @@ func TestFlushProfileData(t *testing.T) {
 		}
 	}
 	require.NoError(tx.Commit())
+}
+
+func TestProfileDB_Add(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockErr := errors.New("mock error")
+
+	t.Run("Success", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+
+		mockBlockStmt := mockDb.ExpectPrepare("")
+		blockStmt, err := db.Prepare("")
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when preparing block statement", err)
+		}
+
+		mockTxStmt := mockDb.ExpectPrepare("")
+		txStmt, err := db.Prepare("")
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when preparing transaction statement", err)
+		}
+
+		pDB := &profileDB{
+			sql:       db,
+			blockStmt: blockStmt,
+			txStmt:    txStmt,
+			buffer:    []ProfileData{},
+		}
+
+		mockDb.ExpectBegin()
+		mockBlockStmt.ExpectExec().WillReturnResult(sqlmock.NewResult(1, 1))
+		mockTxStmt.ExpectExec().WillReturnResult(sqlmock.NewResult(1, 1))
+		mockDb.ExpectCommit()
+		err = pDB.Add(ProfileData{
+			tTransactions:   []int64{123456},
+			tTypes:          []TxType{TransferTx},
+			gasTransactions: []uint64{1000},
+		})
+
+		assert.Nil(t, err)
+		if err = mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("BeginError", func(t *testing.T) {
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+
+		// begin error
+		pDB := &profileDB{
+			sql:    db,
+			buffer: []ProfileData{},
+		}
+		mockDb.ExpectBegin().WillReturnError(mockErr)
+		err = pDB.Add(ProfileData{
+			tTransactions:   []int64{123456},
+			tTypes:          []TxType{TransferTx},
+			gasTransactions: []uint64{1000},
+		})
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockErr.Error())
+		if err = mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("WriteBlockError", func(t *testing.T) {
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+
+		mockBlockStmt := mockDb.ExpectPrepare("")
+		blockStmt, err := db.Prepare("")
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when preparing block statement", err)
+		}
+		// begin error
+		pDB := &profileDB{
+			sql:       db,
+			blockStmt: blockStmt,
+			buffer:    []ProfileData{},
+		}
+		mockDb.ExpectBegin()
+		mockBlockStmt.ExpectExec().WillReturnError(mockErr)
+		err = pDB.Add(ProfileData{
+			tTransactions:   []int64{123456},
+			tTypes:          []TxType{TransferTx},
+			gasTransactions: []uint64{1000},
+		})
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockErr.Error())
+		if err = mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("WriteTxError", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		db, mockDb, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer func(db *sql.DB) {
+			_ = db.Close()
+		}(db)
+
+		mockBlockStmt := mockDb.ExpectPrepare("")
+		blockStmt, err := db.Prepare("")
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when preparing block statement", err)
+		}
+
+		mockTxStmt := mockDb.ExpectPrepare("")
+		txStmt, err := db.Prepare("")
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when preparing transaction statement", err)
+		}
+
+		pDB := &profileDB{
+			sql:       db,
+			blockStmt: blockStmt,
+			txStmt:    txStmt,
+			buffer:    []ProfileData{},
+		}
+
+		mockDb.ExpectBegin()
+		mockBlockStmt.ExpectExec().WillReturnResult(sqlmock.NewResult(1, 1))
+		mockTxStmt.ExpectExec().WillReturnError(mockErr)
+		err = pDB.Add(ProfileData{
+			tTransactions:   []int64{123456},
+			tTypes:          []TxType{TransferTx},
+			gasTransactions: []uint64{1000},
+		})
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockErr.Error())
+		if err = mockDb.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
 }

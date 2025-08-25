@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/google/martian/log"
 )
 
@@ -317,4 +319,33 @@ func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target u
 	}
 	sdb.EndSyncPeriod()
 	return nil
+}
+
+// OverwriteStateDB overwrites the StateDb with the expected state.
+func OverwriteStateDB(patch txcontext.WorldState, db state.VmStateDB) {
+	patch.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
+		if !db.Exist(addr) {
+			db.CreateAccount(addr)
+		}
+		accBalance := acc.GetBalance()
+		balance := db.GetBalance(addr)
+		if accBalance.Cmp(balance) != 0 {
+			db.SubBalance(addr, balance, tracing.BalanceChangeUnspecified)
+			db.AddBalance(addr, accBalance, tracing.BalanceChangeUnspecified)
+		}
+		if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
+			db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
+
+		}
+		if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
+			db.SetCode(addr, acc.GetCode())
+		}
+
+		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
+			if db.GetState(addr, keyHash) != valueHash {
+				db.SetState(addr, keyHash, valueHash)
+			}
+		})
+
+	})
 }

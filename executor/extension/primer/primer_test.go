@@ -20,11 +20,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/holiman/uint256"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -35,7 +30,15 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/rlp"
+	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"go.uber.org/mock/gomock"
 )
 
@@ -480,4 +483,66 @@ func TestPrimer_EthereumGenesisPriming(t *testing.T) {
 			require.NoError(t, err, "pre-run failed")
 		})
 	}
+}
+
+func TestStateDbPrimer_Prime(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	log := logger.NewLogger("Info", "TestStateDbPrimer")
+
+	cfg := &utils.Config{}
+	cfg.SkipPriming = false
+	cfg.StateDbSrc = ""
+	cfg.First = 0
+	mockDb := state.NewMockStateDB(ctrl)
+	mockAida := db.NewMockBaseDB(ctrl)
+	mockAdapter := db.NewMockDbAdapter(ctrl)
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	p := &stateDbPrimer[any]{
+		log: log,
+		ctx: utils.NewPrimeContext(cfg, mockDb, 0, log),
+		cfg: cfg,
+	}
+	mockAida.EXPECT().GetBackend().Return(mockAdapter)
+	mockIter := NewMockProxyIterator(ctrl)
+	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
+	mockAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]uint8{1, 2, 3}, nil)
+	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(nil).Times(3)
+	mockDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil).Times(3)
+	mockDb.EXPECT().EndTransaction().Return(nil).Times(3)
+	mockDb.EXPECT().EndBlock().Return(nil).Times(3)
+	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(mockBulk, nil).Times(2)
+	mockBulk.EXPECT().Close().Times(2)
+	mockDb.EXPECT().BeginSyncPeriod(gomock.Any())
+	mockDb.EXPECT().EndSyncPeriod()
+	mockDb.EXPECT().Exist(gomock.Any()).Return(false)
+	mockAida.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(mockIter)
+	mockIter.EXPECT().Next().Return(true)
+	mockIter.EXPECT().Next().Return(false)
+	mockBulk.EXPECT().CreateAccount(gomock.Any())
+	mockBulk.EXPECT().SetBalance(gomock.Any(), gomock.Any())
+	mockBulk.EXPECT().SetNonce(gomock.Any(), gomock.Any())
+	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any())
+	blockNum := uint64(12345)
+	key := db.UpdateDBKey(blockNum)
+	value, _ := rlp.EncodeToBytes(updateset.UpdateSetRLP{
+		WorldState: updateset.UpdateSet{
+			WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
+			Block:           0,
+			DeletedAccounts: []types.Address{},
+		}.ToWorldStateRLP(),
+		DeletedAccounts: []types.Address{},
+	})
+	mockIter.EXPECT().Key().Return(key).AnyTimes()
+	mockIter.EXPECT().Value().Return(value).AnyTimes()
+	mockIter.EXPECT().Release()
+	mockIter.EXPECT().Next()
+	mockIter.EXPECT().Release()
+	err := p.prime(mockDb, mockAida)
+	assert.NoError(t, err)
+}
+
+//go:generate mockgen -source=primer_test.go -destination=primer_mock.go -package=primer
+type ProxyIterator interface {
+	iterator.Iterator
 }

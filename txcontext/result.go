@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-//go:generate mockgen -source result.go -destination result_mocks.go -package txcontext
+//go:generate mockgen -source result.go -destination result_mock.go -package txcontext
 
 package txcontext
 
@@ -101,11 +101,10 @@ func (r result) Equal(y Receipt) bool {
 }
 
 func ReceiptEqual(x, y Receipt) bool {
-	if x == y {
+	if x == nil && y == nil {
 		return true
 	}
-
-	if (x == nil || y == nil) && x != y {
+	if x == nil || y == nil {
 		return false
 	}
 
