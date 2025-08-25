@@ -151,6 +151,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 
 		// Block 2
 		// Tx 1
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
@@ -158,16 +159,21 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		// Tx 2
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 
 		// Block 3
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 
 		// Block 4
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](5), gomock.Any(), nil),
 	)
@@ -210,6 +216,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 	// Tx 1
 	gomock.InOrder(
 		pre,
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](2, 1), gomock.Any()),
@@ -222,6 +229,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](2, 2), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](2), gomock.Any()),
 		post,
 	)
 
@@ -229,9 +237,11 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 	// Tx 1
 	gomock.InOrder(
 		pre,
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](3, 1), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](3), gomock.Any()),
 		post,
 	)
 
@@ -239,9 +249,11 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 	// Tx 1
 	gomock.InOrder(
 		pre,
+		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		post,
 	)
 

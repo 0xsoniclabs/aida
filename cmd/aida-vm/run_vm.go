@@ -99,7 +99,7 @@ func run(
 			To:                     int(cfg.Last) + 1,
 			NumWorkers:             cfg.Workers,
 			State:                  stateDb,
-			ParallelismGranularity: executor.TransactionLevel,
+			ParallelismGranularity: executor.BlockLevel,
 		},
 		processor,
 		extensions,
