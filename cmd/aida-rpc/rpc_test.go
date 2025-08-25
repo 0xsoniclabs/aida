@@ -222,6 +222,7 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		ext.EXPECT().PreRun(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 
 		// Req 1
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(2)).Return(archive, nil),
 		archive.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
@@ -238,8 +239,10 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 		archive.EXPECT().EndTransaction(),
 		archive.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 
 		// Req 3
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(3)).Return(archive, nil),
 		archive.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
@@ -247,8 +250,10 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 		archive.EXPECT().EndTransaction(),
 		archive.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 
 		// Block 4
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(4)).Return(archive, nil),
 		archive.EXPECT().BeginTransaction(uint32(0)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
@@ -256,6 +261,7 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 		archive.EXPECT().EndTransaction(),
 		archive.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 
 		ext.EXPECT().PostRun(executor.AtBlock[*rpc.RequestAndResults](5), gomock.Any(), nil),
 	)
@@ -301,6 +307,7 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 	gomock.InOrder(
 		pre,
 		// Req 1
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(2)).Return(archiveOne, nil),
 		archiveOne.EXPECT().BeginTransaction(uint32(1)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
@@ -308,12 +315,14 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 		archiveOne.EXPECT().EndTransaction(),
 		archiveOne.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](2), gomock.Any()),
 		post,
 	)
 
 	gomock.InOrder(
 		pre,
 		// Req 2
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(3)).Return(archiveTwo, nil),
 		archiveTwo.EXPECT().BeginTransaction(uint32(2)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
@@ -321,12 +330,14 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 		archiveTwo.EXPECT().EndTransaction(),
 		archiveTwo.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](3), gomock.Any()),
 		post,
 	)
 
 	gomock.InOrder(
 		pre,
 		// Req 3
+		ext.EXPECT().PreBlock(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 		db.EXPECT().GetArchiveState(uint64(4)).Return(archiveThree, nil),
 		archiveThree.EXPECT().BeginTransaction(uint32(0)),
 		ext.EXPECT().PreTransaction(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
@@ -334,6 +345,7 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 		ext.EXPECT().PostTransaction(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 		archiveThree.EXPECT().EndTransaction(),
 		archiveThree.EXPECT().Release(),
+		ext.EXPECT().PostBlock(executor.AtBlock[*rpc.RequestAndResults](4), gomock.Any()),
 		post,
 	)
 
