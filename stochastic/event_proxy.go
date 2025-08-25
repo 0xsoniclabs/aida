@@ -363,12 +363,12 @@ func (p *EventProxy) BeginSyncPeriod(number uint64) {
 	p.db.BeginSyncPeriod(number)
 }
 
-func (p *EventProxy) EndSyncPeriod() {
+func (p *EventProxy) EndSyncPeriod() error {
 	// register event
 	p.registry.RegisterOp(EndSyncPeriodID)
 
 	// call real StateDB
-	p.db.EndSyncPeriod()
+	return p.db.EndSyncPeriod()
 }
 
 func (p *EventProxy) Close() error {

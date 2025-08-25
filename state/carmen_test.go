@@ -21,12 +21,14 @@ import (
 	"errors"
 	"testing"
 
-	carmen "github.com/0xsoniclabs/carmen/go/state"
+	"github.com/0xsoniclabs/carmen/go/carmen"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 // TestCarmenState_MakeCarmenStateDBInvalid tests db initialization with invalid Variant
@@ -224,7 +226,7 @@ func TestCarmenState_CodeOperations(t *testing.T) {
 
 			csDB.SetCode(addr, code)
 
-			if bytes.Compare(csDB.GetCode(addr), code) != 0 {
+			if !bytes.Equal(csDB.GetCode(addr), code) {
 				t.Fatal("failed to update account code; wrong value")
 			}
 
@@ -324,7 +326,10 @@ func TestCarmenState_TrxBlockSyncPeriodOperations(t *testing.T) {
 					}
 				}
 
-				csDB.EndSyncPeriod()
+				err = csDB.EndSyncPeriod()
+				if err != nil {
+					t.Fatalf("cannot end sync period; %v", err)
+				}
 			}
 		})
 	}
@@ -771,24 +776,24 @@ func TestCarmenState_BulkloadOperations(t *testing.T) {
 				// randomized operation
 				operationType := GetRandom(t, 0, 4)
 
-				switch {
-				case operationType == 1:
+				switch operationType {
+				case 1:
 					// set balance
 					newBalance := uint256.NewInt(GetRandom(t, 0, 5_000_000))
 
 					cbl.SetBalance(account, newBalance)
-				case operationType == 2:
+				case 2:
 					// set code
 					code := MakeRandomByteSlice(t, 2048)
 
 					cbl.SetCode(account, code)
-				case operationType == 3:
+				case 3:
 					// set state
 					key := common.BytesToHash(MakeRandomByteSlice(t, 32))
 					value := common.BytesToHash(MakeRandomByteSlice(t, 32))
 
 					cbl.SetState(account, key, value)
-				case operationType == 4:
+				case 4:
 					// set nonce
 					newNonce := GetRandom(t, 0, 5_000_000)
 
@@ -837,4 +842,1045 @@ func TestCarmenState_GetShadowDB(t *testing.T) {
 			}
 		})
 	}
+}
+
+// carmenStateDB struct method tests
+func TestCarmenStateDB_CreateAccount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().CreateAccount(carmen.Address(addr))
+	c.CreateAccount(addr)
+}
+
+func TestCarmenStateDB_CreateContract(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().CreateContract(carmen.Address(addr))
+	c.CreateContract(addr)
+}
+
+func TestCarmenStateDB_Exist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().Exist(carmen.Address(addr)).Return(true)
+	exists := c.Exist(addr)
+	assert.True(t, exists)
+}
+
+func TestCarmenStateDB_Empty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().Empty(carmen.Address(addr)).Return(true)
+	empty := c.Empty(addr)
+	assert.True(t, empty)
+}
+
+func TestCarmenStateDB_SelfDestruct(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.Amount{})
+	mockTxCtx.EXPECT().SelfDestruct(carmen.Address(addr))
+	a := c.SelfDestruct(addr)
+	assert.Equal(t, uint256.Int{}, a)
+}
+
+func TestCarmenStateDB_SelfDestruct6780(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.Amount{})
+	mockTxCtx.EXPECT().SelfDestruct6780(carmen.Address(addr)).Return(true)
+	a, value := c.SelfDestruct6780(addr)
+	assert.Equal(t, uint256.Int{}, a)
+	assert.Equal(t, true, value)
+}
+
+func TestCarmenStateDB_HasSelfDestructed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().HasSelfDestructed(carmen.Address(addr)).Return(true)
+	hasSelfDestructed := c.HasSelfDestructed(addr)
+	assert.True(t, hasSelfDestructed)
+}
+
+func TestCarmenStateDB_GetBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	expectedBalance := uint256.NewInt(1000)
+	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.NewAmount(uint64(1000)))
+	balance := c.GetBalance(addr)
+	assert.Equal(t, expectedBalance, balance)
+}
+
+func TestCarmenStateDB_AddBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	additionalBalance := uint256.NewInt(500)
+	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.NewAmount(uint64(500)))
+	mockTxCtx.EXPECT().AddBalance(carmen.Address(addr), carmen.NewAmount(uint64(500)))
+	value := c.AddBalance(addr, additionalBalance, tracing.BalanceChangeUnspecified)
+	assert.Equal(t, uint256.NewInt(500), &value)
+}
+
+func TestCarmenStateDB_SubBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	subtractBalance := uint256.NewInt(500)
+	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.NewAmount(uint64(500)))
+	mockTxCtx.EXPECT().SubBalance(carmen.Address(addr), carmen.NewAmount(uint64(500)))
+	value := c.SubBalance(addr, subtractBalance, tracing.BalanceChangeUnspecified)
+	assert.Equal(t, uint256.NewInt(500), &value)
+}
+
+func TestCarmenStateDB_GetNonce(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	expectedNonce := uint64(42)
+	mockTxCtx.EXPECT().GetNonce(carmen.Address(addr)).Return(expectedNonce)
+	nonce := c.GetNonce(addr)
+	assert.Equal(t, expectedNonce, nonce)
+}
+
+func TestCarmenStateDB_SetNonce(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	newNonce := uint64(100)
+	mockTxCtx.EXPECT().SetNonce(carmen.Address(addr), newNonce)
+	c.SetNonce(addr, newNonce, tracing.NonceChangeUnspecified)
+}
+
+func TestCarmenStateDB_GetCommittedState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	expectedValue := common.BytesToHash([]byte("testValue"))
+	mockTxCtx.EXPECT().GetCommittedState(carmen.Address(addr), carmen.Key(key)).Return(carmen.Value(expectedValue))
+	value := c.GetCommittedState(addr, key)
+	assert.Equal(t, expectedValue, value)
+}
+
+func TestCarmenStateDB_GetState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	expectedValue := common.BytesToHash([]byte("testValue"))
+	mockTxCtx.EXPECT().GetState(carmen.Address(addr), carmen.Key(key)).Return(carmen.Value(expectedValue))
+	value := c.GetState(addr, key)
+	assert.Equal(t, expectedValue, value)
+}
+
+func TestCarmenStateDB_SetState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	value := common.BytesToHash([]byte("testValue"))
+	mockTxCtx.EXPECT().GetState(carmen.Address(addr), carmen.Key(key)).Return(carmen.Value{})
+	mockTxCtx.EXPECT().SetState(carmen.Address(addr), carmen.Key(key), carmen.Value(value))
+	out := c.SetState(addr, key, value)
+	assert.Equal(t, common.Hash{}, out)
+}
+
+func TestCarmenStateDB_GetStorageRoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().HasEmptyStorage(carmen.Address(addr)).Return(false)
+	root := c.GetStorageRoot(addr)
+	assert.Equal(t, common.Hash{0x01}, root)
+}
+
+func TestCarmenStateDB_SetTransientState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	value := common.BytesToHash([]byte("testValue"))
+	mockTxCtx.EXPECT().SetTransientState(carmen.Address(addr), carmen.Key(key), carmen.Value(value))
+	c.SetTransientState(addr, key, value)
+}
+
+func TestCarmenStateDB_GetTransientState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	expectedValue := common.BytesToHash([]byte("testValue"))
+	mockTxCtx.EXPECT().GetTransientState(carmen.Address(addr), carmen.Key(key)).Return(carmen.Value(expectedValue))
+	value := c.GetTransientState(addr, key)
+	assert.Equal(t, expectedValue, value)
+}
+
+func TestCarmenStateDB_GetCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	expectedCode := []byte{0x01, 0x02, 0x03}
+	mockTxCtx.EXPECT().GetCode(carmen.Address(addr)).Return(expectedCode)
+	code := c.GetCode(addr)
+	assert.Equal(t, expectedCode, code)
+}
+
+func TestCarmenStateDB_GetCodeSize(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	expectedSize := 3
+	mockTxCtx.EXPECT().GetCodeSize(carmen.Address(addr)).Return(expectedSize)
+	size := c.GetCodeSize(addr)
+	assert.Equal(t, expectedSize, size)
+}
+
+func TestCarmenStateDB_GetCodeHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	expectedHash := common.Hash{0x01, 0x02, 0x03}
+	mockTxCtx.EXPECT().GetCodeHash(carmen.Address(addr)).Return(carmen.Hash{
+		0x01, 0x02, 0x03,
+	})
+	hash := c.GetCodeHash(addr)
+	assert.Equal(t, expectedHash, hash)
+}
+
+func TestCarmenStateDB_SetCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	code := []byte{0x01, 0x02, 0x03}
+	mockTxCtx.EXPECT().GetCode(carmen.Address(addr)).Return(code)
+	mockTxCtx.EXPECT().SetCode(carmen.Address(addr), code)
+	c.SetCode(addr, code)
+}
+
+func TestCarmenStateDB_Snapshot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	snapshotID := 1
+	mockTxCtx.EXPECT().Snapshot().Return(snapshotID)
+	ss := c.Snapshot()
+	assert.Equal(t, snapshotID, ss)
+}
+
+func TestCarmenStateDB_RevertToSnapshot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	snapshotID := 1
+	mockTxCtx.EXPECT().RevertToSnapshot(snapshotID)
+	c.RevertToSnapshot(snapshotID)
+}
+
+func TestCarmenStateDB_EndTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockTxCtx.EXPECT().Commit().Return(nil)
+	err := c.EndTransaction()
+	assert.NoError(t, err)
+}
+
+func TestCarmenStateDB_GetHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockQueryCtx := NewMockproxyQueryContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	expectedHash := common.Hash{0x01, 0x02, 0x03}
+	mockQueryCtx.EXPECT().GetStateHash().Return(carmen.Hash{0x01, 0x02, 0x03})
+	mockDb.EXPECT().QueryHeadState(gomock.Any()).Do(func(ff func(ctxt carmen.QueryContext)) {
+		ff(mockQueryCtx)
+	}).Return(nil)
+	hash, err := c.GetHash()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHash, hash)
+}
+
+func TestCarmenStateDB_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockDb.EXPECT().Close().Return(nil)
+	err := c.Close()
+	assert.NoError(t, err)
+}
+
+func TestCarmenStateDB_AddRefund(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockTxCtx.EXPECT().AddRefund(uint64(100))
+	c.AddRefund(uint64(100))
+}
+
+func TestCarmenStateDB_SubRefund(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockTxCtx.EXPECT().SubRefund(uint64(50))
+	c.SubRefund(uint64(50))
+}
+
+func TestCarmenStateDB_GetRefund(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	expectedRefund := uint64(200)
+	mockTxCtx.EXPECT().GetRefund().Return(expectedRefund)
+	refund := c.GetRefund()
+	assert.Equal(t, expectedRefund, refund)
+}
+
+func TestCarmenStateDB_Prepare(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	sender := common.HexToAddress("0x1234")
+	coinbase := common.HexToAddress("0x5678")
+	dest := common.HexToAddress("0x9abc")
+	mockTxCtx.EXPECT().ClearAccessList()
+	mockTxCtx.EXPECT().AddAddressToAccessList(gomock.Any()).Times(3)
+	c.Prepare(params.TestRules, sender, coinbase, &dest, []common.Address{sender}, nil)
+}
+
+func TestCarmenStateDB_AddressInAccessList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().IsAddressInAccessList(carmen.Address(addr)).Return(true)
+	inList := c.AddressInAccessList(addr)
+	assert.True(t, inList)
+}
+
+func TestCarmenStateDB_SlotInAccessList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	mockTxCtx.EXPECT().IsSlotInAccessList(carmen.Address(addr), carmen.Key(key)).Return(true, false)
+	addrOk, slotOk := c.SlotInAccessList(addr, key)
+	assert.True(t, addrOk)
+	assert.False(t, slotOk)
+}
+
+func TestCarmenStateDB_AddAddressToAccessList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockTxCtx.EXPECT().AddAddressToAccessList(carmen.Address(addr))
+	c.AddAddressToAccessList(addr)
+}
+
+func TestCarmenStateDB_AddSlotToAccessList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	mockTxCtx.EXPECT().AddSlotToAccessList(carmen.Address(addr), carmen.Key(key))
+	c.AddSlotToAccessList(addr, key)
+}
+
+func TestCarmenStateDB_AddLog(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToAddress("0x1234")
+	topics := []common.Hash{common.HexToHash("0x1"), common.HexToHash("0x2")}
+	data := []byte{0x01, 0x02, 0x03}
+	mockTxCtx.EXPECT().AddLog(gomock.Any())
+	c.AddLog(&types.Log{
+		Address: addr,
+		Topics:  topics,
+		Data:    data,
+	})
+}
+
+func TestCarmenStateDB_GetLogs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	addr := common.HexToHash("0x1234")
+	mockTxCtx.EXPECT().GetLogs().Return([]*carmen.Log{})
+	logs := c.GetLogs(addr, uint64(0), addr, uint64(0))
+	assert.Equal(t, []*types.Log{}, logs)
+}
+
+func TestCarmenStateDB_PointCache(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	assert.Panics(t, func() {
+		c.PointCache()
+	})
+}
+
+func TestCarmenStateDB_Witness(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	out := c.Witness()
+	assert.Nil(t, out)
+}
+
+func TestCarmenStateDB_Finalise(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	assert.NotPanics(t, func() {
+		c.Finalise(false)
+	})
+}
+
+func TestCarmenStateDB_IntermediateRoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	root := c.IntermediateRoot(false)
+	assert.Equal(t, common.Hash{}, root)
+}
+
+func TestCarmenStateDB_Commit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	h, out := c.Commit(uint64(9), false)
+	assert.Equal(t, common.Hash{}, h)
+	assert.Nil(t, out)
+}
+
+func TestCarmenStateDB_SetTxContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	assert.NotPanics(t, func() {
+		c.SetTxContext(common.Hash{}, 0)
+	})
+}
+
+func TestCarmenStateDB_PrepareSubstate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	assert.NotPanics(t, func() {
+		c.PrepareSubstate(nil, uint64(0))
+	})
+}
+
+func TestCarmenStateDB_GetSubstatePostAlloc(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	out := c.GetSubstatePostAlloc()
+	assert.Nil(t, out)
+}
+
+func TestCarmenStateDB_AddPreimage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	assert.Panics(t, func() {
+		c.AddPreimage(common.Hash{}, nil)
+	})
+}
+
+func TestCarmenStateDB_AccessEvents(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	out := c.AccessEvents()
+	assert.Nil(t, out)
+}
+
+func TestCarmenStateDB_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	err := c.Error()
+	assert.Nil(t, err)
+}
+
+func TestCarmenStateDB_StartBulkLoad(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(nil, nil)
+	bulkLoad, err := c.StartBulkLoad(0)
+	assert.NoError(t, err)
+	assert.NotNil(t, bulkLoad)
+}
+
+func TestCarmenStateDB_GetMemoryUsage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockMem := NewMockproxyMemoryFootprint(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	mockDb.EXPECT().GetMemoryFootprint().Return(mockMem)
+	mockMem.EXPECT().Total().Return(uint64(9))
+	memoryUsage := c.GetMemoryUsage()
+	assert.Equal(t, uint64(9), memoryUsage.UsedBytes)
+}
+
+func TestCarmenStateDB_GetShadowDB(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenStateDB{
+		db:    mockDb,
+		txCtx: mockTxCtx,
+	}
+	shadowDB := c.GetShadowDB()
+	assert.Nil(t, shadowDB)
+}
+
+// carmenHeadState struct method tests
+func TestCarmenHeadStateBeginBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(mockBlkCtx, nil)
+	err := c.BeginBlock(uint64(9))
+	assert.NoError(t, err)
+}
+
+func TestCarmenHeadStateBeginTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockBlkCtx.EXPECT().BeginTransaction().Return(mockTxCtx, nil)
+	err := c.BeginTransaction(uint32(9))
+	assert.NoError(t, err)
+}
+
+func TestCarmenHeadStateEndBlock(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockBlkCtx.EXPECT().Commit().Return(nil)
+	err := c.EndBlock()
+	assert.NoError(t, err)
+}
+
+func TestCarmenHeadStateBeginSyncPeriod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	assert.NotPanics(t, func() {
+		c.BeginSyncPeriod(uint64(9))
+	})
+}
+
+func TestCarmenHeadStateEndSyncPeriod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+
+	err := c.EndSyncPeriod()
+	assert.NoError(t, err)
+}
+
+func TestCarmenHeadStateGetArchiveState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockDb.EXPECT().GetHistoricContext(uint64(1)).Return(nil, nil)
+	archiveState, err := c.GetArchiveState(uint64(1))
+	assert.NoError(t, err)
+	assert.NotNil(t, archiveState)
+}
+
+func TestCarmenHeadStateGetArchiveBlockHeight(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := carmen.NewMockHeadBlockContext(ctrl)
+	c := &carmenHeadState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockDb.EXPECT().GetArchiveBlockHeight().Return(int64(42), nil)
+	height, value, err := c.GetArchiveBlockHeight()
+	assert.Equal(t, uint64(42), height)
+	assert.Equal(t, false, value)
+	assert.NoError(t, err)
+}
+
+// carmenHistoricState struct method tests
+func TestCarmenHistoricState_BeginTransaction(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := NewMockproxyHistoricBlockContext(ctrl)
+	c := &carmenHistoricState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockBlkCtx.EXPECT().BeginTransaction().Return(mockTxCtx, nil)
+	err := c.BeginTransaction(uint32(9))
+	assert.NoError(t, err)
+}
+
+func TestCarmenHistoricState_GetHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	c := &carmenHistoricState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+	}
+	expectedHash := common.Hash{0x01, 0x02, 0x03}
+	mockDb.EXPECT().GetHistoricStateHash(gomock.Any()).Return(carmen.Hash(expectedHash), nil)
+	hash, err := c.GetHash()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHash, hash)
+}
+
+func TestCarmenHistoricState_Release(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDb := NewMockproxyDatabase(ctrl)
+	mockTxCtx := NewMockproxyTransactionContext(ctrl)
+	mockBlkCtx := NewMockproxyHistoricBlockContext(ctrl)
+	c := &carmenHistoricState{
+		carmenStateDB: carmenStateDB{
+			db:    mockDb,
+			txCtx: mockTxCtx,
+		},
+		blkCtx: mockBlkCtx,
+	}
+	mockBlkCtx.EXPECT().Close().Return(nil)
+	err := c.Release()
+	assert.NoError(t, err)
+}
+
+// carmenBulkLoad struct method tests
+func TestCarmenBulkLoad_CreateAccount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	addr := common.HexToAddress("0x1234")
+	mockBulk.EXPECT().CreateAccount(carmen.Address(addr))
+	c.CreateAccount(addr)
+}
+
+func TestCarmenBulkLoad_SetBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	addr := common.HexToAddress("0x1234")
+	balance := uint256.NewInt(1000)
+	mockBulk.EXPECT().SetBalance(carmen.Address(addr), carmen.NewAmount(uint64(1000)))
+	c.SetBalance(addr, balance)
+}
+
+func TestCarmenBulkLoad_SetNonce(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	addr := common.HexToAddress("0x1234")
+	nonce := uint64(42)
+	mockBulk.EXPECT().SetNonce(carmen.Address(addr), nonce)
+	c.SetNonce(addr, nonce)
+}
+
+func TestCarmenBulkLoad_SetState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	addr := common.HexToAddress("0x1234")
+	key := common.BytesToHash([]byte("testKey"))
+	value := common.BytesToHash([]byte("testValue"))
+	mockBulk.EXPECT().SetState(carmen.Address(addr), carmen.Key(key), carmen.Value(value))
+	c.SetState(addr, key, value)
+}
+
+func TestCarmenBulkLoad_SetCode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	addr := common.HexToAddress("0x1234")
+	code := []byte{0x01, 0x02, 0x03}
+	mockBulk.EXPECT().SetCode(carmen.Address(addr), code)
+	c.SetCode(addr, code)
+}
+
+func TestCarmenBulkLoad_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBulk := carmen.NewMockBulkLoad(ctrl)
+	c := &carmenBulkLoad{
+		load: mockBulk,
+	}
+	mockBulk.EXPECT().Finalize().Return(nil)
+	err := c.Close()
+	assert.NoError(t, err)
 }

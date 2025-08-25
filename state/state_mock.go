@@ -1501,9 +1501,11 @@ func (mr *MockStateDBMockRecorder) EndBlock() *gomock.Call {
 }
 
 // EndSyncPeriod mocks base method.
-func (m *MockStateDB) EndSyncPeriod() {
+func (m *MockStateDB) EndSyncPeriod() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "EndSyncPeriod")
+	ret := m.ctrl.Call(m, "EndSyncPeriod")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // EndSyncPeriod indicates an expected call of EndSyncPeriod.

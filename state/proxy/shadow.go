@@ -234,14 +234,11 @@ func (s *shadowStateDb) BeginSyncPeriod(number uint64) {
 	}
 }
 
-func (s *shadowStateDb) EndSyncPeriod() {
+func (s *shadowStateDb) EndSyncPeriod() error {
 	err := s.run("EndSyncPeriod", func(s state.StateDB) error {
-		s.EndSyncPeriod()
-		return nil
+		return s.EndSyncPeriod()
 	})
-	if err != nil {
-		s.log.Errorf("failed: %v", err)
-	}
+	return err
 }
 
 func (s *shadowStateDb) GetHash() (common.Hash, error) {
