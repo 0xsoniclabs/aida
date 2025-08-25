@@ -33,9 +33,7 @@ func traceApp() *cli.App {
 		Flags:     []cli.Flag{},
 		Commands: []*cli.Command{
 			&RunRecordCmd,
-			// todo: will be handled in upcoming PR
-			&RunReplayCmd,
-			//&trace.TraceReplaySubstateCommand,
+			&RunReplaySubstateCmd,
 		},
 	}
 }
