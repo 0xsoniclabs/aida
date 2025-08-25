@@ -19,7 +19,6 @@ package tracer
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 )

@@ -1,11 +1,11 @@
 package proxy
 
 import (
+	"github.com/0xsoniclabs/aida/tracer"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -21,7 +21,7 @@ func TestProxy_NewProfilerProxy(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	p := NewProfilerProxy(mockDb, mockAnalytics, "info")
 
 	assert.NotNil(t, p)
@@ -33,7 +33,7 @@ func TestProfilerProxy_CreateAccount(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -49,7 +49,7 @@ func TestProfilerProxy_SubBalance(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -67,7 +67,7 @@ func TestProfilerProxy_AddBalance(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -85,7 +85,7 @@ func TestProfilerProxy_GetBalance(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -103,7 +103,7 @@ func TestProfilerProxy_GetNonce(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -121,7 +121,7 @@ func TestProfilerProxy_SetNonce(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -138,7 +138,7 @@ func TestProfilerProxy_GetCodeHash(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -156,7 +156,7 @@ func TestProfilerProxy_GetCode(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -174,7 +174,7 @@ func TestProfilerProxy_SetCode(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -191,7 +191,7 @@ func TestProfilerProxy_GetCodeSize(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -209,7 +209,7 @@ func TestProfilerProxy_AddRefund(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -225,7 +225,7 @@ func TestProfilerProxy_SubRefund(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -241,7 +241,7 @@ func TestProfilerProxy_GetRefund(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -258,7 +258,7 @@ func TestProfilerProxy_GetCommittedState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -277,7 +277,7 @@ func TestProfilerProxy_GetState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -296,7 +296,7 @@ func TestProfilerProxy_SetState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -314,7 +314,7 @@ func TestProfilerProxy_SetTransientState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -332,7 +332,7 @@ func TestProfilerProxy_GetTransientState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -351,7 +351,7 @@ func TestProfilerProxy_SelfDestruct(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -367,7 +367,7 @@ func TestProfilerProxy_HasSelfDestructed(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -384,7 +384,7 @@ func TestProfilerProxy_Exist(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -401,7 +401,7 @@ func TestProfilerProxy_Empty(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -419,7 +419,7 @@ func TestProfilerProxy_Prepare(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -442,7 +442,7 @@ func TestProfilerProxy_AddAddressToAccessList(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -459,7 +459,7 @@ func TestProfilerProxy_AddressInAccessList(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -478,7 +478,7 @@ func TestProfilerProxy_SlotInAccessList(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -498,7 +498,7 @@ func TestProfilerProxy_AddSlotToAccessList(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -516,7 +516,7 @@ func TestProfilerProxy_Snapshot(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -534,7 +534,7 @@ func TestProfilerProxy_RevertToSnapshot(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -551,7 +551,7 @@ func TestProfilerProxy_Error(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -567,7 +567,7 @@ func TestProfilerProxy_do(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -579,7 +579,7 @@ func TestProfilerProxy_do(t *testing.T) {
 	mockOp := func() {
 		value = 1
 	}
-	p.do(operation.CreateAccountID, mockOp)
+	p.do(tracer.CreateAccountID, mockOp)
 	assert.Equal(t, value, 1)
 }
 func TestProfilerProxy_BeginTransaction(t *testing.T) {
@@ -587,7 +587,7 @@ func TestProfilerProxy_BeginTransaction(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -606,7 +606,7 @@ func TestProfilerProxy_EndTransaction(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -624,7 +624,7 @@ func TestProfilerProxy_BeginBlock(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -643,7 +643,7 @@ func TestProfilerProxy_EndBlock(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -661,7 +661,7 @@ func TestProfilerProxy_BeginSyncPeriod(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -679,7 +679,7 @@ func TestProfilerProxy_EndSyncPeriod(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -696,7 +696,7 @@ func TestProfilerProxy_GetHash(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -716,7 +716,7 @@ func TestProfilerProxy_AddLog(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -738,7 +738,7 @@ func TestProfilerProxy_GetLogs(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -764,7 +764,7 @@ func TestProfilerProxy_PointCache(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -782,7 +782,7 @@ func TestProfilerProxy_Witness(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -800,7 +800,7 @@ func TestProfilerProxy_AddPreimage(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -819,7 +819,7 @@ func TestProfilerProxy_AccessEvents(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -837,7 +837,7 @@ func TestProfilerProxy_SetTxContext(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -856,7 +856,7 @@ func TestProfilerProxy_Finalise(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -873,7 +873,7 @@ func TestProfilerProxy_IntermediateRoot(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -892,7 +892,7 @@ func TestProfilerProxy_Commit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -913,7 +913,7 @@ func TestProfilerProxy_GetSubstatePostAlloc(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -931,7 +931,7 @@ func TestProfilerProxy_PrepareSubstate(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -949,7 +949,7 @@ func TestProfilerProxy_Close(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -966,7 +966,7 @@ func TestProfilerProxy_StartBulkLoad(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewMockLogger(ctrl)
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -984,7 +984,7 @@ func TestProfilerProxy_GetArchiveState(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1003,7 +1003,7 @@ func TestProfilerProxy_GetArchiveBlockHeight(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1022,7 +1022,7 @@ func TestProfilerProxy_GetMemoryUsage(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1039,7 +1039,7 @@ func TestProfilerProxy_GetShadowDB(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1056,7 +1056,7 @@ func TestProfilerProxy_CreateContract(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1072,7 +1072,7 @@ func TestProfilerProxy_SelfDestruct6780(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,
@@ -1088,7 +1088,7 @@ func TestProfilerProxy_GetStorageRoot(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
+	mockAnalytics := analytics.NewIncrementalAnalytics(int(tracer.NumOps))
 	mockLogger := logger.NewLogger("info", "test")
 	p := &ProfilerProxy{
 		db:   mockDb,

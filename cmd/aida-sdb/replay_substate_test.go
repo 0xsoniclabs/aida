@@ -30,7 +30,7 @@ import (
 )
 
 func TestCmd_RunReplaySubstate(t *testing.T) {
-	_, _, path := utils.CreateTestSubstateDb(t)
+	_, path := utils.CreateTestSubstateDb(t)
 	app := cli.NewApp()
 	app.Action = RunReplaySubstate
 	app.Flags = []cli.Flag{

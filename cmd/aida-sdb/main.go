@@ -25,17 +25,15 @@ import (
 
 // traceApp initializes a trace-cli app. This function is called by the main
 // function and unit tests.
-func traceApp() *cli.App {
-	return &cli.App{
-		Name:      "Aida Storage Trace Manager",
-		HelpName:  "trace",
-		Copyright: "(c) 2022 Fantom Foundation",
-		Flags:     []cli.Flag{},
-		Commands: []*cli.Command{
-			&RunRecordCmd,
-			&RunReplaySubstateCmd,
-		},
-	}
+var traceApp = &cli.App{
+	Name:      "Aida Storage Trace Manager",
+	HelpName:  "trace",
+	Copyright: "(c) 2022 Fantom Foundation",
+	Flags:     []cli.Flag{},
+	Commands: []*cli.Command{
+		&RunRecordCmd,
+		&RunReplaySubstateCmd,
+	},
 }
 
 // main implements "trace" cli traceApplication.

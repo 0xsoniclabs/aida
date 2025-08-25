@@ -103,7 +103,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 		db.EXPECT().GetHash().Return(common.Hash{}, nil)
 		db.EXPECT().Error().Return(nil)
 
-		ext := makeShadowDbValidator(cfg)
+		ext := makeShadowDbValidator[txcontext.TxContext](cfg)
 
 		err := ext.PostBlock(st, ctx)
 		assert.NoError(t, err)
@@ -123,7 +123,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 
 		db.EXPECT().GetHash().Return(common.Hash{}, expectedErr)
 
-		ext := makeShadowDbValidator(cfg)
+		ext := makeShadowDbValidator[txcontext.TxContext](cfg)
 
 		err := ext.PostBlock(st, ctx)
 
@@ -142,17 +142,17 @@ func TestShadowDbValidator_MakeShadowDbValidator(t *testing.T) {
 		cfg := &utils.Config{
 			ShadowDb: true,
 		}
-		ext := MakeShadowDbValidator(cfg)
+		ext := MakeShadowDbValidator[txcontext.TxContext](cfg)
 		assert.NotNil(t, ext)
 
-		_, ok := ext.(*shadowDbValidator)
+		_, ok := ext.(*shadowDbValidator[txcontext.TxContext])
 		assert.True(t, ok)
 	})
 	t.Run("ShadowDbDisabled", func(t *testing.T) {
 		cfg := &utils.Config{
 			ShadowDb: false,
 		}
-		ext := MakeShadowDbValidator(cfg)
+		ext := MakeShadowDbValidator[txcontext.TxContext](cfg)
 		assert.NotNil(t, ext)
 
 		_, ok := ext.(executor.Extension[txcontext.TxContext])
