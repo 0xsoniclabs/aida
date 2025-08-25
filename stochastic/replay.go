@@ -297,19 +297,6 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		msg   string
 	)
 
-	if addrCl == statistics.ZeroValueID || addrCl == statistics.NewValueID {
-		return
-	}
-
-	if op == GetTransientStateID || op == SetTransientStateID {
-		return
-	}
-
-	if op == CreateContractID {
-		return 
-	}
-
-
 	// fetch indexes from index access generators
 	addrIdx := ss.contracts.NextIndex(addrCl)
 	keyIdx := ss.keys.NextIndex(keyCl)
@@ -377,14 +364,10 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		ss.selfDestructed = []int64{}
 
 	case CreateAccountID:
-		//if !db.Exist(addr) {
-			db.CreateAccount(addr)
-		//}
+		db.CreateAccount(addr)
 
 	case CreateContractID:
-		if db.Exist(addr) {
-			db.CreateContract(addr)
-		}
+		db.CreateContract(addr)
 
 	case EmptyID:
 		db.Empty(addr)
