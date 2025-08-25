@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -105,5 +106,62 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			require.ErrorContains(t, err, test.wantErr)
 		})
 	}
+
+}
+
+func TestCmd_ValidateCommandRealDatabase(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir("../../dataset/sample-pb-db", aidaDbPath))
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&Command}
+
+	args := utils.NewArgs("test").
+		Arg(Command.Name).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	assert.NoError(t, err)
+}
+
+func TestCmd_ValidateCommandRealDatabaseError(t *testing.T) {
+
+	t.Run("cannot parse config", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&Command}
+
+		args := utils.NewArgs("test").
+			Arg(Command.Name).
+			Flag(utils.ChainIDFlag.Name, 9990099).
+			Flag(utils.AidaDbFlag.Name, "").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
+
+	t.Run("cannot open db", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&Command}
+
+		args := utils.NewArgs("test").
+			Arg(Command.Name).
+			Flag(utils.AidaDbFlag.Name, "").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
 
 }

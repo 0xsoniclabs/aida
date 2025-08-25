@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
