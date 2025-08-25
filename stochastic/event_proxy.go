@@ -227,7 +227,7 @@ func (p *EventProxy) RevertToSnapshot(snapshot int) {
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
 			p.registry.RegisterSnapshotDelta(len(p.snapshots) - i - 1)
-			p.snapshots = p.snapshots[0 : i+1]
+			p.snapshots = p.snapshots[0 : i]
 			break
 		}
 	}
