@@ -18,7 +18,6 @@ package utils
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,7 +26,6 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/google/martian/log"
@@ -254,71 +252,6 @@ func makeStateDBVariant(
 		)
 	}
 	return nil, fmt.Errorf("unknown Db implementation: %v", impl)
-}
-
-// DeleteDestroyedAccountsFromWorldState removes previously suicided accounts from
-// the world state.
-func DeleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *Config, target uint64) (err error) {
-	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
-
-	src, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)
-	if err != nil {
-		return err
-	}
-	defer func(src *db.DestroyedAccountDB) {
-		err = errors.Join(err, src.Close())
-	}(src)
-	list, err := src.GetAccountsDestroyedInRange(0, target)
-	if err != nil {
-		return err
-	}
-	for _, cur := range list {
-		if ws.Has(common.Address(cur)) {
-			log.Debugf("Remove %v from world state", cur)
-			ws.Delete(common.Address(cur))
-		}
-	}
-	return nil
-}
-
-// DeleteDestroyedAccountsFromStateDB performs suicide operations on previously
-// self-destructed accounts.
-func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target uint64, aidaDb db.BaseDB) error {
-	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
-
-	src := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
-	accounts, err := src.GetAccountsDestroyedInRange(0, target)
-	if err != nil {
-		return err
-	}
-	log.Noticef("Deleting %d accounts ...", len(accounts))
-	if len(accounts) == 0 {
-		// nothing to delete, skip
-		return nil
-	}
-	sdb.BeginSyncPeriod(0)
-	err = sdb.BeginBlock(target)
-	if err != nil {
-		return err
-	}
-	err = sdb.BeginTransaction(0)
-	if err != nil {
-		return err
-	}
-	for _, addr := range accounts {
-		sdb.SelfDestruct(common.Address(addr))
-		log.Debugf("Perform suicide on %v", addr)
-	}
-	err = sdb.EndTransaction()
-	if err != nil {
-		return err
-	}
-	err = sdb.EndBlock()
-	if err != nil {
-		return err
-	}
-	sdb.EndSyncPeriod()
-	return nil
 }
 
 // OverwriteStateDB overwrites the StateDb with the expected state.

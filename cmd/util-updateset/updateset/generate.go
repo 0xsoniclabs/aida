@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
@@ -126,7 +127,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 }
 
 // GenUpdateSet generates a series of update sets from substate db
-func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db.DestroyedAccountDB, first, last uint64, interval uint64) error {
+func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb db.DestroyedAccountDB, first, last uint64, interval uint64) error {
 	var (
 		err               error
 		destroyedAccounts []substatetypes.Address
@@ -206,8 +207,8 @@ func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db
 		if !(err == nil || errors.Is(err, leveldb.ErrNotFound)) {
 			return err
 		}
-		utils.ClearAccountStorage(update, destroyed)
-		utils.ClearAccountStorage(update, resurrected)
+		prime.ClearAccountStorage(update, destroyed)
+		prime.ClearAccountStorage(update, resurrected)
 		destroyedAccounts = append(destroyedAccounts, destroyed...)
 		destroyedAccounts = append(destroyedAccounts, resurrected...)
 

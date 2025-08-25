@@ -10,34 +10,9 @@ import (
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 )
-
-var testUpdateSet = &updateset.UpdateSet{
-	WorldState: substate.WorldState{
-		types.Address{1}: &substate.Account{
-			Nonce:   1,
-			Balance: new(uint256.Int).SetUint64(1),
-		},
-		types.Address{2}: &substate.Account{
-			Nonce:   2,
-			Balance: new(uint256.Int).SetUint64(2),
-		},
-	},
-	Block: 1,
-}
-
-var testDeletedAccounts = []types.Address{{3}, {4}}
-
-func createTestUpdateDB(dbPath string) (substateDb.UpdateDB, error) {
-	db, err := substateDb.NewUpdateDB(dbPath, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
 
 func GetTestSubstate(encoding string) *substate.Substate {
 	txType := int32(substate.SetCodeTxType)

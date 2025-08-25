@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package prime
 
 import (
 	"fmt"
@@ -24,28 +24,36 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/aida/utils"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func NewPrimeContext(cfg *Config, db state.StateDB, block uint64, log logger.Logger) *PrimeContext {
-	return &PrimeContext{cfg: cfg, log: log, block: block, db: db, exist: make(map[common.Address]bool)}
+func NewPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *PrimeContext {
+	return &PrimeContext{
+		cfg:   cfg,
+		log:   log,
+		block: 0,
+		db:    db,
+		exist: make(map[common.Address]bool),
+	}
 }
 
 // PrimeContext structure keeps context used over iterations of priming
 type PrimeContext struct {
-	cfg        *Config
-	log        logger.Logger
-	block      uint64
-	load       state.BulkLoad
-	db         state.StateDB
+	cfg        *utils.Config           // command configuration
+	log        logger.Logger           // logger for the prime context
+	block      uint64                  // current block number used for priming
+	load       state.BulkLoad          // bulk load to be applied
+	db         state.StateDB           // database to be primed
 	exist      map[common.Address]bool // account exists in db
 	operations int                     // number of operations processed without commit
+	hasPrimed  bool                    // whether the stateDB has been primed
 }
 
 // mayApplyBulkLoad closes and reopen bulk load if it has over n operations.
 func (pc *PrimeContext) mayApplyBulkLoad() error {
-	if pc.operations >= OperationThreshold {
+	if pc.operations >= utils.OperationThreshold {
 		pc.log.Debugf("\t\tApply bulk load with %v operations...", pc.operations)
 		pc.operations = 0
 		if err := pc.load.Close(); err != nil {
@@ -63,7 +71,8 @@ func (pc *PrimeContext) mayApplyBulkLoad() error {
 }
 
 // PrimeStateDB primes database with accounts from the world state.
-func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) error {
+func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState) error {
+	var err error
 	numValues := 0 // number of storage values
 	ws.ForEachAccount(func(address common.Address, account txcontext.Account) {
 		numValues += account.GetStorageSize()
@@ -71,22 +80,24 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) 
 
 	pc.log.Debugf("\tLoading %d accounts with %d values ..", ws.Len(), numValues)
 
-	pt := NewProgressTracker(numValues, pc.log)
+	pt := utils.NewProgressTracker(numValues, pc.log)
 	if pc.cfg.PrimeRandom {
 		//if 0, commit once after priming all accounts
 		if pc.cfg.PrimeThreshold == 0 {
 			pc.cfg.PrimeThreshold = ws.Len()
 		}
-		if err := pc.PrimeStateDBRandom(ws, db, pt); err != nil {
+		if err := pc.PrimeStateDBRandom(ws, pt); err != nil {
 			return fmt.Errorf("failed to prime StateDB: %v", err)
 		}
 	} else {
-		err := pc.loadExistingAccountsIntoCache(ws)
-		if err != nil {
-			return err
+		if pc.cfg.IsExistingStateDb {
+			err := pc.loadExistingAccountsIntoCache(ws)
+			if err != nil {
+				return err
+			}
 		}
 
-		pc.load, err = db.StartBulkLoad(pc.block)
+		pc.load, err = pc.db.StartBulkLoad(pc.block)
 		if err != nil {
 			return err
 		}
@@ -112,6 +123,7 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) 
 			return fmt.Errorf("failed to prime StateDB: %v", err)
 		}
 		pc.block++
+		pc.hasPrimed = true
 	}
 	pc.log.Debugf("\t\tPriming completed ...")
 	return nil
@@ -119,6 +131,7 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState, db state.StateDB) 
 
 // loadExistingAccountsIntoCache checks whether accounts to be primed already exists in the statedb.
 // If so, it preloads pc.exist cache with the account existence.
+// This is only needed when src db is used.
 func (pc *PrimeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) error {
 	err := pc.db.BeginBlock(pc.block)
 	if err != nil {
@@ -153,7 +166,7 @@ func (pc *PrimeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) e
 }
 
 // primeOneAccount initializes an account on stateDB with substate
-func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *ProgressTracker) error {
+func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *utils.ProgressTracker) error {
 	exist, found := pc.exist[addr]
 	// do not create empty accounts
 	if !exist && acc.GetBalance().Sign() == 0 && acc.GetNonce() == 0 && len(acc.GetCode()) == 0 {
@@ -191,7 +204,9 @@ func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Accou
 }
 
 // PrimeStateDBRandom primes database with accounts from the world state in random order.
-func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.StateDB, pt *ProgressTracker) error {
+func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, pt *utils.ProgressTracker) error {
+	var err error
+
 	contracts := make([]string, 0, ws.Len())
 	ws.ForEachAccount(func(addr common.Address, _ txcontext.Account) {
 		contracts = append(contracts, addr.Hex())
@@ -204,9 +219,11 @@ func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.Sta
 		contracts[i], contracts[j] = contracts[j], contracts[i]
 	})
 
-	err := pc.loadExistingAccountsIntoCache(ws)
-	if err != nil {
-		return err
+	if pc.cfg.IsExistingStateDb {
+		err := pc.loadExistingAccountsIntoCache(ws)
+		if err != nil {
+			return err
+		}
 	}
 
 	pc.load, err = pc.db.StartBulkLoad(pc.block)
@@ -232,39 +249,55 @@ func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.Sta
 }
 
 // SelfDestructAccounts clears storage of all input accounts.
-func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substatetypes.Address) {
+func (pc *PrimeContext) SelfDestructAccounts(accounts []substatetypes.Address) {
+	// short-circuit if no accounts to self-destruct
+	// prevents block number incrementing
+	if len(accounts) == 0 {
+		pc.log.Debugf("\t\t No accounts to self-destruct.")
+		return
+	}
+
 	count := 0
-	db.BeginSyncPeriod(0)
-	err := db.BeginBlock(pc.block)
+	pc.log.Debugf("\t\t Self-destructing %d accounts ...", len(accounts))
+	pc.db.BeginSyncPeriod(0)
+	err := pc.db.BeginBlock(pc.block)
 	if err != nil {
 		pc.log.Errorf("failed to begin block: %v", err)
 	}
-	err = db.BeginTransaction(0)
+	err = pc.db.BeginTransaction(0)
 	if err != nil {
 		pc.log.Errorf("failed to begin transaction: %v", err)
 	}
 	for _, addr := range accounts {
 		a := common.Address(addr)
-		if db.Exist(a) {
-			db.SelfDestruct(a)
+		if pc.db.Exist(a) {
+			pc.db.SelfDestruct(a)
 			pc.log.Debugf("\t\t Perform suicide on %s", a)
 			count++
 			pc.exist[a] = false
 		}
 	}
-	err = db.EndTransaction()
+	err = pc.db.EndTransaction()
 	if err != nil {
 		pc.log.Errorf("failed to end transaction: %v", err)
 	}
-	err = db.EndBlock()
+	err = pc.db.EndBlock()
 	if err != nil {
 		pc.log.Errorf("failed to end block: %v", err)
 	}
-	db.EndSyncPeriod()
+	pc.db.EndSyncPeriod()
 	pc.block++
 	pc.log.Infof("\t\t %v suicided accounts were removed from statedb (before priming).", count)
 }
 
+func (pc *PrimeContext) SetBlock(block uint64) {
+	pc.block = block
+}
+
 func (pc *PrimeContext) GetBlock() uint64 {
 	return pc.block
+}
+
+func (pc *PrimeContext) HasPrimed() bool {
+	return pc.hasPrimed
 }
