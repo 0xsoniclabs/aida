@@ -232,16 +232,16 @@ func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, db state.Sta
 }
 
 // SelfDestructAccounts clears storage of all input accounts.
-func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substatetypes.Address) {
+func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substatetypes.Address) error {
 	count := 0
 	db.BeginSyncPeriod(0)
 	err := db.BeginBlock(pc.block)
 	if err != nil {
-		pc.log.Errorf("failed to begin block: %v", err)
+		return fmt.Errorf("failed to begin block: %w", err)
 	}
 	err = db.BeginTransaction(0)
 	if err != nil {
-		pc.log.Errorf("failed to begin transaction: %v", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	for _, addr := range accounts {
 		a := common.Address(addr)
@@ -254,15 +254,16 @@ func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substa
 	}
 	err = db.EndTransaction()
 	if err != nil {
-		pc.log.Errorf("failed to end transaction: %v", err)
+		return fmt.Errorf("failed to end transaction: %w", err)
 	}
 	err = db.EndBlock()
 	if err != nil {
-		pc.log.Errorf("failed to end block: %v", err)
+		return fmt.Errorf("failed to end block: %w", err)
 	}
 	db.EndSyncPeriod()
 	pc.block++
 	pc.log.Infof("\t\t %v suicided accounts were removed from statedb (before priming).", count)
+	return nil
 }
 
 func (pc *PrimeContext) GetBlock() uint64 {
