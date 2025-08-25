@@ -23,6 +23,7 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
@@ -42,10 +43,10 @@ var UtilDbApp = cli.App{
 		&merge.Command,
 		&info.Command,
 		&validate.Command,
-		&db.ExtractEthereumGenesisCommand,
+		&generate.Command,
 		&db.UpdateCommand,
-		&db.GenDeletedAccountsCommand,
 		&db.ScrapeCommand,
+		&db.MetadataCommand,
 
 		//Priming only
 		&primer.RunPrimerCmd,
