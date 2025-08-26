@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -35,52 +34,64 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 
 	mockErr := errors.New("mock error")
 
-	// case success
-	mockBulk := state.NewMockBulkLoad(ctrl)
-	mockStateDb := state.NewMockStateDB(ctrl)
-	p := &PrimeContext{
-		cfg:        nil,
-		load:       mockBulk,
-		db:         mockStateDb,
-		operations: utils.OperationThreshold + 1,
-		log:        logger.NewLogger("ERROR", "Test"),
-	}
-	mockBulk.EXPECT().Close().Return(nil)
-	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulk, nil)
-	err := p.mayApplyBulkLoad()
-	assert.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		mockBulk := state.NewMockBulkLoad(ctrl)
+		mockStateDb := state.NewMockStateDB(ctrl)
+		p := &PrimeContext{
+			load:       mockBulk,
+			db:         mockStateDb,
+			operations: utils.OperationThreshold + 1,
+			log:        logger.NewLogger("ERROR", "Test"),
+		}
+		mockBulk.EXPECT().Close().Return(nil)
+		mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(mockBulk, nil)
+		err := p.mayApplyBulkLoad()
+		assert.NoError(t, err)
+	})
 
-	// case success
-	p.operations = 0
-	err = p.mayApplyBulkLoad()
-	assert.Nil(t, err)
+	t.Run("success_no_bulk", func(t *testing.T) {
+		mockBulk := state.NewMockBulkLoad(ctrl)
+		mockStateDb := state.NewMockStateDB(ctrl)
+		p := &PrimeContext{
+			load:       mockBulk,
+			db:         mockStateDb,
+			operations: 0,
+			log:        logger.NewLogger("ERROR", "Test"),
+		}
+		err := p.mayApplyBulkLoad()
+		assert.Nil(t, err)
+	})
 
-	// case error on close
-	p = &PrimeContext{
-		cfg:        nil,
-		load:       mockBulk,
-		db:         mockStateDb,
-		operations: utils.OperationThreshold + 1,
-		log:        logger.NewLogger("ERROR", "Test"),
-	}
-	mockBulk.EXPECT().Close().Return(mockErr)
-	err = p.mayApplyBulkLoad()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), err.Error())
+	t.Run("error_on_close", func(t *testing.T) {
+		mockBulk := state.NewMockBulkLoad(ctrl)
+		mockStateDb := state.NewMockStateDB(ctrl)
+		p := &PrimeContext{
+			load:       mockBulk,
+			db:         mockStateDb,
+			operations: utils.OperationThreshold + 1,
+			log:        logger.NewLogger("ERROR", "Test"),
+		}
+		mockBulk.EXPECT().Close().Return(mockErr)
+		err := p.mayApplyBulkLoad()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockErr.Error())
+	})
 
-	// case error on start bulk load
-	p = &PrimeContext{
-		cfg:        nil,
-		load:       mockBulk,
-		db:         mockStateDb,
-		operations: utils.OperationThreshold + 1,
-		log:        logger.NewLogger("ERROR", "Test"),
-	}
-	mockBulk.EXPECT().Close().Return(nil)
-	mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, mockErr)
-	err = p.mayApplyBulkLoad()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), err.Error())
+	t.Run("error_on_start_bulk_load", func(t *testing.T) {
+		mockBulk := state.NewMockBulkLoad(ctrl)
+		mockStateDb := state.NewMockStateDB(ctrl)
+		p := &PrimeContext{
+			load:       mockBulk,
+			db:         mockStateDb,
+			operations: utils.OperationThreshold + 1,
+			log:        logger.NewLogger("ERROR", "Test"),
+		}
+		mockBulk.EXPECT().Close().Return(nil)
+		mockStateDb.EXPECT().StartBulkLoad(uint64(1)).Return(nil, mockErr)
+		err := p.mayApplyBulkLoad()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), mockErr.Error())
+	})
 }
 
 func TestPrimeContext_PrimeStateDB(t *testing.T) {
@@ -179,7 +190,6 @@ func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 	}
 	acc := makeTestAccount(t)
 
-	// Case 1: normal flow
 	gomock.InOrder(
 		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil),
 		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil),
@@ -192,9 +202,6 @@ func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 	}))
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(1), p.block)
-
-	// Case 2: no accounts
-
 }
 
 func TestPrimeContext_primeOneAccount(t *testing.T) {
@@ -255,81 +262,119 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 	mockBulk.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return().AnyTimes()
 	mockBulk.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return().AnyTimes()
 	mockBulk.EXPECT().Close().Return(nil).AnyTimes()
-	err := p.PrimeStateDBRandom(mockWs, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
+	err := p.primeStateDBRandom(mockWs, utils.NewProgressTracker(0, logger.NewLogger("ERROR", "Test")))
 	assert.NoError(t, err)
 }
 
-func TestPrimeContext_SelfDestructAccounts(t *testing.T) {
+func TestPrimeContext_SelfDestructAccountsSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	mockStateDb := state.NewMockStateDB(ctrl)
+	mockLogger := logger.NewMockLogger(ctrl)
 
-	t.Run("success", func(t *testing.T) {
-
-		mockStateDb := state.NewMockStateDB(ctrl)
-		mockLogger := logger.NewMockLogger(ctrl)
-		p := &PrimeContext{
-			cfg:        nil,
-			load:       nil,
-			db:         mockStateDb,
-			operations: 0,
-			log:        mockLogger,
-			block:      0,
-			exist: map[common.Address]bool{
-				common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
-				common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
-			},
-		}
-		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
-		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
-		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
-		mockStateDb.EXPECT().EndTransaction().Return(nil)
-		mockStateDb.EXPECT().EndBlock().Return(nil)
-		mockStateDb.EXPECT().EndSyncPeriod().Return()
-		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
-		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
-		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		p.SelfDestructAccounts([]substatetypes.Address{
-			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
-			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
-		})
-		assert.Equal(t, uint64(1), p.block)
+	p := &PrimeContext{
+		db:         mockStateDb,
+		operations: 0,
+		log:        mockLogger,
+		block:      0,
+		exist: map[common.Address]bool{
+			common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
+			common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+		},
+	}
+	mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+	mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+	mockStateDb.EXPECT().EndTransaction().Return(nil)
+	mockStateDb.EXPECT().EndBlock().Return(nil)
+	mockStateDb.EXPECT().EndSyncPeriod().Return()
+	mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+	mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+	mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+	err := p.selfDestructAccounts([]substatetypes.Address{
+		substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
+		substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
 	})
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), p.block)
+}
 
-	t.Run("error", func(t *testing.T) {
+func TestPrimeContext_SelfDestructAccountsReturnsErrors(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockError := errors.New("mock error")
 
-		mockStateDb := state.NewMockStateDB(ctrl)
-		mockLogger := logger.NewMockLogger(ctrl)
-		p := &PrimeContext{
-			cfg:        nil,
-			load:       nil,
-			db:         mockStateDb,
-			operations: 0,
-			log:        mockLogger,
-			block:      0,
-			exist: map[common.Address]bool{
-				common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
-				common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+	testcases := []struct {
+		name      string
+		mockSetup func(*state.MockStateDB)
+	}{
+		{
+			name: "BeginBlockError",
+			mockSetup: func(mockStateDb *state.MockStateDB) {
+				mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(mockError)
 			},
-		}
-		mockError := errors.New("mock error")
-		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
-		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(mockError)
-		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(mockError)
-		mockStateDb.EXPECT().EndTransaction().Return(mockError)
-		mockStateDb.EXPECT().EndBlock().Return(mockError)
-		mockStateDb.EXPECT().EndSyncPeriod().Return()
-		mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
-		mockLogger.EXPECT().Errorf(gomock.Any(), gomock.Any()).AnyTimes()
-		mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
-		mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
-		p.SelfDestructAccounts([]substatetypes.Address{
-			substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
-			substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
+		},
+		{
+			name: "BeginTransactionError",
+			mockSetup: func(mockStateDb *state.MockStateDB) {
+				mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(mockError)
+			},
+		},
+		{
+			name: "EndTransactionError",
+			mockSetup: func(mockStateDb *state.MockStateDB) {
+				mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+				mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+				mockStateDb.EXPECT().EndTransaction().Return(mockError)
+			},
+		},
+		{
+			name: "EndBlockError",
+			mockSetup: func(mockStateDb *state.MockStateDB) {
+				mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+				mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
+				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+				mockStateDb.EXPECT().EndTransaction().Return(nil)
+				mockStateDb.EXPECT().EndBlock().Return(mockError)
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStateDb := state.NewMockStateDB(ctrl)
+			mockLogger := logger.NewMockLogger(ctrl)
+			p := &PrimeContext{
+				db:         mockStateDb,
+				operations: 0,
+				log:        mockLogger,
+				block:      0,
+				exist: map[common.Address]bool{
+					common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): true,
+					common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): true,
+				},
+			}
+
+			mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
+			tc.mockSetup(mockStateDb)
+			err := p.selfDestructAccounts([]substatetypes.Address{
+				substatetypes.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
+				substatetypes.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"),
+			})
+			assert.Error(t, err, "SelfDestructAccounts expected error but got none")
+			assert.ErrorContains(t, err, "mock error")
 		})
-		assert.Equal(t, uint64(1), p.block)
-	})
+
+	}
 
 }
 
@@ -384,10 +429,10 @@ func TestPrimeContext_PrimeStateDB_RealData(t *testing.T) {
 	for _, tc := range utils.GetStateDbTestCases() {
 		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
 			cfg := utils.MakeTestConfig(tc)
+			cfg.DbTmp = t.TempDir()
 
 			// Initialization of state DB
-			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir)
+			sDB, _, err := utils.PrepareStateDB(cfg)
 
 			require.NoError(t, err, "failed to create state DB")
 
@@ -432,10 +477,10 @@ func TestPrimeContext_PrimeStateDB_ContinuousPrimingFromSrcDB(t *testing.T) {
 	for _, tc := range utils.GetStateDbTestCases() {
 		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
 			cfg := utils.MakeTestConfig(tc)
+			cfg.DbTmp = t.TempDir()
 
 			// Initialization of state DB
 			sDB, sDbDir, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir)
 
 			require.NoError(t, err, "failed to create state DB")
 
@@ -476,8 +521,7 @@ func TestPrimeContext_PrimeStateDB_ContinuousPrimingFromSrcDB(t *testing.T) {
 			cfg.IsExistingStateDb = true
 
 			// Initialization of state DB
-			sDB2, sDbDir2, err := utils.PrepareStateDB(cfg)
-			defer os.RemoveAll(sDbDir2)
+			sDB2, _, err := utils.PrepareStateDB(cfg)
 			require.NoError(t, err, "failed to create state DB2")
 
 			defer func() {

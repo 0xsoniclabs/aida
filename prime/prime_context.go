@@ -86,7 +86,7 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState) error {
 		if pc.cfg.PrimeThreshold == 0 {
 			pc.cfg.PrimeThreshold = ws.Len()
 		}
-		if err := pc.PrimeStateDBRandom(ws, pt); err != nil {
+		if err := pc.primeStateDBRandom(ws, pt); err != nil {
 			return fmt.Errorf("failed to prime StateDB: %v", err)
 		}
 	} else {
@@ -203,8 +203,8 @@ func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Accou
 	return nil
 }
 
-// PrimeStateDBRandom primes database with accounts from the world state in random order.
-func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, pt *utils.ProgressTracker) error {
+// primeStateDBRandom primes database with accounts from the world state in random order.
+func (pc *PrimeContext) primeStateDBRandom(ws txcontext.WorldState, pt *utils.ProgressTracker) error {
 	var err error
 
 	contracts := make([]string, 0, ws.Len())
@@ -248,13 +248,13 @@ func (pc *PrimeContext) PrimeStateDBRandom(ws txcontext.WorldState, pt *utils.Pr
 	return err
 }
 
-// SelfDestructAccounts clears storage of all input accounts.
-func (pc *PrimeContext) SelfDestructAccounts(accounts []substatetypes.Address) {
+// selfDestructAccounts clears storage of all input accounts.
+func (pc *PrimeContext) selfDestructAccounts(accounts []substatetypes.Address) error {
 	// short-circuit if no accounts to self-destruct
 	// prevents block number incrementing
 	if len(accounts) == 0 {
 		pc.log.Debugf("\t\t No accounts to self-destruct.")
-		return
+		return nil
 	}
 
 	count := 0
@@ -262,11 +262,11 @@ func (pc *PrimeContext) SelfDestructAccounts(accounts []substatetypes.Address) {
 	pc.db.BeginSyncPeriod(0)
 	err := pc.db.BeginBlock(pc.block)
 	if err != nil {
-		pc.log.Errorf("failed to begin block: %v", err)
+		return fmt.Errorf("failed to begin block: %w", err)
 	}
 	err = pc.db.BeginTransaction(0)
 	if err != nil {
-		pc.log.Errorf("failed to begin transaction: %v", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	for _, addr := range accounts {
 		a := common.Address(addr)
@@ -279,15 +279,16 @@ func (pc *PrimeContext) SelfDestructAccounts(accounts []substatetypes.Address) {
 	}
 	err = pc.db.EndTransaction()
 	if err != nil {
-		pc.log.Errorf("failed to end transaction: %v", err)
+		return fmt.Errorf("failed to end transaction: %w", err)
 	}
 	err = pc.db.EndBlock()
 	if err != nil {
-		pc.log.Errorf("failed to end block: %v", err)
+		return fmt.Errorf("failed to end block: %w", err)
 	}
 	pc.db.EndSyncPeriod()
 	pc.block++
 	pc.log.Infof("\t\t %v suicided accounts were removed from statedb (before priming).", count)
+	return nil
 }
 
 func (pc *PrimeContext) SetBlock(block uint64) {

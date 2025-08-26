@@ -132,7 +132,7 @@ func (p *primer) mayPrimeFromUpdateSet() error {
 		ClearAccountStorage(update, newSet.DeletedAccounts)
 		// if exists in DB, suicide
 		if hasPrimed {
-			p.ctx.SelfDestructAccounts(newSet.DeletedAccounts)
+			p.ctx.selfDestructAccounts(newSet.DeletedAccounts)
 			hasPrimed = false
 		}
 
@@ -166,7 +166,7 @@ func (p *primer) mayPrimeFromSubstate() error {
 	}
 	// remove deleted accounts from statedb before priming only if statedb is not empty
 	if p.ctx.HasPrimed() {
-		p.ctx.SelfDestructAccounts(deletedAccounts)
+		p.ctx.selfDestructAccounts(deletedAccounts)
 	}
 	if err = p.ctx.PrimeStateDB(substatecontext.NewWorldState(update)); err != nil {
 		return fmt.Errorf("cannot prime state-db; %w", err)
