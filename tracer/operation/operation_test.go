@@ -188,8 +188,9 @@ func (s *MockStateDB) BeginSyncPeriod(id uint64) {
 	s.recording = append(s.recording, Record{BeginSyncPeriodID, []any{id}})
 }
 
-func (s *MockStateDB) EndSyncPeriod() {
+func (s *MockStateDB) EndSyncPeriod() error {
 	s.recording = append(s.recording, Record{EndSyncPeriodID, []any{}})
+	return nil
 }
 
 func (s *MockStateDB) StartBulkLoad(uint64) (state.BulkLoad, error) {

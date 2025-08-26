@@ -18,6 +18,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,9 +31,13 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/rlp"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -191,6 +196,36 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("EndSyncPeriod error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockStateDb := state.NewMockStateDB(ctrl)
+		mockBaseDb := db.NewMockBaseDB(ctrl)
+
+		kv := &testutil.KeyValue{}
+		// First key
+		key1 := db.EncodeDestroyedAccountKey(5, 0)
+		list1 := db.SuicidedAccountLists{
+			DestroyedAccounts:   []substatetypes.Address{{1}, {2}},
+			ResurrectedAccounts: []substatetypes.Address{},
+		}
+		value1, _ := rlp.EncodeToBytes(list1)
+
+		kv.PutU(key1, value1)
+		iter := iterator.NewArrayIterator(kv)
+		mockBaseDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter)
+		mockStateDb.EXPECT().BeginSyncPeriod(gomock.Any()).Return()
+		mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
+		mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(uint256.Int{}).Times(2)
+		mockStateDb.EXPECT().EndTransaction().Return(nil)
+		mockStateDb.EXPECT().EndBlock().Return(nil)
+		mockStateDb.EXPECT().EndSyncPeriod().Return(errors.New("mock error"))
+		cfg := &Config{}
+		err := DeleteDestroyedAccountsFromStateDB(mockStateDb, cfg, uint64(10), mockBaseDb)
+		assert.Error(t, err)
+	})
 }
 
 // TestStatedb_PrepareStateDB tests preparation and initialization of existing state DB
