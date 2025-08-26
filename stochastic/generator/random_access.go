@@ -19,9 +19,7 @@ package generator
 import (
 	"fmt"
 	"math"
-	"math/rand"
 
-	"github.com/0xsoniclabs/aida/stochastic/exponential"
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
@@ -30,26 +28,25 @@ import (
 // take a very long time and would slow down the simulation.)
 const minSize = 100 * statistics.QueueLen
 
-
-// Randomizer interface 
+// Randomizer interface
 type Randomizer interface {
-        RandRange(l int64, u int64) int64  // produce a random value in the interval [l,u]
-        Sample(n int64) int64              // sample distribution
-        SampleQueue() int                  // sample queue distribution
+	RandRange(l int64, u int64) int64 // produce a random value in the interval [l,u]
+	Sample(n int64) int64             // sample distribution
+	SampleQueue() int                 // sample queue distribution
 }
 
 // RandomAccess data structure for producing random index accesses.
 type RandomAccess struct {
-	n int64         // cardinality of set
-	queue []int64   // queue for indexes whose length is less than qStatslen
-	rand Randomizer // random generator
+	n     int64      // cardinality of set
+	queue []int64    // queue for indexes whose length is less than qStatslen
+	rand  Randomizer // random generator
 }
 
 // NewAccess creates a new random access instance for arguments
 func NewRandomAccess(n int64, rand Randomizer) *RandomAccess {
 	queue := []int64{}
 	for i := 0; i < statistics.QueueLen; i++ {
-		queue = append(queue, rand.RandRange(1,n))
+		queue = append(queue, rand.RandRange(1, n))
 	}
 	return &RandomAccess{
 		n:     n,
@@ -78,13 +75,13 @@ func (a *RandomAccess) NextIndex(class int) (int64, error) {
 		}
 		v := a.n
 		a.placeQ(v)
-		a.n ++
+		a.n++
 		return v + 1, nil
 
 	// use randomised value that is not contained in the queue
 	case statistics.RandomValueID:
 		for {
-			v := a.rand.Sample(a.n-1)
+			v := a.rand.Sample(a.n - 1)
 			if !a.findQElem(v) {
 				a.placeQ(v)
 				return v + 1, nil
@@ -101,9 +98,9 @@ func (a *RandomAccess) NextIndex(class int) (int64, error) {
 	case statistics.RecentValueID:
 		if v, err := a.recentQ(); err != nil {
 			a.placeQ(v)
-			return v + 1
+			return v + 1, nil
 		} else {
-			return err
+			return 0, err
 		}
 
 	default:
@@ -127,7 +124,7 @@ func (a *RandomAccess) DeleteIndex(v int64) error {
 	// in range, but there might elements in the queue
 	// that exceed the new range limit. They need to
 	// be replaced.
-	j := rand.Sample(a.n-1)
+	j := a.rand.Sample(a.n - 1)
 	for i := 0; i < statistics.QueueLen; i++ {
 		if a.queue[i] >= a.n {
 			a.queue[i] = j
@@ -159,8 +156,8 @@ func (a *RandomAccess) lastQ() int64 {
 // recentQ returns some element in the queue but not the previous one.
 func (a *RandomAccess) recentQ() (int64, error) {
 	i := a.rand.SampleQueue()
-	if (i <= 0 || i >= statistics.QueueLen)  {
+	if i <= 0 || i >= statistics.QueueLen {
 		return 0, fmt.Errorf("recentQ: queue index out of range for recent access")
-        } 
-	return a.queue[i]
+	}
+	return a.queue[i], nil
 }

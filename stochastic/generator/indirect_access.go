@@ -3,7 +3,7 @@
 //
 // Aida is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Software
 // (at your option) any later version.
 //
 // Aida is distributed in the hope that it will be useful,
@@ -36,34 +36,35 @@ type IndirectAccess struct {
 
 // NewIndirectAccess creates a new indirect index access-generator.
 func NewIndirectAccess(ra *RandomAccess) *IndirectAccess {
-	t := make([]int64, ra.numElem)
-	for i := int64(0); i < ra.numElem; i++ {
+	t := make([]int64, ra.n)
+	for i := int64(0); i < ra.n; i++ {
 		t[i] = i + 1 // shifted by one because of zero value
 	}
 	return &IndirectAccess{
 		randAcc:     ra,
-		ctr:         ra.numElem,
+		ctr:         ra.n,
 		translation: t,
 	}
 }
 
 // NextIndex returns the next index value based on the provided class.
-func (a *IndirectAccess) NextIndex(class int) int64 {
-	v := a.randAcc.NextIndex(class)
-	if v == -1 {
-		return -1
-	} else if class == statistics.ZeroValueID {
-		return v
-	} else if class == statistics.NewValueID {
-		if v != a.randAcc.numElem {
-			panic("unexpected nextIndex result.")
+func (a *IndirectAccess) NextIndex(class int) (int64, error) {
+	if v, err := a.randAcc.NextIndex(class); err != nil {
+		if class == statistics.ZeroValueID {
+			return v, nil
+		} else if class == statistics.NewValueID {
+			if v != a.randAcc.n {
+				panic("unexpected nextIndex result.")
+			}
+			a.ctr++
+			v := a.ctr
+			a.translation = append(a.translation, v)
+			return v, nil
+		} else {
+			return a.translation[v-1], nil
 		}
-		a.ctr++
-		v := a.ctr
-		a.translation = append(a.translation, v)
-		return v
 	} else {
-		return a.translation[v-1]
+		return 0, err
 	}
 }
 
@@ -100,5 +101,5 @@ func (a *IndirectAccess) findIndex(k int64) int64 {
 
 // NumElem returns the number of indexes
 func (a *IndirectAccess) NumElem() int64 {
-	return a.randAcc.numElem
+	return a.randAcc.n
 }
