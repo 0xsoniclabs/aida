@@ -1,4 +1,4 @@
-// Copyright 2025 Sonic Labs
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,20 +17,20 @@
 package visualizer
 
 import (
-	"log"
+	"fmt"
 	"sort"
 
-	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/stochastic/exponential"
-	"github.com/0xsoniclabs/aida/stochastic/stationary"
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
+	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/markov"
 )
 
-// EventData contains the statistical data for events that is used for visualization.
-type EventData struct {
-	Contracts AccessData   // contract-address view model
-	Keys      AccessData   // storage-key view model
-	Values    AccessData   // storage-value view model
+// StatsData contains the statistical visualisation data for the markov chain
+type StatsData struct {
+	Contracts ArgumentData // contract-address view model
+	Keys      ArgumentData // storage-key view model
+	Values    ArgumentData // storage-value view model
 	Snapshot  SnapshotData // snapshot view model
 
 	Stationary          []OpData                                      // stationary distribution model
@@ -39,22 +39,18 @@ type EventData struct {
 	BlocksPerSyncPeriod float64                                       // average number of blocks per sync-period
 	OperationLabel      []string                                      // operation labels for stochastic matrix
 	StochasticMatrix    [][]float64                                   // stochastic Matrix
-	SimplifiedMatrix    [stochastic.NumOps][stochastic.NumOps]float64 // simplified stochastic matrix
+	SimplifiedMatrix    [operations.NumOps][operations.NumOps]float64 // simplified stochastic matrix
 }
 
-// AccessData contains the statistical data for access statistics that is used for visualization.
-type AccessData struct {
-	ECdf   [][2]float64 // empirical cumulative distribution function of counting stats
-	QPdf   []float64    // queuing distribution function
-	Lambda float64      // exponential Distribution Parameter
-	Cdf    [][2]float64 // parameterised cumulative distribution function
+// ArgumentData contains the statistical data for access statistics that is used for visualization.
+type ArgumentData struct {
+	A_CDF [][2]float64 // empirical cumulative distribution function of counting stats
+	Q_PMF []float64    // queuing distribution function
 }
 
 // SnapshotData contains the statistical data for snapshot deltas used for visualization.
 type SnapshotData struct {
-	ECdf   [][2]float64 // empirical cumulative distribution function
-	Lambda float64      // exponential Distribution Parameter
-	Cdf    [][2]float64 // parameterised cumulative distribution function
+	ECdf [][2]float64 // empirical cumulative distribution function
 }
 
 // OpData stores a single operation and its probability (for stead-state)
@@ -63,16 +59,16 @@ type OpData struct {
 	value float64 // operation's value (either probability or frequency)
 }
 
-// events is the singleton for the viewing model.
-var events EventData
+// stats is the singleton for the viewing model.
+var stats StatsData
 
-// GetEventsData returns the pointer to the singleton.
-func GetEventsData() *EventData {
-	return &events
+// GetData returns the pointer to the singleton.
+func GetData() *StatsData {
+	return &stats
 }
 
-// PopulateEvents populates the event model from event registry.
-func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
+// PopulateData populates the model from the JSON struct
+func (e *StatsData) PopulateData(d *recorder.StatsJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)
@@ -88,7 +84,11 @@ func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
 
 	// Sort entries of the stationary distribution and populate
 	n := len(d.Operations)
-	stationary, _ := stationary.ComputeDistribution(d.StochasticMatrix)
+	mc, mcErr := markov.New(d.StochasticMatrix, d.Operations)
+	if mcErr != nil {
+		panic(fmt.Sprintf("PopulateData: expected a new markov chain: %v", mcErr))
+	}
+	stationary, _ := mc.Stationary()
 	data := []OpData{}
 	for i := 0; i < n; i++ {
 		data = append(data, OpData{
@@ -108,14 +108,14 @@ func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
 	blockProb := 0.0
 	syncPeriodProb := 0.0
 	for i := 0; i < n; i++ {
-		sop, _, _, _ := stochastic.DecodeOpcode(d.Operations[i])
-		if sop == stochastic.BeginTransactionID {
+		sop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i])
+		if sop == operations.BeginTransactionID {
 			txProb = stationary[i]
 		}
-		if sop == stochastic.BeginBlockID {
+		if sop == operations.BeginBlockID {
 			blockProb = stationary[i]
 		}
-		if sop == stochastic.BeginSyncPeriodID {
+		if sop == operations.BeginSyncPeriodID {
 			syncPeriodProb = stationary[i]
 		}
 	}
@@ -128,18 +128,19 @@ func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
 
 	txData := []OpData{}
 	if txProb > 0.0 {
-		for op := 0; op < stochastic.NumOps; op++ {
+		for op := 0; op < operations.NumOps; op++ {
 			// exclude scoping operations
-			if op != stochastic.BeginBlockID && op != stochastic.EndBlockID && op != stochastic.BeginSyncPeriodID && op != stochastic.EndSyncPeriodID && op != stochastic.BeginTransactionID && op != stochastic.EndTransactionID {
+			if op != operations.BeginBlockID && op != operations.EndBlockID && op != operations.BeginSyncPeriodID &&
+				op != operations.EndSyncPeriodID && op != operations.BeginTransactionID && op != operations.EndTransactionID {
 				// sum all versions of an operation and normalize the value with the transaction's probability
 				sum := 0.0
 				for i := 0; i < n; i++ {
-					if sop, _, _, _ := stochastic.DecodeOpcode(d.Operations[i]); sop == op {
+					if sop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i]); sop == op {
 						sum += stationary[i]
 					}
 				}
 				txData = append(txData, OpData{
-					label: stochastic.OpMnemo(op),
+					label: operations.OpMnemo(op),
 					value: sum / txProb})
 			}
 		}
@@ -161,47 +162,35 @@ func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
 
 	// reduce stochastic matrix to a simplified matrix
 	for i := 0; i < n; i++ {
-		iop, _, _, _ := stochastic.DecodeOpcode(d.Operations[i])
+		iop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i])
 		for j := 0; j < n; j++ {
-			jop, _, _, _ := stochastic.DecodeOpcode(d.Operations[j])
+			jop, _, _, _, _ := operations.DecodeOpcode(d.Operations[j])
 			e.SimplifiedMatrix[iop][jop] += d.StochasticMatrix[i][j]
 		}
 	}
 
 	// normalize row data after reduction
-	for i := 0; i < stochastic.NumOps; i++ {
+	for i := 0; i < operations.NumOps; i++ {
 		sum := 0.0
-		for j := 0; j < stochastic.NumOps; j++ {
+		for j := 0; j < operations.NumOps; j++ {
 			sum += e.SimplifiedMatrix[i][j]
 		}
-		for j := 0; j < stochastic.NumOps; j++ {
+		for j := 0; j < operations.NumOps; j++ {
 			e.SimplifiedMatrix[i][j] /= sum
 		}
 	}
 }
 
 // PopulateAccess populates access stats model
-func (a *AccessData) PopulateAccess(d *statistics.AccessJSON) {
-	a.ECdf = make([][2]float64, len(d.Counting.ECdf))
-	copy(a.ECdf, d.Counting.ECdf)
-	lambda, err := exponential.ApproximateLambda(d.Counting.ECdf)
-	if err != nil {
-		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
-	}
-	a.Lambda = lambda
-	a.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumDistributionPoints)
-	a.QPdf = make([]float64, len(d.Queuing.Distribution))
-	copy(a.QPdf, d.Queuing.Distribution)
+func (a *ArgumentData) PopulateAccess(d *arguments.ClassifierJSON) {
+	a.A_CDF = make([][2]float64, len(d.Counting.ECDF))
+	copy(a.A_CDF, d.Counting.ECDF)
+	a.Q_PMF = make([]float64, len(d.Queuing.Distribution))
+	copy(a.Q_PMF, d.Queuing.Distribution)
 }
 
 // PopulateSnapStats populates snapshot stats model
-func (s *SnapshotData) PopulateSnapshotStats(d *stochastic.EventRegistryJSON) {
-	s.ECdf = make([][2]float64, len(d.SnapshotEcdf))
-	copy(s.ECdf, d.SnapshotEcdf)
-	lambda, err := exponential.ApproximateLambda(d.SnapshotEcdf)
-	if err != nil {
-		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
-	}
-	s.Lambda = lambda
-	s.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumDistributionPoints)
+func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StatsJSON) {
+	s.ECdf = make([][2]float64, len(d.SnapshotECDF))
+	copy(s.ECdf, d.SnapshotECDF)
 }

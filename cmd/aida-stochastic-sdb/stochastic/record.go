@@ -1,4 +1,4 @@
-// Copyright 2025 Sonic Labs
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,16 +17,15 @@
 package stochastic
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
-	"os"
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -37,7 +36,7 @@ import (
 var StochasticRecordCommand = cli.Command{
 	Action:    stochasticRecordAction,
 	Name:      "record",
-	Usage:     "record StateDB events while processing blocks",
+	Usage:     "record Markovian stats while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.CpuProfileFlag,
@@ -53,128 +52,92 @@ The stochastic record command requires two arguments:
 <blockNumFirst> <blockNumLast>
 
 <blockNumFirst> and <blockNumLast> are the first and
-last block for recording events.`,
+last block for recording stats.`,
 }
 
-// stochasticRecordAction implements recording of events.
+// stochasticRecordAction implements recording of stats.
 func stochasticRecordAction(ctx *cli.Context) error {
-	var err error
-
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
-	// force enable transaction validation
 	cfg.ValidateTxState = true
-
-	// start CPU profiling if enabled.
+	log := logger.NewLogger(cfg.LogLevel, "StochasticRecord")
 	if err := utils.StartCPUProfile(cfg); err != nil {
 		return err
 	}
 	defer utils.StopCPUProfile(cfg)
-
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {
 		return err
 	}
-
-	// iterate through subsets in sequence
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer func(sdb db.SubstateDB) {
-		err = errors.Join(err, sdb.Close())
-	}(sdb)
+	defer sdb.Close()
 	iter := sdb.NewSubstateIterator(int(cfg.First), cfg.Workers)
 	defer iter.Release()
 	oldBlock := uint64(math.MaxUint64) // set to an infeasible block
-	var sec float64
-	start := time.Now()
-	lastSec := time.Since(start).Seconds()
-
-	// create a new event registry
-	eventRegistry := stochastic.NewEventRegistry()
-
+	var (
+		start   time.Time
+		sec     float64
+		lastSec float64
+	)
+	start = time.Now()
+	sec = time.Since(start).Seconds()
+	lastSec = time.Since(start).Seconds()
+	stats := recorder.NewStats()
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
-	eventRegistry.RegisterOp(stochastic.BeginSyncPeriodID)
-
-	// iterate over all substates in order
+	stats.CountOp(operations.BeginSyncPeriodID)
 	for iter.Next() {
 		tx := iter.Value()
-		// close off old block with an end-block operation
 		if oldBlock != tx.Block {
 			if tx.Block > cfg.Last {
 				break
 			}
 			if oldBlock != math.MaxUint64 {
-				eventRegistry.RegisterOp(stochastic.EndBlockID)
+				stats.CountOp(operations.EndBlockID)
 				newSyncPeriod := tx.Block / cfg.SyncPeriodLength
 				for curSyncPeriod < newSyncPeriod {
-					eventRegistry.RegisterOp(stochastic.EndSyncPeriodID)
+					stats.CountOp(operations.EndSyncPeriodID)
 					curSyncPeriod++
-					eventRegistry.RegisterOp(stochastic.BeginSyncPeriodID)
+					stats.CountOp(operations.BeginSyncPeriodID)
 				}
 			}
-			// open new block with a begin-block operation and clear index cache
-			eventRegistry.RegisterOp(stochastic.BeginBlockID)
+			stats.CountOp(operations.BeginBlockID)
 			oldBlock = tx.Block
 		}
-
+		stats.CountOp(operations.BeginTransactionID)
 		var statedb state.StateDB
 		statedb = state.MakeInMemoryStateDB(substatecontext.NewWorldState(tx.InputSubstate), tx.Block)
-		statedb = stochastic.NewEventProxy(statedb, &eventRegistry)
+		statedb = recorder.NewStochasticProxy(statedb, &stats)
 		if _, err = processor.ProcessTransaction(statedb, int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)); err != nil {
 			return err
 		}
+		stats.CountOp(operations.EndTransactionID)
 
 		// report progress
 		sec = time.Since(start).Seconds()
 		if sec-lastSec >= 15 {
-			fmt.Printf("stochastic record: Elapsed time: %.0f s, at block %v\n", sec, oldBlock)
+			log.Infof("Elapsed time: %.0f s, at block %v", sec, oldBlock)
 			lastSec = sec
 		}
 	}
 	// end last block
 	if oldBlock != math.MaxUint64 {
-		eventRegistry.RegisterOp(stochastic.EndBlockID)
+		stats.CountOp(operations.EndBlockID)
 	}
-	eventRegistry.RegisterOp(stochastic.EndSyncPeriodID)
+	stats.CountOp(operations.EndSyncPeriodID)
 
 	sec = time.Since(start).Seconds()
-	fmt.Printf("stochastic record: Total elapsed time: %.3f s, processed %v blocks\n", sec, cfg.Last-cfg.First+1)
-
-	// writing event registry
-	fmt.Printf("stochastic record: write events file ...\n")
+	log.Noticef("Total elapsed time: %.3f s, processed %v blocks", sec, cfg.Last-cfg.First+1)
+	log.Notice("Write stats file ...")
 	if cfg.Output == "" {
-		cfg.Output = "./events.json"
+		cfg.Output = "./stats.json"
 	}
-	err = WriteEvents(&eventRegistry, cfg.Output)
-	if err != nil {
+	if err = stats.Write(cfg.Output); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// WriteEvents writes event file in JSON format.
-func WriteEvents(r *stochastic.EventRegistry, filename string) (err error) {
-	f, fErr := os.Create(filename)
-	if fErr != nil {
-		return fmt.Errorf("cannot open JSON file; %v", fErr)
-	}
-	defer func(f *os.File) {
-		err = errors.Join(err, f.Close())
-	}(f)
-
-	jOut, jErr := json.MarshalIndent(r.NewEventRegistryJSON(), "", "    ")
-	if jErr != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", jErr)
-	}
-
-	_, pErr := fmt.Fprintln(f, string(jOut))
-	if pErr != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", pErr)
 	}
 
 	return nil

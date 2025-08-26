@@ -1,4 +1,4 @@
-// Copyright 2025 Sonic Labs
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/goccy/go-graphviz"
@@ -78,7 +78,7 @@ func convertCountingData(data [][2]float64) []opts.LineData {
 }
 
 // newCountingChart creates a line chart for a counting statistic.
-func newCountingChart(title string, subtitle string, lambda float64, ecdf [][2]float64, cdf [][2]float64) *charts.Line {
+func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, values [][2]float64) *charts.Line {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme: types.ThemeChalk,
@@ -97,37 +97,26 @@ func newCountingChart(title string, subtitle string, lambda float64, ecdf [][2]f
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
-			Title:    title,
-			Subtitle: subtitle,
+			Title: title,
 		}))
-	sLambda := fmt.Sprintf("%v", lambda)
-	chart.AddSeries("eCDF", convertCountingData(ecdf)).AddSeries("CDF, λ="+sLambda, convertCountingData(cdf))
+	chart.AddSeries("Contracts", convertCountingData(contracts)).AddSeries("Keys", convertCountingData(keys)).AddSeries("Values", convertCountingData(values))
+
 	return chart
 }
 
 // renderCounting renders counting statistics.
 func renderCounting(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
-	contracts := newCountingChart("Counting Statistics", "for Contract-Addresses",
-		events.Contracts.Lambda,
-		events.Contracts.ECdf,
-		events.Contracts.Cdf)
-	keys := newCountingChart("Counting Statistics", "for Storage-Keys",
-		events.Keys.Lambda,
-		events.Keys.ECdf,
-		events.Keys.Cdf)
-	values := newCountingChart("Counting Statistics", "for Storage-Values",
-		events.Values.Lambda,
-		events.Values.ECdf,
-		events.Values.Cdf)
-
-	// TODO: Set HTML title via GlobalOption
-	page := components.NewPage()
-	page.AddCharts(contracts, keys, values)
-	page.Render(w)
+	data := GetData()
+	chart := newCountingChart(
+		"Counting Statistics",
+		data.Contracts.A_CDF,
+		data.Keys.A_CDF,
+		data.Values.A_CDF,
+	)
+	chart.Render(w)
 }
 
-// renderSnapshotStast renders a line chart for a snapshot statistics
+// renderSnapshotStats renders a line chart for a snapshot statistics
 func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
@@ -150,9 +139,8 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 			Title:    "Snapshot Statistics",
 			Subtitle: "Delta Distribution",
 		}))
-	events := GetEventsData()
-	sLambda := fmt.Sprintf("%v", events.Snapshot.Lambda)
-	chart.AddSeries("eCDF", convertCountingData(events.Snapshot.ECdf)).AddSeries("CDF, λ="+sLambda, convertCountingData(events.Snapshot.Cdf))
+	data := GetData()
+	chart.AddSeries("eCDF", convertCountingData(data.Snapshot.ECdf))
 	chart.Render(w)
 }
 
@@ -167,7 +155,7 @@ func convertQueuingData(data []float64) []opts.ScatterData {
 
 // renderQueuing renders a queuing statistics.
 func renderQueuing(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	scatter := charts.NewScatter()
 	scatter.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -187,10 +175,9 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
-			Title:    "Queuing Probabilities",
-			Subtitle: "for contract-addresses, storage-keys, and storage-values",
+			Title: "Queuing Probabilities",
 		}))
-	scatter.AddSeries("Contract", convertQueuingData(events.Contracts.QPdf)).AddSeries("Keys", convertQueuingData(events.Keys.QPdf)).AddSeries("Values", convertQueuingData(events.Values.QPdf))
+	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
 	scatter.Render(w)
 }
 
@@ -214,7 +201,7 @@ func convertOperationLabel(data []OpData) []string {
 
 // renderOperationStats renders the stationary distribution.
 func renderOperationStats(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -237,15 +224,15 @@ func renderOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: "StateDB Operations",
 		}))
-	bar.SetXAxis(convertOperationLabel(events.Stationary)).AddSeries("Stationary Distribution", convertOperationData(events.Stationary))
+	bar.SetXAxis(convertOperationLabel(data.Stationary)).AddSeries("Stationary Distribution", convertOperationData(data.Stationary))
 	bar.XYReversal()
 	bar.Render(w)
 }
 
 // renderTransactionalOperationStats renders the average number of operations per transaction.
 func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
-	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", events.TxPerBlock, events.BlocksPerSyncPeriod)
+	data := GetData()
+	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", data.TxPerBlock, data.BlocksPerSyncPeriod)
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -268,27 +255,27 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: title,
 		}))
-	bar.SetXAxis(convertOperationLabel(events.TxOperation)).AddSeries("Ops/Tx", convertOperationData(events.TxOperation))
+	bar.SetXAxis(convertOperationLabel(data.TxOperation)).AddSeries("Ops/Tx", convertOperationData(data.TxOperation))
 	bar.Render(w)
 }
 
 // renderSimplifiedMarkovChain renders a reduced markov chain whose nodes have no argument classes.
 func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
 		graph.Close()
 		g.Close()
 	}()
-	nodes := make([]*cgraph.Node, stochastic.NumOps)
-	for op := 0; op < stochastic.NumOps; op++ {
-		nodes[op], _ = graph.CreateNode(stochastic.OpMnemo(op))
-		nodes[op].SetLabel(stochastic.OpMnemo(op))
+	nodes := make([]*cgraph.Node, operations.NumOps)
+	for op := 0; op < operations.NumOps; op++ {
+		nodes[op], _ = graph.CreateNode(operations.OpMnemo(op))
+		nodes[op].SetLabel(operations.OpMnemo(op))
 	}
-	for i := 0; i < stochastic.NumOps; i++ {
-		for j := 0; j < stochastic.NumOps; j++ {
-			p := events.SimplifiedMatrix[i][j]
+	for i := 0; i < operations.NumOps; i++ {
+		for j := 0; j < operations.NumOps; j++ {
+			p := data.SimplifiedMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -314,22 +301,22 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // renderMarkovChain renders a markov chain.
 func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
 		graph.Close()
 		g.Close()
 	}()
-	n := len(events.OperationLabel)
+	n := len(data.OperationLabel)
 	nodes := make([]*cgraph.Node, n)
 	for i := 0; i < n; i++ {
-		nodes[i], _ = graph.CreateNode(events.OperationLabel[i])
-		nodes[i].SetLabel(events.OperationLabel[i])
+		nodes[i], _ = graph.CreateNode(data.OperationLabel[i])
+		nodes[i].SetLabel(data.OperationLabel[i])
 	}
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
-			p := events.StochasticMatrix[i][j]
+			p := data.StochasticMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -353,13 +340,13 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, txt)
 }
 
-// FireUpWeb produces a data model for the recorded events and
+// FireUpWeb produces a data model for the recorded markov stats and
 // visualizes with a local web-server.
-func FireUpWeb(eventRegistry *stochastic.EventRegistryJSON, addr string) {
+func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
-	eventModel := GetEventsData()
-	eventModel.PopulateEventData(eventRegistry)
+	model := GetData()
+	model.PopulateData(statsJSON)
 
 	// create web server
 	http.HandleFunc("/", renderMain)

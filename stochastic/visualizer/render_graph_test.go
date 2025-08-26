@@ -1,4 +1,4 @@
-// Copyright 2025 Sonic Labs
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ func TestVisualizer_renderDotGraph(t *testing.T) {
             const graphviz = await Graphviz.load();
             const svg = graphviz.layout(dot, "svg", "dot");
 	    document.getElementById("graph").innerHTML = svg;
-        } 
+        }
     </script>
 </body>
 </html>

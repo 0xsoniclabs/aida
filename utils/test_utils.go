@@ -202,6 +202,14 @@ func DownloadTestDataset(outputDir string) (err error) {
 	if err != nil {
 		return err
 	}
+	err = downloadFile(prefix+"stats.tar.gz", filepath.Join(outputDir, "stats.tar.gz"))
+	if err != nil {
+		return err
+	}
+	err = extractTarGz(filepath.Join(outputDir, "stats.tar.gz"), outputDir)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
