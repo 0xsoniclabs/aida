@@ -16,8 +16,6 @@
 
 package stochastic
 
-// TODO: Provide Mocking tests for proxy
-
 import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -226,8 +224,12 @@ func (p *EventProxy) RevertToSnapshot(snapshot int) {
 	// find snapshot in recordings and record how many snapshots have to be unwound
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
-			p.registry.RegisterSnapshotDelta(len(p.snapshots) - i - 1)
-			p.snapshots = p.snapshots[0 : i+1]
+			delta := len(p.snapshots) - i - 1
+			p.registry.RegisterSnapshotDelta(delta)
+			// remove snapshot from the active snapshot list
+			// i.e., the snapshot given as an argument cannot
+			// be reused for another call to RevertToSnapshot
+			p.snapshots = p.snapshots[0 : i]
 			break
 		}
 	}
@@ -303,7 +305,6 @@ func (p *EventProxy) Error() error {
 
 // GetSubstatePostAlloc gets substate post allocation.
 func (p *EventProxy) GetSubstatePostAlloc() txcontext.WorldState {
-	// call real StateDB
 	return p.db.GetSubstatePostAlloc()
 }
 
@@ -312,62 +313,42 @@ func (p *EventProxy) PrepareSubstate(substate txcontext.WorldState, block uint64
 }
 
 func (p *EventProxy) BeginTransaction(number uint32) error {
-	// register event
 	p.registry.RegisterOp(BeginTransactionID)
-
-	// call real StateDB
 	if err := p.db.BeginTransaction(number); err != nil {
 		return err
 	}
-
 	// clear all snapshots
 	p.snapshots = []int{}
 	return nil
 }
 
 func (p *EventProxy) EndTransaction() error {
-	// register event
 	p.registry.RegisterOp(EndTransactionID)
-
-	// call real StateDB
 	if err := p.db.EndTransaction(); err != nil {
 		return err
 	}
-
 	// clear all snapshots
 	p.snapshots = []int{}
 	return nil
 }
 
 func (p *EventProxy) BeginBlock(number uint64) error {
-	// register event
 	p.registry.RegisterOp(BeginBlockID)
-
-	// call real StateDB
 	return p.db.BeginBlock(number)
 }
 
 func (p *EventProxy) EndBlock() error {
-	// register event
 	p.registry.RegisterOp(EndBlockID)
-
-	// call real StateDB
 	return p.db.EndBlock()
 }
 
 func (p *EventProxy) BeginSyncPeriod(number uint64) {
-	// register event
 	p.registry.RegisterOp(BeginSyncPeriodID)
-
-	// call real StateDB
 	p.db.BeginSyncPeriod(number)
 }
 
 func (p *EventProxy) EndSyncPeriod() {
-	// register event
 	p.registry.RegisterOp(EndSyncPeriodID)
-
-	// call real StateDB
 	p.db.EndSyncPeriod()
 }
 
