@@ -149,7 +149,7 @@ func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.Destro
 func recordDeletedAccountsFromTx(
 	tx *substate.Substate,
 	processor *executor.TxProcessor,
-	ddb *db.DestroyedAccountDB,
+	ddb db.DestroyedAccountDB,
 	deleteHistory *map[common.Address]bool,
 	cfg *utils.Config,
 ) (finalErr error) {
@@ -187,7 +187,7 @@ func recordDeletedAccountsFromTx(
 
 // writeDeletedAccounts reads contracts which were suicided or created and adds them to lists
 func writeDeletedAccounts(
-	ddb *db.DestroyedAccountDB,
+	ddb db.DestroyedAccountDB,
 	ss *substate.Substate,
 	ch chan proxy.ContractLiveliness,
 	deleteHistory *map[common.Address]bool,
