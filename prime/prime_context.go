@@ -29,8 +29,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func NewPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *PrimeContext {
-	return &PrimeContext{
+type Context interface {
+	PrimeStateDB(ws txcontext.WorldState) error
+}
+
+func NewPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) Context {
+	return newPrimeContext(cfg, db, log)
+}
+
+func newPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *primeContext {
+	return &primeContext{
 		cfg:   cfg,
 		log:   log,
 		block: 0,
@@ -39,8 +47,8 @@ func NewPrimeContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *Pr
 	}
 }
 
-// PrimeContext structure keeps context used over iterations of priming
-type PrimeContext struct {
+// primeContext structure keeps context used over iterations of priming
+type primeContext struct {
 	cfg        *utils.Config           // command configuration
 	log        logger.Logger           // logger for the prime context
 	block      uint64                  // current block number used for priming
@@ -52,7 +60,7 @@ type PrimeContext struct {
 }
 
 // mayApplyBulkLoad closes and reopen bulk load if it has over n operations.
-func (pc *PrimeContext) mayApplyBulkLoad() error {
+func (pc *primeContext) mayApplyBulkLoad() error {
 	if pc.operations >= utils.OperationThreshold {
 		pc.log.Debugf("\t\tApply bulk load with %v operations...", pc.operations)
 		pc.operations = 0
@@ -71,7 +79,7 @@ func (pc *PrimeContext) mayApplyBulkLoad() error {
 }
 
 // PrimeStateDB primes database with accounts from the world state.
-func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState) error {
+func (pc *primeContext) PrimeStateDB(ws txcontext.WorldState) error {
 	var err error
 	numValues := 0 // number of storage values
 	ws.ForEachAccount(func(address common.Address, account txcontext.Account) {
@@ -132,7 +140,7 @@ func (pc *PrimeContext) PrimeStateDB(ws txcontext.WorldState) error {
 // loadExistingAccountsIntoCache checks whether accounts to be primed already exists in the statedb.
 // If so, it preloads pc.exist cache with the account existence.
 // This is only needed when src db is used.
-func (pc *PrimeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) error {
+func (pc *primeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) error {
 	err := pc.db.BeginBlock(pc.block)
 	if err != nil {
 		return fmt.Errorf("cannot begin block; %w", err)
@@ -166,7 +174,7 @@ func (pc *PrimeContext) loadExistingAccountsIntoCache(ws txcontext.WorldState) e
 }
 
 // primeOneAccount initializes an account on stateDB with substate
-func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *utils.ProgressTracker) error {
+func (pc *primeContext) primeOneAccount(addr common.Address, acc txcontext.Account, pt *utils.ProgressTracker) error {
 	exist, found := pc.exist[addr]
 	// do not create empty accounts
 	if !exist && acc.GetBalance().Sign() == 0 && acc.GetNonce() == 0 && len(acc.GetCode()) == 0 {
@@ -204,7 +212,7 @@ func (pc *PrimeContext) primeOneAccount(addr common.Address, acc txcontext.Accou
 }
 
 // primeStateDBRandom primes database with accounts from the world state in random order.
-func (pc *PrimeContext) primeStateDBRandom(ws txcontext.WorldState, pt *utils.ProgressTracker) error {
+func (pc *primeContext) primeStateDBRandom(ws txcontext.WorldState, pt *utils.ProgressTracker) error {
 	var err error
 
 	contracts := make([]string, 0, ws.Len())
@@ -249,7 +257,7 @@ func (pc *PrimeContext) primeStateDBRandom(ws txcontext.WorldState, pt *utils.Pr
 }
 
 // selfDestructAccounts clears storage of all input accounts.
-func (pc *PrimeContext) selfDestructAccounts(accounts []substatetypes.Address) error {
+func (pc *primeContext) selfDestructAccounts(accounts []substatetypes.Address) error {
 	// short-circuit if no accounts to self-destruct
 	// prevents block number incrementing
 	if len(accounts) == 0 {
@@ -291,14 +299,14 @@ func (pc *PrimeContext) selfDestructAccounts(accounts []substatetypes.Address) e
 	return nil
 }
 
-func (pc *PrimeContext) SetBlock(block uint64) {
+func (pc *primeContext) SetBlock(block uint64) {
 	pc.block = block
 }
 
-func (pc *PrimeContext) GetBlock() uint64 {
+func (pc *primeContext) GetBlock() uint64 {
 	return pc.block
 }
 
-func (pc *PrimeContext) HasPrimed() bool {
+func (pc *primeContext) HasPrimed() bool {
 	return pc.hasPrimed
 }

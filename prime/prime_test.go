@@ -52,14 +52,14 @@ func TestPrime_NewPrimer(t *testing.T) {
 	mockAidaDb.EXPECT().GetBackend().Return(mockAdapter).AnyTimes()
 	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter).AnyTimes()
 
-	p := NewPrimer(cfg, mockStateDb, mockAidaDb, log)
+	p := newPrimer(cfg, mockStateDb, mockAidaDb, log)
 
 	assert.NotNil(t, p)
 	assert.Equal(t, cfg, p.cfg)
 	assert.Equal(t, log, p.log)
 	assert.Equal(t, mockStateDb, p.ctx.db)
 	assert.Equal(t, uint64(0), p.block)
-	assert.Equal(t, uint64(0), p.first)
+	assert.Equal(t, uint64(0), p.target)
 }
 
 func TestPrime_Prime(t *testing.T) {
@@ -507,7 +507,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		mockLog.EXPECT().Warningf("cannot read state db info; %v", gomock.Any())
 		p.trySetBlocks()
 		assert.Equal(t, uint64(1), p.block)
-		assert.Equal(t, uint64(1), p.first)
+		assert.Equal(t, uint64(1), p.target)
 	})
 
 	t.Run("Existing state db success", func(t *testing.T) {
@@ -522,7 +522,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		_ = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, uint64(19), common.Hash{}, true)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(20), p.block)
-		assert.Equal(t, uint64(20), p.first)
+		assert.Equal(t, uint64(20), p.target)
 	})
 
 	t.Run("Non-existing state db, empty substate db", func(t *testing.T) {
@@ -537,7 +537,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		mockSubstateDb.EXPECT().GetFirstSubstate().Return(nil)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(0), p.block)
-		assert.Equal(t, uint64(0), p.first)
+		assert.Equal(t, uint64(0), p.target)
 	})
 
 	t.Run("Non-existing state db, substate first < update-set first", func(t *testing.T) {
@@ -554,7 +554,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(10), p.block)
-		assert.Equal(t, uint64(10), p.first)
+		assert.Equal(t, uint64(10), p.target)
 	})
 
 	t.Run("Non-existing state db, substate first > update-set first", func(t *testing.T) {
@@ -571,7 +571,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(20), p.block)
-		assert.Equal(t, uint64(30), p.first)
+		assert.Equal(t, uint64(30), p.target)
 	})
 
 	t.Run("State db exist, first processable block is cfg.First", func(t *testing.T) {
@@ -587,7 +587,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		_ = utils.WriteStateDbInfo(cfg.StateDbSrc, cfg, uint64(9), common.Hash{}, true)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(10), p.block)
-		assert.Equal(t, uint64(100), p.first)
+		assert.Equal(t, uint64(100), p.target)
 	})
 
 	t.Run("Non-existing state db, first processable block is cfg.First", func(t *testing.T) {
@@ -606,7 +606,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 		)
 		p.trySetBlocks()
 		assert.Equal(t, uint64(20), p.block)
-		assert.Equal(t, uint64(100), p.first)
+		assert.Equal(t, uint64(100), p.target)
 	})
 }
 
@@ -621,13 +621,13 @@ func newTestPrimer(
 	log logger.Logger,
 ) *primer {
 	return &primer{
-		cfg:   cfg,
-		log:   log,
-		ctx:   NewPrimeContext(cfg, stateDb, log),
-		udb:   updateDb,
-		sdb:   substateDb,
-		ddb:   deletionDb,
-		block: block,
-		first: first,
+		cfg:    cfg,
+		log:    log,
+		ctx:    newPrimeContext(cfg, stateDb, log),
+		udb:    updateDb,
+		sdb:    substateDb,
+		ddb:    deletionDb,
+		block:  block,
+		target: first,
 	}
 }

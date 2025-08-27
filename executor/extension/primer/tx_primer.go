@@ -36,7 +36,7 @@ func makeTxPrimer(cfg *utils.Config, log logger.Logger) executor.Extension[txcon
 
 type txPrimer struct {
 	extension.NilExtension[txcontext.TxContext]
-	primeCtx *prime.PrimeContext
+	primeCtx prime.Context
 	cfg      *utils.Config
 	log      logger.Logger
 }

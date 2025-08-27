@@ -10,12 +10,9 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
-
-	//"github.com/syndtr/goleveldb/leveldb/testutil"
 	"go.uber.org/mock/gomock"
 )
 
@@ -69,30 +66,6 @@ func TestWorldStateUpdate_ClearAccountStorage(t *testing.T) {
 	}
 	ClearAccountStorage(ws, []types.Address{addr})
 	assert.Equal(t, 0, len(ws[addr].Storage))
-}
-
-var testUpdateSet = &updateset.UpdateSet{
-	WorldState: substate.WorldState{
-		types.Address{1}: &substate.Account{
-			Nonce:   1,
-			Balance: new(uint256.Int).SetUint64(1),
-		},
-		types.Address{2}: &substate.Account{
-			Nonce:   2,
-			Balance: new(uint256.Int).SetUint64(2),
-		},
-	},
-	Block: 1,
-}
-
-var testDeletedAccounts = []types.Address{{3}, {4}}
-
-func createTestUpdateDB(dbPath string) (db.UpdateDB, error) {
-	db, err := db.NewUpdateDB(dbPath, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
 }
 
 // TestStatedb_DeleteDestroyedAccountsFromWorldState tests removal of destroyed accounts from given world state
@@ -199,7 +172,7 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			p := &primer{
 				cfg:    cfg,
 				log:    log,
-				ctx:    NewPrimeContext(cfg, stateDb, log),
+				ctx:    newPrimeContext(cfg, stateDb, log),
 				aidadb: aidaDb,
 				ddb:    ddb,
 			}

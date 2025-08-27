@@ -35,13 +35,13 @@ func generateUpdateSet(first uint64, last uint64, cfg *utils.Config, sdb db.Subs
 		deletedAccounts []types.Address
 	)
 
-	stateIter := sdb.NewSubstateIterator(int(first), cfg.Workers)
+	substateIter := sdb.NewSubstateIterator(int(first), cfg.Workers)
 	update := make(substate.WorldState)
-	defer stateIter.Release()
+	defer substateIter.Release()
 
 	// Todo rewrite in wrapping functions
-	for stateIter.Next() {
-		tx := stateIter.Value()
+	for substateIter.Next() {
+		tx := substateIter.Value()
 		// exceeded block range?
 		if tx.Block > last {
 			break
@@ -52,11 +52,17 @@ func generateUpdateSet(first uint64, last uint64, cfg *utils.Config, sdb db.Subs
 		if err != nil {
 			return update, deletedAccounts, fmt.Errorf("failed to get deleted account. %v", err)
 		}
-		// reset storagea
+		// reset storage of destroyed accounts
 		if len(destroyed) > 0 {
 			deletedAccounts = append(deletedAccounts, destroyed...)
 		}
 		if len(resurrected) > 0 {
+			// Resurrected accounts are contained in this transaction, it should be cleared before merging.
+			// This is to ensure that storage keys are consistent with the new data in the substate.
+			// It is possible that the old value has additional keys which may not get replaced.
+
+			// Because we know that resurrected account will have latest value from this transaction,
+			// we can safely clear the storage here, and add it to list of accounts to be deleted before priming.
 			deletedAccounts = append(deletedAccounts, resurrected...)
 			ClearAccountStorage(update, resurrected)
 		}

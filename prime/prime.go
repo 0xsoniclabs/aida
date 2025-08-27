@@ -29,11 +29,20 @@ import (
 	"github.com/google/martian/log"
 )
 
-func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) *primer {
+type Primer interface {
+	// Prime advances the stateDb to given first block.
+	Prime() error
+}
+
+func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) Primer {
+	return newPrimer(cfg, state, aidaDb, log)
+}
+
+func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) *primer {
 	p := &primer{
 		cfg:    cfg,
 		log:    log,
-		ctx:    NewPrimeContext(cfg, state, log),
+		ctx:    newPrimeContext(cfg, state, log),
 		aidadb: aidaDb,
 	}
 	if aidaDb != nil {
@@ -48,13 +57,13 @@ func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 type primer struct {
 	cfg    *utils.Config         // run configuration
 	log    logger.Logger         // primmer logger
-	ctx    *PrimeContext         // prime context
+	ctx    *primeContext         // prime context
 	aidadb db.BaseDB             // Aida database
 	sdb    db.SubstateDB         // substate database
 	udb    db.UpdateDB           // update-set database
 	ddb    db.DestroyedAccountDB // deleted accounts database
 	block  uint64                // current block number used for priming
-	first  uint64                // first block that can be processed
+	target uint64                // end of priming block
 }
 
 func (p *primer) trySetBlocks() {
@@ -65,9 +74,9 @@ func (p *primer) trySetBlocks() {
 		}
 		p.ctx.SetBlock(stateDbInfo.Block + 1)
 		p.block = stateDbInfo.Block + 1
-		p.first = max(p.block, p.cfg.First)
+		p.target = max(p.block, p.cfg.First)
 	} else {
-		p.first = p.cfg.First
+		p.target = p.cfg.First
 		if p.sdb == nil || p.udb == nil {
 			return
 		}
@@ -86,7 +95,7 @@ func (p *primer) trySetBlocks() {
 		// Choose the minimum of substateFirst and updateSetFirst to ensure priming starts from the earliest available block,
 		// as both sources may have different starting points and we want to cover all possible data.
 		p.block = min(substateFirst, updateSetFirst)
-		p.first = max(substateFirst, p.cfg.First)
+		p.target = max(substateFirst, p.cfg.First)
 	}
 }
 
@@ -98,17 +107,17 @@ func (p *primer) mayPrimeFromUpdateSet() error {
 	)
 
 	// Primable block is already ahead of the first target block. No priming is needed.
-	if p.block >= p.first {
+	if p.block >= p.target {
 		return nil
 	}
 	// create iterator starting from the first primable block.
-	updateIter := p.udb.NewUpdateSetIterator(p.block, p.first-1)
+	updateIter := p.udb.NewUpdateSetIterator(p.block, p.target-1)
 	defer updateIter.Release()
 	update := make(substate.WorldState)
 
 	for updateIter.Next() {
 		newSet := updateIter.Value()
-		if newSet.Block >= p.first {
+		if newSet.Block >= p.target {
 			break
 		}
 		p.block = newSet.Block
@@ -132,7 +141,9 @@ func (p *primer) mayPrimeFromUpdateSet() error {
 		ClearAccountStorage(update, newSet.DeletedAccounts)
 		// if exists in DB, suicide
 		if hasPrimed {
-			p.ctx.selfDestructAccounts(newSet.DeletedAccounts)
+			if err := p.ctx.selfDestructAccounts(newSet.DeletedAccounts); err != nil {
+				return err
+			}
 			hasPrimed = false
 		}
 
@@ -156,17 +167,19 @@ func (p *primer) mayPrimeFromUpdateSet() error {
 
 // mayPrimeFromSubstate prime from current block to the runnable first block.
 func (p *primer) mayPrimeFromSubstate() error {
-	if p.block >= p.first {
+	if p.block >= p.target {
 		return nil
 	}
-	log.Infof("\tPriming using substate from %v to %v", p.block, p.first-1)
-	update, deletedAccounts, err := generateUpdateSet(p.block, p.first-1, p.cfg, p.sdb, p.ddb)
+	log.Infof("\tPriming using substate from %v to %v", p.block, p.target-1)
+	update, deletedAccounts, err := generateUpdateSet(p.block, p.target-1, p.cfg, p.sdb, p.ddb)
 	if err != nil {
 		return fmt.Errorf("cannot generate update-set; %w", err)
 	}
 	// remove deleted accounts from statedb before priming only if statedb is not empty
 	if p.ctx.HasPrimed() {
-		p.ctx.selfDestructAccounts(deletedAccounts)
+		if err := p.ctx.selfDestructAccounts(deletedAccounts); err != nil {
+			return err
+		}
 	}
 	if err = p.ctx.PrimeStateDB(substatecontext.NewWorldState(update)); err != nil {
 		return fmt.Errorf("cannot prime state-db; %w", err)
@@ -222,12 +235,12 @@ func (p *primer) mayDeleteDestroyedAccountsFromStateDB(target uint64) error {
 func (p *primer) Prime() error {
 	var err error
 	// skip priming
-	if p.block >= p.first {
-		p.log.Debugf("skipping priming; first priming block %v; first block %v", p.block, p.first)
+	if p.block >= p.target {
+		p.log.Debugf("skipping priming; first priming block %v; first block %v", p.block, p.target)
 		return nil
 	}
 	p.log.Noticef("Priming from block %v...", p.block)
-	p.log.Noticef("Priming to block %v...", p.first-1)
+	p.log.Noticef("Priming to block %v...", p.target-1)
 
 	// try advance from update-set
 	err = p.mayPrimeFromUpdateSet()
@@ -241,8 +254,8 @@ func (p *primer) Prime() error {
 		return fmt.Errorf("cannot prime from substate; %w", err)
 	}
 
-	p.log.Noticef("Delete destroyed accounts until block %v", p.first-1)
-	err = p.mayDeleteDestroyedAccountsFromStateDB(p.first - 1)
+	p.log.Noticef("Delete destroyed accounts until block %v", p.target-1)
+	err = p.mayDeleteDestroyedAccountsFromStateDB(p.target - 1)
 	if err != nil {
 		return fmt.Errorf("cannot delete destroyed accounts from state-db; %v", err)
 	}

@@ -37,7 +37,7 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		mockBulk := state.NewMockBulkLoad(ctrl)
 		mockStateDb := state.NewMockStateDB(ctrl)
-		p := &PrimeContext{
+		p := &primeContext{
 			load:       mockBulk,
 			db:         mockStateDb,
 			operations: utils.OperationThreshold + 1,
@@ -52,7 +52,7 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	t.Run("success_no_bulk", func(t *testing.T) {
 		mockBulk := state.NewMockBulkLoad(ctrl)
 		mockStateDb := state.NewMockStateDB(ctrl)
-		p := &PrimeContext{
+		p := &primeContext{
 			load:       mockBulk,
 			db:         mockStateDb,
 			operations: 0,
@@ -65,7 +65,7 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	t.Run("error_on_close", func(t *testing.T) {
 		mockBulk := state.NewMockBulkLoad(ctrl)
 		mockStateDb := state.NewMockStateDB(ctrl)
-		p := &PrimeContext{
+		p := &primeContext{
 			load:       mockBulk,
 			db:         mockStateDb,
 			operations: utils.OperationThreshold + 1,
@@ -80,7 +80,7 @@ func TestPrimeContext_mayApplyBulkLoad(t *testing.T) {
 	t.Run("error_on_start_bulk_load", func(t *testing.T) {
 		mockBulk := state.NewMockBulkLoad(ctrl)
 		mockStateDb := state.NewMockStateDB(ctrl)
-		p := &PrimeContext{
+		p := &primeContext{
 			load:       mockBulk,
 			db:         mockStateDb,
 			operations: utils.OperationThreshold + 1,
@@ -119,7 +119,7 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup the PrimeContext
-			p := &PrimeContext{
+			p := &primeContext{
 				cfg: &utils.Config{
 					PrimeRandom:       tc.primRandom,
 					IsExistingStateDb: tc.useSrcDb,
@@ -158,7 +158,7 @@ func TestPrimeContext_PrimeStateDB_EmptyWorldState(t *testing.T) {
 	defer ctrl.Finish()
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockBulk := state.NewMockBulkLoad(ctrl)
-	p := &PrimeContext{
+	p := &primeContext{
 		cfg:        &utils.Config{},
 		load:       mockBulk,
 		db:         mockStateDb,
@@ -179,7 +179,7 @@ func TestPrimeContext_loadExistingAccountsIntoCache(t *testing.T) {
 
 	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
-	p := &PrimeContext{
+	p := &primeContext{
 		cfg:        nil,
 		load:       mockBulk,
 		db:         mockStateDb,
@@ -210,7 +210,7 @@ func TestPrimeContext_primeOneAccount(t *testing.T) {
 
 	mockBulk := state.NewMockBulkLoad(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
-	p := &PrimeContext{
+	p := &primeContext{
 		cfg:        nil,
 		load:       mockBulk,
 		db:         mockStateDb,
@@ -241,7 +241,7 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc1,
 		common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): acc2,
 	})
-	p := &PrimeContext{
+	p := &primeContext{
 		cfg: &utils.Config{
 			RandomSeed: 0,
 		},
@@ -272,7 +272,7 @@ func TestPrimeContext_SelfDestructAccountsSuccess(t *testing.T) {
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockLogger := logger.NewMockLogger(ctrl)
 
-	p := &PrimeContext{
+	p := &primeContext{
 		db:         mockStateDb,
 		operations: 0,
 		log:        mockLogger,
@@ -353,7 +353,7 @@ func TestPrimeContext_SelfDestructAccountsReturnsErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockStateDb := state.NewMockStateDB(ctrl)
 			mockLogger := logger.NewMockLogger(ctrl)
-			p := &PrimeContext{
+			p := &primeContext{
 				db:         mockStateDb,
 				operations: 0,
 				log:        mockLogger,
@@ -380,7 +380,7 @@ func TestPrimeContext_SelfDestructAccountsReturnsErrors(t *testing.T) {
 
 func TestPrimeContext_GetBlock(t *testing.T) {
 	target := uint64(5)
-	p := &PrimeContext{
+	p := &primeContext{
 		log:   logger.NewLogger("ERROR", "Test"),
 		block: 0,
 	}
@@ -402,7 +402,7 @@ func TestPrimeContext_HasPrimedIsUpdatedAfterPrimeStateDb(t *testing.T) {
 	ws := txcontext.NewWorldState(map[common.Address]txcontext.Account{
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
 	})
-	p := &PrimeContext{
+	p := &primeContext{
 		cfg:        &utils.Config{},
 		load:       mockBulk,
 		db:         mockStateDb,
@@ -445,7 +445,7 @@ func TestPrimeContext_PrimeStateDB_RealData(t *testing.T) {
 			// Generating randomized world state
 			ws, _ := utils.MakeWorldState(t)
 
-			pc := NewPrimeContext(cfg, sDB, log)
+			pc := newPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws)
 			require.NoError(t, err)
@@ -488,7 +488,7 @@ func TestPrimeContext_PrimeStateDB_ContinuousPrimingFromSrcDB(t *testing.T) {
 			alloc, _ := utils.MakeWorldState(t)
 			ws := txcontext.NewWorldState(alloc)
 
-			pc := NewPrimeContext(cfg, sDB, log)
+			pc := newPrimeContext(cfg, sDB, log)
 			// Priming state DB
 			err = pc.PrimeStateDB(ws)
 			require.NoError(t, err, "failed to prime state DB")
@@ -556,7 +556,7 @@ func TestPrimeContext_PrimeStateDB_ContinuousPrimingFromSrcDB(t *testing.T) {
 			alloc2, _ := utils.MakeWorldState(t)
 			ws2 := txcontext.NewWorldState(alloc2)
 
-			pc2 := NewPrimeContext(cfg, sDB2, log)
+			pc2 := newPrimeContext(cfg, sDB2, log)
 			pc2.block = srcDbBlock
 			// Priming state DB
 			err = pc2.PrimeStateDB(ws2)
