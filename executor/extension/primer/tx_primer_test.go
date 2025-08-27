@@ -42,7 +42,7 @@ func TestTxPrimer_PreTransaction(t *testing.T) {
 	cfg := &utils.Config{}
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{
-		primeCtx: prime.NewPrimeContext(cfg, mockDb, log),
+		primeCtx: prime.NewContext(cfg, mockDb, log),
 		cfg:      cfg,
 		log:      log,
 	}

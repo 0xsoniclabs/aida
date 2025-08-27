@@ -42,7 +42,7 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 	p := &primer{
 		cfg:    cfg,
 		log:    log,
-		ctx:    newPrimeContext(cfg, state, log),
+		ctx:    newContext(cfg, state, log),
 		aidadb: aidaDb,
 	}
 	if aidaDb != nil {
@@ -57,7 +57,7 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 type primer struct {
 	cfg    *utils.Config         // run configuration
 	log    logger.Logger         // primmer logger
-	ctx    *primeContext         // prime context
+	ctx    *context              // prime context
 	aidadb db.BaseDB             // Aida database
 	sdb    db.SubstateDB         // substate database
 	udb    db.UpdateDB           // update-set database

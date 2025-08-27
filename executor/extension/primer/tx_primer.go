@@ -42,7 +42,7 @@ type txPrimer struct {
 }
 
 func (p *txPrimer) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	p.primeCtx = prime.NewPrimeContext(p.cfg, ctx.State, p.log)
+	p.primeCtx = prime.NewContext(p.cfg, ctx.State, p.log)
 	return nil
 }
 

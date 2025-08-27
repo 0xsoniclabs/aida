@@ -43,6 +43,6 @@ type ethStateTestDbPrimer struct {
 }
 
 func (e ethStateTestDbPrimer) PreBlock(st executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	primeCtx := prime.NewPrimeContext(e.cfg, ctx.State, e.log)
+	primeCtx := prime.NewContext(e.cfg, ctx.State, e.log)
 	return primeCtx.PrimeStateDB(st.Data.GetInputState())
 }

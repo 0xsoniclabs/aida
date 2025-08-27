@@ -172,7 +172,7 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			p := &primer{
 				cfg:    cfg,
 				log:    log,
-				ctx:    newPrimeContext(cfg, stateDb, log),
+				ctx:    newContext(cfg, stateDb, log),
 				aidadb: aidaDb,
 				ddb:    ddb,
 			}

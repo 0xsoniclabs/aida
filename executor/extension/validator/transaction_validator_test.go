@@ -807,7 +807,7 @@ func TestValidateStateDb_ValidationDoesNotFail(t *testing.T) {
 			log := logger.NewLogger("INFO", "TestStateDb")
 
 			// Create new prime context
-			pc := prime.NewPrimeContext(cfg, sDB, log)
+			pc := prime.NewContext(cfg, sDB, log)
 			// Priming state DB with given world state
 			if err = pc.PrimeStateDB(ws); err != nil {
 				t.Fatal(err)
@@ -858,7 +858,7 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 			log := logger.NewLogger("INFO", "TestStateDb")
 
 			// Create new prime context
-			pc := prime.NewPrimeContext(cfg, sDB, log)
+			pc := prime.NewContext(cfg, sDB, log)
 			// Priming state DB with given world state
 			pc.PrimeStateDB(ws)
 
