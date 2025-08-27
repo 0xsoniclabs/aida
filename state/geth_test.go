@@ -129,11 +129,22 @@ func TestGethDb_CreateContractIsProtected(t *testing.T) {
 	require.NoError(t, err)
 	addr := common.Address{0x22}
 	// First create the contract
-	db.CreateContract(addr)
+	db.CreateAccount(addr)
 	// Account must exist in the db
 	require.True(t, db.Exist(addr))
 	// Then recall it - it must not panic
 	db.CreateContract(addr)
 	// Account must exist in the db
 	require.True(t, db.Exist(addr))
+}
+
+func TestGethDb_CreateContractDoesNotCreateAccount(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First create the contract
+	db.CreateContract(addr)
+	// Account must not exist in the db
+	require.False(t, db.Exist(addr))
 }
