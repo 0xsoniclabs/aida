@@ -6,11 +6,11 @@ toolchain go1.24.1
 
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250708101910-3666ec34654c
+	github.com/0xsoniclabs/norma v0.0.0-20250730035254-f987bb65330a
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20250801095047-2314840e301c
 	github.com/0xsoniclabs/tosca v0.0.0-20250708111444-f020a558b11e
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
 	github.com/dsnet/compress v0.0.1
 	github.com/ethereum/go-ethereum v1.15.0
