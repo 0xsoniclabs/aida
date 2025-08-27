@@ -29,12 +29,7 @@ func TestState_StorageIsEmpty_SelfDestructAndReincarnation_EmptyStateIsReportedC
 	for name, factory := range impl {
 		t.Run(name, func(t *testing.T) {
 			state := factory(t)
-			defer func(state StateDB) {
-				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
-			}(state)
+			defer state.Close()
 			runSelfDestructAndReincarnationTest(t, state)
 		})
 	}
@@ -45,29 +40,25 @@ func runSelfDestructAndReincarnationTest(t *testing.T, state StateDB) {
 	key := common.Hash{4, 5, 6}
 	value := common.Hash{7, 8, 9}
 
-	mustNotError := func(err error) {
-		require.NoError(t, err, "Unexpected error")
-	}
-
 	// We start by creating an account with some non-empty state.
-	mustNotError(state.BeginBlock(1))
+	state.BeginBlock(1)
 	{
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			state.CreateAccount(address)
 			state.CreateContract(address)
 			state.SetNonce(address, 1, tracing.NonceChangeUnspecified)
 			state.SetState(address, key, value)
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 
 	// In the next block we have two transactions:
-	mustNotError(state.BeginBlock(2))
+	state.BeginBlock(2)
 	{
 		// 1. Self-destruct the account.
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			// At this point, the account storage is not empty.
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
@@ -80,10 +71,10 @@ func runSelfDestructAndReincarnationTest(t *testing.T, state StateDB) {
 			require.Equal(t, uint64(1), state.GetNonce(address))
 
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 
 		// 2. Create the same account again.
-		mustNotError(state.BeginTransaction(2))
+		state.BeginTransaction(2)
 		{
 			// The effects of the self-destruct are now visible. The storage
 			// root should be empty and the nonce should be reset to 0.
@@ -106,30 +97,30 @@ func runSelfDestructAndReincarnationTest(t *testing.T, state StateDB) {
 			// not automatically removed at the end of the block.
 			state.SetNonce(address, 1, tracing.NonceChangeUnspecified)
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 
 		// 3. The view on the re-born account after the end of the transaction.
-		mustNotError(state.BeginTransaction(3))
+		state.BeginTransaction(3)
 		{
 			// Even here, the storage root remains empty, as the storage root is
 			// not re-evaluated until the end of the block.
 			require.True(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 
 	// Check the state after the block.
-	mustNotError(state.BeginBlock(3))
+	state.BeginBlock(3)
 	{
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 }
 
 func TestState_StorageIsEmpty_SelfDestruct6780_EmptyStateIsReportedCorrectly(t *testing.T) {
@@ -149,12 +140,7 @@ func TestState_StorageIsEmpty_SelfDestruct6780_EmptyStateIsReportedCorrectly(t *
 	for name, factory := range impl {
 		t.Run(name, func(t *testing.T) {
 			state := factory(t)
-			defer func(state StateDB) {
-				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
-			}(state)
+			defer state.Close()
 			runSelfDestruct6780AndReincarnationTest(t, state)
 		})
 	}
@@ -165,29 +151,25 @@ func runSelfDestruct6780AndReincarnationTest(t *testing.T, state StateDB) {
 	key := common.Hash{4, 5, 6}
 	value := common.Hash{7, 8, 9}
 
-	mustNotError := func(err error) {
-		require.NoError(t, err, "Unexpected error")
-	}
-
 	// We start by creating an account with some non-empty state.
-	mustNotError(state.BeginBlock(1))
+	state.BeginBlock(1)
 	{
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			state.CreateAccount(address)
 			state.CreateContract(address)
 			state.SetNonce(address, 1, tracing.NonceChangeUnspecified)
 			state.SetState(address, key, value)
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 
 	// In the next block we have two transactions:
-	mustNotError(state.BeginBlock(2))
+	state.BeginBlock(2)
 	{
 		// 1. Self-destruct the account.
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			// At this point, the account storage is not empty.
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
@@ -202,10 +184,10 @@ func runSelfDestruct6780AndReincarnationTest(t *testing.T, state StateDB) {
 			require.Equal(t, uint64(1), state.GetNonce(address))
 
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 
 		// 2. The account still exists in the following transaction.
-		mustNotError(state.BeginTransaction(2))
+		state.BeginTransaction(2)
 		{
 			// The self-destruct6780 in the previous transaction did not change
 			// the storage root, so it should still be non-empty.
@@ -215,22 +197,22 @@ func runSelfDestruct6780AndReincarnationTest(t *testing.T, state StateDB) {
 			// deleted by the self-destruct6780.
 			require.Equal(t, uint64(1), state.GetNonce(address))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 
 	// Check the state after the block.
-	mustNotError(state.BeginBlock(3))
+	state.BeginBlock(3)
 	{
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			// The end-of-block has no effect on the account.
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 			require.Equal(t, uint64(1), state.GetNonce(address))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 }
 
 func TestState_StorageIsEmpty_SelfDestruct6780InSameTransaction_EmptyStateIsReportedCorrectly(t *testing.T) {
@@ -250,12 +232,7 @@ func TestState_StorageIsEmpty_SelfDestruct6780InSameTransaction_EmptyStateIsRepo
 	for name, factory := range impl {
 		t.Run(name, func(t *testing.T) {
 			state := factory(t)
-			defer func(state StateDB) {
-				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
-			}(state)
+			defer state.Close()
 			runSelfDestruct6780InSameTransactionTest(t, state)
 		})
 	}
@@ -266,14 +243,10 @@ func runSelfDestruct6780InSameTransactionTest(t *testing.T, state StateDB) {
 	key := common.Hash{4, 5, 6}
 	value := common.Hash{7, 8, 9}
 
-	mustNotError := func(err error) {
-		require.NoError(t, err, "Unexpected error")
-	}
-
 	// We start by creating an account with some non-empty state.
-	mustNotError(state.BeginBlock(1))
+	state.BeginBlock(1)
 	{
-		mustNotError(state.BeginTransaction(1))
+		state.BeginTransaction(1)
 		{
 			// Initially, the storage root is empty.
 			require.True(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
@@ -297,17 +270,17 @@ func runSelfDestruct6780InSameTransactionTest(t *testing.T, state StateDB) {
 			require.Equal(t, uint64(1), state.GetNonce(address))
 			require.True(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 
-		mustNotError(state.BeginTransaction(2))
+		state.BeginTransaction(2)
 		{
 			// It should look like the account never existed.
 			require.True(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 			require.Equal(t, uint64(0), state.GetNonce(address))
 		}
-		mustNotError(state.EndTransaction())
+		state.EndTransaction()
 	}
-	mustNotError(state.EndBlock())
+	state.EndBlock()
 }
 
 func isEmptyStorageRoot(hash common.Hash) bool {

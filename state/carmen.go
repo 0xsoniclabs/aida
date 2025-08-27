@@ -245,8 +245,32 @@ func (s *carmenStateDB) RevertToSnapshot(id int) {
 	s.txCtx.RevertToSnapshot(id)
 }
 
+func (s *carmenHeadState) BeginTransaction(uint32) error {
+	var err error
+	s.txCtx, err = s.blkCtx.BeginTransaction()
+	return err
+}
+
 func (s *carmenStateDB) EndTransaction() error {
 	return s.txCtx.Commit()
+}
+
+func (s *carmenHeadState) BeginBlock(block uint64) error {
+	var err error
+	s.blkCtx, err = s.db.BeginBlock(block)
+	return err
+}
+
+func (s *carmenHeadState) EndBlock() error {
+	return s.blkCtx.Commit()
+}
+
+func (s *carmenHeadState) BeginSyncPeriod(number uint64) {
+	// ignored for Carmen
+}
+
+func (s *carmenHeadState) EndSyncPeriod() {
+	// ignored for Carmen
 }
 
 func (s *carmenStateDB) GetHash() (common.Hash, error) {
@@ -391,52 +415,23 @@ func (s *carmenStateDB) Error() error {
 	return nil
 }
 
+func (s *carmenHistoricState) BeginTransaction(uint32) error {
+	var err error
+	s.txCtx, err = s.blkCtx.BeginTransaction()
+	return err
+}
+
+func (s *carmenHistoricState) GetHash() (common.Hash, error) {
+	h, err := s.db.GetHistoricStateHash(s.blkNumber)
+	return common.Hash(h), err
+}
+
 func (s *carmenStateDB) StartBulkLoad(block uint64) (BulkLoad, error) {
 	bl, err := s.db.StartBulkLoad(block)
 	if err != nil {
 		return nil, fmt.Errorf("cannot start bulkload; %w", err)
 	}
 	return &carmenBulkLoad{bl}, nil
-}
-
-func (s *carmenStateDB) GetMemoryUsage() *MemoryUsage {
-	if s.db == nil {
-		return &MemoryUsage{uint64(0), nil}
-	}
-	usage := s.db.GetMemoryFootprint()
-	if usage == nil {
-		return &MemoryUsage{uint64(0), nil}
-	}
-	return &MemoryUsage{uint64(usage.Total()), usage}
-}
-
-func (s *carmenStateDB) GetShadowDB() StateDB {
-	return nil
-}
-
-func (s *carmenHeadState) BeginBlock(block uint64) error {
-	var err error
-	s.blkCtx, err = s.db.BeginBlock(block)
-	return err
-}
-
-func (s *carmenHeadState) BeginTransaction(uint32) error {
-	var err error
-	s.txCtx, err = s.blkCtx.BeginTransaction()
-	return err
-}
-
-func (s *carmenHeadState) EndBlock() error {
-	return s.blkCtx.Commit()
-}
-
-func (s *carmenHeadState) BeginSyncPeriod(number uint64) {
-	// ignored for Carmen
-}
-
-func (s *carmenHeadState) EndSyncPeriod() error {
-	// ignored for Carmen
-	return nil
 }
 
 func (s *carmenHeadState) GetArchiveState(block uint64) (NonCommittableStateDB, error) {
@@ -465,15 +460,19 @@ func (s *carmenHeadState) GetArchiveBlockHeight() (uint64, bool, error) {
 	return uint64(blk), false, nil
 }
 
-func (s *carmenHistoricState) BeginTransaction(uint32) error {
-	var err error
-	s.txCtx, err = s.blkCtx.BeginTransaction()
-	return err
+func (s *carmenStateDB) GetMemoryUsage() *MemoryUsage {
+	if s.db == nil {
+		return &MemoryUsage{uint64(0), nil}
+	}
+	usage := s.db.GetMemoryFootprint()
+	if usage == nil {
+		return &MemoryUsage{uint64(0), nil}
+	}
+	return &MemoryUsage{uint64(usage.Total()), usage}
 }
 
-func (s *carmenHistoricState) GetHash() (common.Hash, error) {
-	h, err := s.db.GetHistoricStateHash(s.blkNumber)
-	return common.Hash(h), err
+func (s *carmenStateDB) GetShadowDB() StateDB {
+	return nil
 }
 
 func (s *carmenHistoricState) Release() error {

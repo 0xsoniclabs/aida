@@ -92,9 +92,9 @@ func (s *LoggingStateDb) BeginSyncPeriod(number uint64) {
 	s.state.BeginSyncPeriod(number)
 }
 
-func (s *LoggingStateDb) EndSyncPeriod() error {
+func (s *LoggingStateDb) EndSyncPeriod() {
 	s.writeLog("EndSyncPeriod")
-	return s.state.EndSyncPeriod()
+	s.state.EndSyncPeriod()
 }
 
 func (s *LoggingStateDb) GetHash() (common.Hash, error) {

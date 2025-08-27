@@ -17,11 +17,11 @@
 package state
 
 import (
+	"encoding/json"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewChainConduit(t *testing.T) {
@@ -43,7 +43,17 @@ func TestNewChainConduit(t *testing.T) {
 	}
 	for _, test := range tests {
 		got := NewChainConduit(test.isEthereum, test.chainConfig)
-		assert.Equal(t, test.want, got)
+		gotS, err := json.Marshal(got)
+		if err != nil {
+			t.Errorf("json.Marshal(%v) failed: %v", got, err)
+		}
+		wantS, err := json.Marshal(test.want)
+		if err != nil {
+			t.Errorf("json.Marshal(%v) failed: %v", test.want, err)
+		}
+		if string(gotS) != string(wantS) {
+			t.Errorf("NewChainConduit(%v, %v) = %v, want %v", test.isEthereum, test.chainConfig, got, test.want)
+		}
 	}
 }
 

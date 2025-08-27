@@ -230,10 +230,7 @@ func (s *gethStateDB) EndBlock() error {
 		if err = s.trieCommit(); err != nil {
 			return fmt.Errorf("cannot commit trie; %w", err)
 		}
-		err = s.trieCap()
-		if err != nil {
-			return err
-		}
+		s.trieCap()
 	}
 	return nil
 }
@@ -242,19 +239,12 @@ func (s *gethStateDB) BeginSyncPeriod(number uint64) {
 	// ignored
 }
 
-func (s *gethStateDB) EndSyncPeriod() error {
+func (s *gethStateDB) EndSyncPeriod() {
 	// if not archival node, flush trie to disk after each sync-period
 	if s.evmState != nil && !s.isArchiveMode {
-		err := s.trieCleanCommit()
-		if err != nil {
-			return err
-		}
-		err = s.trieCap()
-		if err != nil {
-			return err
-		}
+		s.trieCleanCommit()
+		s.trieCap()
 	}
-	return nil
 }
 
 func (s *gethStateDB) GetHash() (common.Hash, error) {
@@ -262,7 +252,6 @@ func (s *gethStateDB) GetHash() (common.Hash, error) {
 }
 
 func (s *gethStateDB) Finalise(deleteEmptyObjects bool) {
-	// TODO why
 	if db, ok := s.db.(*geth.StateDB); ok {
 		db.Finalise(deleteEmptyObjects)
 	}
@@ -286,6 +275,7 @@ func (s *gethStateDB) SetTxContext(thash common.Hash, ti int) {
 	if db, ok := s.db.(*geth.StateDB); ok {
 		db.SetTxContext(thash, ti)
 	}
+	return
 }
 
 func (s *gethStateDB) PrepareSubstate(substate txcontext.WorldState, block uint64) {
@@ -361,9 +351,8 @@ func (s *gethStateDB) AddLog(log *types.Log) {
 	s.db.AddLog(log)
 }
 func (s *gethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
-	// TODO why
 	panic("Add Preimage")
-	// s.db.AddPreimage(hash, preimage)
+	s.db.AddPreimage(hash, preimage)
 }
 
 func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
@@ -436,15 +425,9 @@ func (l *gethBulkLoad) SetCode(addr common.Address, code []byte) {
 }
 
 func (l *gethBulkLoad) Close() error {
-	err := l.db.EndTransaction()
-	if err != nil {
-		return err
-	}
-	err = l.db.EndBlock()
-	if err != nil {
-		return err
-	}
-	_, err = l.db.Commit(l.block, false)
+	l.db.EndTransaction()
+	l.db.EndBlock()
+	_, err := l.db.Commit(l.block, false)
 	l.block++
 	return err
 }
@@ -455,22 +438,16 @@ func (s *gethStateDB) trieCommit() error {
 	// If we're applying genesis or running an archive node, always flush
 	if s.isArchiveMode {
 		if err := triedb.Commit(s.stateRoot, false); err != nil {
-			return fmt.Errorf("failed to flush trie DB into main DB. %v", err)
+			return fmt.Errorf("Failed to flush trie DB into main DB. %v", err)
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
-		err := triedb.Reference(s.stateRoot, common.Hash{})
-		if err != nil {
-			return err
-		} // metadata reference to keep trie alive
+		triedb.Reference(s.stateRoot, common.Hash{}) // metadata reference to keep trie alive
 		s.triegc.Push(s.stateRoot, s.block)
 
 		if current := s.block; current > triesInMemory {
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
-			err := s.trieCap()
-			if err != nil {
-				return err
-			}
+			s.trieCap()
 
 			// Find the next state trie we need to commit
 			chosen := current - triesInMemory
@@ -482,10 +459,7 @@ func (s *gethStateDB) trieCommit() error {
 					s.triegc.Push(root, number)
 					break
 				}
-				err := triedb.Dereference(root)
-				if err != nil {
-					return err
-				}
+				triedb.Dereference(root)
 			}
 		}
 	}
@@ -507,10 +481,7 @@ func (s *gethStateDB) trieCleanCommit() error {
 				s.triegc.Push(root, number)
 				break
 			}
-			err := triedb.Dereference(root)
-			if err != nil {
-				return err
-			}
+			triedb.Dereference(root)
 		}
 	}
 	// commit the state trie after clean up
@@ -519,17 +490,13 @@ func (s *gethStateDB) trieCleanCommit() error {
 }
 
 // trieCap flushes matured singleton nodes to disk.
-func (s *gethStateDB) trieCap() error {
+func (s *gethStateDB) trieCap() {
 	triedb := s.evmState.TrieDB()
 	_, nodes, imgs := triedb.Size()
 	if nodes > memoryUpperLimit+ethdb.IdealBatchSize || imgs > imgUpperLimit {
 		//If we exceeded our memory allowance, flush matured singleton nodes to disk
-		err := triedb.Cap(memoryUpperLimit)
-		if err != nil {
-			return err
-		}
+		triedb.Cap(memoryUpperLimit)
 	}
-	return nil
 }
 
 func (s *gethStateDB) GetShadowDB() StateDB {

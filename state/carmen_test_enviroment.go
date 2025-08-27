@@ -17,7 +17,6 @@
 package state
 
 import (
-	cryptorand "crypto/rand"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -83,7 +82,7 @@ func MakeRandomByteSlice(t *testing.T, bufferLength int) []byte {
 	buffer := make([]byte, bufferLength)
 
 	// fill the slice with random data
-	_, err := cryptorand.Read(buffer)
+	_, err := rand.Read(buffer)
 	if err != nil {
 		t.Fatalf("failed test data; can not generate random byte slice; %s", err.Error())
 	}
@@ -100,7 +99,7 @@ func GetRandom(t *testing.T, lower int, upper int) uint64 {
 		t.Fatalf("expected positive integer. (%v, %v)", lower, upper)
 	}
 	// seed the PRNG
-	rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand.Seed(time.Now().UnixNano())
 
 	// get randomized balance
 	return uint64(lower + rand.Intn(upper-lower))

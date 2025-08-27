@@ -317,10 +317,7 @@ func DeleteDestroyedAccountsFromStateDB(sdb state.StateDB, cfg *Config, target u
 	if err != nil {
 		return err
 	}
-	err = sdb.EndSyncPeriod()
-	if err != nil {
-		return err
-	}
+	sdb.EndSyncPeriod()
 	return nil
 }
 

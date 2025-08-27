@@ -295,10 +295,7 @@ func (ss *stochasticState) prime() error {
 	if err != nil {
 		return err
 	}
-	err = db.EndSyncPeriod()
-	if err != nil {
-		return err
-	}
+	db.EndSyncPeriod()
 	ss.log.Notice("End priming...")
 	return nil
 }
@@ -405,10 +402,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		ss.deleteAccounts()
 
 	case EndSyncPeriodID:
-		err := db.EndSyncPeriod()
-		if err != nil {
-			ss.log.Fatal(err)
-		}
+		db.EndSyncPeriod()
 		ss.syncPeriodNum++
 
 	case EndTransactionID:

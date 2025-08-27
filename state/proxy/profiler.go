@@ -354,11 +354,10 @@ func (p *ProfilerProxy) BeginSyncPeriod(number uint64) {
 	})
 }
 
-func (p *ProfilerProxy) EndSyncPeriod() (err error) {
+func (p *ProfilerProxy) EndSyncPeriod() {
 	p.do(operation.EndSyncPeriodID, func() {
-		err = p.db.EndSyncPeriod()
+		p.db.EndSyncPeriod()
 	})
-	return err
 }
 
 func (p *ProfilerProxy) GetHash() (common.Hash, error) {

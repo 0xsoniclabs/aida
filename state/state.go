@@ -160,7 +160,7 @@ type StateDB interface {
 
 	// Sync period scoping
 	BeginSyncPeriod(uint64)
-	EndSyncPeriod() error
+	EndSyncPeriod()
 
 	// GetHash computes a comprehensive hash over a snapshot of the entire state. Note, to
 	// be of any value, no concurrent modifications should be conducted while computing the

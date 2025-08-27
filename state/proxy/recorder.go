@@ -404,9 +404,9 @@ func (r *RecorderProxy) BeginSyncPeriod(number uint64) {
 	r.db.BeginSyncPeriod(number)
 }
 
-func (r *RecorderProxy) EndSyncPeriod() error {
+func (r *RecorderProxy) EndSyncPeriod() {
 	r.write(operation.NewEndSyncPeriod())
-	return r.db.EndSyncPeriod()
+	r.db.EndSyncPeriod()
 }
 
 func (r *RecorderProxy) GetHash() (common.Hash, error) {
