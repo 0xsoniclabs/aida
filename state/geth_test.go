@@ -17,13 +17,13 @@
 package state
 
 import (
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/stretchr/testify/require"
 )
 
 const N = 1000
@@ -115,8 +115,12 @@ func TestGethDb_CreateAccountIsProtected(t *testing.T) {
 	addr := common.Address{0x22}
 	// First create the account
 	db.CreateAccount(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
 	// Then recall it - it must not panic
 	db.CreateAccount(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
 }
 
 func TestGethDb_CreateContractIsProtected(t *testing.T) {
@@ -126,6 +130,10 @@ func TestGethDb_CreateContractIsProtected(t *testing.T) {
 	addr := common.Address{0x22}
 	// First create the contract
 	db.CreateContract(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
 	// Then recall it - it must not panic
 	db.CreateContract(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
 }
