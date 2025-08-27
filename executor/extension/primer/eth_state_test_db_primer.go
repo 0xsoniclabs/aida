@@ -20,6 +20,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -42,6 +43,6 @@ type ethStateTestDbPrimer struct {
 }
 
 func (e ethStateTestDbPrimer) PreBlock(st executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	primeCtx := utils.NewPrimeContext(e.cfg, ctx.State, 0, e.log)
-	return primeCtx.PrimeStateDB(st.Data.GetInputState(), ctx.State)
+	primeCtx := prime.NewContext(e.cfg, ctx.State, e.log)
+	return primeCtx.PrimeStateDB(st.Data.GetInputState())
 }
