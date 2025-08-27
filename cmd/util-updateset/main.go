@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ var GenUpdateSetApp = cli.App{
 	Name:      "Aida Generate Update-set Manager",
 	HelpName:  "aida-updateset",
 	Usage:     "generate update-set from substate",
-	Copyright: "(c) 2022 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	ArgsUsage: "<blockNumLast> <interval>",
 	Flags:     []cli.Flag{},
 	Commands: []*cli.Command{
