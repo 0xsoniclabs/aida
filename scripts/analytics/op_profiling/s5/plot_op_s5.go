@@ -28,10 +28,9 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/scripts/analytics/html"
-	"github.com/0xsoniclabs/aida/tracer/operation"
+	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/utils"
 	xmath "github.com/0xsoniclabs/aida/utils/math"
-
 	// db
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -316,11 +315,10 @@ func main() {
 	oWg.Wait()
 
 	// get opIds, opNameByOpId
-	ops := operation.CreateIdLabelMap() //byte->string
 	for opId, count := range countByOpId {
 		if count > 0 {
 			opIds = append(opIds, opId)
-			opNameByOpId[opId] = ops[byte(opId)]
+			opNameByOpId[opId] = tracer.OpText[uint8(opId)]
 		}
 	}
 

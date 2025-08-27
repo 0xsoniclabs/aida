@@ -31,9 +31,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// RecordCommand data structure for the record app
-var RecordCommand = cli.Command{
-	Action:    RecordStateDbTrace,
+// RunRecordCmd data structure for the record app
+var RunRecordCmd = cli.Command{
+	Action:    RunRecord,
 	Name:      "record",
 	Usage:     "captures and records StateDB operations while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
@@ -60,7 +60,7 @@ The trace record command requires two arguments:
 last block of the inclusive range of blocks to trace transactions.`,
 }
 
-func RecordStateDbTrace(ctx *cli.Context) error {
+func RunRecord(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func record(
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
 		statedb.MakeTemporaryStatePrepper(cfg),
-		statedb.MakeProxyRecorderPrepper[txcontext.TxContext](cfg),
+		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
 	}
@@ -107,7 +107,7 @@ func record(
 		executor.Params{
 			From:                   int(cfg.First),
 			To:                     int(cfg.Last) + 1,
-			ParallelismGranularity: executor.TransactionLevel,
+			ParallelismGranularity: executor.BlockLevel,
 		},
 		processor,
 		extensions,

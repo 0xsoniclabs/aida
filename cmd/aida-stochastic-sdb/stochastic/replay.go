@@ -23,9 +23,7 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
@@ -108,15 +106,16 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	}
 	defer os.RemoveAll(stateDbDir)
 
+	// todo: will be handled in upcoming PR
 	// Enable tracing if debug flag is set
-	if cfg.Trace {
-		rCtx, err := context.NewRecord(cfg.TraceFile, uint64(0))
-		if err != nil {
-			return err
-		}
-		defer rCtx.Close()
-		db = proxy.NewRecorderProxy(db, rCtx)
-	}
+	//if cfg.Trace {
+	//	rCtx, err := context.NewRecord(cfg.TraceFile, uint64(0))
+	//	if err != nil {
+	//		return err
+	//	}
+	//	defer rCtx.Close()
+	//	db = proxy.NewRecorderProxy(db, rCtx)
+	//}
 
 	// run simulation.
 	log.Info("Run simulation")
