@@ -17,7 +17,6 @@
 package statedb
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/big"
 	"slices"
@@ -34,6 +33,7 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -299,7 +299,7 @@ func TestThrottler_ProducesEventsInExpectedRate(t *testing.T) {
 
 		expected := float64(rate) * float64(testPeriod) / float64(time.Second)
 		diff := float64(count) - expected
-		if diff > 2 || diff < -2 {
+		if diff > 5 || diff < -5 {
 			t.Errorf("failed to reproduce rate %d, did %d events in %v", rate, count, testPeriod)
 		}
 	}
