@@ -118,8 +118,8 @@ install-dev-tools:
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/merge ./cmd/util-db/validate
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/merge ./cmd/util-db/validate
+	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/merge ./cmd/util-db/validate
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
