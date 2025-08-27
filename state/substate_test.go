@@ -1,11 +1,10 @@
 package state
 
 import (
-	"testing"
-
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestOffTheChainStateDb_CloseDoesNotPanicIfBackendIsNil(t *testing.T) {

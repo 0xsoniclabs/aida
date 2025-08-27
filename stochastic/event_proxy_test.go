@@ -615,9 +615,8 @@ func TestEventProxy_EndSyncPeriod(t *testing.T) {
 	base := state.NewMockStateDB(ctrl)
 	reg := NewEventRegistry()
 	proxy := NewEventProxy(base, &reg)
-	base.EXPECT().EndSyncPeriod().Return(nil)
-	err := proxy.EndSyncPeriod()
-	assert.NoError(t, err)
+	base.EXPECT().EndSyncPeriod().Return()
+	proxy.EndSyncPeriod()
 }
 
 func TestEventProxy_Close(t *testing.T) {

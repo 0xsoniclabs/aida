@@ -260,10 +260,7 @@ func (pc *PrimeContext) SelfDestructAccounts(db state.StateDB, accounts []substa
 	if err != nil {
 		pc.log.Errorf("failed to end block: %v", err)
 	}
-	err = db.EndSyncPeriod()
-	if err != nil {
-		pc.log.Errorf("failed to end sync period: %v", err)
-	}
+	db.EndSyncPeriod()
 	pc.block++
 	pc.log.Infof("\t\t %v suicided accounts were removed from statedb (before priming).", count)
 }

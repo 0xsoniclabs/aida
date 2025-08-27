@@ -566,8 +566,8 @@ func (db *inMemoryStateDB) BeginSyncPeriod(number uint64) {
 	// ignored
 }
 
-func (db *inMemoryStateDB) EndSyncPeriod() error {
-	return nil
+func (db *inMemoryStateDB) EndSyncPeriod() {
+	// ignored
 }
 
 func (s *inMemoryStateDB) GetHash() (common.Hash, error) {

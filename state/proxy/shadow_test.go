@@ -1440,46 +1440,22 @@ func TestShadowStateDb_EndSyncPeriod(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	t.Run("success", func(t *testing.T) {
-		mockDb := state.NewMockStateDB(ctrl)
-		mockLogger := logger.NewLogger("info", "test")
-		shadow := &shadowStateDb{
-			shadowVmStateDb: shadowVmStateDb{
-				prime:            mockDb,
-				shadow:           mockDb,
-				snapshots:        []snapshotPair{},
-				err:              nil,
-				log:              mockLogger,
-				compareStateHash: false,
-			},
-			prime:  mockDb,
-			shadow: mockDb,
-		}
-		mockDb.EXPECT().EndSyncPeriod().Return(nil).Times(2)
-		err := shadow.EndSyncPeriod()
-		assert.NoError(t, err)
-	})
-
-	t.Run("error", func(t *testing.T) {
-		mockDb := state.NewMockStateDB(ctrl)
-		mockLogger := logger.NewLogger("info", "test")
-		shadow := &shadowStateDb{
-			shadowVmStateDb: shadowVmStateDb{
-				prime:            mockDb,
-				shadow:           mockDb,
-				snapshots:        []snapshotPair{},
-				err:              nil,
-				log:              mockLogger,
-				compareStateHash: false,
-			},
-			prime:  mockDb,
-			shadow: mockDb,
-		}
-		mockDb.EXPECT().EndSyncPeriod().Return(errors.New("mock error"))
-		err := shadow.EndSyncPeriod()
-		assert.Error(t, err)
-	})
-
+	mockDb := state.NewMockStateDB(ctrl)
+	mockLogger := logger.NewLogger("info", "test")
+	shadow := &shadowStateDb{
+		shadowVmStateDb: shadowVmStateDb{
+			prime:            mockDb,
+			shadow:           mockDb,
+			snapshots:        []snapshotPair{},
+			err:              nil,
+			log:              mockLogger,
+			compareStateHash: false,
+		},
+		prime:  mockDb,
+		shadow: mockDb,
+	}
+	mockDb.EXPECT().EndSyncPeriod().Times(2)
+	shadow.EndSyncPeriod()
 }
 
 func TestShadowStateDb_GetHash(t *testing.T) {
