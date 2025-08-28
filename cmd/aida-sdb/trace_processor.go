@@ -24,29 +24,21 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		value, reason := state.Data.Data[0].(*uint256.Int), state.Data.Data[1].(tracing.BalanceChangeReason)
 		ctx.State.AddBalance(state.Data.Addr, value, reason)
 	case tracer.BeginBlockID:
-		if err := ctx.State.BeginBlock(uint64(state.Block)); err != nil {
-			return err
-		}
+		return ctx.State.BeginBlock(uint64(state.Block))
 	case tracer.BeginSyncPeriodID:
 		ctx.State.BeginSyncPeriod(state.Data.Data[0].(uint64))
 	case tracer.BeginTransactionID:
-		if err := ctx.State.BeginTransaction(uint32(state.Transaction)); err != nil {
-			return err
-		}
+		return ctx.State.BeginTransaction(uint32(state.Transaction))
 	case tracer.CreateAccountID:
 		ctx.State.CreateAccount(state.Data.Addr)
 	case tracer.EmptyID:
 		ctx.State.Empty(state.Data.Addr)
 	case tracer.EndBlockID:
-		if err := ctx.State.EndBlock(); err != nil {
-			return err
-		}
+		return ctx.State.EndBlock()
 	case tracer.EndSyncPeriodID:
 		ctx.State.EndSyncPeriod()
 	case tracer.EndTransactionID:
-		if err := ctx.State.EndTransaction(); err != nil {
-			return err
-		}
+		return ctx.State.EndTransaction()
 	case tracer.ExistID:
 		ctx.State.Exist(state.Data.Addr)
 	case tracer.GetBalanceID:
@@ -144,9 +136,7 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 			return err
 		}
 	case tracer.CloseID:
-		if err := ctx.State.Close(); err != nil {
-			return err
-		}
+		return ctx.State.Close()
 	case tracer.AccessEventsID:
 		ctx.State.AccessEvents()
 	case tracer.GetHashID:
@@ -160,13 +150,11 @@ func (p *traceProcessor) Process(state executor.State[tracer.Operation], ctx *ex
 		ctx.State.PrepareSubstate(ws, uint64(state.Block))
 	case tracer.GetArchiveStateID:
 		blkNum := state.Data.Data[0].(uint64)
-		_, err := ctx.State.GetArchiveState(blkNum)
-		if err != nil {
+		if _, err := ctx.State.GetArchiveState(blkNum); err != nil {
 			return err
 		}
 	case tracer.GetArchiveBlockHeightID:
-		_, _, err := ctx.State.GetArchiveBlockHeight()
-		if err != nil {
+		if _, _, err := ctx.State.GetArchiveBlockHeight(); err != nil {
 			return err
 		}
 	default:
