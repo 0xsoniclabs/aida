@@ -41,7 +41,7 @@ func TestCmd_RunTxGenerator(t *testing.T) {
 		&utils.ForkFlag,
 	}
 
-	err := app.Run([]string{RunTxGeneratorCmd.Name, "--fork", "Prague", "1"})
+	err := app.Run([]string{RunTxGeneratorCmd.Name, "--fork", "Prague", "5"})
 	require.NoError(t, err)
 }
 
