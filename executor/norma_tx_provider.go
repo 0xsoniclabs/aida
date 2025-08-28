@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -439,5 +440,6 @@ func (f fakeRpcClient) TransactionReceipt(_ context.Context, _ common.Hash) (*ty
 
 // WaitTransactionReceipt is implemented to conform with norma's exponential backoff before declaring timeout.
 func (f fakeRpcClient) WaitTransactionReceipt(_ common.Hash) (*types.Receipt, error) {
+	time.Sleep(5 * time.Millisecond)
 	return &types.Receipt{Status: types.ReceiptStatusSuccessful}, nil
 }
