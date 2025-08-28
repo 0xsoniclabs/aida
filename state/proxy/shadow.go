@@ -141,6 +141,12 @@ func (s *shadowVmStateDb) GetCommittedState(addr common.Address, key common.Hash
 	return s.getHash("GetCommittedState", func(s state.VmStateDB) common.Hash { return s.GetCommittedState(addr, key) }, addr, key)
 }
 
+func (s *shadowVmStateDb) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	return s.getHashPair("GetCommittedState", func(s state.VmStateDB) (common.Hash, common.Hash) {
+		return s.GetStateAndCommittedState(addr, key)
+	}, addr, key)
+}
+
 func (s *shadowVmStateDb) GetState(addr common.Address, key common.Hash) common.Hash {
 	return s.getHash("GetState", func(s state.VmStateDB) common.Hash { return s.GetState(addr, key) }, addr, key)
 }
@@ -730,6 +736,20 @@ func (s *shadowVmStateDb) getHash(opName string, op func(s state.VmStateDB) comm
 		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
 	}
 	return resP
+}
+
+func (s *shadowVmStateDb) getHashPair(opName string, op func(s state.VmStateDB) (common.Hash, common.Hash), args ...any) (common.Hash, common.Hash) {
+	res1P, res2P := op(s.prime)
+	res1S, res2S := op(s.shadow)
+	if res1P != res1S {
+		s.logIssue(opName, res1P, res1S, args)
+		s.err = fmt.Errorf("%v (first hash) diverged from shadow DB", getOpcodeString(opName, args))
+	}
+	if res2P != res2S {
+		s.logIssue(opName, res2P, res2S, args)
+		s.err = fmt.Errorf("%v (second hash) diverged from shadow DB", getOpcodeString(opName, args))
+	}
+	return res1P, res2P
 }
 
 func (s *shadowVmStateDb) getUint256Ptr(opName string, op func(s state.VmStateDB) *uint256.Int, args ...any) *uint256.Int {
