@@ -130,6 +130,10 @@ func (r *DeletionProxy) GetCommittedState(addr common.Address, key common.Hash) 
 	return value
 }
 
+func (r *DeletionProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	return r.db.GetStateAndCommittedState(addr, key)
+}
+
 // GetState retrieves a value from the StateDB.
 func (r *DeletionProxy) GetState(addr common.Address, key common.Hash) common.Hash {
 	value := r.db.GetState(addr, key)

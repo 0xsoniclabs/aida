@@ -170,6 +170,14 @@ func (p *ProfilerProxy) GetCommittedState(addr common.Address, key common.Hash) 
 	return res
 }
 
+func (p *ProfilerProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	var val, origin common.Hash
+	p.do(operation.GetStateAndCommittedStateID, func() {
+		val, origin = p.db.GetStateAndCommittedState(addr, key)
+	})
+	return val, origin
+}
+
 // GetState retrieves a value from the StateDB.
 func (p *ProfilerProxy) GetState(addr common.Address, key common.Hash) common.Hash {
 	var res common.Hash

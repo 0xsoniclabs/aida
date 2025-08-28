@@ -58,6 +58,7 @@ type VmStateDB interface {
 	GetState(common.Address, common.Hash) common.Hash
 	SetState(common.Address, common.Hash, common.Hash) common.Hash
 	GetStorageRoot(common.Address) common.Hash
+	GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash)
 
 	// Transient Storage
 	SetTransientState(common.Address, common.Hash, common.Hash)

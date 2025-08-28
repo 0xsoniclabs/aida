@@ -164,6 +164,11 @@ func (r *RecorderProxy) GetCommittedState(addr common.Address, key common.Hash) 
 	return value
 }
 
+func (r *RecorderProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	// this tool is in process of refactoring - no point of implementing this now
+	panic("not implemented")
+}
+
 // GetState retrieves a value from the StateDB.
 func (r *RecorderProxy) GetState(addr common.Address, key common.Hash) common.Hash {
 	previousContract := r.ctx.PrevContract()

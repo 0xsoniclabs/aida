@@ -239,6 +239,12 @@ func (s *loggingVmStateDb) GetCommittedState(addr common.Address, key common.Has
 	return res
 }
 
+func (s *loggingVmStateDb) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	val, origin := s.db.GetStateAndCommittedState(addr, key)
+	s.writeLog("GetStateAndCommittedState, %s, %s, %s, %s", addr, key, val, origin)
+	return val, origin
+}
+
 func (s *loggingVmStateDb) GetState(addr common.Address, key common.Hash) common.Hash {
 	res := s.db.GetState(addr, key)
 	s.writeLog("GetState, %v, %v, %v", addr, key, res)
