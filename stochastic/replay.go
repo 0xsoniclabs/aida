@@ -79,24 +79,28 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
 	// contract addresses can be deleted by suicide.)
-	contracts := generator.NewIndirectAccess(generator.NewRandomAccess(
-		rg,
-		e.Contracts.NumKeys,
-		e.Contracts.Lambda,
-		e.Contracts.QueueDistribution,
-	))
+	contracts := generator.NewIndirectAccess(
+		generator.NewRandomAccess(
+			e.Contracts.NumKeys,
+			generator.NewExpRandomizer(
+				rg,
+				e.Contracts.Lambda,
+				e.Contracts.QueueDistribution,
+			)))
 	keys := generator.NewRandomAccess(
-		rg,
 		e.Keys.NumKeys,
-		e.Keys.Lambda,
-		e.Keys.QueueDistribution,
-	)
+		generator.NewExpRandomizer(
+			rg,
+			e.Keys.Lambda,
+			e.Keys.QueueDistribution,
+		))
 	values := generator.NewRandomAccess(
-		rg,
 		e.Values.NumKeys,
-		e.Values.Lambda,
-		e.Values.QueueDistribution,
-	)
+		generator.NewExpRandomizer(
+			rg,
+			e.Values.Lambda,
+			e.Values.QueueDistribution,
+		))
 
 	// setup state
 	ss := NewStochasticState(rg, db, contracts, keys, values, e.SnapshotLambda, log)
@@ -316,9 +320,9 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	)
 
 	// fetch indexes from index access generators
-	addrIdx := ss.contracts.NextIndex(addrCl)
-	keyIdx := ss.keys.NextIndex(keyCl)
-	valueIdx := ss.values.NextIndex(valueCl)
+	addrIdx, _ := ss.contracts.NextIndex(addrCl)
+	keyIdx, _ := ss.keys.NextIndex(keyCl)
+	valueIdx, _ := ss.values.NextIndex(valueCl)
 
 	// convert index to address/hashes
 	if addrCl != statistics.NoArgID {
