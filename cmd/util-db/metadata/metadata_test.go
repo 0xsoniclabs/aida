@@ -47,7 +47,7 @@ func TestCmd_MetadataCommand(t *testing.T) {
 
 func TestCmd_PrintMetadataCommand(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 
@@ -66,7 +66,7 @@ func TestCmd_PrintMetadataCommand(t *testing.T) {
 
 func TestCmd_GenerateMetadataCommand(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 
@@ -105,7 +105,7 @@ func TestCmd_GenerateMetadataCommand_EmptyAidaDb(t *testing.T) {
 
 func TestCmd_InsertMetadataCommand(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 	params := map[string]string{
@@ -137,7 +137,7 @@ func TestCmd_InsertMetadataCommand(t *testing.T) {
 }
 
 func TestCmd_InsertMetadataCommand_Errors(t *testing.T) {
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 
 	tests := []struct {
 		name        string
@@ -179,7 +179,7 @@ func TestCmd_InsertMetadataCommand_Errors(t *testing.T) {
 
 func TestCmd_InsertMetadataCommand_IncorrectArguments(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 	params := map[string]string{
@@ -211,7 +211,7 @@ func TestCmd_InsertMetadataCommand_IncorrectArguments(t *testing.T) {
 
 func TestCmd_RemoveMetadataCommand(t *testing.T) {
 	// given
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 

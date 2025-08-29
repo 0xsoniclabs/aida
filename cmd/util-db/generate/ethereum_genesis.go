@@ -1,4 +1,4 @@
-// Copyright 2025 Sonic Labs
+// Copyright 2024 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -14,20 +14,70 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utildb
+package generate
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/0xsoniclabs/substate/substate"
-	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/cockroachdb/errors"
 	"github.com/holiman/uint256"
+
+	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
+	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/updateset"
+	"github.com/urfave/cli/v2"
 )
+
+var generateEthereumGenesisCommand = cli.Command{
+	Action: generateEthereumGenesisAction,
+	Name:   "ethereum-genesis",
+	Usage:  "Extracts WorldState from json into first updateset",
+	Flags: []cli.Flag{
+		&utils.ChainIDFlag,
+		&utils.UpdateDbFlag,
+		&logger.LogLevelFlag,
+	},
+	Description: `
+Extracts WorldState from ethereum genesis.json into first updateset.`,
+}
+
+func generateEthereumGenesisAction(ctx *cli.Context) (finalErr error) {
+	// process arguments and flags
+	if ctx.Args().Len() != 1 {
+		return fmt.Errorf("ethereum-update command requires exactly 1 argument")
+	}
+	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	if argErr != nil {
+		return argErr
+	}
+	log := logger.NewLogger(cfg.LogLevel, "Ethereum Update")
+
+	log.Notice("Load Ethereum initial world state")
+	ws, err := loadEthereumGenesisWorldState(ctx.Args().Get(0))
+	if err != nil {
+		return err
+	}
+
+	udb, err := db.NewDefaultUpdateDB(cfg.UpdateDb)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		finalErr = errors.Join(finalErr, udb.Close())
+	}()
+
+	log.Noticef("PutUpdateSet(0, %v, []common.Address{})", ws)
+
+	return udb.PutUpdateSet(&updateset.UpdateSet{WorldState: ws, Block: 0}, make([]substatetypes.Address, 0))
+}
 
 type GenesisData struct {
 	Alloc map[string]struct {
@@ -38,18 +88,18 @@ type GenesisData struct {
 	} `json:"alloc"`
 }
 
-// LoadEthereumGenesisWorldState loads opera initial world state from worldstate-db as WorldState
-func LoadEthereumGenesisWorldState(genesis string) (substate.WorldState, error) {
+// loadEthereumGenesisWorldState loads opera initial world state from worldstate-db as WorldState
+func loadEthereumGenesisWorldState(genesisPath string) (substate.WorldState, error) {
 	var jsData GenesisData
 	// Read the content of the JSON file
-	jsonData, err := ioutil.ReadFile(genesis)
+	jsonData, err := os.ReadFile(genesisPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read genesis file: %account", err)
+		return nil, fmt.Errorf("failed to read genesis file: %v", err)
 	}
 
-	// Unmarshal JSON data
-	if err := json.Unmarshal(jsonData, &jsData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal genesis file: %account", err)
+	err = json.Unmarshal(jsonData, &jsData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal genesis file: %v", err)
 	}
 
 	ssAccounts := make(substate.WorldState)
@@ -78,7 +128,7 @@ func LoadEthereumGenesisWorldState(genesis string) (substate.WorldState, error) 
 
 		acc := substate.NewAccount(nonce, balance, code)
 
-		if account.Storage != nil && len(account.Storage) > 0 {
+		if len(account.Storage) > 0 {
 			for key, value := range account.Storage {
 				decodedKey, err := hex.DecodeString(strings.TrimPrefix(key, "0x"))
 				if err != nil {

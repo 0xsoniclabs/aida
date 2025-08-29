@@ -49,7 +49,7 @@ func TestMerge_Command(t *testing.T) {
 	err = sdb2.Close()
 	require.NoError(t, err)
 
-	_, aidaDbPath := utils.CreateTestSubstateDb(t)
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Action = mergeAction
 	app.Flags = Command.Flags

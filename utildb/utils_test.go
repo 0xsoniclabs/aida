@@ -26,9 +26,9 @@ import (
 )
 
 func TestUtils_OpenSourceDatabases(t *testing.T) {
-	ss1, path1 := utils.CreateTestSubstateDb(t)
-	ss2, path2 := utils.CreateTestSubstateDb(t)
-	ss3, path3 := utils.CreateTestSubstateDb(t)
+	ss1, path1 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+	ss2, path2 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+	ss3, path3 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 
 	dbs, err := OpenSourceDatabases([]string{path1, path2, path3})
 	require.NoError(t, err)
