@@ -121,6 +121,8 @@ const (
 	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
 	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository-public/hoodi/aida-patches"
 	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
+
+	AidaDbRepositoryTestUrl = "https://storage.googleapis.com/aida-repository-public/sonic-dummy/aida-patches"
 )
 
 const maxLastBlock = math.MaxUint64 - 1 // we decrease the value by one because params are always +1
@@ -711,7 +713,7 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	}
 
 	// read meta data
-	aidaDb, err := db.NewReadOnlyBaseDB(cc.cfg.AidaDb)
+	aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb)
 	if err != nil {
 		cc.log.Warningf("Cannot open AidaDB; %v", err)
 		return defaultFirst, defaultLast, defaultLastPatch, nil
@@ -723,18 +725,13 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	}()
 
 	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
-	err = md.getBlockRange()
-	if err != nil {
-		cc.log.Warning(err)
-		return defaultFirst, defaultLast, defaultLastPatch, nil
-	}
 	cc.hasMetadata = true
-	lastPatchBlock, err := getPatchFirstBlock(md.LastBlock)
+	lastPatchBlock, err := getPatchFirstBlock(md.GetLastBlock())
 	if err != nil {
 		cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
 	}
 
-	return md.FirstBlock, md.LastBlock, lastPatchBlock, nil
+	return md.GetFirstBlock(), md.GetLastBlock(), lastPatchBlock, nil
 }
 
 // adjustBlockRange finds overlap between metadata block range and block range specified by user in command line
@@ -774,7 +771,7 @@ func (cc *configContext) setChainId() error {
 		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", ChainIDFlag.Name)
 
 		// we check if AidaDb was set with err == nil
-		if aidaDb, err := db.OpenBaseDB(cc.cfg.AidaDb); err == nil {
+		if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
 			md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 
 			cc.cfg.ChainID = md.GetChainID()

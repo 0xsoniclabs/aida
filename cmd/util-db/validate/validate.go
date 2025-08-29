@@ -47,19 +47,19 @@ func validateAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot parse config; %v", err)
 	}
 
-	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
 	defer utildb.MustCloseDB(aidaDb)
-
 	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
-	md.ChainId = md.GetChainID()
-	if md.ChainId == 0 {
+	if md.GetChainID() == 0 {
 		log.Warning("cannot find db-hash in your aida-db metadata, this operation is needed because db-hash was not found inside your aida-db; please make sure you specified correct chain-id with flag --%v", utils.ChainIDFlag.Name)
-		md.ChainId = cfg.ChainID
+		if err = md.SetChainID(cfg.ChainID); err != nil {
+			return fmt.Errorf("cannot set chain-id inside aida-db metadata; %v", err)
+		}
 	}
 
 	// validation only makes sense if user has pure AidaDb
@@ -74,7 +74,7 @@ func validateAction(ctx *cli.Context) error {
 	if len(expectedHash) == 0 {
 		// we want to save the hash inside metadata
 		saveHash = true
-		expectedHash, err = utildb.FindDbHashOnline(md.ChainId, log, md)
+		expectedHash, err = utildb.FindDbHashOnline(md.GetChainID(), log, md)
 		if err != nil {
 			return fmt.Errorf("validation cannot be performed - could not find expected db hash; %v", err)
 		}

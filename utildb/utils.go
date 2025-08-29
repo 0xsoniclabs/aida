@@ -17,11 +17,9 @@
 package utildb
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
 	"os"
 	"strconv"
@@ -34,26 +32,25 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // OpenSourceDatabases opens all databases required for merge
-func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
+func OpenSourceDatabases(sourceDbPaths []string) ([]db.SubstateDB, error) {
 	if len(sourceDbPaths) < 1 {
 		return nil, fmt.Errorf("no source database were specified")
 	}
 
-	var sourceDbs []db.BaseDB
+	var sourceDbs []db.SubstateDB
 	for i := 0; i < len(sourceDbPaths); i++ {
 		path := sourceDbPaths[i]
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("source database %s; doesn't exist", path)
 		}
-		db, err := db.NewReadOnlyBaseDB(path)
+		db, err := db.NewReadOnlySubstateDB(path)
 		if err != nil {
 			return nil, fmt.Errorf("source database %s; error: %v", path, err)
 		}
@@ -74,33 +71,6 @@ func MustCloseDB(db db.BaseDB) {
 	}
 }
 
-// calculateMD5Sum calculates MD5 hash of given file
-func calculateMD5Sum(filePath string) (string, error) {
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("unable open file %s; %v", filePath, err.Error())
-	}
-	defer file.Close()
-
-	// Create a new MD5 hash instance
-	hash := md5.New()
-
-	// Copy the file content into the hash instance
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return "", fmt.Errorf("unable to calculate md5; %v", err)
-	}
-
-	// Calculate the MD5 checksum as a byte slice
-	checksum := hash.Sum(nil)
-
-	// Convert the checksum to a hexadecimal string
-	md5sum := hex.EncodeToString(checksum)
-
-	return md5sum, nil
-}
-
 // GetDbSize retrieves database size
 func GetDbSize(db db.BaseDB) uint64 {
 	var count uint64
@@ -113,19 +83,13 @@ func GetDbSize(db db.BaseDB) uint64 {
 }
 
 // PrintMetadata from given AidaDb
-func PrintMetadata(pathToDb string) error {
+func PrintMetadata(aidaDb db.SubstateDB) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
-	base, err := db.NewReadOnlyBaseDB(pathToDb)
-	if err != nil {
-		return err
-	}
-	defer MustCloseDB(base)
-
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
 	log.Notice("AIDA-DB INFO:")
 
-	if err = printDbType(md); err != nil {
+	if err := printDbType(md); err != nil {
 		return err
 	}
 
@@ -172,30 +136,20 @@ func PrintMetadata(pathToDb string) error {
 }
 
 // printUpdateSetInfo from given AidaDb
-func printUpdateSetInfo(m *utils.AidaDbMetadata) {
+func printUpdateSetInfo(m utils.Metadata) {
 	log := logger.NewLogger("INFO", "Print-Metadata")
 
 	log.Notice("UPDATE-SET INFO:")
 
-	intervalBytes, err := m.Db.Get([]byte(db.UpdatesetIntervalKey))
-	if err != nil {
-		log.Warning("Value for update-set interval does not exist in given Dbs metadata")
-	} else {
-		log.Infof("Interval: %v blocks", bigendian.BytesToUint64(intervalBytes))
-	}
+	interval := m.GetUpdatesetInterval()
+	log.Infof("Interval: %v blocks", interval)
 
-	sizeBytes, err := m.Db.Get([]byte(db.UpdatesetSizeKey))
-	if err != nil {
-		log.Warning("Value for update-set size does not exist in given Dbs metadata")
-	} else {
-		u := bigendian.BytesToUint64(sizeBytes)
-
-		log.Infof("Size: %.1f MB", float64(u)/float64(1_000_000))
-	}
+	size := m.GetUpdatesetSize()
+	log.Infof("Size: %.1f MB", float64(size)/float64(1_000_000))
 }
 
 // printDbType from given AidaDb
-func printDbType(m *utils.AidaDbMetadata) error {
+func printDbType(m utils.Metadata) error {
 	t := m.GetDbType()
 
 	var typePrint string
@@ -220,12 +174,19 @@ func printDbType(m *utils.AidaDbMetadata) error {
 
 func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	tmpDir := t.TempDir() + "/testAidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
 	md := utils.NewAidaDbMetadata(database, "ERROR")
-	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
+	err = errors.Join(
+		md.SetFirstBlock(1),
+		md.SetLastBlock(50),
+		md.SetFirstEpoch(1),
+		md.SetLastEpoch(50),
+		md.SetChainID(utils.MainnetChainID),
+		md.SetDbHash([]byte("0x0")),
+	)
 	assert.NoError(t, err)
 
 	// write substates to the database

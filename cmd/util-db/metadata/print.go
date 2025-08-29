@@ -19,6 +19,7 @@ package metadata
 import (
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,5 +38,10 @@ func printAction(ctx *cli.Context) error {
 		return argErr
 	}
 
-	return utildb.PrintMetadata(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
+	if err != nil {
+		return err
+	}
+
+	return utildb.PrintMetadata(aidaDb)
 }
