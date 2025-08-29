@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,7 +40,7 @@ import (
 var testingAddress = common.Address{1}
 
 func TestCmd_RunVmAdb(t *testing.T) {
-	_, path := utils.CreateTestSubstateDb(t)
+	_, path := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Action = RunVmAdb
 	app.Flags = []cli.Flag{

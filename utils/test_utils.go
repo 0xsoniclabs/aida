@@ -1,3 +1,19 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
@@ -79,13 +95,13 @@ func Must[T any](value T, err error) T {
 }
 
 // CreateTestSubstateDb creates a test substate database with a predefined substate.
-func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
+func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSchema) (*substate.Substate, string) {
 	path := t.TempDir()
 	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
 	require.NoError(t, err)
-	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+	require.NoError(t, db.SetSubstateEncoding(encoding))
 
-	ss := GetTestSubstate("protobuf")
+	ss := GetTestSubstate(string(encoding))
 	err = db.PutSubstate(ss)
 	require.NoError(t, err)
 
