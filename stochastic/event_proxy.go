@@ -135,8 +135,8 @@ func (p *EventProxy) GetCommittedState(address common.Address, key common.Hash) 
 }
 
 func (p *EventProxy) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
-	// todo implement
-	panic("implement me")
+	p.registry.RegisterKeyOp(GetStateAndCommittedStateID, &address, &hash)
+	return p.db.GetStateAndCommittedState(address, hash)
 }
 
 // GetState retrieves a value from the StateDB.

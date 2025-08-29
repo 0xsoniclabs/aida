@@ -50,7 +50,7 @@ const (
 	GetCodeSizeID
 	GetCommittedStateID
 	GetCommittedStateLclsID
-	GetStateAndCommittedStateID // todo finish
+	GetStateAndCommittedStateID
 	GetNonceID
 	GetStateID
 	GetStateLccsID
