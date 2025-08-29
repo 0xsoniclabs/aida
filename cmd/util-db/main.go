@@ -22,12 +22,12 @@ import (
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
-	"github.com/0xsoniclabs/aida/cmd/util-db/db"
 	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
+	"github.com/0xsoniclabs/aida/cmd/util-db/update"
 	"github.com/0xsoniclabs/aida/cmd/util-db/validate"
 	"github.com/urfave/cli/v2"
 )
@@ -46,9 +46,7 @@ var UtilDbApp = cli.App{
 		&validate.Command,
 		&metadata.Command,
 		&generate.Command,
-		&db.UpdateCommand,
-		&db.ScrapeCommand,
-
+		&update.Command,
 		//Priming only
 		&primer.RunPrimerCmd,
 	},
