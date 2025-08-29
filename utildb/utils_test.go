@@ -1,3 +1,19 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package utildb
 
 import (
@@ -10,9 +26,9 @@ import (
 )
 
 func TestUtils_OpenSourceDatabases(t *testing.T) {
-	ss1, path1 := utils.CreateTestSubstateDb(t)
-	ss2, path2 := utils.CreateTestSubstateDb(t)
-	ss3, path3 := utils.CreateTestSubstateDb(t)
+	ss1, path1 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+	ss2, path2 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+	ss3, path3 := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 
 	dbs, err := OpenSourceDatabases([]string{path1, path2, path3})
 	require.NoError(t, err)

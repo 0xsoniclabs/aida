@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@ import (
 // RunVMApp data structure
 var RunVMApp = cli.App{
 	Name:      "Aida Storage Run VM Manager",
-	Copyright: "(c) 2023 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Commands: []*cli.Command{
 		&RunSubstateCmd,

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ var RunArchiveApp = cli.App{
 	Name:      "Aida Archive Evaluation Tool",
 	HelpName:  "vm-adb",
 	Usage:     "run VM on the archive",
-	Copyright: "(c) 2023 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	// TODO: derive supported flags from utilized executor extensions (issue #664).
 	Flags: []cli.Flag{

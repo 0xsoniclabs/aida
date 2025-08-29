@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ var rpcApp = &cli.App{
 	Name:   "Replay-RPC",
 	Usage: "Sends real API requests recorded on rpcapi.fantom.network to StateDB then compares recorded" +
 		"result with result returned by DB.",
-	Copyright: "(c) 2023 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	Flags: []cli.Flag{
 		&utils.RpcRecordingFileFlag,
 		&utils.WorkersFlag,

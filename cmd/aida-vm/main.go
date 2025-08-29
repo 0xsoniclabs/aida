@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ var runVmApp = &cli.App{
 	Action:    RunVm,
 	Name:      "EVM evaluation tool",
 	HelpName:  "aida-vm",
-	Copyright: "(c) 2023 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	// TODO: derive supported flags from utilized executor extensions.
 	Flags: []cli.Flag{
