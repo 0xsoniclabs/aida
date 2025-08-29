@@ -185,6 +185,14 @@ func TestProxies_AllCalls(t *testing.T) {
 		})
 	}
 
+	// GetStateAndCommittedState
+	base.EXPECT().GetStateAndCommittedState(addr, key).Times(len(proxies) + 1)
+	for name, proxy := range proxies {
+		t.Run(name+"_GetStateAndCommittedState", func(t *testing.T) {
+			proxy.GetStateAndCommittedState(addr, key)
+		})
+	}
+
 	// Commit
 	base.EXPECT().Commit(uint64Val, boolVal).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
