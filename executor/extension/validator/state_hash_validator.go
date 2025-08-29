@@ -53,31 +53,47 @@ type stateHashValidator[T any] struct {
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
 	hashProvider            utils.HashProvider
+	sdb                     db.SubstateDB // substate db pointer
 }
 
-func (e *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
-	if e.cfg.DbImpl == "carmen" {
-		if e.cfg.CarmenSchema != 5 {
+func (v *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
+	if v.cfg.DbImpl == "carmen" {
+		if v.cfg.CarmenSchema != 5 {
 			return errors.New("state-hash-validation only works with carmen schema 5")
 		}
 
-		if e.cfg.ArchiveMode && e.cfg.ArchiveVariant != "s5" {
+		if v.cfg.ArchiveMode && v.cfg.ArchiveVariant != "s5" {
 			return errors.New("archive state-hash-validation only works with archive variant s5")
 		}
-	} else if e.cfg.DbImpl != "geth" {
+	} else if v.cfg.DbImpl != "geth" {
 		return errors.New("state-hash-validation only works with db-impl carmen or geth")
 	}
 
-	e.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
+	// adjust first block to the earliest substate block if available
+	// this condition is added for setting sdb in seting.
+	if ctx.AidaDb != nil && v.sdb == nil {
+		v.sdb = db.MakeDefaultSubstateDBFromBaseDB(ctx.AidaDb)
+	}
+	if v.sdb != nil {
+		sub := v.sdb.GetFirstSubstate()
+		if sub != nil {
+			block := int(sub.Block)
+			if block > v.nextArchiveBlockToCheck {
+				v.nextArchiveBlockToCheck = block
+			}
+		}
+	}
+
+	v.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
 	return nil
 }
 
-func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor.Context) error {
+func (v *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor.Context) error {
 	if ctx.State == nil {
 		return nil
 	}
 
-	want, err := e.getStateHash(state.Block)
+	want, err := v.getStateHash(state.Block)
 	if err != nil {
 		return err
 	}
@@ -93,9 +109,9 @@ func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor
 	}
 
 	// Check the ArchiveDB
-	if e.cfg.ArchiveMode {
-		e.lastProcessedBlock = state.Block
-		if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
+	if v.cfg.ArchiveMode {
+		v.lastProcessedBlock = state.Block
+		if err = v.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 			return err
 		}
 	}
@@ -103,18 +119,18 @@ func (e *stateHashValidator[T]) PostBlock(state executor.State[T], ctx *executor
 	return nil
 }
 
-func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Context, err error) error {
+func (v *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Context, err error) error {
 	// Skip processing if run is aborted due to an error.
 	if err != nil {
 		return nil
 	}
 	// Complete processing remaining archive blocks.
-	if e.cfg.ArchiveMode {
-		for e.nextArchiveBlockToCheck < e.lastProcessedBlock {
-			if err = e.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
+	if v.cfg.ArchiveMode {
+		for v.nextArchiveBlockToCheck < v.lastProcessedBlock {
+			if err = v.checkArchiveHashes(ctx.State, ctx.AidaDb); err != nil {
 				return err
 			}
-			if e.nextArchiveBlockToCheck < e.lastProcessedBlock {
+			if v.nextArchiveBlockToCheck < v.lastProcessedBlock {
 				time.Sleep(10 * time.Millisecond)
 			}
 		}
@@ -122,7 +138,7 @@ func (e *stateHashValidator[T]) PostRun(_ executor.State[T], ctx *executor.Conte
 	return nil
 }
 
-func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb db.BaseDB) error {
+func (v *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb db.BaseDB) error {
 	// Note: the archive may be lagging behind the life DB, so block hashes need
 	// to be checked as they become available.
 
@@ -131,9 +147,9 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 		return fmt.Errorf("failed to get archive block height: %v", err)
 	}
 
-	cur := uint64(e.nextArchiveBlockToCheck)
+	cur := uint64(v.nextArchiveBlockToCheck)
 	for !empty && cur <= height {
-		want, err := e.getStateHash(int(cur))
+		want, err := v.getStateHash(int(cur))
 		if err != nil {
 			return err
 		}
@@ -153,8 +169,7 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 		if want != got {
 			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)
 
-			sDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-			block, blockErr := sDb.GetBlockSubstates(cur)
+			block, blockErr := v.sdb.GetBlockSubstates(cur)
 			if blockErr != nil {
 				return fmt.Errorf("cannot get substates for block %d; %v; archive-hash-error: %w", cur, blockErr, unexpectedHashErr)
 			}
@@ -162,18 +177,18 @@ func (e *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 			if len(block) > 0 {
 				return unexpectedHashErr
 			}
-			e.log.Warningf("Empty block %d has mismatch hash; %v", cur, unexpectedHashErr)
+			v.log.Warningf("Empty block %d has mismatch hash; %v", cur, unexpectedHashErr)
 
 		}
 
 		cur++
 	}
-	e.nextArchiveBlockToCheck = int(cur)
+	v.nextArchiveBlockToCheck = int(cur)
 	return nil
 }
 
-func (e *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, error) {
-	want, err := e.hashProvider.GetStateRootHash(blockNumber)
+func (v *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, error) {
+	want, err := v.hashProvider.GetStateRootHash(blockNumber)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return common.Hash{}, fmt.Errorf("state hash for block %v is not present in the db", blockNumber)
