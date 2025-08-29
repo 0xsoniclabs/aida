@@ -713,7 +713,7 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	}
 
 	// read meta data
-	aidaDb, err := db.NewReadOnlyBaseDB(cc.cfg.AidaDb)
+	aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb)
 	if err != nil {
 		cc.log.Warningf("Cannot open AidaDB; %v", err)
 		return defaultFirst, defaultLast, defaultLastPatch, nil
@@ -725,18 +725,13 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	}()
 
 	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
-	err = md.getBlockRange()
-	if err != nil {
-		cc.log.Warning(err)
-		return defaultFirst, defaultLast, defaultLastPatch, nil
-	}
 	cc.hasMetadata = true
-	lastPatchBlock, err := getPatchFirstBlock(md.LastBlock)
+	lastPatchBlock, err := getPatchFirstBlock(md.GetLastBlock())
 	if err != nil {
 		cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
 	}
 
-	return md.FirstBlock, md.LastBlock, lastPatchBlock, nil
+	return md.GetFirstBlock(), md.GetLastBlock(), lastPatchBlock, nil
 }
 
 // adjustBlockRange finds overlap between metadata block range and block range specified by user in command line
