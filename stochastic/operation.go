@@ -41,6 +41,7 @@ const (
 	GetCodeID
 	GetCodeSizeID
 	GetCommittedStateID
+	GetStateAndCommittedStateID
 	GetNonceID
 	GetStateID
 	GetStorageRootID
