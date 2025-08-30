@@ -461,7 +461,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			if ss.traceDebug {
 				ss.log.Infof(" id: %v", snapshot)
 			}
-			ss.snapshot = ss.snapshot[:snapshotIdx+1]
+			ss.snapshot = ss.snapshot[:snapshotIdx]
 
 			// update active snapshots and perform a rollback in balance log
 			db.RevertToSnapshot(snapshot)
