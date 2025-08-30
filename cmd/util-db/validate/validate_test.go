@@ -18,7 +18,11 @@ package validate
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"testing"
+
+	"os"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -26,6 +30,40 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
+
+var testDataDir string
+
+func TestMain(m *testing.M) {
+	fmt.Println("Performing global setup...")
+
+	// setup
+	tempDir, err := os.MkdirTemp("", "profile_test_*")
+	if err != nil {
+		fmt.Printf("Failed to create temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	testDataDir = tempDir
+	err = utils.DownloadTestDataset(testDataDir)
+	fmt.Printf("Downloaded test data: %s\n", testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to download test dataset: %v\n", err)
+		_ = os.RemoveAll(testDataDir)
+		os.Exit(1)
+	}
+
+	// run
+	exitCode := m.Run()
+
+	// teardown
+	err = os.RemoveAll(testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to remove temp dir: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Performing global teardown...")
+	os.Exit(exitCode)
+}
 
 func TestCmd_ValidateCommand(t *testing.T) {
 	// given
@@ -121,5 +159,62 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			require.ErrorContains(t, err, test.wantErr)
 		})
 	}
+
+}
+
+func TestCmd_ValidateCommandRealDatabase(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir(path.Join(testDataDir, "sample-pb-db"), aidaDbPath))
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&Command}
+
+	args := utils.NewArgs("test").
+		Arg(Command.Name).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	assert.NoError(t, err)
+}
+
+func TestCmd_ValidateCommandRealDatabaseError(t *testing.T) {
+
+	t.Run("cannot parse config", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&Command}
+
+		args := utils.NewArgs("test").
+			Arg(Command.Name).
+			Flag(utils.ChainIDFlag.Name, 9990099).
+			Flag(utils.AidaDbFlag.Name, "").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
+
+	t.Run("cannot open db", func(t *testing.T) {
+		app := cli.NewApp()
+		app.Commands = []*cli.Command{&Command}
+
+		args := utils.NewArgs("test").
+			Arg(Command.Name).
+			Flag(utils.AidaDbFlag.Name, "").
+			Build()
+
+		// when
+		err := app.Run(args)
+
+		// then
+		assert.Error(t, err)
+	})
 
 }

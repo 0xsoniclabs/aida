@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
@@ -92,12 +93,16 @@ func TestRpc_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[*rpc.RequestAndResults]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 2, Data: reqBlockTwo})
+			err := consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 2, Data: reqBlockTwo})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 1, Data: reqBlockThree})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 1, Data: reqBlockThree})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -150,11 +155,14 @@ func TestRpc_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[*rpc.RequestAndResults]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			err := consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 2, Data: reqBlockThree})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 2, Data: reqBlockThree})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -204,12 +212,16 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[*rpc.RequestAndResults]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 2, Data: reqBlockTwo})
+			err := consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 2, Data: reqBlockTwo})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 1, Data: reqBlockThree})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 1, Data: reqBlockThree})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -288,11 +300,14 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[*rpc.RequestAndResults]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			err := consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 2, Transaction: 1, Data: reqBlockTwo})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 2, Data: reqBlockThree})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 3, Transaction: 2, Data: reqBlockThree})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			err = consumer(executor.TransactionInfo[*rpc.RequestAndResults]{Block: 4, Transaction: 0, Data: reqBlockFour})
+			assert.NoError(t, err)
 			return nil
 		})
 

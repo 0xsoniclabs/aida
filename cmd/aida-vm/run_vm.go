@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,7 +44,9 @@ func RunVm(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer aidaDb.Close()
+	defer func(aidaDb db.BaseDB) {
+		err = errors.Join(err, aidaDb.Close())
+	}(aidaDb)
 
 	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()

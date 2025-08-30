@@ -18,6 +18,8 @@ package trace
 
 import (
 	"math/big"
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -29,10 +31,11 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
-
-var testingAddress = common.Address{1}
 
 func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -51,8 +54,10 @@ func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		Run(0, 1, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 1, Data: substatecontext.NewTxContext(testTx)})
+				err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
+				assert.NoError(t, err)
+				err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 1, Data: substatecontext.NewTxContext(testTx)})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -96,7 +101,8 @@ func TestSdbReplaySubstate_StateDbPrepperIsAddedIfDbImplIsMemory(t *testing.T) {
 		Run(0, 1, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
+				err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 0, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -104,7 +110,8 @@ func TestSdbReplaySubstate_StateDbPrepperIsAddedIfDbImplIsMemory(t *testing.T) {
 		Run(0, 0, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[[]operation.Operation]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[[]operation.Operation]{Block: 0, Transaction: 0, Data: testOperationsA})
+				err := consumer(executor.TransactionInfo[[]operation.Operation]{Block: 0, Transaction: 0, Data: testOperationsA})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -137,7 +144,8 @@ func TestSdbReplaySubstate_TxPrimerIsAddedIfDbImplIsNotMemory(t *testing.T) {
 		Run(1, 2, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 1, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
+				err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 1, Transaction: 0, Data: substatecontext.NewTxContext(testTx)})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -145,7 +153,8 @@ func TestSdbReplaySubstate_TxPrimerIsAddedIfDbImplIsNotMemory(t *testing.T) {
 		Run(1, 1, gomock.Any()).
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[[]operation.Operation]) error {
 			for i := from; i < to; i++ {
-				consumer(executor.TransactionInfo[[]operation.Operation]{Block: 1, Transaction: 0, Data: testOperationsA})
+				err := consumer(executor.TransactionInfo[[]operation.Operation]{Block: 1, Transaction: 0, Data: testOperationsA})
+				assert.NoError(t, err)
 			}
 			return nil
 		})
@@ -184,4 +193,29 @@ var testTx = &substate.Substate{
 	Result: &substate.Result{
 		GasUsed: 1,
 	},
+}
+
+func TestCmd_RunTraceReplaySubstateCommand(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	traceFile := path.Join(testDataDir, "trace.bin")
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir(path.Join(testDataDir, "sample-rlp-db"), aidaDbPath))
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&TraceReplaySubstateCommand}
+	args := utils.NewArgs("test").
+		Arg(TraceReplaySubstateCommand.Name).
+		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(utils.TraceFileFlag.Name, traceFile).
+		Flag(utils.WorkersFlag.Name, 1).
+		Arg("1").
+		Arg("1000").
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	assert.NoError(t, err)
 }

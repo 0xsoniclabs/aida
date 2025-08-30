@@ -17,6 +17,7 @@
 package updateset
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -50,7 +51,9 @@ func reportUpdateSetStats(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer udb.Close()
+	defer func(udb db.UpdateDB) {
+		err = errors.Join(err, udb.Close())
+	}(udb)
 
 	iter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
 	defer iter.Release()
