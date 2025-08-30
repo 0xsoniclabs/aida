@@ -38,6 +38,7 @@ var clonePatchCommand = cli.Command{
 		&utils.CompactDbFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
+		&utils.SubstateEncodingFlag,
 	},
 	Description: `
 Creates patch of aida-db for desired block range
@@ -67,7 +68,7 @@ func clonePatchAction(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb)
+	aidaDb, targetDb, err := openCloningDbs(cfg.AidaDb, cfg.TargetDb, cfg.SubstateEncoding)
 	if err != nil {
 		return err
 	}
@@ -84,7 +85,7 @@ func clonePatchAction(ctx *cli.Context) error {
 }
 
 // createPatchClone creates aida-db clonePatchCommand
-func createPatchClone(cfg *utils.Config, aidaDb, targetDb db.BaseDB, firstEpoch, lastEpoch uint64) error {
+func createPatchClone(cfg *utils.Config, aidaDb, targetDb db.SubstateDB, firstEpoch, lastEpoch uint64) error {
 	var cloneType = utils.PatchType
 	err := clone(cfg, aidaDb, targetDb, cloneType)
 	if err != nil {
