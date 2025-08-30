@@ -446,7 +446,10 @@ func (c *cloner) stop() {
 // readDataCustom retrieves data from source AidaDb based on given dbComponent
 func (c *cloner) readDataCustom() error {
 	if c.cloneComponent == dbcomponent.Substate || c.cloneComponent == dbcomponent.All {
-		c.read([]byte(db.CodeDBPrefix), 0, nil)
+		err := c.cloneCodes()
+		if err != nil {
+			return fmt.Errorf("cannot clone codes; %w", err)
+		}
 		c.readSubstate()
 	}
 
