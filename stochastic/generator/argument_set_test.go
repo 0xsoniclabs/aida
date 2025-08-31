@@ -1,18 +1,18 @@
-// Copyright 2024 Fantom Foundation
-// This file is part of Aida Testing Infrastructure for Sonic
-//
-// Aida is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Aida is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+// // Copyright 2024 Fantom Foundation
+// // This file is part of Aida Testing Infrastructure for Sonic
+// //
+// // Aida is free software: you can redistribute it and/or modify
+// // it under the terms of the GNU Lesser General Public License as published by
+// // the Free Software Foundation, either version 3 of the License, or
+// // (at your option) any later version.
+// //
+// // Aida is distributed in the hope that it will be useful,
+// // but WITHOUT ANY WARRANTY; without even the implied warranty of
+// // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// // GNU Lesser General Public License for more details.
+// //
+// // You should have received a copy of the GNU Lesser General Public License
+// // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
 package generator
 
@@ -280,5 +280,131 @@ func TestRandomAccessQueue(t *testing.T) {
 	}
 	if i := er.SampleQueue(); i < 1 || i >= statistics.QueueLen {
 		t.Fatalf("wrong randomized value")
+	}
+}
+
+type MockRandomizer struct {
+	SampleDistributionFunc func(n int64) int64
+	SampleQueueFunc      func() int
+}
+
+func (m *MockRandomizer) SampleDistribution(n int64) int64 {
+	if m.SampleDistributionFunc != nil {
+		return m.SampleDistributionFunc(n)
+	}
+	return 0
+}
+
+func (m *MockRandomizer) SampleQueue() int {
+	if m.SampleQueueFunc != nil {
+		return m.SampleQueueFunc()
+	}
+	return 1
+}
+
+func TestArgSetChooseNoArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	as := NewArgumentSet(1000, mockRandomizer)
+
+	_, err := as.Choose(statistics.NoArgID)
+	if err == nil {
+		t.Errorf("Expected an error for NoArgID, but got nil")
+	}
+}
+
+func TestArgSetChooseZeroArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	as := NewArgumentSet(1000, mockRandomizer)
+
+	_, err := as.Choose(statistics.ZeroArgID)
+	if err == nil {
+		t.Errorf("Expected an error for ZeroArgID, but got nil")
+	}
+}
+
+func TestArgSetChooseRandArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	as := NewArgumentSet(1000, mockRandomizer)
+
+	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
+		return 500
+	}
+	
+	val, err := as.Choose(statistics.RandArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for RandArgID: %v", err)
+	}
+	if val != 501 {
+		t.Errorf("Expected value 501 for RandArgID, but got %d", val)
+	}
+}
+
+func TestArgSetChoosePrevArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	as := NewArgumentSet(1000, mockRandomizer)
+
+	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
+		return 500
+	}
+
+	val, err := as.Choose(statistics.RandArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for RandArgID: %v", err)
+	}
+	if val != 501 {
+		t.Errorf("Expected value 499 for RandArgID, but got %d", val)
+	}
+
+	prev_val, err := as.Choose(statistics.PrevArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for PrevArgID: %v", err)
+	}
+	if prev_val != 501 {
+		t.Errorf("Expected value 501 for PrevArgID, but got %d", prev_val)
+	}
+}
+
+func TestArgSetChooseRecentArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	as := NewArgumentSet(1000, mockRandomizer)
+
+	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
+		return 500
+	}
+
+	rand_val, err := as.Choose(statistics.RandArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for RandArgID: %v", err)
+	}
+
+	val, err := as.Choose(statistics.RecentArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for RecentArgID: %v", err)
+	}
+	if val == rand_val {
+		t.Errorf("Expected value 501 for RecentArgID, but got %d", val)
+	}
+}
+
+func TestArgSetRemove(t *testing.T) {
+	as := NewArgumentSet(minCardinality+10, &MockRandomizer{})
+
+	err := as.Remove(5)
+	if err != nil {
+		t.Errorf("Unexpected error when removing a valid argument: %v", err)
+	}
+	if as.n != minCardinality+9 {
+		t.Errorf("Expected cardinality to be %d after removing an argument, but got %d", minCardinality+9, as.n)
+	}
+
+	err = as.Remove(minCardinality + 10)
+	if err == nil {
+		t.Errorf("Expected an error when removing an argument that is out of range, but got nil")
+	}
+
+	as.n = minCardinality
+	err = as.Remove(5)
+	if err == nil {
+		t.Errorf("Expected an error when removing an argument that would make the cardinality too low, but got nil")
 	}
 }
