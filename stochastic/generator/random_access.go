@@ -57,7 +57,7 @@ func NewRandomAccess(n int64, rand Randomizer) *RandomAccess {
 
 // NextIndex returns the next random value for the given argument class
 func (a *RandomAccess) NextIndex(class int) (int64, error) {
-	switch class {
+    switch class {
 
 	case statistics.NoArgID:
 		return 0, fmt.Errorf("NextIndex: illegal invocation for no-argument class")
@@ -95,13 +95,13 @@ func (a *RandomAccess) NextIndex(class int) (int64, error) {
 		return v + 1, nil
 
 	// return the first position in the queue
-	case statistics.RecentValueID:
-		if v, err := a.recentQ(); err != nil {
-			a.placeQ(v)
-			return v + 1, nil
-		} else {
-			return 0, err
-		}
+    case statistics.RecentValueID:
+        if v, err := a.recentQ(); err == nil {
+            a.placeQ(v)
+            return v + 1, nil
+        } else {
+            return 0, err
+        }
 
 	default:
 		return 0, fmt.Errorf("Unknown argument class")

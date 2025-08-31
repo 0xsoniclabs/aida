@@ -319,10 +319,30 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		rg    = ss.rg
 	)
 
-	// fetch indexes from index access generators
-	addrIdx, _ := ss.contracts.NextIndex(addrCl)
-	keyIdx, _ := ss.keys.NextIndex(keyCl)
-	valueIdx, _ := ss.values.NextIndex(valueCl)
+    // fetch indexes from index access generators only when an argument is required
+    var addrIdx int64
+    var keyIdx int64
+    var valueIdx int64
+    var err error
+
+    if addrCl != statistics.NoArgID {
+        addrIdx, err = ss.contracts.NextIndex(addrCl)
+        if err != nil {
+            ss.log.Fatalf("failed to generate address index: %v", err)
+        }
+    }
+    if keyCl != statistics.NoArgID {
+        keyIdx, err = ss.keys.NextIndex(keyCl)
+        if err != nil {
+            ss.log.Fatalf("failed to generate key index: %v", err)
+        }
+    }
+    if valueCl != statistics.NoArgID {
+        valueIdx, err = ss.values.NextIndex(valueCl)
+        if err != nil {
+            ss.log.Fatalf("failed to generate value index: %v", err)
+        }
+    }
 
 	// convert index to address/hashes
 	if addrCl != statistics.NoArgID {

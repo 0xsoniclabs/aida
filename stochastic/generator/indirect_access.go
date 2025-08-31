@@ -49,23 +49,27 @@ func NewIndirectAccess(ra *RandomAccess) *IndirectAccess {
 
 // NextIndex returns the next index value based on the provided class.
 func (a *IndirectAccess) NextIndex(class int) (int64, error) {
-	if v, err := a.randAcc.NextIndex(class); err != nil {
-		if class == statistics.ZeroValueID {
-			return v, nil
-		} else if class == statistics.NewValueID {
-			if v != a.randAcc.n {
-				panic("unexpected nextIndex result.")
-			}
-			a.ctr++
-			v := a.ctr
-			a.translation = append(a.translation, v)
-			return v, nil
-		} else {
-			return a.translation[v-1], nil
-		}
-	} else {
-		return 0, err
-	}
+    v, err := a.randAcc.NextIndex(class)
+    if err != nil {
+        return 0, err
+    }
+
+    switch class {
+    case statistics.ZeroValueID:
+        return 0, nil
+
+    case statistics.NewValueID:
+        a.ctr++
+        nv := a.ctr
+        a.translation = append(a.translation, nv)
+        return nv, nil
+
+    default:
+        if v <= 0 || int(v) > len(a.translation) {
+            return 0, errors.New("translation index out of range")
+        }
+        return a.translation[v-1], nil
+    }
 }
 
 // DeleteIndex deletes an indirect index.
