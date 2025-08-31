@@ -232,8 +232,7 @@ func downloadFile(inputUrl, output string) (err error) {
 	}
 	return nil
 }
-
-func extractTarGz(tarGzFile, outputFolder string) (err error) {
+func extractTarGz(tarGzFile, outputFolder string) error {
 	// Open the tar.gz file
 	file, err := os.Open(tarGzFile)
 	if err != nil {
@@ -255,12 +254,6 @@ func extractTarGz(tarGzFile, outputFolder string) (err error) {
 	// Create the tar reader
 	tr := tar.NewReader(gr)
 
-	// Get the absolute, cleaned output folder to prevent path traversal
-	absOutputFolder, err := filepath.Abs(outputFolder)
-	if err != nil {
-		return err
-	}
-
 	// Extract the files from the tar reader
 	for {
 		header, err := tr.Next()
@@ -273,13 +266,20 @@ func extractTarGz(tarGzFile, outputFolder string) (err error) {
 		}
 
 		// Determine the output file path
-		targetPath, err := filepath.Abs(filepath.Join(absOutputFolder, header.Name))
+		targetPath, err := filepath.Abs(filepath.Join(outputFolder, header.Name))
 		if err != nil {
 			return err
 		}
-		// Ensure the targetPath is within the absOutputFolder (no traversal allowed)
-		if !strings.HasPrefix(targetPath, absOutputFolder+string(os.PathSeparator)) && targetPath != absOutputFolder {
-			return fmt.Errorf("illegal file path in archive: %s", header.Name)
+
+		// Make sure that path does not contain ".."
+		if strings.Contains(targetPath, "..") {
+			return fmt.Errorf("tarfile is attempting to use path containing ..: %s", targetPath)
+		}
+
+		// Make sure that output file does not overwrite existing files
+		_, err = os.Stat(targetPath)
+		if err == nil || os.IsExist(err) {
+			return fmt.Errorf("tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
 		}
 
 		// Check if it's a directory
