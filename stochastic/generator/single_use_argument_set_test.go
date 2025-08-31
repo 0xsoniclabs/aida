@@ -17,10 +17,11 @@
 package generator
 
 import (
-	"math/rand"
+	"errors"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/golang/mock/gomock"
 )
 
 // containsQ checks whether an element is in the queue (ignoring the previous value).
@@ -35,13 +36,13 @@ func containsIndirectQ(slice []int64, x int64) bool {
 
 // TestSingleUseArgumentSetSimple tests indirect access generator for indexes.
 func TestSingleUseArgumentSetSimple(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf)))
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(n, mockRandomizer))
 
 	// check no argument class (must be always -1)
 	if _, err := ia.Choose(statistics.NoArgID); err == nil {
@@ -67,13 +68,13 @@ func TestSingleUseArgumentSetSimple(t *testing.T) {
 
 // TestSingleUseArgumentSetRecentAccess tests previous accesses
 func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	ra := NewReusableArgumentSet(n, mockRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 
 	// check a new value (must be equal to the number of elements
@@ -103,17 +104,19 @@ func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
 
 // TestSingleUseArgumentSetDeleteIndex tests deletion of an index
 func TestIndirectAcessDeleteIndex(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	ra := NewReusableArgumentSet(n, mockRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 	idx := int64(500) // choose an index in the middle of the range
 
 	// delete previous element
+	// expect a randomizer call during removal to refresh queue entries
+	mockRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
 	err := ia.Remove(idx)
 	if err != nil {
 		t.Fatalf("Deletion failed (%v).", err)
@@ -125,4 +128,136 @@ func TestIndirectAcessDeleteIndex(t *testing.T) {
 			t.Fatalf("index still exists.")
 		}
 	}
+}
+
+func TestSingleUseChoosePropagatesUnderlyingError(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    chooseErr := errors.New("choose failed")
+    mockAS.EXPECT().Choose(statistics.PrevArgID).Return(ArgumentType(0), chooseErr)
+
+    if _, err := ia.Choose(statistics.PrevArgID); err == nil {
+        t.Fatalf("expected error to propagate from underlying Choose")
+    }
+}
+
+func TestSingleUseChooseTranslationIndexOutOfRangeLow(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    mockAS.EXPECT().Choose(statistics.PrevArgID).Return(ArgumentType(0), nil)
+
+    if _, err := ia.Choose(statistics.PrevArgID); err == nil {
+        t.Fatalf("expected translation index out of range error for v<=0")
+    }
+}
+
+func TestSingleUseChooseTranslationIndexOutOfRangeHigh(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    // len(translation) == 5, return 6 to exceed bounds safely
+    mockAS.EXPECT().Choose(statistics.PrevArgID).Return(ArgumentType(6), nil)
+
+    if _, err := ia.Choose(statistics.PrevArgID); err == nil {
+        t.Fatalf("expected translation index out of range error for v>len(translation)")
+    }
+}
+
+func TestSingleUseChooseDefaultReturnsTranslatedValue(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    mockAS.EXPECT().Choose(statistics.PrevArgID).Return(ArgumentType(2), nil)
+
+    v, err := ia.Choose(statistics.PrevArgID)
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+    if v != 2 {
+        t.Fatalf("expected translated value 2, got %d", v)
+    }
+}
+
+func TestSingleUseRemoveZeroIsNoop(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    if err := ia.Remove(0); err != nil {
+        t.Fatalf("expected nil error for k==0, got %v", err)
+    }
+}
+
+func TestSingleUseRemoveIndexNotFound(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    if err := ia.Remove(ArgumentType(999)); err == nil {
+        t.Fatalf("expected error when removing non-existing index")
+    }
+}
+
+func TestSingleUseRemovePropagatesUnderlyingError(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    // Removing existing translated index 3 should call underlying Remove(3)
+    remErr := errors.New("remove failed")
+    mockAS.EXPECT().Remove(ArgumentType(3)).Return(remErr)
+
+    if err := ia.Remove(ArgumentType(3)); err == nil {
+        t.Fatalf("expected error propagation from underlying Remove")
+    }
+}
+
+func TestSingleUseRemoveSuccess(t *testing.T) {
+    mockCtl := gomock.NewController(t)
+    defer mockCtl.Finish()
+
+    mockAS := NewMockArgumentSet(mockCtl)
+    mockAS.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
+
+    ia := NewSingleUseArgumentSet(mockAS)
+
+    mockAS.EXPECT().Remove(ArgumentType(1)).Return(nil)
+
+    if err := ia.Remove(ArgumentType(1)); err != nil {
+        t.Fatalf("expected nil error on successful remove, got %v", err)
+    }
 }
