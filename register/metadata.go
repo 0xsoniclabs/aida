@@ -104,12 +104,12 @@ func makeRunMetadata(connection string, fetchCfg FetchInfo, fetchEnv FetchInfo) 
 	return rm, warnings
 }
 
-func (rm *RunMetadata) Print() {
-	rm.Ps.Print()
+func (rm *RunMetadata) Print() error {
+	return rm.Ps.Print()
 }
 
-func (rm *RunMetadata) Close() {
-	rm.Ps.Close()
+func (rm *RunMetadata) Close() error {
+	return rm.Ps.Close()
 }
 
 // fetchEnvInfo fetches environment info by executing a number of linux commands.

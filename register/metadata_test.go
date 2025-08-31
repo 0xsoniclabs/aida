@@ -38,7 +38,8 @@ func TestRunMetadata_Print(t *testing.T) {
 		Ps:   utils.NewCustomPrinters([]utils.Printer{mockPrinter}),
 	}
 	mockPrinter.EXPECT().Print()
-	meta.Print()
+	err := meta.Print()
+	assert.NoError(t, err)
 }
 
 func TestRunMetadata_Close(t *testing.T) {
@@ -51,7 +52,8 @@ func TestRunMetadata_Close(t *testing.T) {
 		Ps:   utils.NewCustomPrinters([]utils.Printer{mockPrinter}),
 	}
 	mockPrinter.EXPECT().Close()
-	meta.Close()
+	err := meta.Close()
+	assert.NoError(t, err)
 }
 
 func TestRunMetadata_sqlite3(t *testing.T) {
