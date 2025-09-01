@@ -437,6 +437,9 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case GetStateID:
 		db.GetState(addr, key)
 
+	case GetStateAndCommittedStateID:
+		db.GetStateAndCommittedState(addr, key)
+
 	case GetStorageRootID:
 		db.GetStorageRoot(addr)
 
