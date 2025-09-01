@@ -20,13 +20,17 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/status-im/keycard-go/hexutils"
 )
 
@@ -34,6 +38,23 @@ const (
 	StateRootHashPrefix = "dbh"
 	BlockHashPrefix     = "bh"
 )
+
+// ClientInterface defines the methods that an RPC client must implement.
+type IRpcClient interface {
+	RegisterName(name string, receiver interface{}) error
+	SupportedModules() (map[string]string, error)
+	Close()
+	SetHeader(key, value string)
+	Call(result interface{}, method string, args ...interface{}) error
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
+	BatchCall(b []rpc.BatchElem) error
+	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
+	Notify(ctx context.Context, method string, args ...interface{}) error
+	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
+	SupportsSubscriptions() bool
+}
 
 type HashProvider interface {
 	GetStateRootHash(blockNumber int) (common.Hash, error)
@@ -83,6 +104,104 @@ func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 	return common.BytesToHash(stateRoot), nil
 }
 
+// StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
+func StateAndBlockHashScraper(ctx context.Context, chainId ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
+	client, err := getClient(ctx, chainId, clientDb, log)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	var i = firstBlock
+
+	// If firstBlock is 0, we need to get the state root for block 1 and save it as the state root for block 0
+	// this is because the correct state root for block 0 is not available from the rpc node (at least in fantom mainnet and testnet)
+	if firstBlock == 0 {
+		block, err := getBlockByNumber(client, "0x1")
+		if err != nil {
+			return err
+		}
+
+		if block == nil {
+			return fmt.Errorf("block 1 not found")
+		}
+
+		err = SaveStateRoot(db, "0x0", block["stateRoot"].(string))
+		if err != nil {
+			return err
+		}
+		err = SaveBlockHash(db, "0x1", block["hash"].(string))
+		if err != nil {
+			return err
+		}
+		i++
+	}
+
+	for ; i <= lastBlock; i++ {
+		blockNumber := fmt.Sprintf("0x%x", i)
+		block, err := getBlockByNumber(client, blockNumber)
+		if err != nil {
+			return err
+		}
+
+		if block == nil {
+			return fmt.Errorf("block %d not found", i)
+		}
+
+		err = SaveStateRoot(db, blockNumber, block["stateRoot"].(string))
+		if err != nil {
+			return err
+		}
+		err = SaveBlockHash(db, blockNumber, block["hash"].(string))
+		if err != nil {
+			return err
+		}
+
+		if i%10000 == 0 {
+			log.Infof("Scraping block %d done!\n", i)
+		}
+	}
+
+	return nil
+}
+
+// getClient returns a rpc/ipc client
+func getClient(ctx context.Context, chainId ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
+	var client *rpc.Client
+	var err error
+
+	// try both sonic and geth ipcs
+	ipcPaths := []string{
+		clientDb + "/sonic.ipc",
+		clientDb + "/geth.ipc",
+	}
+	for _, ipcPath := range ipcPaths {
+		_, errIpc := os.Stat(ipcPath)
+		if errIpc == nil {
+			// ipc file exists
+			client, err = rpc.DialIPC(ctx, ipcPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to connect to IPC at %s: %v", ipcPath, err)
+			}
+			log.Infof("Connected to IPC at %s", ipcPath)
+			return client, err
+		}
+	}
+
+	// if ipc file does not exist, try to connect to RPC
+	var provider string
+	provider, err = GetProvider(chainId)
+	if err != nil {
+		return nil, err
+	}
+	client, err = rpc.Dial(provider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to the RPC client at %s: %v", provider, err)
+	}
+	log.Infof("Connected to RPC at %s", provider)
+	return client, nil
+}
+
 // SaveStateRoot saves the state root hash to the database
 func SaveStateRoot(db db.BaseDB, blockNumber string, stateRoot string) error {
 	fullPrefix := StateRootHashPrefix + blockNumber
@@ -105,6 +224,16 @@ func SaveBlockHash(db db.BaseDB, blockNumber string, hash string) error {
 		return fmt.Errorf("unable to put state hash for block %s: %v", blockNumber, err)
 	}
 	return nil
+}
+
+// getBlockByNumber get block from the rpc node
+func getBlockByNumber(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
+	var block map[string]interface{}
+	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block %s: %v", blockNumber, err)
+	}
+	return block, nil
 }
 
 // StateHashKeyToUint64 converts a state hash key to a uint64
