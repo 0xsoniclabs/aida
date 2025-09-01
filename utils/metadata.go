@@ -90,7 +90,7 @@ type Metadata interface {
 	// GenerateMetadata generates new or updates metadata in AidaDb.
 	GenerateMetadata() error
 	// Merge merges source metadata into target metadata if its possible.
-	Merge(AidaDbMetadata) error
+	Merge(Metadata) error
 	// Delete deletes metadata from AidaDb.
 	Delete()
 
@@ -103,6 +103,8 @@ type Metadata interface {
 	GetTimestamp() uint64
 	GetDbType() AidaDbType
 	GetDbHash() []byte
+	GetUpdatesetInterval() uint64
+	GetUpdatesetSize() uint64
 
 	// Setters
 	SetFirstBlock(uint64) error
@@ -120,14 +122,15 @@ type Metadata interface {
 
 // AidaDbMetadata holds any information about AidaDb needed for putting it into the Db
 type AidaDbMetadata struct {
-	Db                    db.SubstateDB
-	log                   logger.Logger
-	FirstBlock, LastBlock *uint64
-	FirstEpoch, LastEpoch *uint64
-	ChainId               ChainID
-	DbType                AidaDbType
-	timestamp             *uint64
-	dbHash                []byte
+	Db                               db.SubstateDB
+	log                              logger.Logger
+	FirstBlock, LastBlock            *uint64
+	FirstEpoch, LastEpoch            *uint64
+	updateSetSize, updateSetInterval *uint64
+	ChainId                          ChainID
+	DbType                           AidaDbType
+	timestamp                        *uint64
+	dbHash                           []byte
 }
 
 func (md *AidaDbMetadata) GenerateMetadata() error {
@@ -174,7 +177,7 @@ func NewAidaDbMetadata(db db.SubstateDB, logLevel string) Metadata {
 	}
 }
 
-func (md *AidaDbMetadata) Merge(src AidaDbMetadata) error {
+func (md *AidaDbMetadata) Merge(src Metadata) error {
 	targetChainID := md.GetChainID()
 	srcChainID := src.GetChainID()
 	if targetChainID != 0 {
@@ -263,10 +266,10 @@ func (md *AidaDbMetadata) GetFirstBlock() uint64 {
 	firstBlockBytes, err := md.Db.Get([]byte(FirstBlockPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return -1
+			return 0
 		}
 		md.log.Criticalf("cannot get first block from metadata; %v", err)
-		return -1
+		return 0
 	}
 
 	blk := bigendian.BytesToUint64(firstBlockBytes)
@@ -282,10 +285,10 @@ func (md *AidaDbMetadata) GetLastBlock() uint64 {
 	lastBlockBytes, err := md.Db.Get([]byte(LastBlockPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return -1
+			return 0
 		}
 		md.log.Criticalf("cannot get last block from metadata; %v", err)
-		return -1
+		return 0
 	}
 	blk := bigendian.BytesToUint64(lastBlockBytes)
 	md.LastBlock = &blk
@@ -299,10 +302,10 @@ func (md *AidaDbMetadata) GetFirstEpoch() uint64 {
 	firstEpochBytes, err := md.Db.Get([]byte(FirstEpochPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return -1
+			return 0
 		}
 		md.log.Criticalf("cannot get first epoch from metadata; %v", err)
-		return -1
+		return 00
 	}
 	blk := bigendian.BytesToUint64(firstEpochBytes)
 	md.FirstEpoch = &blk
@@ -316,10 +319,10 @@ func (md *AidaDbMetadata) GetLastEpoch() uint64 {
 	lastEpochBytes, err := md.Db.Get([]byte(LastEpochPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return -1
+			return 0
 		}
 		md.log.Criticalf("cannot get last epoch from metadata; %v", err)
-		return -1
+		return 0
 	}
 	blk := bigendian.BytesToUint64(lastEpochBytes)
 	md.LastEpoch = &blk
@@ -762,4 +765,39 @@ func (md *AidaDbMetadata) SetUpdatesetSize(val uint64) error {
 	}
 	md.log.Info("METADATA: Updateset size saved successfully")
 	return nil
+}
+func (md *AidaDbMetadata) GetUpdatesetInterval() uint64 {
+	if md.updateSetInterval != nil {
+		return *md.updateSetInterval
+	}
+	bytes, err := md.Db.Get([]byte(db.UpdatesetIntervalKey))
+	if err != nil {
+		if errors.Is(err, leveldb.ErrNotFound) {
+			return 0
+		}
+		md.log.Criticalf("cannot get updateset interval from metadata; %v", err)
+		return 0
+	}
+
+	interval := bigendian.BytesToUint64(bytes)
+	md.updateSetInterval = &interval
+	return interval
+}
+
+func (md *AidaDbMetadata) GetUpdatesetSize() uint64 {
+	if md.updateSetSize != nil {
+		return *md.updateSetSize
+	}
+	bytes, err := md.Db.Get([]byte(db.UpdatesetSizeKey))
+	if err != nil {
+		if errors.Is(err, leveldb.ErrNotFound) {
+			return 0
+		}
+		md.log.Criticalf("cannot get updateset size from metadata; %v", err)
+		return 0
+	}
+
+	size := bigendian.BytesToUint64(bytes)
+	md.updateSetSize = &size
+	return size
 }

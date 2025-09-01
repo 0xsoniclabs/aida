@@ -39,19 +39,19 @@ import (
 )
 
 // OpenSourceDatabases opens all databases required for merge
-func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
+func OpenSourceDatabases(sourceDbPaths []string) ([]db.SubstateDB, error) {
 	if len(sourceDbPaths) < 1 {
 		return nil, fmt.Errorf("no source database were specified")
 	}
 
-	var sourceDbs []db.BaseDB
+	var sourceDbs []db.SubstateDB
 	for i := 0; i < len(sourceDbPaths); i++ {
 		path := sourceDbPaths[i]
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("source database %s; doesn't exist", path)
 		}
-		db, err := db.NewReadOnlyBaseDB(path)
+		db, err := db.NewReadOnlySubstateDB(path)
 		if err != nil {
 			return nil, fmt.Errorf("source database %s; error: %v", path, err)
 		}
@@ -84,19 +84,13 @@ func GetDbSize(db db.BaseDB) uint64 {
 }
 
 // PrintMetadata from given AidaDb
-func PrintMetadata(pathToDb string) error {
+func PrintMetadata(aidaDb db.BaseDB) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
-	base, err := db.NewReadOnlyBaseDB(pathToDb)
-	if err != nil {
-		return err
-	}
-	defer MustCloseDB(base)
-
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
 	log.Notice("AIDA-DB INFO:")
 
-	if err = printDbType(md); err != nil {
+	if err := printDbType(md); err != nil {
 		return err
 	}
 
@@ -143,19 +137,19 @@ func PrintMetadata(pathToDb string) error {
 }
 
 // printUpdateSetInfo from given AidaDb
-func printUpdateSetInfo(m *utils.AidaDbMetadata) {
+func printUpdateSetInfo(m utils.Metadata) {
 	log := logger.NewLogger("INFO", "Print-Metadata")
 
 	log.Notice("UPDATE-SET INFO:")
 
-	intervalBytes, err := m.Db.Get([]byte(db.UpdatesetIntervalKey))
+	intervalBytes, err := m.GetUpdatesetInterval()
 	if err != nil {
 		log.Warning("Value for update-set interval does not exist in given Dbs metadata")
 	} else {
 		log.Infof("Interval: %v blocks", bigendian.BytesToUint64(intervalBytes))
 	}
 
-	sizeBytes, err := m.Db.Get([]byte(db.UpdatesetSizeKey))
+	sizeBytes, err := m.GetUpdatesetSize()
 	if err != nil {
 		log.Warning("Value for update-set size does not exist in given Dbs metadata")
 	} else {
