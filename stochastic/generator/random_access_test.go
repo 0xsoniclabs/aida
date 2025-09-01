@@ -78,11 +78,11 @@ func TestRandomAccessSimple(t *testing.T) {
 	}
 
 	// create a uniform distribution for random generator and check recent access
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		qpdf[i] = 1.0 / float64(statistics.QueueLen)
 	}
 	ra = NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf))
-	for i := 0; i < minSize; i++ {
+	for range minSize {
 		copy(queue, ra.queue)
 		if idx, err := ra.NextIndex(statistics.RecentValueID); idx < 1 || idx > ra.n || !containsQ(queue, idx-1) || err != nil {
 			t.Fatalf("index access not in queue")
@@ -175,7 +175,7 @@ func checkUniformQueueSelection(qpdf []float64, numSteps int) bool {
 	counts := make([]int64, statistics.QueueLen)
 
 	// select numSteps queue position and count there occurrence
-	for steps := 0; steps < numSteps; steps++ {
+	for range numSteps {
 		idx := ra.rand.SampleQueue()
 		counts[idx]++
 	}
@@ -211,7 +211,7 @@ func checkUniformQueueSelection(qpdf []float64, numSteps int) bool {
 func TestRandomAccessRandQPos(t *testing.T) {
 	// create a uniform queue distribution
 	qpdf := make([]float64, statistics.QueueLen)
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		qpdf[i] = 1.0 / float64(statistics.QueueLen)
 	}
 
@@ -222,7 +222,7 @@ func TestRandomAccessRandQPos(t *testing.T) {
 
 	// create a truncated geometric queue distribution
 	alpha := 0.4
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		qpdf[i] = (1 - alpha) *
 			math.Pow(alpha, statistics.QueueLen) /
 			(1.0 - math.Pow(alpha, statistics.QueueLen)) *
@@ -263,7 +263,7 @@ func TestRandomAccessQueue(t *testing.T) {
 	rg := rand.New(rand.NewSource(999))
 
 	qpdf := make([]float64, statistics.QueueLen)
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		qpdf[i] = 1.0 / float64(statistics.QueueLen)
 	}
 	er := NewExpRandomizer(rg, 5.0, qpdf)

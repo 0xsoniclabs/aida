@@ -48,7 +48,7 @@ func NewRandomAccess(n int64, rand Randomizer) *RandomAccess {
 		return nil
 	}
 	queue := []int64{}
-	for i := 0; i < statistics.QueueLen; i++ {
+	for range statistics.QueueLen {
 		queue = append(queue, rand.RandRange(1, n))
 	}
 	return &RandomAccess{
@@ -128,7 +128,7 @@ func (a *RandomAccess) DeleteIndex(v int64) error {
 	// that exceed the new range limit. They need to
 	// be replaced.
 	j := a.rand.Sample(a.n - 1)
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		if a.queue[i] >= a.n {
 			a.queue[i] = j
 		}
@@ -138,7 +138,7 @@ func (a *RandomAccess) DeleteIndex(v int64) error {
 
 // findQElem finds an element in the queue.
 func (a *RandomAccess) findQElem(elem int64) bool {
-	for i := 0; i < statistics.QueueLen; i++ {
+	for i := range statistics.QueueLen {
 		if a.queue[i] == elem {
 			return true
 		}
