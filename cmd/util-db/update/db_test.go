@@ -169,7 +169,7 @@ func TestUpdate_update_downloadFails(t *testing.T) {
 
 func TestUpdate_mergeToExistingAidaDb_ClassicPatch(t *testing.T) {
 	// Create patch with a substate
-	want, patchPath := utils.CreateTestSubstateDb(t)
+	want, patchPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	// Open target db and fill it
 	targetDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/target-db")
 	require.NoError(t, err)
@@ -218,7 +218,7 @@ func TestUpdate_mergeToExistingAidaDb_ClassicPatch(t *testing.T) {
 }
 
 func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
-	ss, targetDbPath := utils.CreateTestSubstateDb(t)
+	ss, targetDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	// Create patch with a state root
 	patchPath := t.TempDir() + stateHashPatchFileName
 	patchDb, err := db.NewDefaultBaseDB(patchPath)
@@ -253,8 +253,8 @@ func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
 }
 
 func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
-	want, patchPath := utils.CreateTestSubstateDb(t)
-	_, targetPath := utils.CreateTestSubstateDb(t)
+	want, patchPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+	_, targetPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	targetDb, err := db.NewDefaultBaseDB(targetPath)
 	require.NoError(t, err)
 	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
