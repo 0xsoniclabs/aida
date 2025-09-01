@@ -111,6 +111,12 @@ func (s *MockStateDB) SetNonce(addr common.Address, value uint64, reason tracing
 	s.recording = append(s.recording, Record{SetNonceID, []any{addr, value, reason}})
 }
 
+func (s *MockStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	state := s.GetState(addr, key)
+	committed := s.GetCommittedState(addr, key)
+	return state, committed
+}
+
 func (s *MockStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
 	s.recording = append(s.recording, Record{GetCommittedStateID, []any{addr, key}})
 	return common.Hash{}

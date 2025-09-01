@@ -234,7 +234,9 @@ func (db *inMemoryStateDB) GetCommittedState(addr common.Address, key common.Has
 }
 
 func (db *inMemoryStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
-	panic("not implemented")
+	committed := db.GetCommittedState(addr, key)
+	state := db.GetState(addr, key)
+	return state, committed
 }
 
 func (db *inMemoryStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
