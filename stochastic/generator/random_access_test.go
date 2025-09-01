@@ -46,7 +46,7 @@ func TestRandomAccessSimple(t *testing.T) {
 	ra := NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf))
 
 	// check no argument class (must be always -1)
-	if _, err := ra.NextIndex(statistics.NoArgID); err != nil {
+	if _, err := ra.NextIndex(statistics.NoArgID); err == nil {
 		t.Fatalf("expected an invalid index")
 	}
 
