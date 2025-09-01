@@ -41,26 +41,26 @@ func TestIndirectAccessSimple(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ia := NewIndirectAccess(NewRandomAccess(rg, 1000, 5.0, qpdf))
+	ia := NewIndirectAccess(NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf)))
 
 	// check no argument class (must be always -1)
-	if ia.NextIndex(statistics.NoArgID) != -1 {
+	if _, err := ia.NextIndex(statistics.NoArgID); err != nil {
 		t.Fatalf("expected an invalid index")
 	}
 
 	// check zero argument class (must be zero)
-	if ia.NextIndex(statistics.ZeroValueID) != 0 {
+	if idx, err := ia.NextIndex(statistics.ZeroValueID); idx != 0 || err != nil {
 		t.Fatalf("expected an invalid index")
 	}
 
 	// check a new value (must be equal to the number of elements
 	// in the index set and must be greater than zero).
-	if idx := ia.NextIndex(statistics.NewValueID); idx != ia.NumElem() || idx < 1 {
+	if idx, err := ia.NextIndex(statistics.NewValueID); idx != ia.NumElem() || idx < 1 || err != nil {
 		t.Fatalf("expected a new index (%v, %v)", idx, ia.NumElem())
 	}
 
 	// run check again.
-	if idx := ia.NextIndex(statistics.NewValueID); idx != ia.NumElem() || idx < 1 {
+	if idx, err := ia.NextIndex(statistics.NewValueID); idx != ia.NumElem() || idx < 1 || err != nil {
 		t.Fatalf("expected a new index (%v, %v)", idx, ia.NumElem())
 	}
 
@@ -69,14 +69,14 @@ func TestIndirectAccessSimple(t *testing.T) {
 	// in the range between 1 and ra.num).
 	queue := make([]int64, statistics.QueueLen)
 	copy(queue, ia.randAcc.queue)
-	if idx := ia.NextIndex(statistics.PreviousValueID); ia.translation[ia.randAcc.lastQ()] != idx || idx < 1 || idx > ia.NumElem() {
+	if idx, err := ia.NextIndex(statistics.PreviousValueID); ia.translation[ia.randAcc.lastQ()] != idx || idx < 1 || idx > ia.NumElem() || err != nil {
 		t.Fatalf("accessing previous index failed (%v, %v)", idx, ia.translation[ia.randAcc.lastQ()])
 	}
 
 	// check recent value (must return an element in the queue excluding
 	// the first element).
 	copy(queue, ia.randAcc.queue)
-	if idx := ia.NextIndex(statistics.RecentValueID); idx != -1 {
+	if idx, err := ia.NextIndex(statistics.RecentValueID); idx != -1 || err != nil {
 		t.Fatalf("index access must fail because no distribution was specified")
 	}
 
@@ -85,15 +85,15 @@ func TestIndirectAccessSimple(t *testing.T) {
 		qpdf[i] = 1.0 / float64(statistics.QueueLen)
 	}
 
-	ia = NewIndirectAccess(NewRandomAccess(rg, 1000, 5.0, qpdf))
+	ia = NewIndirectAccess(NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf)))
 	copy(queue, ia.randAcc.queue)
-	if idx := ia.NextIndex(statistics.RecentValueID); idx < 1 || idx > ia.NumElem() || !containsIndirectQ(queue, idx-1) {
+	if idx, err := ia.NextIndex(statistics.RecentValueID); idx < 1 || idx > ia.NumElem() || !containsIndirectQ(queue, idx-1) || err != nil {
 		t.Fatalf("index access not in queue")
 	}
 
 	// check random access (must not be contained in queue)
 	copy(queue, ia.randAcc.queue)
-	if idx := ia.NextIndex(statistics.RandomValueID); idx < 1 || idx > ia.NumElem() || containsIndirectQ(queue, idx-1) || queue[0]+1 == idx {
+	if idx, err := ia.NextIndex(statistics.RandomValueID); idx < 1 || idx > ia.NumElem() || containsIndirectQ(queue, idx-1) || queue[0]+1 == idx || err != nil {
 		t.Fatalf("index access must fail because no distribution was specified")
 	}
 }
@@ -106,30 +106,30 @@ func TestIndirectAccessRecentAccess(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewRandomAccess(rg, 1000, 5.0, qpdf)
+	ra := NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf))
 	ia := NewIndirectAccess(ra)
 
 	// check a new value (must be equal to the number of elements
 	// in the index set and must be greater than zero).
-	idx1 := ia.NextIndex(statistics.NewValueID)
-	if idx1 != ra.numElem || idx1 < 1 {
+	idx1, err1 := ia.NextIndex(statistics.NewValueID)
+	if idx1 != ra.n || idx1 < 1 || err1 != nil {
 		t.Fatalf("expected a new index")
 	}
-	idx2 := ia.NextIndex(statistics.PreviousValueID)
-	if idx1 != idx2 {
+	idx2, err2 := ia.NextIndex(statistics.PreviousValueID)
+	if idx1 != idx2 || err2 != nil {
 		t.Fatalf("previous index access failed. (%v, %v)", idx1, idx2)
 	}
-	idx3 := ia.NextIndex(statistics.PreviousValueID)
-	if idx2 != idx3 {
+	idx3, err3 := ia.NextIndex(statistics.PreviousValueID)
+	if idx2 != idx3 || err3 != nil {
 		t.Fatalf("previous index access failed.")
 	}
 	// in the index set and must be greater than zero).
-	idx4 := ia.NextIndex(statistics.NewValueID)
-	if idx4 != ra.numElem || idx4 < 1 {
+	idx4, err4 := ia.NextIndex(statistics.NewValueID)
+	if idx4 != ra.n || idx4 < 1 || err4 != nil {
 		t.Fatalf("expected a new index")
 	}
-	idx5 := ia.NextIndex(statistics.PreviousValueID)
-	if idx5 == idx3 {
+	idx5, err5 := ia.NextIndex(statistics.PreviousValueID)
+	if idx5 == idx3 || err5 != nil {
 		t.Fatalf("previous previous index access must not be identical.")
 	}
 }
@@ -142,7 +142,7 @@ func TestIndirectAcessDeleteIndex(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewRandomAccess(rg, 1000, 5.0, qpdf)
+	ra := NewRandomAccess(1000, NewExpRandomizer(rg, 5.0, qpdf))
 	ia := NewIndirectAccess(ra)
 	idx := int64(500) // choose an index in the middle of the range
 
