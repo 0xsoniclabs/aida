@@ -47,19 +47,19 @@ const (
 
 // stochasticState keeps the execution state for the stochastic simulation
 type stochasticState struct {
-	db             state.StateDB             // StateDB database
-	contracts      *generator.IndirectAccess // index access generator for contracts
-	keys           *generator.RandomAccess   // index access generator for keys
-	values         *generator.RandomAccess   // index access generator for values
-	snapshotLambda float64                   // lambda parameter for snapshot delta distribution
-	totalTx        uint64                    // total number of transactions
-	txNum          uint32                    // current transaction number
-	blockNum       uint64                    // current block number
-	syncPeriodNum  uint64                    // current sync-period number
-	snapshot       []int                     // stack of active snapshots
-	selfDestructed []int64                   // list of self destructed accounts
-	traceDebug     bool                      // trace-debug flag
-	rg             *rand.Rand                // random generator for sampling
+	db             state.StateDB                   // StateDB database
+	contracts      *generator.SingleUseArgumentSet // index access generator for contracts
+	keys           *generator.ArgumentSet          // index access generator for keys
+	values         *generator.ArgumentSet          // index access generator for values
+	snapshotLambda float64                         // lambda parameter for snapshot delta distribution
+	totalTx        uint64                          // total number of transactions
+	txNum          uint32                          // current transaction number
+	blockNum       uint64                          // current block number
+	syncPeriodNum  uint64                          // current sync-period number
+	snapshot       []int                           // stack of active snapshots
+	selfDestructed []int64                         // list of self destructed accounts
+	traceDebug     bool                            // trace-debug flag
+	rg             *rand.Rand                      // random generator for sampling
 	log            logger.Logger
 }
 
@@ -79,22 +79,22 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
 	// contract addresses can be deleted by suicide.)
-	contracts := generator.NewIndirectAccess(
-		generator.NewRandomAccess(
+	contracts := generator.NewSingleUseArgumentSet(
+		generator.NewArgumentSet(
 			e.Contracts.NumKeys,
 			generator.NewExpRandomizer(
 				rg,
 				e.Contracts.Lambda,
 				e.Contracts.QueueDistribution,
 			)))
-	keys := generator.NewRandomAccess(
+	keys := generator.NewArgumentSet(
 		e.Keys.NumKeys,
 		generator.NewExpRandomizer(
 			rg,
 			e.Keys.Lambda,
 			e.Keys.QueueDistribution,
 		))
-	values := generator.NewRandomAccess(
+	values := generator.NewArgumentSet(
 		e.Values.NumKeys,
 		generator.NewExpRandomizer(
 			rg,
@@ -247,7 +247,7 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 }
 
 // NewStochasticState creates a new state for execution StateDB operations
-func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.IndirectAccess, keys *generator.RandomAccess, values *generator.RandomAccess, snapshotLambda float64, log logger.Logger) stochasticState {
+func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.SingleUseArgumentSet, keys *generator.ArgumentSet, values *generator.ArgumentSet, snapshotLambda float64, log logger.Logger) stochasticState {
 
 	// return stochastic state
 	return stochasticState{
@@ -267,7 +267,7 @@ func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.In
 
 // prime StateDB accounts using account information
 func (ss *stochasticState) prime() error {
-	numInitialAccounts := ss.contracts.NumElem() + 1
+	numInitialAccounts := ss.contracts.Size() + 1
 	ss.log.Notice("Start priming...")
 	ss.log.Noticef("\tinitializing %v accounts\n", numInitialAccounts)
 	pt := utils.NewProgressTracker(int(numInitialAccounts), ss.log)
@@ -319,30 +319,30 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		rg    = ss.rg
 	)
 
-    // fetch indexes from index access generators only when an argument is required
-    var addrIdx int64
-    var keyIdx int64
-    var valueIdx int64
-    var err error
+	// fetch indexes from index access generators only when an argument is required
+	var addrIdx int64
+	var keyIdx int64
+	var valueIdx int64
+	var err error
 
-    if addrCl != statistics.NoArgID {
-        addrIdx, err = ss.contracts.NextIndex(addrCl)
-        if err != nil {
-            ss.log.Fatalf("failed to generate address index: %v", err)
-        }
-    }
-    if keyCl != statistics.NoArgID {
-        keyIdx, err = ss.keys.NextIndex(keyCl)
-        if err != nil {
-            ss.log.Fatalf("failed to generate key index: %v", err)
-        }
-    }
-    if valueCl != statistics.NoArgID {
-        valueIdx, err = ss.values.NextIndex(valueCl)
-        if err != nil {
-            ss.log.Fatalf("failed to generate value index: %v", err)
-        }
-    }
+	if addrCl != statistics.NoArgID {
+		addrIdx, err = ss.contracts.Choose(addrCl)
+		if err != nil {
+			ss.log.Fatalf("failed to generate address index: %v", err)
+		}
+	}
+	if keyCl != statistics.NoArgID {
+		keyIdx, err = ss.keys.Choose(keyCl)
+		if err != nil {
+			ss.log.Fatalf("failed to generate key index: %v", err)
+		}
+	}
+	if valueCl != statistics.NoArgID {
+		valueIdx, err = ss.values.Choose(valueCl)
+		if err != nil {
+			ss.log.Fatalf("failed to generate value index: %v", err)
+		}
+	}
 
 	// convert index to address/hashes
 	if addrCl != statistics.NoArgID {
@@ -617,7 +617,7 @@ func toHash(idx int64) common.Hash {
 func (ss *stochasticState) deleteAccounts() {
 	// remove account information when suicide was invoked in the block.
 	for _, addrIdx := range ss.selfDestructed {
-		if err := ss.contracts.DeleteIndex(addrIdx); err != nil {
+		if err := ss.contracts.Remove(addrIdx); err != nil {
 			ss.log.Fatal("failed deleting index")
 		}
 	}

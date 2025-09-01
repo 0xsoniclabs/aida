@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
-// 
+//
 
 package generator
 
@@ -28,24 +28,20 @@ type ExpRandomizer struct {
 	rg     *rand.Rand
 	lambda float64
 	qpdf   []float64
+	Randomizer
 }
 
 func NewExpRandomizer(rg *rand.Rand, lambda float64, qpdf []float64) *ExpRandomizer {
 	cp := make([]float64, statistics.QueueLen)
 	copy(cp, qpdf)
 	return &ExpRandomizer{
-		rg: rg,
+		rg:     rg,
 		lambda: lambda,
-		qpdf: cp,
+		qpdf:   cp,
 	}
 }
 
-func (r *ExpRandomizer) RandRange(l, u int64) int64 {
-	width := u - l + 1
-	return l + r.rg.Int63n(width)
-}
-
-func (r *ExpRandomizer) Sample(n int64) int64 {
+func (r *ExpRandomizer) SampleDistribution(n int64) int64 {
 	return exponential.DiscreteSample(r.rg, r.lambda, n+1)
 }
 
@@ -88,6 +84,6 @@ func (r *ExpRandomizer) SampleQueue() int {
 	if statistics.QueueLen > 1 {
 		return 1
 	}
-	
+
 	return 0
 }

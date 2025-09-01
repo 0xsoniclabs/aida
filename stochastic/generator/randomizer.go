@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -14,23 +14,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package statistics
+package generator
 
-// IDs for argument kinds
-const (
-	NoArgID     = iota // default label (for no argument)
-	ZeroArgID          // zero value access
-	NewArgID           // newly occurring value access
-	PrevArgID          // value that was previously accessed
-	RecentArgID        // value that recently accessed (time-window is fixed to statistics.QueueLen)
-	RandArgID          // random access (everything else)
-
-	NumArgKinds
-)
-
-// number of points on the ecdf
-const NumDistributionPoints = 100
-
-// QueueLen sets the length of queuing statistics.
-// NB: must be greater than one.
-const QueueLen = 32
+// Randomizer interface for argument sets
+type Randomizer interface {
+	SampleDistribution(n int64) int64 // sample distribution
+	SampleQueue() int                 // sample queue distribution
+}

@@ -28,9 +28,9 @@ func TestOperationDecoding(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := 0; op < NumOps; op++ {
-		for addr := 0; addr < statistics.NumClasses; addr++ {
-			for key := 0; key < statistics.NumClasses; key++ {
-				for value := 0; value < statistics.NumClasses; value++ {
+		for addr := 0; addr < statistics.NumArgKinds; addr++ {
+			for key := 0; key < statistics.NumArgKinds; key++ {
+				for value := 0; value < statistics.NumArgKinds; value++ {
 					// check legality of argument/op combination
 					if (opNumArgs[op] == 0 && addr == statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||
 						(opNumArgs[op] == 1 && addr != statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||
@@ -58,9 +58,9 @@ func TestOperationOpcode(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := 0; op < NumOps; op++ {
-		for addr := 0; addr < statistics.NumClasses; addr++ {
-			for key := 0; key < statistics.NumClasses; key++ {
-				for value := 0; value < statistics.NumClasses; value++ {
+		for addr := 0; addr < statistics.NumArgKinds; addr++ {
+			for key := 0; key < statistics.NumArgKinds; key++ {
+				for value := 0; value < statistics.NumArgKinds; value++ {
 					// check legality of argument/op combination
 					if (opNumArgs[op] == 0 && addr == statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||
 						(opNumArgs[op] == 1 && addr != statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||

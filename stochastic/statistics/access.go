@@ -58,24 +58,24 @@ func (a *Access[T]) Classify(data T) int {
 	// check zero value
 	var zeroValue T
 	if data == zeroValue {
-		return ZeroValueID
+		return ZeroArgID
 	}
 	switch a.qstats.Find(data) {
 	case -1:
 		// data not found in the queuing statistics
 		// => check counting statistics
 		if !a.cstats.Exists(data) {
-			return NewValueID
+			return NewArgID
 		} else {
-			return RandomValueID
+			return RandArgID
 		}
 	case 0:
 		// previous entry
-		return PreviousValueID
+		return PrevArgID
 	default:
 		// data found in queuing statistics
 		// but not previously accessed
-		return RecentValueID
+		return RecentArgID
 	}
 }
 

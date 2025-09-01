@@ -62,7 +62,7 @@ const (
 )
 
 // numArgOps gives the number of operations with encoded argument classes
-const numArgOps = NumOps * statistics.NumClasses * statistics.NumClasses * statistics.NumClasses
+const numArgOps = NumOps * statistics.NumArgKinds * statistics.NumArgKinds * statistics.NumArgKinds
 
 // opText translates IDs to operation's text
 var opText = map[int]string{
@@ -202,21 +202,21 @@ var opId = map[string]int{
 
 // argMnemo is the argument-class mnemonics table.
 var argMnemo = map[int]string{
-	statistics.NoArgID:         "",
-	statistics.ZeroValueID:     "z",
-	statistics.NewValueID:      "n",
-	statistics.PreviousValueID: "p",
-	statistics.RecentValueID:   "q",
-	statistics.RandomValueID:   "r",
+	statistics.NoArgID:     "",
+	statistics.ZeroArgID:   "z",
+	statistics.NewArgID:    "n",
+	statistics.PrevArgID:   "p",
+	statistics.RecentArgID: "q",
+	statistics.RandArgID:   "r",
 }
 
 // argId is the argument-class id table.
 var argId = map[byte]int{
-	'z': statistics.ZeroValueID,
-	'n': statistics.NewValueID,
-	'p': statistics.PreviousValueID,
-	'q': statistics.RecentValueID,
-	'r': statistics.RandomValueID,
+	'z': statistics.ZeroArgID,
+	'n': statistics.NewArgID,
+	'p': statistics.PrevArgID,
+	'q': statistics.RecentArgID,
+	'r': statistics.RandArgID,
 }
 
 // OpMnemo returns the mnemonic code for an operation.
@@ -232,13 +232,13 @@ func checkArgOp(op int, contract int, key int, value int) bool {
 	if op < 0 || op >= NumOps {
 		return false
 	}
-	if contract < 0 || contract >= statistics.NumClasses {
+	if contract < 0 || contract >= statistics.NumArgKinds {
 		return false
 	}
-	if key < 0 || key >= statistics.NumClasses {
+	if key < 0 || key >= statistics.NumArgKinds {
 		return false
 	}
-	if value < 0 || value >= statistics.NumClasses {
+	if value < 0 || value >= statistics.NumArgKinds {
 		return false
 	}
 	switch opNumArgs[op] {
@@ -277,7 +277,7 @@ func EncodeArgOp(op int, addr int, key int, value int) int {
 	if !checkArgOp(op, addr, key, value) {
 		log.Fatalf("EncodeArgOp: invalid operation/arguments")
 	}
-	return (((int(op)*statistics.NumClasses)+addr)*statistics.NumClasses+key)*statistics.NumClasses + value
+	return (((int(op)*statistics.NumArgKinds)+addr)*statistics.NumArgKinds+key)*statistics.NumArgKinds + value
 }
 
 // DecodeArgOp decodes operation with arguments using Honer's scheme
@@ -286,14 +286,14 @@ func DecodeArgOp(argop int) (int, int, int, int) {
 		log.Fatalf("DecodeArgOp: invalid op range")
 	}
 
-	value := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	value := argop % statistics.NumArgKinds
+	argop = argop / statistics.NumArgKinds
 
-	key := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	key := argop % statistics.NumArgKinds
+	argop = argop / statistics.NumArgKinds
 
-	addr := argop % statistics.NumClasses
-	argop = argop / statistics.NumClasses
+	addr := argop % statistics.NumArgKinds
+	argop = argop / statistics.NumArgKinds
 
 	op := argop
 

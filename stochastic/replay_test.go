@@ -223,10 +223,10 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 	qpdf := make([]float64, 2)
-	ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-	contracts := generator.NewIndirectAccess(ra)
-	keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-	values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	contracts := generator.NewSingleUseArgumentSet(ra)
+	keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 	snapshotLambda := 0.1
 
 	gomock.InOrder(
@@ -291,9 +291,9 @@ func TestStochasticState_execute(t *testing.T) {
 	// and check encoding/decoding whether it is symmetric.
 	var codes = map[int]int{}
 	for op := 0; op < NumOps; op++ {
-		for addr := 0; addr < statistics.NumClasses; addr++ {
-			for key := 0; key < statistics.NumClasses; key++ {
-				for value := 0; value < statistics.NumClasses; value++ {
+		for addr := 0; addr < statistics.NumArgKinds; addr++ {
+			for key := 0; key < statistics.NumArgKinds; key++ {
+				for value := 0; value < statistics.NumArgKinds; value++ {
 					// check legality of argument/op combination
 					if (opNumArgs[op] == 0 && addr == statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||
 						(opNumArgs[op] == 1 && addr != statistics.NoArgID && key == statistics.NoArgID && value == statistics.NoArgID) ||
@@ -310,10 +310,10 @@ func TestStochasticState_execute(t *testing.T) {
 
 	rg := rand.New(rand.NewSource(999))
 	qpdf := make([]float64, 2)
-	ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-	contracts := generator.NewIndirectAccess(ra)
-	keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-	values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	contracts := generator.NewSingleUseArgumentSet(ra)
+	keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+	values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 	snapshotLambda := 0.1
 
 	db := state.NewMockStateDB(ctrl)
@@ -365,10 +365,10 @@ func TestStochasticState_prime(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		rg := rand.New(rand.NewSource(999))
 		qpdf := make([]float64, 2)
-		ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		contracts := generator.NewIndirectAccess(ra)
-		keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		contracts := generator.NewSingleUseArgumentSet(ra)
+		keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 		snapshotLambda := 0.1
 
 		db := state.NewMockStateDB(ctrl)
@@ -388,10 +388,10 @@ func TestStochasticState_prime(t *testing.T) {
 	t.Run("failed begin block", func(t *testing.T) {
 		rg := rand.New(rand.NewSource(999))
 		qpdf := make([]float64, 2)
-		ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		contracts := generator.NewIndirectAccess(ra)
-		keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		contracts := generator.NewSingleUseArgumentSet(ra)
+		keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 		snapshotLambda := 0.1
 		mockErr := errors.New("mock error")
 
@@ -406,10 +406,10 @@ func TestStochasticState_prime(t *testing.T) {
 	t.Run("failed begin transaction", func(t *testing.T) {
 		rg := rand.New(rand.NewSource(999))
 		qpdf := make([]float64, 2)
-		ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		contracts := generator.NewIndirectAccess(ra)
-		keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		contracts := generator.NewSingleUseArgumentSet(ra)
+		keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 		snapshotLambda := 0.1
 		mockErr := errors.New("mock error")
 
@@ -425,10 +425,10 @@ func TestStochasticState_prime(t *testing.T) {
 	t.Run("failed end transaction", func(t *testing.T) {
 		rg := rand.New(rand.NewSource(999))
 		qpdf := make([]float64, 2)
-		ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		contracts := generator.NewIndirectAccess(ra)
-		keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		contracts := generator.NewSingleUseArgumentSet(ra)
+		keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 		snapshotLambda := 0.1
 		mockErr := errors.New("mock error")
 
@@ -447,10 +447,10 @@ func TestStochasticState_prime(t *testing.T) {
 	t.Run("failed end block", func(t *testing.T) {
 		rg := rand.New(rand.NewSource(999))
 		qpdf := make([]float64, 2)
-		ra := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		contracts := generator.NewIndirectAccess(ra)
-		keys := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
-		values := generator.NewRandomAccess(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		ra := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		contracts := generator.NewSingleUseArgumentSet(ra)
+		keys := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
+		values := generator.NewArgumentSet(1000, generator.NewExpRandomizer(rg, 5.0, qpdf))
 		snapshotLambda := 0.1
 		mockErr := errors.New("mock error")
 
