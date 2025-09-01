@@ -58,13 +58,13 @@ func mergeAction(ctx *cli.Context) error {
 		sourcePaths[i] = ctx.Args().Get(i)
 	}
 
-	targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	targetDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
 	var (
-		dbs []db.BaseDB
+		dbs []db.SubstateDB
 		md  *utils.AidaDbMetadata
 	)
 
@@ -73,17 +73,15 @@ func mergeAction(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("cannot open source databases: %w", err)
 		}
-		md, err = utils.ProcessMergeMetadata(cfg, targetDb, dbs, sourcePaths)
-		if err != nil {
-			return err
-		}
 
-		// todo this should not be necessary - do not close aida-db in metadata
-		targetDb, err = db.NewDefaultBaseDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot re-open db: %w", err)
+		// merge metadata from all source dbs
+		targetMD := utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+		for _, db := range dbs {
+			sourceMD := utils.NewAidaDbMetadata(db, cfg.LogLevel)
+			if err := targetMD.Merge(sourceMD); err != nil {
+				return fmt.Errorf("cannot merge metadata: %w", err)
+			}
 		}
-
 		for _, database := range dbs {
 			utildb.MustCloseDB(database)
 		}
