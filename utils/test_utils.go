@@ -109,7 +109,7 @@ func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSche
 	//dbHash, err := hex.DecodeString("a0d4f7616f3007bf8c02f816a60b2526")
 	//require.NoError(t, err)
 
-	require.NoError(t, md.GenerateMetadata())
+	require.NoError(t, md.GenerateMetadata(SonicMainnetChainID))
 
 	require.NoError(t, db.Close())
 

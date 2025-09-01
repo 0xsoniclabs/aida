@@ -34,7 +34,6 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
-	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,7 +112,7 @@ func GetDbSize(db db.BaseDB) uint64 {
 }
 
 // PrintMetadata from given AidaDb
-func PrintMetadata(aidaDb db.BaseDB) error {
+func PrintMetadata(aidaDb db.SubstateDB) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
 	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 
@@ -171,25 +170,15 @@ func printUpdateSetInfo(m utils.Metadata) {
 
 	log.Notice("UPDATE-SET INFO:")
 
-	intervalBytes, err := m.GetUpdatesetInterval()
-	if err != nil {
-		log.Warning("Value for update-set interval does not exist in given Dbs metadata")
-	} else {
-		log.Infof("Interval: %v blocks", bigendian.BytesToUint64(intervalBytes))
-	}
+	interval := m.GetUpdatesetInterval()
+	log.Infof("Interval: %v blocks", interval)
 
-	sizeBytes, err := m.GetUpdatesetSize()
-	if err != nil {
-		log.Warning("Value for update-set size does not exist in given Dbs metadata")
-	} else {
-		u := bigendian.BytesToUint64(sizeBytes)
-
-		log.Infof("Size: %.1f MB", float64(u)/float64(1_000_000))
-	}
+	size := m.GetUpdatesetSize()
+	log.Infof("Size: %.1f MB", float64(size)/float64(1_000_000))
 }
 
 // printDbType from given AidaDb
-func printDbType(m *utils.AidaDbMetadata) error {
+func printDbType(m utils.Metadata) error {
 	t := m.GetDbType()
 
 	var typePrint string
@@ -214,12 +203,19 @@ func printDbType(m *utils.AidaDbMetadata) error {
 
 func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	tmpDir := t.TempDir() + "/testAidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
 	md := utils.NewAidaDbMetadata(database, "ERROR")
-	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
+	err = errors.Join(
+		md.SetFirstBlock(1),
+		md.SetLastBlock(50),
+		md.SetFirstEpoch(1),
+		md.SetLastEpoch(50),
+		md.SetChainID(utils.MainnetChainID),
+		md.SetDbHash([]byte("0x0")),
+	)
 	assert.NoError(t, err)
 
 	// write substates to the database

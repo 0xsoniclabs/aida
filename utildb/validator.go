@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -45,7 +46,7 @@ type validator struct {
 }
 
 // FindDbHashOnline if user has no dbHash inside his AidaDb metadata
-func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDbMetadata) ([]byte, error) {
+func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md utils.Metadata) ([]byte, error) {
 	var url string
 
 	if chainId == utils.SonicMainnetChainID {
@@ -62,26 +63,12 @@ func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDb
 		return nil, err
 	}
 
-	md.LastBlock = md.GetLastBlock()
-
-	if md.LastBlock == 0 {
-		log.Warning("your aida-db seems to have empty metadata; looking for block range in substate")
-	}
-
-	var ok bool
-
-	md.FirstBlock, md.LastBlock, ok = utils.FindBlockRangeInSubstate(db.MakeDefaultSubstateDBFromBaseDB(md.Db))
-	if !ok {
-		return nil, errors.New("cannot find block range in substate")
-	}
-
-	err = md.SetBlockRange(md.FirstBlock, md.LastBlock)
+	err = md.GenerateMetadata(chainId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot generate metadata; %v", err)
 	}
-
 	for _, patch := range patches {
-		if patch.ToBlock == md.LastBlock {
+		if patch.ToBlock == md.GetLastBlock() {
 			return hex.DecodeString(patch.DbHash)
 		}
 	}

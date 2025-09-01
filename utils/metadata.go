@@ -88,7 +88,7 @@ type PatchJson struct {
 
 type Metadata interface {
 	// GenerateMetadata generates new or updates metadata in AidaDb.
-	GenerateMetadata() error
+	GenerateMetadata(chainID ChainID) error
 	// Merge merges source metadata into target metadata if its possible.
 	Merge(Metadata) error
 	// Delete deletes metadata from AidaDb.
@@ -118,6 +118,7 @@ type Metadata interface {
 	SetHasHashPatch() error
 	SetUpdatesetInterval(uint64) error
 	SetUpdatesetSize(uint64) error
+	GetDb() db.SubstateDB
 }
 
 // AidaDbMetadata holds any information about AidaDb needed for putting it into the Db
@@ -133,10 +134,16 @@ type AidaDbMetadata struct {
 	dbHash                           []byte
 }
 
-func (md *AidaDbMetadata) GenerateMetadata() error {
-	chainId := md.GetChainID()
+func (md *AidaDbMetadata) GetDb() db.SubstateDB {
+	return md.Db
+}
+
+func (md *AidaDbMetadata) GenerateMetadata(chainId ChainID) error {
 	if chainId == 0 {
-		md.log.Warningf("Your AidaDb does not contain chain-id, metadata will be incomplete")
+		chainId = md.GetChainID()
+		if chainId == 0 {
+			md.log.Warningf("ChainID was nor set neither found in metadata - metadata generation will be incomplete")
+		}
 	}
 
 	fss := md.Db.GetFirstSubstate()

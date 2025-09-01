@@ -46,18 +46,23 @@ const (
 // Update implements updating command to be called from various commands and automatically downloads aida-db patches.
 func Update(cfg *utils.Config) error {
 	log := logger.NewLogger(cfg.LogLevel, "DB Update")
-	start := time.Now()
 
-	targetDbFirstBlock, targetDbLastBlock, err := getTargetDbBlockRange(cfg)
+	targetDB, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
-		return fmt.Errorf("unable retrieve aida-db metadata; %v", err)
+		return err
+	}
+	md := utils.NewAidaDbMetadata(targetDB, cfg.LogLevel)
+	err = md.GenerateMetadata(cfg.ChainID)
+	if err != nil {
+		return fmt.Errorf("unable generate aida-db metadata; %v", err)
 	}
 
-	log.Noticef("First block of your AidaDb: #%v", targetDbFirstBlock)
-	log.Noticef("Last block of your AidaDb: #%v", targetDbLastBlock)
+	log.Noticef("First block of your AidaDb: #%v", md.GetFirstBlock())
+	log.Noticef("Last block of your AidaDb: #%v", md.GetLastBlock())
 
+	start := time.Now()
 	// retrieve available patches from aida-db generation server
-	patches, err := retrievePatchesToDownload(cfg, targetDbFirstBlock, targetDbLastBlock)
+	patches, err := retrievePatchesToDownload(cfg, md)
 	if err != nil {
 		return fmt.Errorf("unable to prepare list of aida-db patches for download; %v", err)
 	}
@@ -76,7 +81,7 @@ func Update(cfg *utils.Config) error {
 	log.Noticef("These patches are in que for download:%v", str)
 
 	// we need to know whether Db is new for metadata
-	err = patchesDownloader(cfg, patches, targetDbFirstBlock, targetDbLastBlock)
+	err = patchesDownloader(cfg, patches, md)
 	if err != nil {
 		return err
 	}
@@ -113,7 +118,7 @@ func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
 }
 
 // patchesDownloader processes patch names to download then download them in pipelined process
-func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock, lastBlock uint64) error {
+func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, md utils.Metadata) error {
 	// create channel to push patch labels trough channel
 	patchesChan := pushPatchToChanel(patches)
 
@@ -124,7 +129,7 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 	decompressedPatchChan, errDecompressChan := decompressPatch(cfg, downloadedPatchChan, errChan)
 
 	// merge decompressed patches
-	err := mergePatch(cfg, decompressedPatchChan, errDecompressChan, firstBlock, lastBlock)
+	err := mergePatch(cfg, decompressedPatchChan, errDecompressChan, md)
 	if err != nil {
 		return err
 	}
@@ -133,16 +138,14 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 }
 
 // mergePatch takes decompressed patches and merges them into aida-db
-func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
+func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, md utils.Metadata) error {
 	var (
-		err      error
-		patchDb  db.BaseDB
-		targetMD *utils.AidaDbMetadata
-		isNewDb  bool
-		log      = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
+		err     error
+		isNewDb bool
+		log     = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
 	)
 
-	if lastAidaDbBlock == 0 {
+	if md.GetLastBlock() == 0 {
 		isNewDb = true
 	}
 
@@ -180,25 +183,6 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 							}
 						}
 					}
-
-					// open targetDB only after there is already first patch or any existing previous data
-					targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
-					if err != nil {
-						return fmt.Errorf("can't open aidaDb; %v", err)
-					}
-					targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
-
-					errOldAida := targetMD.UpdateMetadataInOldAidaDb(cfg.ChainID, firstAidaDbBlock, lastAidaDbBlock)
-					if errOldAida != nil {
-						log.Warningf("error UpdateMetadataInOldAidaDb; %v", errOldAida)
-					}
-
-					defer func() {
-						if err = targetMD.Db.Close(); err != nil {
-							log.Warningf("patchesDownloader: cannot close targetDb; %v", err)
-						}
-					}()
-
 					// patch was already applied before opening targetDb hence we don't need to merge it anymore
 					if isNewDb {
 						continue
@@ -206,20 +190,24 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				}
 
 				// merge newly extracted patch
-				patchDb, err = db.NewReadOnlyBaseDB(extractedPatchPath)
+				patchDb, err := db.NewReadOnlySubstateDB(extractedPatchPath)
 				if err != nil {
-					return fmt.Errorf("cannot open targetDb; %v", err)
+					return fmt.Errorf("cannot open patchDb; %v", err)
 				}
 
 				// we only check metadata if not applying stateHashPatch
 				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					err = targetMD.CheckUpdateMetadata(cfg, patchDb)
-					if err != nil {
-						return err
+					patchMD := utils.NewAidaDbMetadata(patchDb, cfg.LogLevel)
+					// patches contain chainID in metadata
+					if err = patchMD.GenerateMetadata(0); err != nil {
+						return fmt.Errorf("cannot generate patch metadata; %v", err)
+					}
+					if err = md.Merge(patchMD); err != nil {
+						return fmt.Errorf("cannot merge patch metadata; %v", err)
 					}
 				}
 
-				m := NewMerger(cfg, targetMD.Db, []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
+				m := NewMerger(cfg, md.GetDb(), []db.SubstateDB{patchDb}, []string{extractedPatchPath}, nil)
 
 				err = m.Merge()
 				if err != nil {
@@ -228,14 +216,9 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 
 				// we only set metadata if not applying stateHashPatch
 				if strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					err = targetMD.SetHasHashPatch()
+					err = md.SetHasHashPatch()
 					if err != nil {
 						return fmt.Errorf("cannot set has-hash-patch; %v", err)
-					}
-				} else {
-					err = targetMD.SetAll()
-					if err != nil {
-						return fmt.Errorf("cannot set metadata; %v", err)
 					}
 				}
 				m.CloseSourceDbs()
@@ -358,7 +341,7 @@ func pushPatchToChanel(strings []utils.PatchJson) chan utils.PatchJson {
 }
 
 // retrievePatchesToDownload retrieves all available patches from aida-db generation server.
-func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, targetDbLastBlock uint64) ([]utils.PatchJson, error) {
+func retrievePatchesToDownload(cfg *utils.Config, md utils.Metadata) ([]utils.PatchJson, error) {
 	if cfg.UpdateType != "stable" && cfg.UpdateType != "nightly" {
 		return nil, fmt.Errorf("please choose correct data-type with --data-type flag (stable/nightly)")
 	}
@@ -388,9 +371,9 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, tar
 			}
 		}
 		// skip every patch which is sooner than previous last block
-		if patch.ToBlock <= targetDbLastBlock {
+		if patch.ToBlock <= md.GetLastBlock() {
 			// if patch is lachesis and user has not got it in their db we download it
-			if patch.ToBlock == utils.FirstOperaBlock-1 && targetDbFirstBlock == utils.FirstOperaBlock {
+			if patch.ToBlock == utils.FirstOperaBlock-1 && md.GetFirstBlock() == utils.FirstOperaBlock {
 				isAddingLachesisPatch = true
 			} else {
 				continue
@@ -404,7 +387,7 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbFirstBlock uint64, tar
 	}
 
 	// if user has second patch already in their db, we have to re-download it again and delete old update-set key
-	if isAddingLachesisPatch && targetDbFirstBlock == utils.FirstOperaBlock {
+	if isAddingLachesisPatch && md.GetFirstBlock() == utils.FirstOperaBlock {
 		patchesToDownload, err = appendFirstPatch(cfg, availablePatches, patchesToDownload)
 		if err != nil {
 			return nil, err
