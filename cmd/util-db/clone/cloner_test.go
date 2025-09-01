@@ -34,9 +34,9 @@ func TestCloner_stop(t *testing.T) {
 
 	ch := make(chan any)
 	c := &cloner{
-		aidaDb:  mockDbSrc,
-		cloneDb: mockDbTarget,
-		stopCh:  ch,
+		sourceDb: mockDbSrc,
+		cloneDb:  mockDbTarget,
+		stopCh:   ch,
 	}
 	c.stop()
 	ticker := time.NewTicker(time.Second)

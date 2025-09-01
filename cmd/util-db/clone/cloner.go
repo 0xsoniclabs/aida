@@ -38,15 +38,15 @@ import (
 const cloneWriteChanSize = 1
 
 type cloner struct {
-	cfg             *utils.Config
-	log             logger.Logger
-	aidaDb, cloneDb db.SubstateDB
-	cloneComponent  dbcomponent.DbComponent
-	count           uint64
-	typ             utils.AidaDbType
-	writeCh         chan rawEntry
-	errCh           chan error
-	stopCh          chan any
+	cfg               *utils.Config
+	log               logger.Logger
+	sourceDb, cloneDb db.SubstateDB
+	cloneComponent    dbcomponent.DbComponent
+	count             uint64
+	typ               utils.AidaDbType
+	writeCh           chan rawEntry
+	errCh             chan error
+	stopCh            chan any
 }
 
 // rawEntry representation of database entry
@@ -73,7 +73,7 @@ func clone(cfg *utils.Config, aidaDb, cloneDb db.SubstateDB, cloneType utils.Aid
 	c := cloner{
 		cfg:            cfg,
 		cloneDb:        cloneDb,
-		aidaDb:         aidaDb,
+		sourceDb:       aidaDb,
 		log:            log,
 		typ:            cloneType,
 		cloneComponent: dbComponent,
@@ -113,7 +113,7 @@ func (c *cloner) clone() error {
 	}
 
 	if c.typ != utils.CustomType {
-		sourceMD := utils.NewAidaDbMetadata(c.aidaDb, c.cfg.LogLevel)
+		sourceMD := utils.NewAidaDbMetadata(c.sourceDb, c.cfg.LogLevel)
 		chainID := sourceMD.GetChainID()
 
 		if err = utils.ProcessCloneLikeMetadata(c.cloneDb, c.typ, c.cfg.LogLevel, c.cfg.First, c.cfg.Last, chainID); err != nil {
@@ -237,7 +237,7 @@ func (c *cloner) write() {
 func (c *cloner) read(prefix []byte, start uint64, condition func(key []byte) (bool, error)) {
 	c.log.Noticef("Copying data with prefix %v", string(prefix))
 
-	iter := c.aidaDb.NewIterator(prefix, db.BlockToBytes(start))
+	iter := c.sourceDb.NewIterator(prefix, db.BlockToBytes(start))
 	defer iter.Release()
 
 	for iter.Next() {
@@ -318,7 +318,7 @@ func (c *cloner) readStateHashes() error {
 
 	for i := c.cfg.First; i <= c.cfg.Last; i++ {
 		key := []byte(utils.StateRootHashPrefix + hexutil.EncodeUint64(i))
-		value, err := c.aidaDb.Get(key)
+		value, err := c.sourceDb.Get(key)
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				errCounter++
@@ -423,7 +423,7 @@ func (c *cloner) validateDbSize() error {
 func (c *cloner) closeDbs() {
 	var err error
 
-	if err = c.aidaDb.Close(); err != nil {
+	if err = c.sourceDb.Close(); err != nil {
 		c.log.Errorf("cannot close aida-db")
 	}
 
@@ -504,7 +504,7 @@ func openCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.Substat
 	// open db
 	aidaDb, err = db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
+		return nil, nil, fmt.Errorf("sourceDb %v; %v", aidaDbPath, err)
 	}
 
 	err = aidaDb.SetSubstateEncoding(substateEncoding)
@@ -529,7 +529,7 @@ func openCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.Substat
 func (c *cloner) cloneCodes() error {
 	c.log.Noticef("Copying data with prefix %v", db.CodeDBPrefix)
 
-	iter := c.aidaDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
+	iter := c.sourceDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
 	defer iter.Release()
 
 	savedCodes := make(map[types.Hash]struct{})

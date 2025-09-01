@@ -213,7 +213,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			defer func() {
 				err = aidaDb.Close()
 				if err != nil {
-					t.Fatalf("error closing aidaDb %s: %v", tmpDir, err)
+					t.Fatalf("error closing sourceDb %s: %v", tmpDir, err)
 				}
 			}()
 
@@ -559,9 +559,9 @@ func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
 			Workers:          1,
 			SubstateEncoding: "protobuf",
 		},
-		aidaDb:  srcDb,
-		cloneDb: dstDb,
-		log:     logger.NewLogger("warn", "CloneCodesTest"),
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
 	}
 
 	err = clnr.cloneCodes()
@@ -601,9 +601,9 @@ func TestCloner_PutCode_DoesNotPutNilCode(t *testing.T) {
 			Workers:          1,
 			SubstateEncoding: "protobuf",
 		},
-		aidaDb:  srcDb,
-		cloneDb: dstDb,
-		log:     logger.NewLogger("warn", "CloneCodesTest"),
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
 	}
 
 	err = clnr.cloneCodes()
@@ -634,9 +634,9 @@ func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
 			Workers:          1,
 			SubstateEncoding: "protobuf",
 		},
-		aidaDb:  srcDb,
-		cloneDb: dstDb,
-		log:     logger.NewLogger("warn", "CloneCodesTest"),
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
 	}
 
 	err = clnr.cloneCodes()
