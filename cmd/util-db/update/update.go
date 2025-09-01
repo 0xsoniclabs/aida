@@ -47,7 +47,7 @@ const (
 
 var Command = cli.Command{
 	Action: updateDbAction,
-	Name:   "db",
+	Name:   "update",
 	Usage:  "download aida-db patches either creating new database or updating existing one",
 	Flags: []cli.Flag{
 		&utils.AidaDbFlag,
