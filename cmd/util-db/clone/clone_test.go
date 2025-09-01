@@ -175,7 +175,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			name:        "SubstateInvalidDbKey",
 			keyPrefix:   db.SubstateDBPrefix,
 			dbComponent: "substate",
-			expectedErr: "clone failed for SubstateInvalidDbKey: condition emit error; invalid length of substate db key: 5",
+			expectedErr: "clone failed for SubstateInvalidDbKey: cannot clone codes; invalid substate key: [49 115 105 110 118]; invalid length of substate db key: 5",
 		},
 		{
 			name:        "UpdateSetsInvalidDbKey",
