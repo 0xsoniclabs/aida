@@ -26,17 +26,17 @@ import (
 
 func TestCloner_stop(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockDbSrc := db.NewMockBaseDB(ctrl)
-	mockDbTarget := db.NewMockBaseDB(ctrl)
+	mockDbSrc := db.NewMockSubstateDB(ctrl)
+	mockDbTarget := db.NewMockSubstateDB(ctrl)
 
 	mockDbSrc.EXPECT().Close()
 	mockDbTarget.EXPECT().Close()
 
 	ch := make(chan any)
 	c := &cloner{
-		aidaDb:  mockDbSrc,
-		cloneDb: mockDbTarget,
-		stopCh:  ch,
+		sourceDb: mockDbSrc,
+		cloneDb:  mockDbTarget,
+		stopCh:   ch,
 	}
 	c.stop()
 	ticker := time.NewTicker(time.Second)
