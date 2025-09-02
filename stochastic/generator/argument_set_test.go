@@ -23,7 +23,28 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-// test no argument kind in the Choose function of an argument set
+// TestArgSetNewArgSet tests the creation of a new argument set
+func TestArgSetNewArgSet(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewArgumentSet(n, mockRandomizer)
+	if as == nil {
+		t.Errorf("Expected an argument set, but got nil")
+	}
+
+	n = ArgumentType(MaxArgumentType)
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as = NewArgumentSet(n, mockRandomizer)
+	if as == nil {
+		t.Errorf("Expected an argument set, but got nil")
+	}
+}
+
+// TestArgSetChooseNoArg tests no argument kind in the Choose function of an argument set
 func TestArgSetChooseNoArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
