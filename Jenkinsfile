@@ -44,7 +44,7 @@ pipeline {
 
         stage('Check license headers') {
             steps {
-                sh 'cd scripts/license && ./add_license_header.sh --check'
+                sh 'cd scripts/license && chmod +x add_license_header.sh && ./add_license_header.sh --check'
             }
         }
 
