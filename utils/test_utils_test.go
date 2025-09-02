@@ -18,6 +18,7 @@ package utils
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
@@ -78,4 +79,13 @@ func TestArgsBuilder_NewArgs(t *testing.T) {
 	assert.Equal(t, "0", args[8])
 	assert.Equal(t, "--f4", args[9])
 	assert.Equal(t, 10, len(args))
+}
+
+func TestUtils_DownloadTestDataset(t *testing.T) {
+	outputDir := t.TempDir()
+	err := DownloadTestDataset(outputDir)
+	assert.NoError(t, err)
+	stat, err := os.Stat(outputDir)
+	assert.NoError(t, err)
+	assert.NotZero(t, stat.Size())
 }
