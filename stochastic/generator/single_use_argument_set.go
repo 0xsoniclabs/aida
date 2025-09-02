@@ -27,21 +27,22 @@ import (
 // Deleted arguments are not reused and cannot be chosen anymore.
 // This type of argument set is needed for self-destructing account addresses.
 type SingleUseArgumentSet struct {
-	argset      *ArgumentSet   // underlying random argument set
+	argset      ArgumentSet    // underlying random argument set
 	ctr         ArgumentType   // counter
 	translation []ArgumentType // translation table for argument
+	ArgumentSet
 }
 
 // NewSingleUseArgumentSet creates a new argument set whose arguments,
 // when deleted, cannot be reused.
-func NewSingleUseArgumentSet(argset *ArgumentSet) *SingleUseArgumentSet {
-	t := make([]ArgumentType, argset.n)
+func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
+	t := make([]ArgumentType, argset.Size())
 	for i := range argset.Size() {
-		t[i] = i 
+		t[i] = i
 	}
 	return &SingleUseArgumentSet{
 		argset:      argset,
-		ctr:         argset.n,
+		ctr:         argset.Size(),
 		translation: t,
 	}
 }
@@ -99,7 +100,7 @@ func (a *SingleUseArgumentSet) Size() ArgumentType {
 
 // find finds the index in the translation table for a given index k.
 func (a *SingleUseArgumentSet) find(k ArgumentType) ArgumentType {
-	for i := int64(0); i < int64(len(a.translation)); i++ {
+	for i := range int64(len(a.translation)) {
 		if a.translation[i] == k {
 			return i
 		}

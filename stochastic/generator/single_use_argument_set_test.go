@@ -41,7 +41,7 @@ func TestSingleUseArgumentSetSimple(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ia := NewSingleUseArgumentSet(NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf)))
+	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf)))
 
 	// check no argument class (must be always -1)
 	if _, err := ia.Choose(statistics.NoArgID); err == nil {
@@ -73,7 +73,7 @@ func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
+	ra := NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
 	ia := NewSingleUseArgumentSet(ra)
 
 	// check a new value (must be equal to the number of elements
@@ -109,7 +109,7 @@ func TestIndirectAcessDeleteIndex(t *testing.T) {
 	// create a random access index generator
 	// with a zero probability distribution.
 	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
+	ra := NewReusableArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
 	ia := NewSingleUseArgumentSet(ra)
 	idx := int64(500) // choose an index in the middle of the range
 
