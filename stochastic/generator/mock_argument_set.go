@@ -5,14 +5,7 @@
 //
 //	mockgen -source argument_set.go -destination mock_argument_set.go -package generator
 //
-
-// Package generator is a generated GoMock package.
-package generator
-
-import (
-	reflect "reflect"
-
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockArgumentSet is a mock of ArgumentSet interface.
