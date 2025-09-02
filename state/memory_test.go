@@ -17,9 +17,11 @@
 package state
 
 import (
+	"testing"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	gomock "go.uber.org/mock/gomock"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -78,4 +80,19 @@ func TestInMemoryStateDB_GetLogs_AddsLogsWithCorrectTimestamp(t *testing.T) {
 	assert.Len(t, logs, 1) // No logs added yet
 	assert.Equal(t, blkTimestamp, logs[0].BlockTimestamp)
 	assert.Equal(t, uint(1), logs[0].Index)
+}
+
+func TestInMemoryStateDB_GetStateAndCommittedState_Returns(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := NewMockVmStateDB(ctrl)
+
+	address := common.Address{1}
+	key := common.Hash{2}
+	state := common.Hash{3}
+	committed := common.Hash{4}
+
+	db.EXPECT().GetStateAndCommittedState(address, key).Return(state, committed)
+	gotState, gotCommitted := db.GetStateAndCommittedState(address, key)
+	assert.Equal(t, state, gotState)
+	assert.Equal(t, committed, gotCommitted)
 }
