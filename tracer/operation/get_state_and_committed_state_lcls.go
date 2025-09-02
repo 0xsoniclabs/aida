@@ -39,7 +39,7 @@ func NewGetStateAndCommittedStateLcls() *GetStateAndCommittedStateLcls {
 	return new(GetStateAndCommittedStateLcls)
 }
 
-// ReadGetStateAndCommittedStateLcls reads a get-commited-state operation from file.
+// ReadGetStateAndCommittedStateLcls reads a get-state-and-committed-state operation from file.
 func ReadGetStateAndCommittedStateLcls(f io.Reader) (Operation, error) {
 	data := new(GetStateAndCommittedStateLcls)
 	err := binary.Read(f, binary.LittleEndian, data)
