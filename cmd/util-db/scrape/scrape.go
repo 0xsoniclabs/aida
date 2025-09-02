@@ -66,7 +66,6 @@ func scrapeAction(ctx *cli.Context) error {
 	return nil
 }
 
-
 // StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
 func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
 	client, err := getClient(ctx, chainId, clientDb, log)
