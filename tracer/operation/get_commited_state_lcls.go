@@ -27,7 +27,7 @@ import (
 )
 
 // GetStateAndCommittedStateLcls data structure
-type GetStateAndCommittedStateLcls struct {}
+type GetStateAndCommittedStateLcls struct{}
 
 // GetId returns the get-commited-state-operation identifier.
 func (op *GetStateAndCommittedStateLcls) GetId() byte {
