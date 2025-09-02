@@ -47,7 +47,7 @@ type ArgumentSet interface {
 	// (6) a recent argument contained in the queue but not the previous one.
 	Choose(kind int) (ArgumentType, error)
 
-	// Remove an argument from set and shrink argument set by one
+	// Remove an argument from set and shrink argument set by one argument.
 	Remove(v ArgumentType) error
 
 	// Size returns the current size of the argument set.
