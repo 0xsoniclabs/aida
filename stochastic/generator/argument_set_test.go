@@ -296,7 +296,7 @@ func TestArgSetChooseNoArg(t *testing.T) {
 	}
 }
 
-// test zero argument kind in the Choose function of an argument set
+// TestArgSetChooseZeroARg tests zero argument kind in the Choose function of an argument set
 func TestArgSetChooseZeroArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
@@ -311,24 +311,10 @@ func TestArgSetChooseZeroArg(t *testing.T) {
 	}
 }
 
-func TestArgSetChooseRandArg(t *testing.T) {
-	mockCtl := gomock.NewController(t)
-	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
-	as := NewArgumentSet(1000, mockRandomizer)
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
-	val, err := as.Choose(statistics.RandArgID)
-	if err != nil {
-		t.Errorf("Unexpected error for RandArgID: %v", err)
-	}
-	if val != 501 {
-		t.Errorf("Expected value 501 for RandArgID, but got %d", val)
-	}
-}
-
+// TestArgSetChooseRandArg tests random argument kind in the Choose function of an argument set
 func TestArgSetChooseRandArg(t *testing.T) {
 	mockRandomizer := &MockRandomizer{}
-	n := 1000
+	n := ArgumentType(1000)
 	as := NewArgumentSet(n, mockRandomizer)
 	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
@@ -340,6 +326,7 @@ func TestArgSetChooseRandArg(t *testing.T) {
 	}
 }
 
+// TestArgSetChoosePrevArg tests previous argument kind in the Choose function of an argument set
 func TestArgSetChoosePrevArg(t *testing.T) {
 	mockRandomizer := &MockRandomizer{}
 	n := ArgumentType(1000)
@@ -365,6 +352,7 @@ func TestArgSetChoosePrevArg(t *testing.T) {
 	}
 }
 
+// TestArgSetChooseRecentArg tests recent argument kind in the Choose function of an argument set
 func TestArgSetChooseRecentArg(t *testing.T) {
 	mockRandomizer := &MockRandomizer{}
 	n := ArgumentType(1000)
@@ -379,7 +367,7 @@ func TestArgSetChooseRecentArg(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error for RandArgID: %v", err)
 		}
-		if val != i+1 {
+		if val != ArgumentType(i+1) {
 			t.Errorf("Expected value %d for RandArgID, but got %d", i+2, val)
 		}
 	}
