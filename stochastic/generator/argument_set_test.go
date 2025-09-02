@@ -316,7 +316,7 @@ func TestArgSetChooseRandArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockRandomizer := NewMockRandomizer(mockCtl)
 	as := NewArgumentSet(1000, mockRandomizer)
-
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
