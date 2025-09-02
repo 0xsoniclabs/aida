@@ -49,8 +49,8 @@ const (
 type stochasticState struct {
 	db             state.StateDB                   // StateDB database
 	contracts      *generator.SingleUseArgumentSet // index access generator for contracts
-	keys           *generator.ArgumentSet          // index access generator for keys
-	values         *generator.ArgumentSet          // index access generator for values
+	keys           *generator.ReusableArgumentSet  // index access generator for keys
+	values         *generator.ReusableArgumentSet  // index access generator for values
 	snapshotLambda float64                         // lambda parameter for snapshot delta distribution
 	totalTx        uint64                          // total number of transactions
 	txNum          uint32                          // current transaction number
@@ -80,21 +80,21 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	// (NB: Contracts need an indirect access wrapper because
 	// contract addresses can be deleted by suicide.)
 	contracts := generator.NewSingleUseArgumentSet(
-		generator.NewArgumentSet(
+		generator.NewReusableArgumentSet(
 			e.Contracts.NumKeys,
 			generator.NewExpRandomizer(
 				rg,
 				e.Contracts.Lambda,
 				e.Contracts.QueueDistribution,
 			)))
-	keys := generator.NewArgumentSet(
+	keys := generator.NewReusableArgumentSet(
 		e.Keys.NumKeys,
 		generator.NewExpRandomizer(
 			rg,
 			e.Keys.Lambda,
 			e.Keys.QueueDistribution,
 		))
-	values := generator.NewArgumentSet(
+	values := generator.NewReusableArgumentSet(
 		e.Values.NumKeys,
 		generator.NewExpRandomizer(
 			rg,
@@ -247,7 +247,7 @@ func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, 
 }
 
 // NewStochasticState creates a new state for execution StateDB operations
-func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.SingleUseArgumentSet, keys *generator.ArgumentSet, values *generator.ArgumentSet, snapshotLambda float64, log logger.Logger) stochasticState {
+func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.SingleUseArgumentSet, keys *generator.ReusableArgumentSet, values *generator.ReusableArgumentSet, snapshotLambda float64, log logger.Logger) stochasticState {
 
 	// return stochastic state
 	return stochasticState{
