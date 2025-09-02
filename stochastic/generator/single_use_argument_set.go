@@ -36,8 +36,8 @@ type SingleUseArgumentSet struct {
 // when deleted, cannot be reused.
 func NewSingleUseArgumentSet(argset *ArgumentSet) *SingleUseArgumentSet {
 	t := make([]ArgumentType, argset.n)
-	for i := range argset.n {
-		t[i] = i + 1 // shifted by one because of zero value
+	for i := range argset.Size() {
+		t[i] = i 
 	}
 	return &SingleUseArgumentSet{
 		argset:      argset,
@@ -67,7 +67,7 @@ func (a *SingleUseArgumentSet) Choose(kind int) (int64, error) {
 		if v <= 0 || int(v) > len(a.translation) {
 			return 0, errors.New("translation index out of range")
 		}
-		return a.translation[v-1], nil
+		return a.translation[v], nil
 	}
 }
 
@@ -92,6 +92,11 @@ func (a *SingleUseArgumentSet) Remove(k ArgumentType) error {
 	return nil
 }
 
+// Size returns the number of arguments in the argument set.
+func (a *SingleUseArgumentSet) Size() ArgumentType {
+	return a.argset.Size()
+}
+
 // find finds the index in the translation table for a given index k.
 func (a *SingleUseArgumentSet) find(k ArgumentType) ArgumentType {
 	for i := int64(0); i < int64(len(a.translation)); i++ {
@@ -100,9 +105,4 @@ func (a *SingleUseArgumentSet) find(k ArgumentType) ArgumentType {
 		}
 	}
 	return -1
-}
-
-// Size returns the number of arguments in the argument set.
-func (a *SingleUseArgumentSet) Size() ArgumentType {
-	return a.argset.n
 }

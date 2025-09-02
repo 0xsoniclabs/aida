@@ -62,11 +62,6 @@ func NewArgumentSet(n ArgumentType, rand Randomizer) *ArgumentSet {
 	}
 }
 
-// Size returns the current size of the argument set.
-func (a *ArgumentSet) Size() ArgumentType {
-	return a.n
-}
-
 // Choose the a random argument depending on the argument kind. There are
 // following argument kinds: (1) no argument, (2) argument with zero value,
 // (3) a new argument increasing the cardinality of the argument set, (4)
@@ -145,6 +140,11 @@ func (a *ArgumentSet) Remove(v ArgumentType) error {
 	return nil
 }
 
+// Size returns the current size of the argument set.
+func (a *ArgumentSet) Size() ArgumentType {
+	return a.n
+}
+
 // findQElem finds an element in the queue.
 func (a *ArgumentSet) findQElem(elem ArgumentType) bool {
 	for i := range statistics.QueueLen {
@@ -169,7 +169,7 @@ func (a *ArgumentSet) lastQ() ArgumentType {
 func (a *ArgumentSet) recentQ() (ArgumentType, error) {
 	i := a.rand.SampleQueue()
 	if i <= 0 || i >= statistics.QueueLen {
-		return 0, fmt.Errorf("recentQ: queue argument (%v) out of range for recent access", i)
+		return 0, fmt.Errorf("recentQ: queue index (%v) out of range for recent access", i)
 	}
 	return a.queue[i], nil
 }

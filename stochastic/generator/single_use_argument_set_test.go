@@ -33,8 +33,8 @@ func containsIndirectQ(slice []int64, x int64) bool {
 	return false
 }
 
-// TestIndirectAccessSimple tests indirect access generator for indexes.
-func TestIndirectAccessSimple(t *testing.T) {
+// TestSingleUseArgumentSetSimple tests indirect access generator for indexes.
+func TestSingleUseArgumentSetSimple(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 
@@ -65,8 +65,8 @@ func TestIndirectAccessSimple(t *testing.T) {
 	}
 }
 
-// TestIndirectAccessRecentAccess tests previous accesses
-func TestIndirectAccessRecentAccess(t *testing.T) {
+// TestSingleUseArgumentSetRecentAccess tests previous accesses
+func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 
@@ -101,7 +101,7 @@ func TestIndirectAccessRecentAccess(t *testing.T) {
 	}
 }
 
-// TestIndirectAccessDeleteIndex tests deletion of an index
+// TestSingleUseArgumentSetDeleteIndex tests deletion of an index
 func TestIndirectAcessDeleteIndex(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))

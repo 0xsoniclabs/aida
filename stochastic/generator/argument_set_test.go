@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/golang/mock/gomock"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -283,53 +284,39 @@ func TestRandomAccessQueue(t *testing.T) {
 	}
 }
 
-type MockRandomizer struct {
-	SampleDistributionFunc func(n int64) int64
-	SampleQueueFunc      func() int
-}
-
-func (m *MockRandomizer) SampleDistribution(n int64) int64 {
-	if m.SampleDistributionFunc != nil {
-		return m.SampleDistributionFunc(n)
-	}
-	return 0
-}
-
-func (m *MockRandomizer) SampleQueue() int {
-	if m.SampleQueueFunc != nil {
-		return m.SampleQueueFunc()
-	}
-	return 1
-}
-
+// test no argument kind in the Choose function of an argument set
 func TestArgSetChooseNoArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	as := NewArgumentSet(1000, mockRandomizer)
-
 	_, err := as.Choose(statistics.NoArgID)
 	if err == nil {
 		t.Errorf("Expected an error for NoArgID, but got nil")
 	}
 }
 
+// test zero argument kind in the Choose function of an argument set
 func TestArgSetChooseZeroArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	as := NewArgumentSet(1000, mockRandomizer)
-
-	_, err := as.Choose(statistics.ZeroArgID)
-	if err == nil {
-		t.Errorf("Expected an error for ZeroArgID, but got nil")
+	zero, err := as.Choose(statistics.ZeroArgID)
+	if err != nil {
+		t.Errorf("Expected no error for ZeroArgID got nil")
+	}
+	if zero != 0 {
+		t.Errorf("Expected value 0 for ZeroArgID, but got %d", zero)
 	}
 }
 
 func TestArgSetChooseRandArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	as := NewArgumentSet(1000, mockRandomizer)
 
-	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
-		return 500
-	}
-	
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -339,50 +326,72 @@ func TestArgSetChooseRandArg(t *testing.T) {
 	}
 }
 
-func TestArgSetChoosePrevArg(t *testing.T) {
+func TestArgSetChooseRandArg(t *testing.T) {
 	mockRandomizer := &MockRandomizer{}
-	as := NewArgumentSet(1000, mockRandomizer)
-
-	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
-		return 500
-	}
-
+	n := 1000
+	as := NewArgumentSet(n, mockRandomizer)
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
 	}
-	if val != 501 {
-		t.Errorf("Expected value 499 for RandArgID, but got %d", val)
+	if val != 4712 {
+		t.Errorf("Expected value 4711 for RandArgID, but got %d", val)
+	}
+}
+
+func TestArgSetChoosePrevArg(t *testing.T) {
+	mockRandomizer := &MockRandomizer{}
+	n := ArgumentType(1000)
+	as := NewArgumentSet(n, mockRandomizer)
+
+	// load queue with a known value
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
+	val, err := as.Choose(statistics.RandArgID)
+	if err != nil {
+		t.Errorf("Unexpected error for RandArgID: %v", err)
+	}
+	if val != 4712 {
+		t.Errorf("Expected value 4711 for RandArgID, but got %d", val)
 	}
 
+	// check whether the queue returns the expected previous value
 	prev_val, err := as.Choose(statistics.PrevArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for PrevArgID: %v", err)
 	}
-	if prev_val != 501 {
+	if prev_val != 4712 {
 		t.Errorf("Expected value 501 for PrevArgID, but got %d", prev_val)
 	}
 }
 
 func TestArgSetChooseRecentArg(t *testing.T) {
 	mockRandomizer := &MockRandomizer{}
-	as := NewArgumentSet(1000, mockRandomizer)
-
-	mockRandomizer.SampleDistributionFunc = func(n int64) int64 {
-		return 500
+	n := ArgumentType(1000)
+	as := NewArgumentSet(n, mockRandomizer)
+	m := 10
+	if m >= statistics.QueueLen-1 {
+		t.Errorf("Test range exceeds queue length")
 	}
-
-	rand_val, err := as.Choose(statistics.RandArgID)
-	if err != nil {
-		t.Errorf("Unexpected error for RandArgID: %v", err)
+	for i := range m {
+		mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(i).Times(1)
+		val, err := as.Choose(statistics.RandArgID)
+		if err != nil {
+			t.Errorf("Unexpected error for RandArgID: %v", err)
+		}
+		if val != i+1 {
+			t.Errorf("Expected value %d for RandArgID, but got %d", i+2, val)
+		}
 	}
-
-	val, err := as.Choose(statistics.RecentArgID)
-	if err != nil {
-		t.Errorf("Unexpected error for RecentArgID: %v", err)
-	}
-	if val == rand_val {
-		t.Errorf("Expected value 501 for RecentArgID, but got %d", val)
+	for i := range m - 1 {
+		mockRandomizer.EXPECT().SampleQueue().Return(i + 1).Times(1)
+		val, err := as.Choose(statistics.RecentArgID)
+		if err != nil {
+			t.Errorf("Unexpected error for RandArgID: %v", err)
+		}
+		if val != ArgumentType(m-i+1) {
+			t.Errorf("Expected value %d for RandArgID, but got %d", m-i+1, val)
+		}
 	}
 }
 
