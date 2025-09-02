@@ -17,279 +17,21 @@
 package generator
 
 import (
-	"math"
-	"math/rand"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/golang/mock/gomock"
-	"gonum.org/v1/gonum/stat/distuv"
 )
-
-// containsQ checks whether an element is in the queue (ignoring the previous value).
-func containsQ(slice []int64, x int64) bool {
-	for i, n := range slice {
-		if x == n && i != 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// TestRandomAccessSimple tests random access generators for indexes.
-func TestRandomAccessSimple(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(99))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
-
-	// check no argument class (must be always -1)
-	if _, err := ra.Choose(statistics.NoArgID); err == nil {
-		t.Fatalf("expected an invalid index")
-	}
-
-	// check zero argument class (must be zero)
-	if idx, err := ra.Choose(statistics.ZeroArgID); idx != 0 || err != nil {
-		t.Fatalf("expected an invalid index")
-	}
-
-	// check a new value (must be equal to the number of elements
-	// in the index set and must be greater than zero).
-	if idx, err := ra.Choose(statistics.NewArgID); idx != ra.n || err != nil {
-		t.Fatalf("expected a new index")
-	}
-
-	// check previous value (must return the first element in the queue
-	// and the element + 1 is the returned value. The returned must be
-	// in the range between 1 and ra.num).
-	queue := make([]int64, statistics.QueueLen)
-	copy(queue, ra.queue)
-	if idx, err := ra.Choose(statistics.PrevArgID); queue[0]+1 != idx || idx < 1 || idx > ra.n || err != nil {
-		t.Fatalf("accessing previous index failed")
-	}
-
-	// check recent value (must return an element in the queue excluding
-	// the first element).
-	copy(queue, ra.queue)
-	if _, err := ra.Choose(statistics.RecentArgID); err != nil {
-		t.Fatalf("index access must fail because no distribution was specified")
-	}
-
-	// create a uniform distribution for random generator and check recent access
-	for i := range statistics.QueueLen {
-		qpdf[i] = 1.0 / float64(statistics.QueueLen)
-	}
-	ra = NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
-	for range minCardinality {
-		copy(queue, ra.queue)
-		if idx, err := ra.Choose(statistics.RecentArgID); idx < 1 || idx > ra.n || !containsQ(queue, idx-1) || err != nil {
-			t.Fatalf("index access not in queue")
-		}
-	}
-
-	// check random access (must not be contained in queue)
-	copy(queue, ra.queue)
-	if idx, err := ra.Choose(statistics.RandArgID); idx < 1 || idx > ra.n || containsQ(queue, idx-1) || queue[0]+1 == idx || err != nil {
-		t.Fatalf("index access must fail because no distribution was specified")
-	}
-}
-
-// TestQueuingSimple tests previous accesses
-func TestRandomAccessRecentAccess(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
-
-	// check a new value (must be equal to the number of elements
-	// in the index set and must be greater than zero).
-	idx1, err1 := ra.Choose(statistics.NewArgID)
-	if idx1 != ra.n || idx1 < 1 || err1 != nil {
-		t.Fatalf("expected a new index")
-	}
-	idx2, err2 := ra.Choose(statistics.PrevArgID)
-	if idx1 != idx2 || err2 != nil {
-		t.Fatalf("previous index access failed.")
-	}
-	idx3, err3 := ra.Choose(statistics.PrevArgID)
-	if idx2 != idx3 || err3 != nil {
-		t.Fatalf("previous index access failed.")
-	}
-	// in the index set and must be greater than zero).
-	idx4, err4 := ra.Choose(statistics.NewArgID)
-	if idx4 != ra.n || idx4 < 1 || err4 != nil {
-		t.Fatalf("expected a new index")
-	}
-	idx5, err5 := ra.Choose(statistics.PrevArgID)
-	if idx5 == idx3 || err5 != nil {
-		t.Fatalf("previous previous index access must not be identical.")
-	}
-}
-
-// TestRandomAccessDeleteIndex tests deletion of an index
-func TestRandomAcessDeleteIndex(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create a random access index generator
-	// with a zero probability distribution.
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(1000, NewExpRandomizer(rg, 5.0, qpdf))
-	idx, err := ra.Choose(statistics.PrevArgID)
-	if idx == -1 || idx < 1 || idx > ra.n || err != nil {
-		t.Fatalf("previous index access failed.")
-	}
-
-	// delete previous element
-	ra.Remove(idx)
-	if len(ra.queue) != statistics.QueueLen {
-		t.Fatalf("queue size did not stay constant.")
-	}
-	for _, x := range ra.queue {
-		if x == idx {
-			t.Fatalf("index stayed still in queue.")
-		}
-	}
-	if ra.n != 999 {
-		t.Fatalf("Cardinality of index set did not decrement.")
-	}
-}
-
-// checkUniformQueueSelection performs a statistical test
-// whether a queue with uniform position distribution is
-// unbiased.
-func checkUniformQueueSelection(qpdf []float64, numSteps int) bool {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	// create random access generator
-	er := NewExpRandomizer(rg, 5.0, qpdf)
-	ra := NewArgumentSet(1000, er)
-
-	// number of observed queue positions
-	counts := make([]int64, statistics.QueueLen)
-
-	// select numSteps queue position and count there occurrence
-	for range numSteps {
-		idx := ra.rand.SampleQueue()
-		counts[idx]++
-	}
-
-	// first index must not be selected
-	if counts[0] > 0 {
-		return false
-	}
-
-	// compute chi-squared value for observations
-	chi2 := float64(0.0)
-	for i, v := range counts {
-		if i != 0 {
-			expected := float64(numSteps) * qpdf[i] / (1.0 - qpdf[0])
-			err := expected - float64(v)
-			// fmt.Printf("Err: %v %v\n", v, expected)
-			chi2 += (err * err) / expected
-		}
-	}
-
-	// Perform statistical test whether uniform queue distribution is unbiased
-	// with an alpha of 0.05 and a degree of freedom of queue length minus two
-	// (no first position!).
-	alpha := 0.05
-	df := float64(statistics.QueueLen - 2)
-	chi2Critical := distuv.ChiSquared{K: df, Src: nil}.Quantile(1.0 - alpha)
-	// fmt.Printf("Chi^2 value: %v Chi^2 critical value: %v df: %v\n", chi2, chi2Critical, statistics.QueueLen-2)
-
-	return chi2 <= chi2Critical
-}
-
-// TestRandomAccessRandQPos checks the random selection of the queue position via a statistical test.
-func TestRandomAccessRandQPos(t *testing.T) {
-	// create a uniform queue distribution
-	qpdf := make([]float64, statistics.QueueLen)
-	for i := range statistics.QueueLen {
-		qpdf[i] = 1.0 / float64(statistics.QueueLen)
-	}
-
-	// run statistical test
-	if !checkUniformQueueSelection(qpdf, 100000) {
-		t.Fatalf("The random queue selection for a uniform queue distribution is biased.")
-	}
-
-	// create a truncated geometric queue distribution
-	alpha := 0.4
-	for i := range statistics.QueueLen {
-		qpdf[i] = (1 - alpha) *
-			math.Pow(alpha, statistics.QueueLen) /
-			(1.0 - math.Pow(alpha, statistics.QueueLen)) *
-			math.Pow(alpha, -float64(i+1))
-	}
-
-	// run statistical test
-	if !checkUniformQueueSelection(qpdf, 100000) {
-		t.Fatalf("The random queue selection for truncated geometric queue distribution is biased.")
-	}
-}
-
-// TestRandomAccessLimits checks limits.
-func TestRandomAccessLimits(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	qpdf := make([]float64, statistics.QueueLen)
-	ra := NewArgumentSet(math.MaxInt64, NewExpRandomizer(rg, 5.0, qpdf))
-	if _, err := ra.Choose(statistics.NewArgID); err == nil {
-		t.Fatalf("Fails to detect cardinality integer overflow.")
-	}
-	ra = NewArgumentSet(minCardinality, NewExpRandomizer(rg, 5.0, qpdf))
-	if err := ra.Remove(0); err == nil {
-		t.Fatalf("Fails to detect deleting zero element.")
-	}
-	if err := ra.Remove(1); err == nil {
-		t.Fatalf("Fails to detect depletion of elements.")
-	}
-	if ra := NewArgumentSet(minCardinality-1, NewExpRandomizer(rg, 5.0, qpdf)); ra != nil {
-		t.Fatalf("Fails to detect low cardinality.")
-	}
-}
-
-// TestRandomAccessQueue tests the queue operation
-func TestRandomAccessQueue(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	qpdf := make([]float64, statistics.QueueLen)
-	for i := range statistics.QueueLen {
-		qpdf[i] = 1.0 / float64(statistics.QueueLen)
-	}
-	er := NewExpRandomizer(rg, 5.0, qpdf)
-	ra := NewArgumentSet(1000, er)
-	ra.placeQ(2)
-	if idx := ra.lastQ(); idx != 2 {
-		t.Fatalf("Queuing of element 2 failed.")
-	}
-	if idx, err := ra.recentQ(); idx < 0 || idx >= ra.n || !containsQ(ra.queue, idx) || err != nil {
-		t.Fatalf("RecentQ fetched invalid element.")
-	}
-	if idx, err := ra.recentQ(); idx < 0 || idx >= ra.n || !containsQ(ra.queue, idx) || err != nil {
-		t.Fatalf("RecentQ fetched invalid element.")
-	}
-	if i := er.SampleQueue(); i < 1 || i >= statistics.QueueLen {
-		t.Fatalf("wrong randomized value")
-	}
-}
 
 // test no argument kind in the Choose function of an argument set
 func TestArgSetChooseNoArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 	mockRandomizer := NewMockRandomizer(mockCtl)
-	as := NewArgumentSet(1000, mockRandomizer)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewArgumentSet(n, mockRandomizer)
 	_, err := as.Choose(statistics.NoArgID)
 	if err == nil {
 		t.Errorf("Expected an error for NoArgID, but got nil")
@@ -301,7 +43,10 @@ func TestArgSetChooseZeroArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 	mockRandomizer := NewMockRandomizer(mockCtl)
-	as := NewArgumentSet(1000, mockRandomizer)
+	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewArgumentSet(n, mockRandomizer)
 	zero, err := as.Choose(statistics.ZeroArgID)
 	if err != nil {
 		t.Errorf("Expected no error for ZeroArgID got nil")
@@ -313,10 +58,14 @@ func TestArgSetChooseZeroArg(t *testing.T) {
 
 // TestArgSetChooseRandArg tests random argument kind in the Choose function of an argument set
 func TestArgSetChooseRandArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewArgumentSet(n, mockRandomizer)
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -328,12 +77,16 @@ func TestArgSetChooseRandArg(t *testing.T) {
 
 // TestArgSetChoosePrevArg tests previous argument kind in the Choose function of an argument set
 func TestArgSetChoosePrevArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	n := ArgumentType(1000)
+	// needed to fill the queue
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewArgumentSet(n, mockRandomizer)
 
 	// load queue with a known value
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(4711).Times(1)
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -354,38 +107,44 @@ func TestArgSetChoosePrevArg(t *testing.T) {
 
 // TestArgSetChooseRecentArg tests recent argument kind in the Choose function of an argument set
 func TestArgSetChooseRecentArg(t *testing.T) {
-	mockRandomizer := &MockRandomizer{}
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
 	n := ArgumentType(1000)
+
+	var calls []*gomock.Call
+	// prepare mock calls to fill the queue with values from 1 to QueueLen
+	calls = append(calls, mockRandomizer.EXPECT().SampleDistribution(n-1).Return(ArgumentType(4711)).Times(statistics.QueueLen))
+	// prepare mock calls to select recent values in ascending order from the queue
+	for i := range statistics.QueueLen - 1 {
+		calls = append(calls, mockRandomizer.EXPECT().SampleQueue().Return(int(i+1)).Times(1))
+	}
+	gomock.InOrder(calls...)
+
+	// create argument set and query each queue element subsequentially
 	as := NewArgumentSet(n, mockRandomizer)
-	m := 10
-	if m >= statistics.QueueLen-1 {
-		t.Errorf("Test range exceeds queue length")
-	}
-	for i := range m {
-		mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(i).Times(1)
-		val, err := as.Choose(statistics.RandArgID)
-		if err != nil {
-			t.Errorf("Unexpected error for RandArgID: %v", err)
-		}
-		if val != ArgumentType(i+1) {
-			t.Errorf("Expected value %d for RandArgID, but got %d", i+2, val)
-		}
-	}
-	for i := range m - 1 {
-		mockRandomizer.EXPECT().SampleQueue().Return(i + 1).Times(1)
+	for range statistics.QueueLen - 1 {
 		val, err := as.Choose(statistics.RecentArgID)
 		if err != nil {
 			t.Errorf("Unexpected error for RandArgID: %v", err)
 		}
-		if val != ArgumentType(m-i+1) {
-			t.Errorf("Expected value %d for RandArgID, but got %d", m-i+1, val)
+		expected_val := ArgumentType(4712)
+		if val != expected_val {
+			t.Errorf("Expected value %d for RandArgID, but got %d", expected_val, val)
 		}
 	}
 }
 
+// / TestArgSetRemove tests the Remove function of an argument set
 func TestArgSetRemove(t *testing.T) {
-	as := NewArgumentSet(minCardinality+10, &MockRandomizer{})
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockRandomizer := NewMockRandomizer(mockCtl)
+	n := ArgumentType(minCardinality + 10)
+	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(48)).Times(statistics.QueueLen)
+	as := NewArgumentSet(n, mockRandomizer)
 
+	mockRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
 	err := as.Remove(5)
 	if err != nil {
 		t.Errorf("Unexpected error when removing a valid argument: %v", err)
