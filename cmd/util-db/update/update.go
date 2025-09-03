@@ -139,11 +139,6 @@ func getTargetDbBlockRange(cfg *utils.Config) (firstAidaDbBlock uint64, lastAida
 		defer func() {
 			finalErr = errors.Join(finalErr, sdb.Close())
 		}()
-		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
-		if err != nil {
-			return 0, 0, fmt.Errorf("failed to set substate encoding. %v", err)
-		}
-
 		firstAidaDbBlock, lastAidaDbBlock, ok := utils.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			return 0, 0, fmt.Errorf("cannot find blocks in substate; is substate present in given db? %v", cfg.AidaDb)
