@@ -113,12 +113,13 @@ func (c *cloner) clone() error {
 	}
 
 	if c.typ != utils.CustomType {
+		srcMd := utils.NewAidaDbMetadata(c.sourceDb, c.cfg.LogLevel)
 		md := utils.NewAidaDbMetadata(c.cloneDb, c.cfg.LogLevel)
 		err = md.SetDbType(utils.CloneType)
 		if err != nil {
 			return fmt.Errorf("cannot set db type for clone db; %v", err)
 		}
-		err = md.GenerateMetadata()
+		err = md.GenerateMetadata(srcMd.GetChainID())
 		if err != nil {
 			return fmt.Errorf("cannot generate metadata for clone db; %v", err)
 		}

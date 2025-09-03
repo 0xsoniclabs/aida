@@ -74,7 +74,11 @@ func updateAction(ctx *cli.Context) error {
 		return err
 	}
 
-	return utildb.PrintMetadata(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
+	if err != nil {
+		return fmt.Errorf("failed to open aida-db: %v", err)
+	}
+	return utildb.PrintMetadata(aidaDb)
 }
 
 // update implements updating command to be called from various commands and automatically downloads aida-db patches.
@@ -199,28 +203,27 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				return nil
 			}
 
-				// firstRun is triggered only when applying first patch
-				// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
-				// before opening database for writing
-				if firstRun {
-					firstRun = false
-					// first patch to empty database is moved to target right away
-					// this way we can skip iteration and metadata inserts
-					if isNewDb {
-						log.Noticef("AIDA-DB was empty - directly saving first patch")
-						// move extracted patch to target location - first attempting with os.Rename because it is fastest
-						if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
-							// attempting with deep copy - needed when moving across different disks
-							if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
-								return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
-							}
+			// firstRun is triggered only when applying first patch
+			// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
+			// before opening database for writing
+			if firstRun {
+				firstRun = false
+				// first patch to empty database is moved to target right away
+				// this way we can skip iteration and metadata inserts
+				if isNewDb {
+					log.Noticef("AIDA-DB was empty - directly saving first patch")
+					// move extracted patch to target location - first attempting with os.Rename because it is fastest
+					if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
+						// attempting with deep copy - needed when moving across different disks
+						if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
+							return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
 						}
 					}
-					// patch was already applied before opening targetDb hence we don't need to merge it anymore
-					if !isNewDb {
-						if err = mergeToExistingAidaDb(cfg, targetMD, extractedPatchPath); err != nil {
-							return err
-						}
+				}
+				// patch was already applied before opening targetDb hence we don't need to merge it anymore
+				if !isNewDb {
+					if err = mergeToExistingAidaDb(cfg, md, extractedPatchPath); err != nil {
+						return err
 					}
 				}
 			}
@@ -228,40 +231,40 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 	}
 }
 
-func mergeToExistingAidaDb(cfg *utils.Config, targetMD *utils.AidaDbMetadata, extractedPatchPath string) error {
+func mergeToExistingAidaDb(cfg *utils.Config, md utils.Metadata, extractedPatchPath string) error {
 	// merge newly extracted patch
 	patchDb, err := db.NewReadOnlySubstateDB(extractedPatchPath)
 	if err != nil {
 		return fmt.Errorf("cannot open patchDb; %v", err)
 	}
 
-				// we only check metadata if not applying stateHashPatch
-				if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					patchMD := utils.NewAidaDbMetadata(patchDb, cfg.LogLevel)
-					// patches contain chainID in metadata
-					if err = patchMD.GenerateMetadata(0); err != nil {
-						return fmt.Errorf("cannot generate patch metadata; %v", err)
-					}
-					if err = md.Merge(patchMD); err != nil {
-						return fmt.Errorf("cannot merge patch metadata; %v", err)
-					}
-				}
+	// we only check metadata if not applying stateHashPatch
+	if !strings.Contains(extractedPatchPath, stateHashPatchFileName) {
+		patchMD := utils.NewAidaDbMetadata(patchDb, cfg.LogLevel)
+		// patches contain chainID in metadata
+		if err = patchMD.GenerateMetadata(0); err != nil {
+			return fmt.Errorf("cannot generate patch metadata; %v", err)
+		}
+		if err = md.Merge(patchMD); err != nil {
+			return fmt.Errorf("cannot merge patch metadata; %v", err)
+		}
+	}
 
-				m := utildb.NewMerger(cfg, md.GetDb(), []db.BaseDB{patchDb}, []string{extractedPatchPath}, nil)
+	m := utildb.NewMerger(cfg, md.GetDb(), []db.SubstateDB{patchDb}, []string{extractedPatchPath}, nil)
 
-				err = m.Merge()
-				if err != nil {
-					return fmt.Errorf("unable to merge %v; %v", extractedPatchPath, err)
-				}
+	err = m.Merge()
+	if err != nil {
+		return fmt.Errorf("unable to merge %v; %v", extractedPatchPath, err)
+	}
 
-				// we only set metadata if not applying stateHashPatch
-				if strings.Contains(extractedPatchPath, stateHashPatchFileName) {
-					err = md.SetHasHashPatch()
-					if err != nil {
-						return fmt.Errorf("cannot set has-hash-patch; %v", err)
-					}
-				}
-				m.CloseSourceDbs()
+	// we only set metadata if not applying stateHashPatch
+	if strings.Contains(extractedPatchPath, stateHashPatchFileName) {
+		err = md.SetHasHashPatch()
+		if err != nil {
+			return fmt.Errorf("cannot set has-hash-patch; %v", err)
+		}
+	}
+	m.CloseSourceDbs()
 
 	// remove patch
 	err = os.RemoveAll(extractedPatchPath)

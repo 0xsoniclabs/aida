@@ -59,17 +59,16 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 	valArg := ctx.Args().Get(1)
 
 	// open db
-	base, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		finalErr = errors.Join(finalErr, base.Close())
+		finalErr = errors.Join(finalErr, aidaDb.Close())
 	}()
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
-
+	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
 	switch db.MetadataPrefix + keyArg {
 	case utils.FirstBlockPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)

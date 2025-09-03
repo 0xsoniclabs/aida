@@ -41,26 +41,25 @@ func generateAction(ctx *cli.Context) error {
 		return argErr
 	}
 
-	base, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
-
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-	fb, lb, ok := utils.FindBlockRangeInSubstate(sdb)
+	defer utildb.MustCloseDB(aidaDb)
+	fb, lb, ok := utils.FindBlockRangeInSubstate(aidaDb)
 	if !ok {
 		return errors.New("cannot find block range in substate")
 	}
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
-	md.FirstBlock = fb
-	md.LastBlock = lb
-	if err = md.SetFreshMetadata(cfg.ChainID); err != nil {
+	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	if err = md.SetFirstBlock(fb); err != nil {
 		return err
 	}
-
-	utildb.MustCloseDB(base)
-
-	return utildb.PrintMetadata(cfg.AidaDb)
-
+	if err = md.SetLastBlock(lb); err != nil {
+		return err
+	}
+	if err = md.SetChainID(cfg.ChainID); err != nil {
+		return err
+	}
+	return utildb.PrintMetadata(aidaDb)
 }

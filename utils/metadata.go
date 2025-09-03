@@ -92,7 +92,7 @@ type Metadata interface {
 	// Merge merges source metadata into target metadata if its possible.
 	Merge(Metadata) error
 	// Delete deletes metadata from AidaDb.
-	Delete()
+	Delete() error
 
 	// Getters
 	GetFirstBlock() uint64
@@ -604,50 +604,52 @@ func (md *AidaDbMetadata) SetBlockRange(firstBlock uint64, lastBlock uint64) err
 	return nil
 }
 
-func (md *AidaDbMetadata) Delete() {
+func (md *AidaDbMetadata) Delete() error {
 	var err error
 
 	if err = md.Db.Delete([]byte(ChainIDPrefix)); err != nil {
-		md.log.Criticalf("cannot delete chain-id; %v", err)
+		return fmt.Errorf("cannot delete chain-id; %v", err)
 	} else {
 		md.log.Debugf("ChainID deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(FirstBlockPrefix)); err != nil {
-		md.log.Criticalf("cannot delete first block; %v", err)
+		return fmt.Errorf("cannot delete first block; %v", err)
 	} else {
 		md.log.Debugf("First block deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(LastBlockPrefix)); err != nil {
-		md.log.Criticalf("cannot delete last block; %v", err)
+		return fmt.Errorf("cannot delete last block; %v", err)
 	} else {
 		md.log.Debugf("Last block deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(FirstEpochPrefix)); err != nil {
-		md.log.Criticalf("cannot delete first epoch; %v", err)
+		return fmt.Errorf("cannot delete first epoch; %v", err)
 	} else {
 		md.log.Debugf("First epoch deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(LastEpochPrefix)); err != nil {
-		md.log.Criticalf("cannot delete last epoch; %v", err)
+		return fmt.Errorf("cannot delete last epoch; %v", err)
 	} else {
 		md.log.Debugf("Last epoch deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(TypePrefix)); err != nil {
-		md.log.Criticalf("cannot delete db type; %v", err)
+		return fmt.Errorf("cannot delete db type; %v", err)
 	} else {
 		md.log.Debugf("Timestamp deleted successfully")
 	}
 
 	if err = md.Db.Delete([]byte(TimestampPrefix)); err != nil {
-		md.log.Criticalf("cannot delete creation timestamp; %v", err)
+		return fmt.Errorf("cannot delete creation timestamp; %v", err)
 	} else {
 		md.log.Debugf("Timestamp deleted successfully")
 	}
+
+	return nil
 }
 
 // FindBlockRangeInSubstate if AidaDb does not yet have metadata
