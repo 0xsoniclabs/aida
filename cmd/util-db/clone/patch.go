@@ -73,15 +73,17 @@ func clonePatchAction(ctx *cli.Context) error {
 		return err
 	}
 
+	defer func() {
+		utildb.MustCloseDB(aidaDb)
+		utildb.MustCloseDB(targetDb)
+	}()
+
 	err = createPatchClone(cfg, aidaDb, targetDb, firstEpoch, lastEpoch)
 	if err != nil {
 		return err
 	}
 
-	utildb.MustCloseDB(aidaDb)
-	utildb.MustCloseDB(targetDb)
-
-	return utildb.PrintMetadata(cfg.TargetDb)
+	return utildb.PrintMetadata(targetDb)
 }
 
 // createPatchClone creates aida-db clonePatchCommand

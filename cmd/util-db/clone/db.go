@@ -53,14 +53,15 @@ func cloneDbAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		utildb.MustCloseDB(aidaDb)
+		utildb.MustCloseDB(targetDb)
+	}()
 
 	err = clone(cfg, aidaDb, targetDb, utils.CloneType)
 	if err != nil {
 		return err
 	}
 
-	utildb.MustCloseDB(aidaDb)
-	utildb.MustCloseDB(targetDb)
-
-	return utildb.PrintMetadata(cfg.TargetDb)
+	return utildb.PrintMetadata(targetDb)
 }
