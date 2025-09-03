@@ -19,6 +19,7 @@ package register
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	rr "github.com/0xsoniclabs/aida/register"
@@ -34,8 +35,8 @@ func TestRegisterRequestProgress_PreRun(t *testing.T) {
 	dir := t.TempDir()
 	r := &registerRequestProgress{
 		log: logger.NewLogger("info", "test"),
-		id:  rr.MakeRunIdentity(int64(0), &utils.Config{}),
-		cfg: &utils.Config{
+		id:  rr.MakeRunIdentity(int64(0), &config.Config{}),
+		cfg: &config.Config{
 			RegisterRun: dir,
 		},
 		ps: utils.NewPrinters(),
@@ -51,8 +52,8 @@ func TestRegisterRequestProgress_PostTransaction(t *testing.T) {
 	dir := t.TempDir()
 	r := &registerRequestProgress{
 		log: logger.NewLogger("info", "test"),
-		id:  rr.MakeRunIdentity(int64(0), &utils.Config{}),
-		cfg: &utils.Config{
+		id:  rr.MakeRunIdentity(int64(0), &config.Config{}),
+		cfg: &config.Config{
 			RegisterRun: dir,
 		},
 		ps:              utils.NewPrinters(),
@@ -67,7 +68,7 @@ func TestRegisterRequestProgress_PostRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	dir := t.TempDir()
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		RegisterRun: dir,
 	}
 	mockPrinter := utils.NewMockPrinter(ctrl)
@@ -91,7 +92,7 @@ func TestRegisterRequestProgress_PostRun(t *testing.T) {
 }
 
 func TestMakeRegisterRequestProgress(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		RegisterRun: t.TempDir(),
 	}
 	r := MakeRegisterRequestProgress(cfg, 1, 1)

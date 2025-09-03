@@ -19,6 +19,7 @@ package trace
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -29,13 +30,12 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
 func ReplaySubstate(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func ReplaySubstate(ctx *cli.Context) error {
 	return replaySubstate(cfg, substateIterator, processor, nil, extra)
 }
 
-func makeSubstateProcessor(cfg *utils.Config, rCtx *context.Replay, operationProvider executor.Provider[[]operation.Operation]) *substateProcessor {
+func makeSubstateProcessor(cfg *config.Config, rCtx *context.Replay, operationProvider executor.Provider[[]operation.Operation]) *substateProcessor {
 	return &substateProcessor{
 		operationProcessor: operationProcessor{cfg, rCtx},
 		operationProvider:  operationProvider,
@@ -87,7 +87,7 @@ func (p substateProcessor) Process(state executor.State[txcontext.TxContext], ct
 }
 
 func replaySubstate(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	processor executor.Processor[txcontext.TxContext],
 	stateDb state.StateDB,

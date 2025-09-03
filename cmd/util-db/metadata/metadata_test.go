@@ -19,6 +19,8 @@ package metadata
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -54,7 +56,7 @@ func TestCmd_PrintMetadataCommand(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(printCommand.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
 		Build()
 
 	// when
@@ -73,8 +75,8 @@ func TestCmd_GenerateMetadataCommand(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(generateCommand.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.ChainIDFlag.Name, int(config.MainnetChainID)).
 		Build()
 
 	// when
@@ -92,8 +94,8 @@ func TestCmd_GenerateMetadataCommand_EmptyAidaDb(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(generateCommand.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.ChainIDFlag.Name, int(config.MainnetChainID)).
 		Build()
 
 	// when
@@ -109,22 +111,22 @@ func TestCmd_InsertMetadataCommand(t *testing.T) {
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 	params := map[string]string{
-		utils.FirstBlockPrefix:  "0",
-		utils.LastBlockPrefix:   "0",
-		utils.FirstEpochPrefix:  "0",
-		utils.LastEpochPrefix:   "0",
-		utils.TypePrefix:        "0",
-		utils.ChainIDPrefix:     "0",
-		utils.TimestampPrefix:   "0",
-		utils.DbHashPrefix:      "1234",
-		db.UpdatesetIntervalKey: "0",
-		db.UpdatesetSizeKey:     "0",
+		metadata.FirstBlockPrefix: "0",
+		metadata.LastBlockPrefix:  "0",
+		metadata.FirstEpochPrefix: "0",
+		metadata.LastEpochPrefix:  "0",
+		metadata.TypePrefix:       "0",
+		metadata.ChainIDPrefix:    "0",
+		metadata.TimestampPrefix:  "0",
+		metadata.DbHashPrefix:     "1234",
+		db.UpdatesetIntervalKey:   "0",
+		db.UpdatesetSizeKey:       "0",
 	}
 	for param := range params {
 		args := utils.NewArgs("test").
 			Arg(Command.Name).
 			Arg(insertCommand.Name).
-			Flag(utils.AidaDbFlag.Name, aidaDbPath).
+			Flag(config.AidaDbFlag.Name, aidaDbPath).
 			Arg(param[2:]).
 			Arg(params[param]).
 			Build()
@@ -149,7 +151,7 @@ func TestCmd_InsertMetadataCommand_Errors(t *testing.T) {
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
 				Arg(insertCommand.Name).
-				Flag(utils.AidaDbFlag.Name, aidaDbPath),
+				Flag(config.AidaDbFlag.Name, aidaDbPath),
 			wantErr: "this command requires two arguments",
 		},
 		{
@@ -157,7 +159,7 @@ func TestCmd_InsertMetadataCommand_Errors(t *testing.T) {
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
 				Arg(insertCommand.Name).
-				Flag(utils.AidaDbFlag.Name, aidaDbPath).
+				Flag(config.AidaDbFlag.Name, aidaDbPath).
 				Arg("unknownKey").
 				Arg("123"),
 			wantErr: "incorrect keyArg: unknownKey",
@@ -183,21 +185,21 @@ func TestCmd_InsertMetadataCommand_IncorrectArguments(t *testing.T) {
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 	params := map[string]string{
-		utils.FirstBlockPrefix:  "a",
-		utils.LastBlockPrefix:   "b",
-		utils.FirstEpochPrefix:  "c",
-		utils.LastEpochPrefix:   "d",
-		utils.TypePrefix:        "e",
-		utils.ChainIDPrefix:     "f",
-		utils.DbHashPrefix:      "0",
-		db.UpdatesetIntervalKey: "h",
-		db.UpdatesetSizeKey:     "i",
+		metadata.FirstBlockPrefix: "a",
+		metadata.LastBlockPrefix:  "b",
+		metadata.FirstEpochPrefix: "c",
+		metadata.LastEpochPrefix:  "d",
+		metadata.TypePrefix:       "e",
+		metadata.ChainIDPrefix:    "f",
+		metadata.DbHashPrefix:     "0",
+		db.UpdatesetIntervalKey:   "h",
+		db.UpdatesetSizeKey:       "i",
 	}
 	for param := range params {
 		args := utils.NewArgs("test").
 			Arg(Command.Name).
 			Arg(insertCommand.Name).
-			Flag(utils.AidaDbFlag.Name, aidaDbPath).
+			Flag(config.AidaDbFlag.Name, aidaDbPath).
 			Arg(param[2:]).
 			Arg(params[param]).
 			Build()
@@ -218,7 +220,7 @@ func TestCmd_RemoveMetadataCommand(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(removeCommand.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
 		Build()
 
 	// when

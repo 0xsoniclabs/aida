@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -34,7 +35,7 @@ const (
 
 // MakeProgressLogger creates progress logger. It logs progress about processor depending on reportFrequency.
 // If reportFrequency is 0, it is set to ProgressLoggerDefaultReportFrequency.
-func MakeProgressLogger[T any](cfg *utils.Config, reportFrequency time.Duration) executor.Extension[T] {
+func MakeProgressLogger[T any](cfg *config.Config, reportFrequency time.Duration) executor.Extension[T] {
 	if cfg.NoHeartbeatLogging {
 		return extension.NilExtension[T]{}
 	}
@@ -46,7 +47,7 @@ func MakeProgressLogger[T any](cfg *utils.Config, reportFrequency time.Duration)
 	return makeProgressLogger[T](cfg, reportFrequency, logger.NewLogger(cfg.LogLevel, "Progress-Logger"))
 }
 
-func makeProgressLogger[T any](cfg *utils.Config, reportFrequency time.Duration, logger logger.Logger) *progressLogger[T] {
+func makeProgressLogger[T any](cfg *config.Config, reportFrequency time.Duration, logger logger.Logger) *progressLogger[T] {
 	return &progressLogger[T]{
 		cfg:             cfg,
 		log:             logger,
@@ -66,7 +67,7 @@ type txProgressInfo struct {
 // in "heartbeat" depending on reportFrequency.
 type progressLogger[T any] struct {
 	extension.NilExtension[T]
-	cfg             *utils.Config
+	cfg             *config.Config
 	log             logger.Logger
 	inputCh         chan txProgressInfo
 	wg              *sync.WaitGroup

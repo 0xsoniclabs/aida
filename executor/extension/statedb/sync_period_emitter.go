@@ -17,20 +17,20 @@
 package statedb
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 type TestSyncPeriodEmitter[T any] struct {
 	extension.NilExtension[T]
-	cfg        *utils.Config
+	cfg        *config.Config
 	syncPeriod uint64
 }
 
 // MakeTestSyncPeriodEmitter creates an executor.Extension handling SyncPeriod beginnings and ends.
-func MakeTestSyncPeriodEmitter[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeTestSyncPeriodEmitter[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.SyncPeriodLength <= 0 {
 		log := logger.NewLogger(cfg.LogLevel, "Progress-Reporter")
 		log.Warning("SyncPeriodLength was set in cfg to 0; SyncPeriodEmitter disabled")

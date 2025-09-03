@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -105,7 +105,7 @@ func TestUtils_UpdateStateDbOnEthereumChainFailsOnBeginTransaction(t *testing.T)
 		db.EXPECT().GetState(common.Address{0x01}, common.Hash{0x01}).Return(common.Hash{}).Times(1),
 		db.EXPECT().SetState(common.Address{0x01}, common.Hash{0x01}, common.Hash{0x02}).Times(1),
 		db.EXPECT().EndTransaction().Return(nil).Times(1),
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(errors.New("err")).Times(1),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)).Return(errors.New("err")).Times(1),
 	)
 	// Call the method to test
 	err := updateStateDbOnEthereumChain(patch, db, true)
@@ -121,7 +121,7 @@ func TestValidateWorldState(t *testing.T) {
 	mockLogger := logger.NewMockLogger(ctrl)
 
 	t.Run("SubsetCheck_Success", func(t *testing.T) {
-		cfg := &utils.Config{StateValidationMode: utils.SubsetCheck}
+		cfg := &config.Config{StateValidationMode: config.SubsetCheck}
 		// We need to simulate doSubsetValidation. Since it's not easily mockable directly
 		// without refactoring or using a global variable (which is bad practice),
 		// we'll test its behavior by ensuring no error is returned when underlying checks pass.
@@ -133,7 +133,7 @@ func TestValidateWorldState(t *testing.T) {
 	})
 
 	t.Run("SubsetCheck_Failure", func(t *testing.T) {
-		cfg := &utils.Config{StateValidationMode: utils.SubsetCheck}
+		cfg := &config.Config{StateValidationMode: config.SubsetCheck}
 		// Simulate a scenario where doSubsetValidation would fail.
 		// For example, an account exists in expectedAlloc but not in db.
 		// This requires more intricate mocking of ForEachAccount and db.Exist inside doSubsetValidation.
@@ -161,7 +161,7 @@ func TestValidateWorldState(t *testing.T) {
 	})
 
 	t.Run("EqualityCheck_Success", func(t *testing.T) {
-		cfg := &utils.Config{StateValidationMode: utils.EqualityCheck}
+		cfg := &config.Config{StateValidationMode: config.EqualityCheck}
 		mockVmAlloc := txcontext.NewMockWorldState(ctrl)
 
 		mockDB.EXPECT().GetSubstatePostAlloc().Return(mockVmAlloc)
@@ -172,7 +172,7 @@ func TestValidateWorldState(t *testing.T) {
 	})
 
 	t.Run("EqualityCheck_Failure", func(t *testing.T) {
-		cfg := &utils.Config{StateValidationMode: utils.EqualityCheck}
+		cfg := &config.Config{StateValidationMode: config.EqualityCheck}
 		mockVmAlloc := txcontext.NewMockWorldState(ctrl)
 
 		mockDB.EXPECT().GetSubstatePostAlloc().Return(mockVmAlloc)
@@ -191,7 +191,7 @@ func TestValidateWorldState(t *testing.T) {
 	})
 
 	t.Run("UnknownValidationMode", func(t *testing.T) {
-		cfg := &utils.Config{StateValidationMode: utils.ValidationMode(999)} // An invalid mode
+		cfg := &config.Config{StateValidationMode: config.ValidationMode(999)} // An invalid mode
 		// No mocks should be called as it should just return nil or handle gracefully.
 		// Based on current implementation, it will default to no error if mode is not recognized.
 		err := validateWorldState(cfg, mockDB, mockExpectedAlloc, mockLogger)

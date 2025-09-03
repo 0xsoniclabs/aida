@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
@@ -38,7 +39,7 @@ const (
 
 // PrepareStateDB creates stateDB or load existing stateDB
 // Use this function when both opening existing and creating new StateDB
-func PrepareStateDB(cfg *Config) (state.StateDB, string, error) {
+func PrepareStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		db     state.StateDB
 		err    error
@@ -61,7 +62,7 @@ func PrepareStateDB(cfg *Config) (state.StateDB, string, error) {
 }
 
 // useExistingStateDB uses already existing DB to create a DB instance with a potential shadow instance.
-func useExistingStateDB(cfg *Config) (state.StateDB, string, error) {
+func useExistingStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		err            error
 		stateDb        state.StateDB
@@ -162,7 +163,7 @@ func useExistingStateDB(cfg *Config) (state.StateDB, string, error) {
 }
 
 // makeNewStateDB creates a DB instance with a potential shadow instance.
-func makeNewStateDB(cfg *Config) (state.StateDB, string, error) {
+func makeNewStateDB(cfg *config.Config) (state.StateDB, string, error) {
 	var (
 		err         error
 		stateDb     state.StateDB
@@ -217,7 +218,7 @@ func makeStateDBVariant(
 	variant, archiveVariant string,
 	carmenSchema int,
 	rootHash common.Hash,
-	cfg *Config,
+	cfg *config.Config,
 ) (state.StateDB, error) {
 	switch impl {
 	case "memory":
@@ -233,7 +234,7 @@ func makeStateDBVariant(
 			variant,
 			rootHash,
 			cfg.ArchiveMode,
-			state.NewChainConduit(IsEthereumNetwork(cfg.ChainID), chainCfg),
+			state.NewChainConduit(config.IsEthereumNetwork(cfg.ChainID), chainCfg),
 		)
 	case "carmen":
 		// Disable archive if not enabled.

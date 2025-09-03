@@ -17,9 +17,10 @@
 package clone
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/urfave/cli/v2"
 )
 
@@ -30,12 +31,12 @@ var cloneDbCommand = cli.Command{
 	Usage:     "clone db creates aida-db subset",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.TargetDbFlag,
-		&utils.CompactDbFlag,
-		&utils.ValidateFlag,
+		&config.AidaDbFlag,
+		&config.TargetDbFlag,
+		&config.CompactDbFlag,
+		&config.ValidateFlag,
 		&logger.LogLevelFlag,
-		&utils.SubstateEncodingFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 Creates clone db is used to create subset of aida-db to have more compact database, but still fully usable for desired block range.
@@ -44,7 +45,7 @@ Creates clone db is used to create subset of aida-db to have more compact databa
 
 // cloneDbAction creates aida-db copy or subset
 func cloneDbAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func cloneDbAction(ctx *cli.Context) error {
 		return err
 	}
 
-	err = clone(cfg, aidaDb, targetDb, utils.CloneType)
+	err = clone(cfg, aidaDb, targetDb, metadata.CloneType)
 	if err != nil {
 		return err
 	}

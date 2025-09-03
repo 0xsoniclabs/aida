@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,7 +33,7 @@ var printDeletedAccountsCommand = cli.Command{
 	Usage:     "Prints deletion info about an account in AidaDb.",
 	ArgsUsage: "<firstBlockNum>, <lastBlockNum>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 		&logger.LogLevelFlag,
 		&flags.Account,
 	},
@@ -41,7 +41,7 @@ var printDeletedAccountsCommand = cli.Command{
 
 // printDeletedAccountsAction for given deleted account in AidaDb
 func printDeletedAccountsAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}

@@ -19,9 +19,9 @@ package trace
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/tracer/operation"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
@@ -31,7 +31,7 @@ func TestSdbReplay_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	processor := executor.NewMockProcessor[[]operation.Operation](ctrl)
 	ext := executor.NewMockExtension[[]operation.Operation](ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.KeepDb = false
 

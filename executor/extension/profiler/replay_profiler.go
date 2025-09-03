@@ -17,15 +17,15 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeReplayProfiler creates executor.Extension that prints profile statistics
-func MakeReplayProfiler[T any](cfg *utils.Config, rCtx *context.Replay) executor.Extension[T] {
+func MakeReplayProfiler[T any](cfg *config.Config, rCtx *context.Replay) executor.Extension[T] {
 	if !cfg.Profile {
 		return extension.NilExtension[T]{}
 	}
@@ -38,7 +38,7 @@ func MakeReplayProfiler[T any](cfg *utils.Config, rCtx *context.Replay) executor
 
 type replayProfiler[T any] struct {
 	extension.NilExtension[T]
-	cfg  *utils.Config
+	cfg  *config.Config
 	rCtx *context.Replay
 }
 

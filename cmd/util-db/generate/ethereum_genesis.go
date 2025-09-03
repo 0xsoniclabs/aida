@@ -24,12 +24,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/cockroachdb/errors"
 	"github.com/holiman/uint256"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/updateset"
@@ -41,8 +41,8 @@ var generateEthereumGenesisCommand = cli.Command{
 	Name:   "ethereum-genesis",
 	Usage:  "Extracts WorldState from json into first updateset",
 	Flags: []cli.Flag{
-		&utils.ChainIDFlag,
-		&utils.UpdateDbFlag,
+		&config.ChainIDFlag,
+		&config.UpdateDbFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
@@ -54,7 +54,7 @@ func generateEthereumGenesisAction(ctx *cli.Context) (finalErr error) {
 	if ctx.Args().Len() != 1 {
 		return fmt.Errorf("ethereum-update command requires exactly 1 argument")
 	}
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}

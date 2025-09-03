@@ -21,15 +21,15 @@ import (
 	"os"
 	"runtime/pprof"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeCpuProfiler creates a executor.Extension that records CPU profiling
 // data for the duration between the begin and end of the execution run, if
 // enabled in the provided configuration.
-func MakeCpuProfiler[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeCpuProfiler[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.CPUProfile == "" {
 		return extension.NilExtension[T]{}
 	}
@@ -38,7 +38,7 @@ func MakeCpuProfiler[T any](cfg *utils.Config) executor.Extension[T] {
 
 type cpuProfiler[T any] struct {
 	extension.NilExtension[T]
-	cfg            *utils.Config
+	cfg            *config.Config
 	sequenceNumber int
 }
 

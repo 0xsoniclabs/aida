@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -32,12 +32,12 @@ var printExceptionsCommand = cli.Command{
 	Usage:     "Prints exceptions for given block number.",
 	ArgsUsage: "<BlockNum>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 }
 
 func printExceptionsAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, argErr := config.NewConfig(ctx, config.OneToNArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -56,7 +56,7 @@ func printExceptionsAction(ctx *cli.Context) error {
 	return printExceptionForBlock(cfg, log, blockNum)
 }
 
-func printExceptionForBlock(cfg *utils.Config, log logger.Logger, blockNum uint64) error {
+func printExceptionForBlock(cfg *config.Config, log logger.Logger, blockNum uint64) error {
 	exceptionDb, err := db.NewReadOnlyExceptionDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)

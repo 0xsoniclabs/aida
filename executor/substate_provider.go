@@ -19,9 +19,9 @@ package executor
 //go:generate mockgen -source substate_provider.go -destination substate_provider_mocks.go -package executor
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -31,7 +31,7 @@ import (
 // ----------------------------------------------------------------------------
 
 // OpenSubstateProvider opens a substate database as configured in the given parameters.
-func OpenSubstateProvider(cfg *utils.Config, ctxt *cli.Context, aidaDb db.BaseDB) Provider[txcontext.TxContext] {
+func OpenSubstateProvider(cfg *config.Config, ctxt *cli.Context, aidaDb db.BaseDB) Provider[txcontext.TxContext] {
 	substateDb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
 	return &substateProvider{
 		db:                  substateDb,

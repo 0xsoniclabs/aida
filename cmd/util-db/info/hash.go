@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
@@ -34,7 +35,7 @@ var printStateHashCommand = cli.Command{
 	Usage:     "Prints state hash for given block number.",
 	ArgsUsage: "<BlockNum>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 }
 
@@ -48,7 +49,7 @@ var printBlockHashCommand = cli.Command{
 	Usage:     "Prints block hash for given block number.",
 	ArgsUsage: "<BlockNum>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 }
 
@@ -63,9 +64,9 @@ var printTableHashCommand = cli.Command{
 	Name:   "print-table-hash",
 	Usage:  "Calculates hash of AidaDb table data.",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DbComponentFlag,
-		&utils.SubstateEncodingFlag,
+		&config.AidaDbFlag,
+		&config.DbComponentFlag,
+		&config.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
@@ -75,7 +76,7 @@ Creates hash of substates, updatesets, deletion and state-hashes using decoded o
 
 // printTableHashAction creates hash of substates, updatesets, deletion and state-hashes.
 func printTableHashAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ var printPrefixHashCommand = cli.Command{
 	Usage:     "Prints hash of data inside AidaDb for given prefix.",
 	ArgsUsage: "<prefix>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 }
 
@@ -117,7 +118,7 @@ var printPrefixHashCommand = cli.Command{
 func printPrefixHashAction(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "GeneratePrefixHash")
 
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func printPrefixHashAction(ctx *cli.Context) error {
 }
 
 func printHash(ctx *cli.Context, hashType string) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, argErr := config.NewConfig(ctx, config.OneToNArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -166,7 +167,7 @@ func printHash(ctx *cli.Context, hashType string) error {
 }
 
 // printHashForBlock prints state or block hash for given block number in AidaDb
-func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashType string) error {
+func printHashForBlock(cfg *config.Config, log logger.Logger, blockNum int, hashType string) error {
 	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
 	if err != nil {
 		return err

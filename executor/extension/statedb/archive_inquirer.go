@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
@@ -36,11 +37,11 @@ const defaultTickerDuration = 15 * time.Second
 
 // MakeArchiveInquirer creates an extension running historic queries against
 // archive states in the background to the main executor process.
-func MakeArchiveInquirer(cfg *utils.Config) (executor.Extension[txcontext.TxContext], error) {
+func MakeArchiveInquirer(cfg *config.Config) (executor.Extension[txcontext.TxContext], error) {
 	return makeArchiveInquirer(cfg, logger.NewLogger(cfg.LogLevel, "Archive Inquirer"), nil)
 }
 
-func makeArchiveInquirer(cfg *utils.Config, log logger.Logger, duration *time.Duration) (executor.Extension[txcontext.TxContext], error) {
+func makeArchiveInquirer(cfg *config.Config, log logger.Logger, duration *time.Duration) (executor.Extension[txcontext.TxContext], error) {
 	if cfg.ArchiveQueryRate <= 0 {
 		return extension.NilExtension[txcontext.TxContext]{}, nil
 	}
@@ -71,7 +72,7 @@ type archiveInquirer struct {
 	extension.NilExtension[txcontext.TxContext]
 	*executor.ArchiveDbTxProcessor
 
-	cfg            *utils.Config
+	cfg            *config.Config
 	log            logger.Logger
 	state          state.StateDB
 	tickerDuration time.Duration
@@ -96,7 +97,7 @@ type archiveInquirer struct {
 func (i *archiveInquirer) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	if !i.cfg.ArchiveMode {
 		i.finished.Signal()
-		return fmt.Errorf("can not run archive queries without enabled archive (missing --%s flag)", utils.ArchiveModeFlag.Name)
+		return fmt.Errorf("can not run archive queries without enabled archive (missing --%s flag)", config.ArchiveModeFlag.Name)
 	}
 	i.state = ctx.State
 	numWorkers := i.cfg.Workers

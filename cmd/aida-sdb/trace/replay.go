@@ -19,6 +19,7 @@ package trace
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -27,13 +28,12 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
 func ReplayTrace(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func ReplayTrace(ctx *cli.Context) error {
 }
 
 type operationProcessor struct {
-	cfg  *utils.Config
+	cfg  *config.Config
 	rCtx *context.Replay
 }
 
@@ -85,7 +85,7 @@ func (p operationProcessor) runTransaction(block uint64, operations []operation.
 	}
 }
 
-func replay(cfg *utils.Config, provider executor.Provider[[]operation.Operation], processor executor.Processor[[]operation.Operation], extra []executor.Extension[[]operation.Operation], aidaDb db.BaseDB) error {
+func replay(cfg *config.Config, provider executor.Provider[[]operation.Operation], processor executor.Processor[[]operation.Operation], extra []executor.Extension[[]operation.Operation], aidaDb db.BaseDB) error {
 	var extensionList = []executor.Extension[[]operation.Operation]{
 		profiler.MakeCpuProfiler[[]operation.Operation](cfg),
 		statedb.MakeStateDbManager[[]operation.Operation](cfg, ""),

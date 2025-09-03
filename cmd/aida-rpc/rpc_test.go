@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
@@ -42,8 +43,8 @@ func TestCmd_RunRpc(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = RunRpc
 	app.Flags = []cli.Flag{
-		&utils.RpcRecordingFileFlag,
-		&utils.StateDbSrcFlag,
+		&config.RpcRecordingFileFlag,
+		&config.StateDbSrcFlag,
 	}
 	recordingsDir := t.TempDir()
 	f, err := os.Create(recordingsDir + "/test_record.gz")
@@ -57,7 +58,7 @@ func TestCmd_RunRpc(t *testing.T) {
 
 	tmp := t.TempDir()
 	// Create a tmp archive
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbTmp:          tmp,
 		DbVariant:      "go-file",
 		DbImpl:         "carmen",
@@ -86,7 +87,7 @@ func TestRpc_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	archiveThree := state.NewMockNonCommittableStateDB(ctrl)
 	archiveFour := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	// Simulate the execution of four requests in three blocks.
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
@@ -143,7 +144,7 @@ func TestRpc_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 	archiveTwo := state.NewMockNonCommittableStateDB(ctrl)
 	archiveThree := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	cfg.Workers = 2
 	// Simulate the execution of four requests in three blocks.
 	provider.EXPECT().
@@ -198,7 +199,7 @@ func TestRpc_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 	ext := executor.NewMockExtension[*rpc.RequestAndResults](ctrl)
 	processor := executor.NewMockProcessor[*rpc.RequestAndResults](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	// Simulate the execution of four requests in three blocks.
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
@@ -281,7 +282,7 @@ func TestRpc_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 	ext := executor.NewMockExtension[*rpc.RequestAndResults](ctrl)
 	processor := executor.NewMockProcessor[*rpc.RequestAndResults](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	cfg.Workers = 2
 	// Simulate the execution of four requests in three blocks.
 	provider.EXPECT().
@@ -360,7 +361,7 @@ func TestRpc_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	var err error
 	reqBlockTwo.Response.Result, err = json.Marshal("0x1")
 	if err != nil {
@@ -394,7 +395,7 @@ func TestRpc_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	var err error
 	reqBlockTwo.Response.Result, err = json.Marshal("0x1")
@@ -429,7 +430,7 @@ func TestRpc_ValidationFailsOnValidTransaction_Sequential(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	var err error
 	reqBlockTwo.Response.Result, err = json.Marshal("0x1")
 	if err != nil {
@@ -467,7 +468,7 @@ func TestRpc_ValidationFailsOnValidTransaction_Parallel(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	var err error
 	reqBlockTwo.Response.Result, err = json.Marshal("0x1")

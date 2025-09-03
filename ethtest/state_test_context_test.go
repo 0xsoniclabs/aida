@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -52,7 +53,7 @@ func TestEthTest_NewMockStateTestContext(t *testing.T) {
 
 	// Create mocks
 	mockTx := types.NewTx(&types.DynamicFeeTx{
-		ChainID: big.NewInt(int64(utils.SepoliaChainID)),
+		ChainID: big.NewInt(int64(config.SepoliaChainID)),
 		V:       common.Big0,
 		R:       common.Big1,
 		S:       common.Big1,

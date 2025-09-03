@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
@@ -41,7 +42,7 @@ func TestPrime_NewPrimer(t *testing.T) {
 
 	log := logger.NewLogger("Info", "TestPrime")
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockAidaDb := db.NewMockBaseDB(ctrl)
@@ -70,7 +71,7 @@ func TestPrime_Prime(t *testing.T) {
 	primeFirst := uint64(10)
 
 	// mock data
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	update := &updateset.UpdateSet{
 		WorldState:      substate.NewWorldState().Add(types.Address{1}, 1, new(uint256.Int).SetUint64(1), nil),
 		Block:           5,
@@ -207,7 +208,7 @@ func TestPrime_MayPrimeFromUpdateSet_EdgeCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	log := logger.NewLogger("Info", "TestPrime")
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	primeBlock := uint64(5)
 	primeFirst := uint64(10)
 
@@ -275,7 +276,7 @@ func TestPrime_MayPrimeFromSubstate_EdgeCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	log := logger.NewLogger("Info", "TestPrime")
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	primeBlock := uint64(5)
 	primeFirst := uint64(10)
 
@@ -354,7 +355,7 @@ func TestPrime_MayDeleteDestroyedAccountsFromStateDB_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	log := logger.NewLogger("Info", "TestPrime")
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	primeBlock := uint64(5)
 	primeFirst := uint64(10)
 
@@ -401,7 +402,7 @@ func TestPrime_MayDeleteDestroyedAccountsFromStateDB_Errors(t *testing.T) {
 	defer ctrl.Finish()
 
 	log := logger.NewLogger("Info", "TestPrime")
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	retError := errors.New("Test Error")
 	acc1 := types.Address{1}
 	primeBlock := uint64(5)
@@ -489,7 +490,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 0,
 	}
 	primeBlock := uint64(0)
@@ -613,7 +614,7 @@ func TestPrime_TrySetBlocks(t *testing.T) {
 func newTestPrimer(
 	block uint64,
 	first uint64,
-	cfg *utils.Config,
+	cfg *config.Config,
 	stateDb state.StateDB,
 	updateDb db.UpdateDB,
 	substateDb db.SubstateDB,

@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
@@ -34,7 +35,7 @@ import (
 )
 
 // TableHash generates a hash for given dbcomponent
-func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
+func TableHash(cfg *config.Config, base db.BaseDB, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
@@ -118,7 +119,7 @@ func combineJson(in chan any, out chan []byte, errChan chan error) {
 }
 
 func GetSubstateHash(
-	cfg *utils.Config,
+	cfg *config.Config,
 	base db.BaseDB,
 	progressLoggerFrequency time.Duration,
 	log logger.Logger,
@@ -157,7 +158,7 @@ func GetSubstateHash(
 }
 
 func GetDeletionHash(
-	cfg *utils.Config,
+	cfg *config.Config,
 	aidaDb db.BaseDB,
 	progressLoggerFrequency time.Duration,
 	log logger.Logger,
@@ -215,7 +216,7 @@ func GetDeletionHash(
 	return parallelHashComputing(feeder)
 }
 
-func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
+func GetUpdateDbHash(cfg *config.Config, base db.BaseDB, log logger.Logger) ([]byte, uint64, error) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
@@ -246,7 +247,7 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 }
 
 func GetStateRootHashesHash(
-	cfg *utils.Config,
+	cfg *config.Config,
 	base db.BaseDB,
 	progressLoggerFrequency time.Duration,
 	log logger.Logger,
@@ -288,7 +289,7 @@ func GetStateRootHashesHash(
 }
 
 func GetBlockHashesHash(
-	cfg *utils.Config,
+	cfg *config.Config,
 	base db.BaseDB,
 	progressLoggerFrequency time.Duration,
 	log logger.Logger,
@@ -330,7 +331,7 @@ func GetBlockHashesHash(
 }
 
 func GetExceptionDbHash(
-	cfg *utils.Config,
+	cfg *config.Config,
 	base db.BaseDB,
 	progressLoggerFrequency time.Duration,
 	log logger.Logger,

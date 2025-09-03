@@ -20,6 +20,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb/mocks"
@@ -47,7 +48,7 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	gomock.InOrder(
 		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
-		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockState.EXPECT().BeginTransaction(uint32(config.PseudoTx)).Return(nil),
 		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any(), gomock.Any()),
 	)
 
@@ -55,14 +56,14 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 		hashProvider: mockProvider,
 		processor:    mockProcessor,
 		// At the time of implementation, Sonic does not have Prague time yet
-		cfg:          utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		cfg:          config.NewTestConfig(t, config.HoleskyChainID, 1, 10, false, "Prague"),
 		NilExtension: extension.NilExtension[txcontext.TxContext]{},
 	}
 
 	// First call is skipped because block number is the first block number of given chain id
-	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: int(utils.KeywordBlocks[utils.HoleskyChainID]["first"]), Data: substateCtx.NewTxContext(&substate.Substate{
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: int(config.KeywordBlocks[config.HoleskyChainID]["first"]), Data: substateCtx.NewTxContext(&substate.Substate{
 		Env:   &substate.Env{Timestamp: math.MaxUint64},
-		Block: utils.KeywordBlocks[utils.HoleskyChainID]["first"],
+		Block: config.KeywordBlocks[config.HoleskyChainID]["first"],
 	})}, &executor.Context{State: mockState})
 	require.NoError(t, err, "PreBlock failed")
 
@@ -87,7 +88,7 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 }
 
 func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
-	cfg := utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague")
+	cfg := config.NewTestConfig(t, config.HoleskyChainID, 1, 10, false, "Prague")
 	hp := NewParentBlockHashProcessor(cfg)
 	ctrl := gomock.NewController(t)
 	aidaDb := db.NewMockSubstateDB(ctrl)

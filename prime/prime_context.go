@@ -21,6 +21,7 @@ import (
 	"math/rand"
 	"sort"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -33,11 +34,11 @@ type Context interface {
 	PrimeStateDB(ws txcontext.WorldState) error
 }
 
-func NewContext(cfg *utils.Config, db state.StateDB, log logger.Logger) Context {
+func NewContext(cfg *config.Config, db state.StateDB, log logger.Logger) Context {
 	return newContext(cfg, db, log)
 }
 
-func newContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *context {
+func newContext(cfg *config.Config, db state.StateDB, log logger.Logger) *context {
 	return &context{
 		cfg:   cfg,
 		log:   log,
@@ -49,7 +50,7 @@ func newContext(cfg *utils.Config, db state.StateDB, log logger.Logger) *context
 
 // context structure keeps context used over iterations of priming
 type context struct {
-	cfg        *utils.Config           // command configuration
+	cfg        *config.Config          // command configuration
 	log        logger.Logger           // logger for the prime context
 	block      uint64                  // current block number used for priming
 	load       state.BulkLoad          // bulk load to be applied

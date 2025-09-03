@@ -21,9 +21,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,8 +34,8 @@ var Command = cli.Command{
 	Name:   "validate",
 	Usage:  "Validates AidaDb using md5 DbHash.",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
 	},
 }
 
@@ -42,7 +43,7 @@ var Command = cli.Command{
 func validateAction(ctx *cli.Context) error {
 	log := logger.NewLogger("INFO", "ValidateCMD")
 
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return fmt.Errorf("cannot parse config; %v", err)
 	}
@@ -54,17 +55,17 @@ func validateAction(ctx *cli.Context) error {
 
 	defer utildb.MustCloseDB(aidaDb)
 
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := metadata.NewAidaDbMetadata(aidaDb, "INFO")
 
 	md.ChainId = md.GetChainID()
 	if md.ChainId == 0 {
-		log.Warning("cannot find db-hash in your aida-db metadata, this operation is needed because db-hash was not found inside your aida-db; please make sure you specified correct chain-id with flag --%v", utils.ChainIDFlag.Name)
+		log.Warning("cannot find db-hash in your aida-db metadata, this operation is needed because db-hash was not found inside your aida-db; please make sure you specified correct chain-id with flag --%v", config.ChainIDFlag.Name)
 		md.ChainId = cfg.ChainID
 	}
 
 	// validation only makes sense if user has pure AidaDb
 	dbType := md.GetDbType()
-	if dbType != utils.GenType {
+	if dbType != metadata.GenType {
 		return fmt.Errorf("validation cannot be performed - your db type (%v) cannot be validated; aborting", dbType)
 	}
 

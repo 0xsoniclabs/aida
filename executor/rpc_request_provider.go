@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
-func OpenRpcRecording(cfg *utils.Config, ctx *cli.Context) (Provider[*rpc.RequestAndResults], error) {
+func OpenRpcRecording(cfg *config.Config, ctx *cli.Context) (Provider[*rpc.RequestAndResults], error) {
 	fileInfo, err := os.Stat(cfg.RpcRecordingPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot stat the rpc path; %w", err)
@@ -55,7 +56,7 @@ func OpenRpcRecording(cfg *utils.Config, ctx *cli.Context) (Provider[*rpc.Reques
 
 }
 
-func openRpcRecording(iter rpc.Iterator, cfg *utils.Config, log logger.Logger, ctxt *cli.Context, files []string) Provider[*rpc.RequestAndResults] {
+func openRpcRecording(iter rpc.Iterator, cfg *config.Config, log logger.Logger, ctxt *cli.Context, files []string) Provider[*rpc.RequestAndResults] {
 	return &rpcRequestProvider{
 		ctxt:     ctxt,
 		fileName: cfg.RpcRecordingPath,

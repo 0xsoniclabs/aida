@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -45,8 +46,8 @@ func TestCmd_RunVm(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = RunVm
 	app.Flags = []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.SubstateEncodingFlag,
+		&config.AidaDbFlag,
+		&config.SubstateEncodingFlag,
 	}
 
 	err := app.Run([]string{runVmApp.Name, "--aida-db", path, "--substate-encoding", "pb", "first", "last"})
@@ -58,7 +59,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	cfg.ContinueOnFailure = true
 	// Simulate the execution of three transactions in two blocks.
 	provider.EXPECT().
@@ -70,7 +71,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 			// Block 3
 			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: config.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
 			return nil
 		})
 
@@ -108,7 +109,7 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		db.EXPECT().GetLogs(common.HexToHash(fmt.Sprintf("0x%016d%016d", 3, 1)), uint64(3), common.HexToHash(fmt.Sprintf("0x%016d", 3)), uint64(10)),
 		db.EXPECT().EndTransaction(),
 		// Pseudo Tx
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)),
 		db.EXPECT().EndTransaction(),
 	)
 
@@ -126,7 +127,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	cfg.ContinueOnFailure = true
 	// Simulate the execution of three transactions in two blocks.
 	provider.EXPECT().
@@ -138,7 +139,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 			// Block 3
 			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: config.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
 			return nil
 		})
 
@@ -171,9 +172,9 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 
 		// Block 4
 		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](5), gomock.Any(), nil),
@@ -188,7 +189,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	cfg.ContinueOnFailure = true
 	cfg.Workers = 2
 	// Simulate the execution of three transactions in two blocks.
@@ -201,7 +202,7 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 			// Block 3
 			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: config.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
 			return nil
 		})
 
@@ -251,9 +252,9 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 	gomock.InOrder(
 		pre,
 		ext.EXPECT().PreBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](4, config.PseudoTx), gomock.Any()),
 		ext.EXPECT().PostBlock(executor.AtBlock[txcontext.TxContext](4), gomock.Any()),
 		post,
 	)
@@ -268,7 +269,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
@@ -319,7 +320,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
@@ -370,7 +371,7 @@ func TestVm_ValidationFailsOnInvalidTransaction_Sequential(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
@@ -408,7 +409,7 @@ func TestVm_ValidationFailsOnInvalidTransaction_Parallel(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).

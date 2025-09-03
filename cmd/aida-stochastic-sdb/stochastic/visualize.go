@@ -19,10 +19,10 @@ package stochastic
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/visualizer"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,7 +33,7 @@ var StochasticVisualizeCommand = cli.Command{
 	Usage:     "produces a graphical view of the estimated parameters for various distributions",
 	ArgsUsage: "<event-file>",
 	Flags: []cli.Flag{
-		&utils.PortFlag,
+		&config.PortFlag,
 	},
 	Description: `
 The stochastic visualize command requires one argument:
@@ -60,7 +60,7 @@ func stochasticVisualizeAction(ctx *cli.Context) error {
 	}
 
 	// fire-up web-server and visualize events
-	port := ctx.String(utils.PortFlag.Name)
+	port := ctx.String(config.PortFlag.Name)
 	if port == "" {
 		port = "8080"
 	}

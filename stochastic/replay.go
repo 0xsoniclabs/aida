@@ -22,6 +22,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/exponential"
@@ -74,7 +75,7 @@ func find[T comparable](a []T, x T) int {
 }
 
 // createState creates a stochastic state and primes the StateDB
-func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*stochasticState, error) {
+func createState(cfg *config.Config, e *EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*stochasticState, error) {
 	// produce random access generators for contract addresses,
 	// storage-keys, and storage addresses.
 	// (NB: Contracts need an indirect access wrapper because
@@ -128,7 +129,7 @@ func getStochasticMatrix(e *EstimationModelJSON) ([]string, [][]float64, int) {
 // It requires the simulation model and simulation length. The trace-debug flag
 // enables/disables the printing of StateDB operations and their arguments on
 // the screen.
-func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
+func RunStochasticReplay(db state.StateDB, e *EstimationModelJSON, nBlocks int, cfg *config.Config, log logger.Logger) error {
 	var (
 		opFrequency [NumOps]uint64 // operation frequency
 		numOps      uint64         // total number of operations

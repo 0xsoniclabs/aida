@@ -20,8 +20,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,42 +32,42 @@ var rpcApp = &cli.App{
 		"result with result returned by DB.",
 	Copyright: "(c) 2025 Sonic Labs",
 	Flags: []cli.Flag{
-		&utils.RpcRecordingFileFlag,
-		&utils.WorkersFlag,
+		&config.RpcRecordingFileFlag,
+		&config.WorkersFlag,
 
 		// VM
-		&utils.VmImplementation,
+		&config.VmImplementation,
 
 		// Config
 		&logger.LogLevelFlag,
-		&utils.ChainIDFlag,
-		&utils.ContinueOnFailureFlag,
-		&utils.ValidateFlag,
-		&utils.NoHeartbeatLoggingFlag,
-		&utils.ErrorLoggingFlag,
-		&utils.TrackProgressFlag,
+		&config.ChainIDFlag,
+		&config.ContinueOnFailureFlag,
+		&config.ValidateFlag,
+		&config.NoHeartbeatLoggingFlag,
+		&config.ErrorLoggingFlag,
+		&config.TrackProgressFlag,
 
 		// Register
-		&utils.RegisterRunFlag,
-		&utils.OverwriteRunIdFlag,
+		&config.RegisterRunFlag,
+		&config.OverwriteRunIdFlag,
 
 		// ShadowDB
-		&utils.ShadowDb,
+		&config.ShadowDb,
 
 		// StateDB
-		&utils.StateDbSrcFlag,
-		&utils.StateDbLoggingFlag,
+		&config.StateDbSrcFlag,
+		&config.StateDbLoggingFlag,
 
 		// Trace
-		&utils.TraceFlag,
-		&utils.TraceFileFlag,
-		&utils.TraceDebugFlag,
+		&config.TraceFlag,
+		&config.TraceFileFlag,
+		&config.TraceDebugFlag,
 
 		// Performance
-		&utils.CpuProfileFlag,
-		&utils.MemoryProfileFlag,
-		&utils.ProfileFlag,
-		&utils.ProfileFileFlag,
+		&config.CpuProfileFlag,
+		&config.MemoryProfileFlag,
+		&config.ProfileFlag,
+		&config.ProfileFileFlag,
 	},
 }
 

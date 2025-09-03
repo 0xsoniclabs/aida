@@ -17,8 +17,8 @@
 package metadata
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -27,12 +27,12 @@ var printCommand = cli.Command{
 	Name:   "print",
 	Usage:  "Prints metadata",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 }
 
 func printAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}

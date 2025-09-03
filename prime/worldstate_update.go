@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
@@ -30,7 +30,7 @@ import (
 )
 
 // generateUpdateSet generates an update set for a block range.
-func generateUpdateSet(first uint64, last uint64, cfg *utils.Config, sdb db.SubstateDB, ddb db.DestroyedAccountDB) (substate.WorldState, []types.Address, error) {
+func generateUpdateSet(first uint64, last uint64, cfg *config.Config, sdb db.SubstateDB, ddb db.DestroyedAccountDB) (substate.WorldState, []types.Address, error) {
 	var (
 		deletedAccounts []types.Address
 	)
@@ -84,7 +84,7 @@ func ClearAccountStorage(update substate.WorldState, accounts []types.Address) {
 
 // deleteDestroyedAccountsFromWorldState removes previously suicided accounts from
 // the world state.
-func deleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *utils.Config, target uint64) (err error) {
+func deleteDestroyedAccountsFromWorldState(ws txcontext.WorldState, cfg *config.Config, target uint64) (err error) {
 	log := logger.NewLogger(cfg.LogLevel, "DelDestAcc")
 
 	src, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)

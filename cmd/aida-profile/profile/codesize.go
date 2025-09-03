@@ -19,7 +19,7 @@ package profile
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
@@ -34,9 +34,9 @@ var GetCodeSizeCommand = cli.Command{
 	Usage:     "reports code size and nonce of smart contracts in the specified block range",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&config.WorkersFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
 	},
 	Description: `
 The aida-profile code-size command requires two arguments:
@@ -96,7 +96,7 @@ func getCodeSizeTask(block uint64, tx int, st *substate.Substate, taskPool *db.S
 func getCodeSizeAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

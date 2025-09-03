@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/urfave/cli/v2"
@@ -33,9 +33,9 @@ var dumpSubstateCommand = cli.Command{
 	Usage:     "prints content in substates in json format",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
-		&utils.AidaDbFlag,
-		&utils.SubstateEncodingFlag,
+		&config.WorkersFlag,
+		&config.AidaDbFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 The aida-vm dump command requires two arguments:
@@ -49,7 +49,7 @@ last block of the inclusive range of blocks to replay transactions.`,
 func dumpSubstateAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}

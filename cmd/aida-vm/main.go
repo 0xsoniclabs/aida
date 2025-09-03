@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,30 +33,30 @@ var runVmApp = &cli.App{
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	// TODO: derive supported flags from utilized executor extensions.
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
+		&config.WorkersFlag,
 		//&substate.SkipTransferTxsFlag,
 		//&substate.SkipCallTxsFlag,
 		//&substate.SkipCreateTxsFlag,
-		&utils.ChainIDFlag,
+		&config.ChainIDFlag,
 		//&utils.ProfileEVMCallFlag,
 		//&utils.MicroProfilingFlag,
 		//&utils.BasicBlockProfilingFlag,
 		//&utils.ProfilingDbNameFlag,
-		&utils.ChannelBufferSizeFlag,
-		&utils.EvmImplementation,
-		&utils.VmImplementation,
-		&utils.ValidateTxStateFlag,
-		&utils.ValidateFlag,
+		&config.ChannelBufferSizeFlag,
+		&config.EvmImplementation,
+		&config.VmImplementation,
+		&config.ValidateTxStateFlag,
+		&config.ValidateFlag,
 		//&utils.OnlySuccessfulFlag,
-		&utils.CpuProfileFlag,
-		&utils.DiagnosticServerFlag,
-		&utils.AidaDbFlag,
+		&config.CpuProfileFlag,
+		&config.DiagnosticServerFlag,
+		&config.AidaDbFlag,
 		&logger.LogLevelFlag,
-		&utils.ErrorLoggingFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbLoggingFlag,
-		&utils.CacheFlag,
-		&utils.SubstateEncodingFlag,
+		&config.ErrorLoggingFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbLoggingFlag,
+		&config.CacheFlag,
+		&config.SubstateEncodingFlag,
 	},
 }
 

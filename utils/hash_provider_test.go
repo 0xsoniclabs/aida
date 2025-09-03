@@ -25,7 +25,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	rpc2 "github.com/0xsoniclabs/aida/utils/rpc"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +46,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 1, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -90,10 +92,10 @@ func TestStateHash_Log(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Infof("Connected to RPC at %s", RPCTestnet)
+	log.EXPECT().Infof("Connected to RPC at %s", rpc2.RPCTestnet)
 	log.EXPECT().Infof("Scraping block %d done!\n", uint64(10000))
 
-	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 9990, 10100, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 9990, 10100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -109,7 +111,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), TestnetChainID, "", database, 0, 100, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -177,7 +179,7 @@ func TestStateHash_KeyToUint64(t *testing.T) {
 func Test_getClient(t *testing.T) {
 	type args struct {
 		ctx     context.Context
-		chainId ChainID
+		chainId config.ChainID
 		ipcPath string
 	}
 	log := logger.NewLogger("info", "Test state hash")
@@ -187,10 +189,10 @@ func Test_getClient(t *testing.T) {
 		want    *rpc.Client
 		wantErr bool
 	}{
-		{"testGetClientRpcSonicMainnet", args{context.Background(), SonicMainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcOperaMainnet", args{context.Background(), MainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcTestnet", args{context.Background(), TestnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientIpcNonExistant", args{context.Background(), TestnetChainID, "/non-existant-path"}, nil, false},
+		{"testGetClientRpcSonicMainnet", args{context.Background(), config.SonicMainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcOperaMainnet", args{context.Background(), config.MainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcTestnet", args{context.Background(), config.TestnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientIpcNonExistant", args{context.Background(), config.TestnetChainID, "/non-existant-path"}, nil, false},
 		{"testGetClientRpcUnknownChainId", args{context.Background(), 88888, ""}, nil, true},
 	}
 	for _, tt := range tests {
@@ -215,7 +217,7 @@ func TestStateHash_GetClientIpcFail(t *testing.T) {
 	}
 
 	log := logger.NewLogger("info", "Test state hash")
-	_, err := getClient(context.Background(), TestnetChainID, tmpIpcPath, log)
+	_, err := getClient(context.Background(), config.TestnetChainID, tmpIpcPath, log)
 	if err == nil {
 		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
 	}

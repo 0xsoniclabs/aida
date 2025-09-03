@@ -21,19 +21,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestEthStateTestValidator_PostBlockCheckStateRoot(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ContinueOnFailure = false
 	ext := makeEthStateTestStateHashValidator(cfg)
 
@@ -83,7 +83,7 @@ func TestEthStateTestStateHashValidator_PostBlock(t *testing.T) {
 
 	mockDb := state.NewMockStateDB(ctrl)
 	mockTxContext := txcontext.NewMockTxContext(ctrl)
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	st := executor.State[txcontext.TxContext]{
 		Data: mockTxContext,
 	}
@@ -101,12 +101,12 @@ func TestEthStateTestStateHashValidator_PostBlock(t *testing.T) {
 
 func TestEthStateTestStateHashValidator_MakeEthStateTestStateHashValidator(t *testing.T) {
 	t.Run("with validation enabled", func(t *testing.T) {
-		cfg := &utils.Config{Validate: true}
+		cfg := &config.Config{Validate: true}
 		ext := MakeEthStateTestStateHashValidator(cfg)
 		assert.IsType(t, &ethStateTestStateHashValidator{}, ext)
 	})
 	t.Run("with validation disabled", func(t *testing.T) {
-		cfg := &utils.Config{Validate: false}
+		cfg := &config.Config{Validate: false}
 		ext := MakeEthStateTestStateHashValidator(cfg)
 		assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 	})

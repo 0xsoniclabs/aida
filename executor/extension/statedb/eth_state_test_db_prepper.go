@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -28,13 +29,13 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-func MakeEthStateTestDbPrepper(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthStateTestDbPrepper(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	// Disable spam from eth logger when creating database
 	log.SetDefault(log.NewLogger(log.DiscardHandler()))
 	return makeEthStateTestDbPrepper(logger.NewLogger(cfg.LogLevel, "EthStatePrepper"), cfg)
 }
 
-func makeEthStateTestDbPrepper(log logger.Logger, cfg *utils.Config) *ethStateTestDbPrepper {
+func makeEthStateTestDbPrepper(log logger.Logger, cfg *config.Config) *ethStateTestDbPrepper {
 	return &ethStateTestDbPrepper{
 		cfg: cfg,
 		log: log,
@@ -43,7 +44,7 @@ func makeEthStateTestDbPrepper(log logger.Logger, cfg *utils.Config) *ethStateTe
 
 type ethStateTestDbPrepper struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 

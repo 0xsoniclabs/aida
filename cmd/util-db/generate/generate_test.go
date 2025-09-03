@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -32,8 +34,8 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
 				Arg(generateDeletedAccountsCommand.Name).
-				Flag(utils.AidaDbFlag.Name, sdbPath).
-				Flag(utils.DeletionDbFlag.Name, ddbPath).
+				Flag(config.AidaDbFlag.Name, sdbPath).
+				Flag(config.DeletionDbFlag.Name, ddbPath).
 				Arg(int(ss.Block - 1)).
 				Arg(int(ss.Block + 1)),
 		},
@@ -43,7 +45,7 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
 				Arg(generateDeletedAccountsCommand.Name).
-				Flag(utils.AidaDbFlag.Name, sdbPath).
+				Flag(config.AidaDbFlag.Name, sdbPath).
 				Arg(strconv.FormatUint(ss.Block-1, 10)).
 				Arg(strconv.FormatUint(ss.Block+1, 10)),
 		},
@@ -53,9 +55,9 @@ func TestGenerate_GenerateDeletedAccountsCommand(t *testing.T) {
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
 				Arg(generateDeletedAccountsCommand.Name).
-				Flag(utils.ChainIDFlag.Name, 9990099).
-				Flag(utils.AidaDbFlag.Name, sdbPath).
-				Flag(utils.DeletionDbFlag.Name, ddbPath).
+				Flag(config.ChainIDFlag.Name, 9990099).
+				Flag(config.AidaDbFlag.Name, sdbPath).
+				Flag(config.DeletionDbFlag.Name, ddbPath).
 				Arg(strconv.FormatUint(ss.Block-1, 10)).
 				Arg(strconv.FormatUint(ss.Block+1, 10)),
 		},
@@ -78,7 +80,7 @@ func TestGenerateDbHash_Command(t *testing.T) {
 	argsBuilder := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(generateDbHashCommand.Name).
-		Flag(utils.AidaDbFlag.Name, path)
+		Flag(config.AidaDbFlag.Name, path)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
 	// when
@@ -87,7 +89,7 @@ func TestGenerateDbHash_Command(t *testing.T) {
 
 	aidaDb, err := db.NewDefaultBaseDB(path)
 	require.NoError(t, err)
-	md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
+	md := metadata.NewAidaDbMetadata(aidaDb, "CRITICAL")
 	got := md.GetDbHash()
 	require.Equal(t, "a0d4f7616f3007bf8c02f816a60b2526", hex.EncodeToString(got))
 	err = aidaDb.Close()
@@ -126,9 +128,9 @@ func TestExtractEthereumGenesis_Command(t *testing.T) {
 	argsBuilder := utils.NewArgs("test").
 		Arg(Command.Name).
 		Arg(generateEthereumGenesisCommand.Name).
-		Flag(utils.UpdateDbFlag.Name, udbPath).
+		Flag(config.UpdateDbFlag.Name, udbPath).
 		Flag(logger.LogLevelFlag.Name, "CRITICAL").
-		Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)).
+		Flag(config.ChainIDFlag.Name, int(config.EthereumChainID)).
 		Arg(genesisPath)
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&Command}
@@ -168,7 +170,7 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 				Arg(Command.Name).
 				Arg(generateEthereumGenesisCommand.Name).
 				Flag(logger.LogLevelFlag.Name, "CRITICAL").
-				Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)),
+				Flag(config.ChainIDFlag.Name, int(config.EthereumChainID)),
 			wantErr: "ethereum-update command requires exactly 1 argument",
 		},
 		{
@@ -177,7 +179,7 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 				Arg(Command.Name).
 				Arg(generateEthereumGenesisCommand.Name).
 				Flag(logger.LogLevelFlag.Name, "CRITICAL").
-				Flag(utils.ChainIDFlag.Name, 11111).
+				Flag(config.ChainIDFlag.Name, 11111).
 				Arg(genesisPath),
 			wantErr: "cannot set chain id: unknown chain id 11111",
 		},
@@ -187,8 +189,8 @@ func TestExtractEthereumGenesis_Command_Error(t *testing.T) {
 				Arg(Command.Name).
 				Arg(generateEthereumGenesisCommand.Name).
 				Flag(logger.LogLevelFlag.Name, "CRITICAL").
-				Flag(utils.ChainIDFlag.Name, int(utils.EthereumChainID)).
-				Flag(utils.UpdateDbFlag.Name, t.TempDir()+"/update.db").
+				Flag(config.ChainIDFlag.Name, int(config.EthereumChainID)).
+				Flag(config.UpdateDbFlag.Name, t.TempDir()+"/update.db").
 				Arg(genesisPath),
 			wantErr: "failed to unmarshal genesis file",
 		},

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
@@ -36,7 +37,7 @@ func TestWorldStateUpdate_GenerateUpdateSet(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	// mockStateDb := state.NewMockStateDB(ctrl)
 	mockSubstateDb := db.NewMockSubstateDB(ctrl)
 	mockDeletionDb := db.NewMockDestroyedAccountDB(ctrl)

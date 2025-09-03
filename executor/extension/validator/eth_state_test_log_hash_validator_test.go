@@ -19,17 +19,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/mock/gomock"
 )
 
 func TestEthStateTestLogHashValidator_PostBlockChecksLogsHash(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ContinueOnFailure = false
 	ext := makeEthStateTestLogHashValidator(cfg)
 	ctrl := gomock.NewController(t)
@@ -76,7 +76,7 @@ func TestEthStateTestLogHashValidator_PostBlockChecksLogsHash(t *testing.T) {
 }
 
 func TestMakeEthStateTestLogHashValidator(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestLogHashValidator(cfg)
 	if _, ok := ext.(executor.Extension[txcontext.TxContext]); !ok {

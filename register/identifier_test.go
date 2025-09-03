@@ -21,13 +21,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 func TestIdentity_SameIdIfSameRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5
@@ -62,13 +61,13 @@ func TestIdentity_SameIdIfSameRun(t *testing.T) {
 }
 
 func TestIdentity_DiffIdIfDiffRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5
 	cfg.VmImpl = "lfvm"
 
-	cfg2 := &utils.Config{}
+	cfg2 := &config.Config{}
 	cfg2.DbImpl = "carmen"
 	cfg2.DbVariant = "go-file"
 	cfg2.CarmenSchema = 3
@@ -111,7 +110,7 @@ func TestIdentity_DiffIdIfDiffRun(t *testing.T) {
 }
 
 func TestIdentity_OverwriteRunIdWorks(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.CarmenSchema = 5
@@ -132,7 +131,7 @@ func TestIdentity_OverwriteRunIdWorks(t *testing.T) {
 }
 
 func TestRegister_MakeRunIdentity(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbImpl:         "carmen",
 		DbVariant:      "go-file",
 		CarmenSchema:   5,
@@ -148,7 +147,7 @@ func TestRegister_MakeRunIdentity(t *testing.T) {
 }
 
 func TestRunIdentity_fetchConfigInfo(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		AppName:          "TestApp",
 		CommandName:      "TestCommand",
 		RegisterRun:      "TestRegisterRun",

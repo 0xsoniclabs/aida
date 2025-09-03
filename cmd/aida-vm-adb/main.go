@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,29 +36,29 @@ var RunArchiveApp = cli.App{
 	// TODO: derive supported flags from utilized executor extensions (issue #664).
 	Flags: []cli.Flag{
 		// substate
-		&utils.WorkersFlag,
+		&config.WorkersFlag,
 
 		// utils
-		&utils.CpuProfileFlag,
-		&utils.ChainIDFlag,
+		&config.CpuProfileFlag,
+		&config.ChainIDFlag,
 		&logger.LogLevelFlag,
-		&utils.StateDbLoggingFlag,
-		&utils.TrackProgressFlag,
-		&utils.NoHeartbeatLoggingFlag,
-		&utils.ErrorLoggingFlag,
+		&config.StateDbLoggingFlag,
+		&config.TrackProgressFlag,
+		&config.NoHeartbeatLoggingFlag,
+		&config.ErrorLoggingFlag,
 
 		// StateDb
-		&utils.AidaDbFlag,
-		&utils.StateDbSrcFlag,
-		&utils.ValidateTxStateFlag,
-		&utils.ValidateFlag,
+		&config.AidaDbFlag,
+		&config.StateDbSrcFlag,
+		&config.ValidateTxStateFlag,
+		&config.ValidateFlag,
 
 		// ShadowDb
-		&utils.ShadowDb,
+		&config.ShadowDb,
 
 		// VM
-		&utils.VmImplementation,
-		&utils.EvmImplementation,
+		&config.VmImplementation,
+		&config.EvmImplementation,
 	},
 	Description: "Runs transactions on historic states derived from an archive DB",
 }

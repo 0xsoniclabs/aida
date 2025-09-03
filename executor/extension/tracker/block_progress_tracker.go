@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -31,7 +32,7 @@ const substateProgressTrackerReportFormat = "Track: block %d, memory %d, disk %d
 
 // MakeBlockProgressTracker creates a blockProgressTracker that depends on the
 // PostBlock event and is only useful as part of a sequential evaluation.
-func MakeBlockProgressTracker(cfg *utils.Config, reportFrequency int) executor.Extension[txcontext.TxContext] {
+func MakeBlockProgressTracker(cfg *config.Config, reportFrequency int) executor.Extension[txcontext.TxContext] {
 	if !cfg.TrackProgress {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -43,7 +44,7 @@ func MakeBlockProgressTracker(cfg *utils.Config, reportFrequency int) executor.E
 	return makeBlockProgressTracker(cfg, reportFrequency, logger.NewLogger(cfg.LogLevel, "ProgressTracker"))
 }
 
-func makeBlockProgressTracker(cfg *utils.Config, reportFrequency int, log logger.Logger) *blockProgressTracker {
+func makeBlockProgressTracker(cfg *config.Config, reportFrequency int, log logger.Logger) *blockProgressTracker {
 	return &blockProgressTracker{
 		progressTracker:   newProgressTracker[txcontext.TxContext](cfg, reportFrequency, log),
 		lastReportedBlock: int(cfg.First) - (int(cfg.First) % reportFrequency),

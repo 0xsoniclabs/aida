@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
@@ -26,7 +27,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	log "github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -38,20 +38,20 @@ var RecordCommand = cli.Command{
 	Usage:     "captures and records StateDB operations while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.UpdateBufferSizeFlag,
-		&utils.SubstateEncodingFlag,
-		&utils.DbTmpFlag,
-		&utils.CpuProfileFlag,
-		&utils.SyncPeriodLengthFlag,
-		&utils.WorkersFlag,
-		&utils.ChainIDFlag,
-		&utils.TraceFileFlag,
-		&utils.TraceDebugFlag,
-		&utils.DebugFromFlag,
-		&utils.AidaDbFlag,
+		&config.UpdateBufferSizeFlag,
+		&config.SubstateEncodingFlag,
+		&config.DbTmpFlag,
+		&config.CpuProfileFlag,
+		&config.SyncPeriodLengthFlag,
+		&config.WorkersFlag,
+		&config.ChainIDFlag,
+		&config.TraceFileFlag,
+		&config.TraceDebugFlag,
+		&config.DebugFromFlag,
+		&config.AidaDbFlag,
 		&log.LogLevelFlag,
-		&utils.TrackerGranularityFlag,
-		&utils.EvmImplementation,
+		&config.TrackerGranularityFlag,
+		&config.EvmImplementation,
 	},
 	Description: `
 The trace record command requires two arguments:
@@ -61,7 +61,7 @@ last block of the inclusive range of blocks to trace transactions.`,
 }
 
 func RecordStateDbTrace(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func RecordStateDbTrace(ctx *cli.Context) error {
 }
 
 func record(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	processor executor.Processor[txcontext.TxContext],
 	extra []executor.Extension[txcontext.TxContext],

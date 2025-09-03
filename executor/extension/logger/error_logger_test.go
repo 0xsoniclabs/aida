@@ -23,14 +23,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func TestErrorLogger_FileIsNotCreatedIfNotDefined(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := makeErrorLogger[any](cfg, logger.NewLogger("critical", "Test"))
 	ext.PreRun(executor.State[any]{}, new(executor.Context))
 
@@ -40,7 +40,7 @@ func TestErrorLogger_FileIsNotCreatedIfNotDefined(t *testing.T) {
 }
 
 func TestErrorLogger_PostRunClosesLoggingThreadAndDoesNotBlockTheExecution(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := makeErrorLogger[any](cfg, logger.NewLogger("critical", "Test"))
 
 	ctx := new(executor.Context)
@@ -69,7 +69,7 @@ func TestErrorLogger_LoggingHappens(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	fileName := t.TempDir() + "test-log"
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ContinueOnFailure = true
 	cfg.ErrorLogging = fileName
 	ext := makeErrorLogger[any](cfg, log)

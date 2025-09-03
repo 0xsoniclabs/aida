@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -42,7 +43,7 @@ const exampleHashC = "0x0a0b0c00000000000000000000000000000000000000000000000000
 const exampleHashD = "0x0300000000000000000000000000000000000000000000000000000000000000"
 
 func TestStateHashValidator_NotActiveIfNotEnabledInConfig(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ValidateStateHashes = false
@@ -65,7 +66,7 @@ func TestStateHashValidator_FailsIfHashIsNotFoundInAidaDb(t *testing.T) {
 		hashProvider.EXPECT().GetStateRootHash(blockNumber).Return(common.Hash{}, leveldb.ErrNotFound),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	ext := makeStateHashValidator[any](cfg, log)
@@ -98,7 +99,7 @@ func TestStateHashValidator_InvalidHashOfLiveDbIsDetected(t *testing.T) {
 
 	blockNumber := 1
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	ext := makeStateHashValidator[any](cfg, log)
@@ -123,7 +124,7 @@ func TestStateHashValidator_InvalidHashOfArchiveDbIsDetected(t *testing.T) {
 	sdb := substateDb.NewMockSubstateDB(ctrl)
 
 	blockNumber := 1
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.ArchiveMode = true
@@ -202,7 +203,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchive(t *testing.T) {
 		sdb.EXPECT().GetBlockSubstates(uint64(2)).Return(output, nil),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -256,7 +257,7 @@ func TestStateHashValidator_ChecksArchiveHashesOfLaggingArchiveDoesNotWaitForNon
 		archive2.EXPECT().Release(),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -298,7 +299,7 @@ func TestStateHashValidator_ValidatingLaggingArchivesIsSkippedIfRunIsAborted(t *
 		archive0.EXPECT().Release(),
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -325,7 +326,7 @@ func TestStateHashValidator_PreRunAdjustFirstArchiveBlockToCheck(t *testing.T) {
 	mockSubstateDb := substateDb.NewMockSubstateDB(ctrl)
 	aidaDb, err := substateDb.NewDefaultBaseDB(t.TempDir())
 	require.NoError(t, err)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First:          3,
 		Last:           5,
 		DbImpl:         "carmen",
@@ -351,7 +352,7 @@ func TestStateHashValidator_PreRunAdjustFirstArchiveBlockToCheck(t *testing.T) {
 
 }
 func TestStateHashValidator_PreRunReturnsErrorIfWrongDbImplIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "wrong"
 	cfg.Last = 5
 
@@ -369,7 +370,7 @@ func TestStateHashValidator_PreRunReturnsErrorIfWrongDbImplIsChosen(t *testing.T
 }
 
 func TestStateHashValidator_PreRunReturnsErrorIfWrongDbVariantIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 3
 	cfg.Last = 5
@@ -388,7 +389,7 @@ func TestStateHashValidator_PreRunReturnsErrorIfWrongDbVariantIsChosen(t *testin
 }
 
 func TestStateHashValidator_PreRunReturnsErrorIfArchiveIsEnabledAndWrongVariantIsChosen(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.CarmenSchema = 5
 	cfg.Last = 5
@@ -467,7 +468,7 @@ func TestStateHashValidator_CheckArchiveHashesBlocksReturnsError(t *testing.T) {
 			baseDb := substateDb.NewMockBaseDB(ctrl)
 			sdb := substateDb.NewMockSubstateDB(ctrl)
 
-			cfg := &utils.Config{}
+			cfg := &config.Config{}
 			cfg.DbImpl = "carmen"
 			cfg.CarmenSchema = 5
 			cfg.ArchiveMode = true

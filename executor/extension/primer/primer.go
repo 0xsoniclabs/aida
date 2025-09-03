@@ -17,14 +17,14 @@
 package primer
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/prime"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeStateDbPrimer[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeStateDbPrimer[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.SkipPriming {
 		return extension.NilExtension[T]{}
 	}
@@ -32,7 +32,7 @@ func MakeStateDbPrimer[T any](cfg *utils.Config) executor.Extension[T] {
 	return makeStateDbPrimer[T](cfg, logger.NewLogger(cfg.LogLevel, "StateDb-Primer"))
 }
 
-func makeStateDbPrimer[T any](cfg *utils.Config, log logger.Logger) *stateDbPrimer[T] {
+func makeStateDbPrimer[T any](cfg *config.Config, log logger.Logger) *stateDbPrimer[T] {
 	return &stateDbPrimer[T]{
 		cfg: cfg,
 		log: log,
@@ -41,7 +41,7 @@ func makeStateDbPrimer[T any](cfg *utils.Config, log logger.Logger) *stateDbPrim
 
 type stateDbPrimer[T any] struct {
 	extension.NilExtension[T]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 

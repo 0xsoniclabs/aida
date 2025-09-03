@@ -19,10 +19,11 @@ package info
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -32,16 +33,16 @@ var printRangeCommand = cli.Command{
 	Name:   "range",
 	Usage:  "Prints range of all types in AidaDb",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DbComponentFlag,
-		&utils.SubstateEncodingFlag,
+		&config.AidaDbFlag,
+		&config.DbComponentFlag,
+		&config.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
 
 // rangeAction prints range of given db component in given AidaDb
 func rangeAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, argErr := config.NewConfig(ctx, config.NoArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -51,7 +52,7 @@ func rangeAction(ctx *cli.Context) error {
 }
 
 // printRange prints range of given db component in given AidaDb
-func printRange(cfg *utils.Config, log logger.Logger) error {
+func printRange(cfg *config.Config, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err
@@ -70,7 +71,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
 		}
 
-		firstBlock, lastBlock, ok := utils.FindBlockRangeInSubstate(sdb)
+		firstBlock, lastBlock, ok := metadata.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			log.Warning("No substate found")
 		} else {

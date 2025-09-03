@@ -19,6 +19,7 @@ package prime
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
@@ -34,11 +35,11 @@ type Primer interface {
 	Prime() error
 }
 
-func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) Primer {
+func NewPrimer(cfg *config.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) Primer {
 	return newPrimer(cfg, state, aidaDb, log)
 }
 
-func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) *primer {
+func newPrimer(cfg *config.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) *primer {
 	p := &primer{
 		cfg:    cfg,
 		log:    log,
@@ -55,7 +56,7 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 }
 
 type primer struct {
-	cfg    *utils.Config         // run configuration
+	cfg    *config.Config        // run configuration
 	log    logger.Logger         // primmer logger
 	ctx    *context              // prime context
 	aidadb db.BaseDB             // Aida database

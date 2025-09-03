@@ -19,8 +19,8 @@ package ethtest
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
@@ -87,7 +87,7 @@ func TestTestCaseSplitter_SplitStateTests_BaseFeeNil(t *testing.T) {
 }
 
 func TestNewTestCaseSplitter_Error(t *testing.T) {
-	cfg := &utils.Config{LogLevel: "info", Fork: "London"}
+	cfg := &config.Config{LogLevel: "info", Fork: "London"}
 	_, err := NewTestCaseSplitter(cfg)
 	assert.Error(t, err)
 }

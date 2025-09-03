@@ -22,15 +22,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 )
 
 type RunIdentity struct {
 	Timestamp int64
-	Cfg       *utils.Config
+	Cfg       *config.Config
 }
 
-func MakeRunIdentity(t int64, cfg *utils.Config) *RunIdentity {
+func MakeRunIdentity(t int64, cfg *config.Config) *RunIdentity {
 	return &RunIdentity{
 		Timestamp: t,
 		Cfg:       cfg,

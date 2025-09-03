@@ -19,8 +19,8 @@ package profile
 import (
 	"sync"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 )
@@ -32,9 +32,9 @@ var GetLocationStatsCommand = cli.Command{
 	Usage:     "computes usage statistics of accessed storage locations",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&config.WorkersFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `

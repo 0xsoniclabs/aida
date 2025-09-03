@@ -27,7 +27,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	rpcutils "github.com/0xsoniclabs/aida/utils/rpc"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -105,7 +107,7 @@ func (p *hashProvider) GetStateRootHash(number int) (common.Hash, error) {
 }
 
 // StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
-func StateAndBlockHashScraper(ctx context.Context, chainId ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
+func StateAndBlockHashScraper(ctx context.Context, chainId config.ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
 	client, err := getClient(ctx, chainId, clientDb, log)
 	if err != nil {
 		return err
@@ -166,7 +168,7 @@ func StateAndBlockHashScraper(ctx context.Context, chainId ChainID, clientDb str
 }
 
 // getClient returns a rpc/ipc client
-func getClient(ctx context.Context, chainId ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
+func getClient(ctx context.Context, chainId config.ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
 	var client *rpc.Client
 	var err error
 
@@ -190,7 +192,7 @@ func getClient(ctx context.Context, chainId ChainID, clientDb string, log logger
 
 	// if ipc file does not exist, try to connect to RPC
 	var provider string
-	provider, err = GetProvider(chainId)
+	provider, err = rpcutils.GetProvider(chainId)
 	if err != nil {
 		return nil, err
 	}

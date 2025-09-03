@@ -19,6 +19,7 @@ package primer
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/urfave/cli/v2"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -26,13 +27,12 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 )
 
 // RunPrimer performs sequential block processing on a StateDb
 func RunPrimer(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, err := config.NewConfig(ctx, config.LastBlockArg)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func RunPrimer(ctx *cli.Context) error {
 	defer aidaDb.Close()
 
 	// set config for primming command
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 	cfg.KeepDb = true
 	// This is necessary to pass the check inside the priming exstension
 	cfg.First = cfg.Last
@@ -53,7 +53,7 @@ func RunPrimer(ctx *cli.Context) error {
 }
 
 func runPriming(
-	cfg *utils.Config,
+	cfg *config.Config,
 	aidaDb db.BaseDB,
 ) error {
 	var extensionList = []executor.Extension[txcontext.TxContext]{

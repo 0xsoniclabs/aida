@@ -25,11 +25,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
@@ -42,10 +42,10 @@ func TestCmd_RunEthereumTest(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = RunEthereumTest
 	app.Flags = []cli.Flag{
-		&utils.ChainIDFlag,
+		&config.ChainIDFlag,
 	}
 
-	err := app.Run([]string{RunEthTestsCmd.Name, "--chainid", strconv.Itoa(int(utils.EthTestsChainID)), t.TempDir()})
+	err := app.Run([]string{RunEthTestsCmd.Name, "--chainid", strconv.Itoa(int(config.EthTestsChainID)), t.TempDir()})
 	require.NoError(t, err)
 }
 
@@ -54,7 +54,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, false, "Cancun")
+	cfg := config.NewTestConfig(t, config.EthTestsChainID, 2, 4, false, "Cancun")
 	cfg.ContinueOnFailure = true
 
 	data := ethtest.CreateTestTransaction(t)
@@ -118,7 +118,7 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, false, "Cancun")
+	cfg := config.NewTestConfig(t, config.EthTestsChainID, 2, 4, false, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	// Simulate the execution of 4 transactions
@@ -132,7 +132,7 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 			// Tx 3
 			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 3, Data: data})
 			// Tx 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: utils.PseudoTx, Data: data})
+			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: config.PseudoTx, Data: data})
 			return nil
 		})
 
@@ -177,10 +177,10 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		db.EXPECT().BeginBlock(uint64(5)),
 		db.EXPECT().BeginTransaction(uint32(3)),
 		ext.EXPECT().PreBlock(executor.AtTransaction[txcontext.TxContext](5, 3), gomock.Any()),
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostBlock(executor.AtTransaction[txcontext.TxContext](5, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostBlock(executor.AtTransaction[txcontext.TxContext](5, config.PseudoTx), gomock.Any()),
 		db.EXPECT().EndTransaction(),
 		db.EXPECT().EndBlock(),
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](5), gomock.Any(), nil),
@@ -196,7 +196,7 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, true, "Cancun")
+	cfg := config.NewTestConfig(t, config.EthTestsChainID, 2, 4, true, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	provider.EXPECT().
@@ -257,7 +257,7 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.EthTestsChainID, 2, 4, true, "Cancun")
+	cfg := config.NewTestConfig(t, config.EthTestsChainID, 2, 4, true, "Cancun")
 	data := ethtest.CreateTestTransaction(t)
 
 	provider.EXPECT().
@@ -305,7 +305,7 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 
 func TestVmSdb_EthTest_FailsWhenChainIDIsNotSet(t *testing.T) {
 	flagSet := flag.NewFlagSet("utils_config_test", 0)
-	flagSet.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "Chain ID.")
+	flagSet.Int(config.ChainIDFlag.Name, int(config.SonicMainnetChainID), "Chain ID.")
 	err := flagSet.Parse([]string{t.TempDir()})
 	require.NoError(t, err)
 
@@ -313,5 +313,5 @@ func TestVmSdb_EthTest_FailsWhenChainIDIsNotSet(t *testing.T) {
 	ctx.Command = &cli.Command{Name: "test_command"}
 
 	err = RunEthereumTest(ctx)
-	require.ErrorContains(t, err, fmt.Sprintf("please specify chain ID using --%s flag (1337 for most cases for this tool)", utils.ChainIDFlag.Name))
+	require.ErrorContains(t, err, fmt.Sprintf("please specify chain ID using --%s flag (1337 for most cases for this tool)", config.ChainIDFlag.Name))
 }

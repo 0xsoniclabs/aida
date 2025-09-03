@@ -17,13 +17,14 @@ package executor
 
 import (
 	"errors"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/testutil"
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/testutil"
+
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/stretchr/testify/assert"
@@ -150,7 +151,7 @@ func TestSubstateProvider_IterationCanBeAbortedByConsumer(t *testing.T) {
 }
 
 func openSubstateDb(path string, t *testing.T) Provider[txcontext.TxContext] {
-	cfg := utils.Config{}
+	cfg := config.Config{}
 	cfg.AidaDb = path
 	cfg.Workers = 1
 	aidaDb, err := db.NewReadOnlyBaseDB(path)
@@ -213,7 +214,7 @@ func TestExecutor_OpenSubstateProvider(t *testing.T) {
 	defer ctrl.Finish()
 
 	t.Run("success", func(t *testing.T) {
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			AidaDb: "testdb",
 		}
 		ctxt := cli.NewContext(nil, nil, nil)

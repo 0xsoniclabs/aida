@@ -20,8 +20,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -54,7 +54,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)
@@ -68,7 +68,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)
@@ -84,8 +84,8 @@ func TestRpc_Execute(t *testing.T) {
 			},
 			Timestamp: uint64(42),
 		}
-		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+		cfg := &config.Config{
+			ChainID: config.MainnetChainID,
 		}
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)
@@ -99,7 +99,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.Nil(t, out)
@@ -113,7 +113,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)
@@ -127,7 +127,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef", "0x0"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)
@@ -141,7 +141,7 @@ func TestRpc_Execute(t *testing.T) {
 				Params:     []interface{}{"1234567890abcdef"},
 			},
 		}
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.Nil(t, out)

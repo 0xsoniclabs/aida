@@ -22,6 +22,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/types/hash"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -38,12 +40,12 @@ import (
 const cloneWriteChanSize = 1
 
 type cloner struct {
-	cfg               *utils.Config
+	cfg               *config.Config
 	log               logger.Logger
 	sourceDb, cloneDb db.SubstateDB
 	cloneComponent    dbcomponent.DbComponent
 	count             uint64
-	typ               utils.AidaDbType
+	typ               metadata.AidaDbType
 	writeCh           chan rawEntry
 	errCh             chan error
 	stopCh            chan any
@@ -56,13 +58,13 @@ type rawEntry struct {
 }
 
 // clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func clone(cfg *utils.Config, aidaDb, cloneDb db.SubstateDB, cloneType utils.AidaDbType) error {
+func clone(cfg *config.Config, aidaDb, cloneDb db.SubstateDB, cloneType metadata.AidaDbType) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb clone")
 
 	var dbComponent dbcomponent.DbComponent
 
-	if cloneType == utils.CustomType {
+	if cloneType == metadata.CustomType {
 		dbComponent, err = dbcomponent.ParseDbComponent(cfg.DbComponent)
 		if err != nil {
 			return err
@@ -112,9 +114,9 @@ func (c *cloner) clone() error {
 		}
 	}
 
-	if c.typ != utils.CustomType {
-		md := utils.NewAidaDbMetadata(c.cloneDb, c.cfg.LogLevel)
-		err = md.SetDbType(utils.CloneType)
+	if c.typ != metadata.CustomType {
+		md := metadata.NewAidaDbMetadata(c.cloneDb, c.cfg.LogLevel)
+		err = md.SetDbType(metadata.CloneType)
 		if err != nil {
 			return fmt.Errorf("cannot set db type for clone db; %v", err)
 		}
@@ -141,7 +143,7 @@ func (c *cloner) readData() error {
 	// notify writer that all data was read
 	defer close(c.writeCh)
 
-	if c.typ == utils.CustomType {
+	if c.typ == metadata.CustomType {
 		return c.readDataCustom()
 	}
 
@@ -155,7 +157,7 @@ func (c *cloner) readData() error {
 	// lastUpdateBeforeRange contains block number at which is first updateset preceding the given block range,
 	// it is only required in CloneType db
 	lastUpdateBeforeRange := c.readUpdateSet()
-	if c.typ == utils.CloneType {
+	if c.typ == metadata.CloneType {
 		// check whether updateset before interval exists
 		if lastUpdateBeforeRange < c.cfg.First && lastUpdateBeforeRange != 0 {
 			c.log.Noticef("Last updateset found at block %v, changing first block to %v", lastUpdateBeforeRange, lastUpdateBeforeRange+1)
@@ -284,11 +286,11 @@ func (c *cloner) readUpdateSet() uint64 {
 	}
 
 	switch c.typ {
-	case utils.CloneType:
+	case metadata.CloneType:
 		c.read([]byte(db.UpdateDBPrefix), 0, endCond)
 		// if there is no updateset before interval (first 1M blocks) then 0 is returned
 		return lastUpdateBeforeRange
-	case utils.PatchType, utils.CustomType:
+	case metadata.PatchType, metadata.CustomType:
 		wantedBlock := c.cfg.First
 		c.read([]byte(db.UpdateDBPrefix), wantedBlock, endCond)
 		return 0

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package metadata
 
 import (
 	"encoding/binary"
@@ -26,7 +26,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utils/rpc"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
@@ -99,7 +101,7 @@ type Metadata interface {
 	GetLastBlock() uint64
 	GetFirstEpoch() uint64
 	GetLastEpoch() uint64
-	GetChainID() ChainID
+	GetChainID() config.ChainID
 	GetTimestamp() uint64
 	GetDbType() AidaDbType
 	GetDbHash() []byte
@@ -111,7 +113,7 @@ type Metadata interface {
 	SetLastBlock(uint64) error
 	SetFirstEpoch(uint64) error
 	SetLastEpoch(uint64) error
-	SetChainID(ChainID) error
+	SetChainID(config.ChainID) error
 	SetTimestamp() error
 	SetDbType(AidaDbType) error
 	SetDbHash([]byte) error
@@ -127,7 +129,7 @@ type AidaDbMetadata struct {
 	FirstBlock, LastBlock            *uint64
 	FirstEpoch, LastEpoch            *uint64
 	updateSetSize, updateSetInterval *uint64
-	ChainId                          ChainID
+	ChainId                          config.ChainID
 	DbType                           AidaDbType
 	timestamp                        *uint64
 	dbHash                           []byte
@@ -330,7 +332,7 @@ func (md *AidaDbMetadata) GetLastEpoch() uint64 {
 }
 
 // GetChainID and return it
-func (md *AidaDbMetadata) GetChainID() ChainID {
+func (md *AidaDbMetadata) GetChainID() config.ChainID {
 	if md.ChainId != 0 {
 		return md.ChainId
 	}
@@ -345,9 +347,9 @@ func (md *AidaDbMetadata) GetChainID() ChainID {
 
 	// chainID used to be 2 bytes long, now it is 8 bytes long
 	if len(chainIDBytes) == 2 {
-		md.ChainId = ChainID(bigendian.BytesToUint16(chainIDBytes))
+		md.ChainId = config.ChainID(bigendian.BytesToUint16(chainIDBytes))
 	} else {
-		md.ChainId = ChainID(bigendian.BytesToUint64(chainIDBytes))
+		md.ChainId = config.ChainID(bigendian.BytesToUint64(chainIDBytes))
 	}
 	return md.ChainId
 }
@@ -431,7 +433,7 @@ func (md *AidaDbMetadata) SetLastEpoch(lastEpoch uint64) error {
 }
 
 // SetChainID in given Db
-func (md *AidaDbMetadata) SetChainID(chainID ChainID) error {
+func (md *AidaDbMetadata) SetChainID(chainID config.ChainID) error {
 	chainIDBytes := bigendian.Uint64ToBytes(uint64(chainID))
 	if err := md.Db.Put([]byte(ChainIDPrefix), chainIDBytes); err != nil {
 		return fmt.Errorf("cannot put chain-id; %v", err)
@@ -498,18 +500,18 @@ func (md *AidaDbMetadata) findEpochs() error {
 
 	// Finding epoch number calls rpc method eth_getBlockByNumber.
 	// Ethereum does not provide information about epoch number in their RPC interface.
-	if IsEthereumNetwork(md.ChainId) {
+	if config.IsEthereumNetwork(md.ChainId) {
 		return nil
 	}
 
-	firstEpoch, err := FindEpochNumber(md.GetFirstBlock(), md.ChainId)
+	firstEpoch, err := rpc.FindEpochNumber(md.GetFirstBlock(), md.ChainId)
 	if err != nil {
 		return fmt.Errorf("cannot find first epoch; %v", err)
 	}
 	// if first block is 0 we can be sure the block begins an epoch so no need to check that
 	if md.GetFirstBlock() != 0 {
 		// we need to check if block is really first block of an epoch
-		firstEpochMinus, err = FindEpochNumber(md.GetFirstBlock(), md.ChainId)
+		firstEpochMinus, err = rpc.FindEpochNumber(md.GetFirstBlock(), md.ChainId)
 		if err != nil {
 			return err
 		}
@@ -525,12 +527,12 @@ func (md *AidaDbMetadata) findEpochs() error {
 		}
 	}
 
-	lastEpoch, err := FindEpochNumber(md.GetLastEpoch(), md.ChainId)
+	lastEpoch, err := rpc.FindEpochNumber(md.GetLastEpoch(), md.ChainId)
 	if err != nil {
 		return fmt.Errorf("cannot find last epoch; %v", err)
 	}
 	// we need to check if block is really last block of an epoch
-	lastEpochPlus, err = FindEpochNumber(md.GetLastEpoch()+1, md.ChainId)
+	lastEpochPlus, err = rpc.FindEpochNumber(md.GetLastEpoch()+1, md.ChainId)
 	if err != nil {
 		return err
 	}
@@ -549,11 +551,11 @@ func (md *AidaDbMetadata) findEpochs() error {
 }
 
 // SetFreshMetadata for an existing AidaDb without metadata
-func (md *AidaDbMetadata) SetFreshMetadata(chainID ChainID) error {
+func (md *AidaDbMetadata) SetFreshMetadata(chainID config.ChainID) error {
 	var err error
 
 	if chainID == 0 {
-		return fmt.Errorf("since you have aida-db without metadata you need to specify chain-id (--%v)", ChainIDFlag.Name)
+		return fmt.Errorf("since you have aida-db without metadata you need to specify chain-id (--%v)", config.ChainIDFlag.Name)
 	}
 
 	// ChainID is Set by user in
@@ -666,7 +668,7 @@ func FindBlockRangeInSubstate(db db.SubstateDB) (uint64, uint64, bool) {
 // DownloadPatchesJson downloads list of available patches from aida-db generation server.
 func DownloadPatchesJson() (data []PatchJson, err error) {
 	// Make the HTTP GET request
-	patchesUrl := AidaDbRepositoryUrl + "/patches.json"
+	patchesUrl := config.AidaDbRepositoryUrl + "/patches.json"
 	response, err := http.Get(patchesUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request for %s: %v", patchesUrl, err)

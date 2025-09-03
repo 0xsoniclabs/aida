@@ -20,9 +20,10 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,12 +34,12 @@ var Command = cli.Command{
 	Name:   "merge",
 	Usage:  "merge source databases into aida-db",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DeleteSourceDbsFlag,
+		&config.AidaDbFlag,
+		&config.DeleteSourceDbsFlag,
 		&logger.LogLevelFlag,
-		&utils.CompactDbFlag,
+		&config.CompactDbFlag,
 		&flags.SkipMetadata,
-		&utils.SubstateEncodingFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 Creates target aida-db by merging source databases from arguments:
@@ -48,7 +49,7 @@ Creates target aida-db by merging source databases from arguments:
 
 // mergeAction two or more Dbs together
 func mergeAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.OneToNArgs)
+	cfg, err := config.NewConfig(ctx, config.OneToNArgs)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func mergeAction(ctx *cli.Context) error {
 
 	var (
 		dbs []db.SubstateDB
-		md  *utils.AidaDbMetadata
+		md  *metadata.AidaDbMetadata
 	)
 
 	if !cfg.SkipMetadata {
@@ -75,9 +76,9 @@ func mergeAction(ctx *cli.Context) error {
 		}
 
 		// merge metadata from all source dbs
-		targetMD := utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+		targetMD := metadata.NewAidaDbMetadata(targetDb, cfg.LogLevel)
 		for _, db := range dbs {
-			sourceMD := utils.NewAidaDbMetadata(db, cfg.LogLevel)
+			sourceMD := metadata.NewAidaDbMetadata(db, cfg.LogLevel)
 			if err := targetMD.Merge(sourceMD); err != nil {
 				return fmt.Errorf("cannot merge metadata: %w", err)
 			}

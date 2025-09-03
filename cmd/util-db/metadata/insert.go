@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,7 +34,7 @@ var insertCommand = cli.Command{
 	Name:   "insert",
 	Usage:  "inserts key/value metadata pair into AidaDb",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 	},
 	Description: `
 Inserts key/value pair into AidaDb according to arguments:
@@ -49,7 +50,7 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		val uint64
 	)
 
-	aidaDbPath := ctx.String(utils.AidaDbFlag.Name)
+	aidaDbPath := ctx.String(config.AidaDbFlag.Name)
 
 	if ctx.Args().Len() != 2 {
 		return fmt.Errorf("this command requires two arguments - <keyArg> <value>")
@@ -68,10 +69,10 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		finalErr = errors.Join(finalErr, base.Close())
 	}()
 
-	md := utils.NewAidaDbMetadata(base, "INFO")
+	md := metadata.NewAidaDbMetadata(base, "INFO")
 
 	switch db.MetadataPrefix + keyArg {
-	case utils.FirstBlockPrefix:
+	case metadata.FirstBlockPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -79,7 +80,7 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		if err = md.SetFirstBlock(val); err != nil {
 			return err
 		}
-	case utils.LastBlockPrefix:
+	case metadata.LastBlockPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -87,7 +88,7 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		if err = md.SetLastBlock(val); err != nil {
 			return err
 		}
-	case utils.FirstEpochPrefix:
+	case metadata.FirstEpochPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -95,7 +96,7 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		if err = md.SetFirstEpoch(val); err != nil {
 			return err
 		}
-	case utils.LastEpochPrefix:
+	case metadata.LastEpochPrefix:
 		val, err = strconv.ParseUint(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
@@ -103,27 +104,27 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 		if err = md.SetLastEpoch(val); err != nil {
 			return err
 		}
-	case utils.TypePrefix:
+	case metadata.TypePrefix:
 		num64, err := strconv.ParseUint(valArg, 10, 8)
 		if err != nil {
 			return err
 		}
-		if err = md.SetDbType(utils.AidaDbType(uint8(num64))); err != nil {
+		if err = md.SetDbType(metadata.AidaDbType(uint8(num64))); err != nil {
 			return err
 		}
-	case utils.ChainIDPrefix:
+	case metadata.ChainIDPrefix:
 		val, err := strconv.ParseInt(valArg, 10, 64)
 		if err != nil {
 			return fmt.Errorf("cannot parse uint %v; %v", valArg, err)
 		}
-		if err = md.SetChainID(utils.ChainID(val)); err != nil {
+		if err = md.SetChainID(config.ChainID(val)); err != nil {
 			return err
 		}
-	case utils.TimestampPrefix:
+	case metadata.TimestampPrefix:
 		if err = md.SetTimestamp(); err != nil {
 			return err
 		}
-	case utils.DbHashPrefix:
+	case metadata.DbHashPrefix:
 		hash, err := hex.DecodeString(valArg)
 		if err != nil {
 			return fmt.Errorf("cannot decode db-hash string into []byte; %v", err)

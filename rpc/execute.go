@@ -21,16 +21,16 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // TODO FIX!
 const falsyContract = "0xe0c38b2a8d09aad53f1c67734b9a95e43d5981c0"
 
-func Execute(block uint64, rec *RequestAndResults, archive state.NonCommittableStateDB, cfg *utils.Config) (txcontext.Result, error) {
+func Execute(block uint64, rec *RequestAndResults, archive state.NonCommittableStateDB, cfg *config.Config) (txcontext.Result, error) {
 	switch rec.Query.MethodBase {
 	case "getBalance":
 		return executeGetBalance(rec.Query.Params[0], archive), nil

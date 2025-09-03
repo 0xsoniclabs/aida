@@ -21,13 +21,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestLiveDbBlockChecker_PreRunReturnsErrorIfStateDbLastBlockIsTooSmallEthereum(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 15
 	cfg.IsExistingStateDb = true
 	cfg.ChainID = 1
@@ -52,7 +53,7 @@ func TestLiveDbBlockChecker_PreRunReturnsErrorIfStateDbLastBlockIsTooSmallEthere
 }
 
 func TestLiveDbBlockChecker_PreRunIgnoresBlockAlignmentIfDbIsMarkedAsNotFinished(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 10
 	cfg.IsExistingStateDb = true
 	cfg.ChainID = 250
@@ -71,7 +72,7 @@ func TestLiveDbBlockChecker_PreRunIgnoresBlockAlignmentIfDbIsMarkedAsNotFinished
 }
 
 func TestLiveDbBlockChecker_PreRunReturnsErrorIfShadowDbLastBlockIsTooSmallEthereum(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 10
 	cfg.IsExistingStateDb = true
 	cfg.ShadowDb = true
@@ -109,7 +110,7 @@ func TestLiveDbBlockChecker_PreRunReturnsErrorIfShadowDbLastBlockIsTooSmallEther
 }
 
 func TestLiveDbBlockChecker_PreRunReturnsErrorIfStateDbLastBlockIsTooHigh(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 10
 	cfg.IsExistingStateDb = true
 
@@ -133,7 +134,7 @@ func TestLiveDbBlockChecker_PreRunReturnsErrorIfStateDbLastBlockIsTooHigh(t *tes
 }
 
 func TestLiveDbBlockChecker_PreRunReturnsErrorIfShadowDbLastBlockIsTooHigh(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 10
 	cfg.IsExistingStateDb = true
 	cfg.ShadowDb = true
@@ -170,7 +171,7 @@ func TestLiveDbBlockChecker_PreRunReturnsErrorIfShadowDbLastBlockIsTooHigh(t *te
 }
 
 func TestShadowDbBlockChecker_PreRunReturnsErrorIfPrimeAndShadowDbHaveDifferentLastBlock(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.First = 15
 	cfg.IsExistingStateDb = true
 	cfg.ShadowDb = true

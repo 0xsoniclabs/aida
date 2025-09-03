@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package rpc
 
 import (
 	"errors"
@@ -23,11 +23,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
 )
 
-const invalidChainID ChainID = -1
+const invalidChainID config.ChainID = -1
 
 // TestSendRPCRequest_Positive tests whether SendRpcRequest does not return error for a valid request and chainID
 func TestSendRPCRequest_Positive(t *testing.T) {
@@ -38,7 +39,7 @@ func TestSendRPCRequest_Positive(t *testing.T) {
 		JSONRPC: "2.0",
 	}
 
-	for _, id := range maps.Keys(RealChainIDs) {
+	for _, id := range maps.Keys(config.RealChainIDs) {
 		t.Run(fmt.Sprintf("ChainID %v", id), func(t *testing.T) {
 
 			res, err := SendRpcRequest(req, id)
@@ -108,7 +109,7 @@ func TestSendRPCRequest_InvalidChainID(t *testing.T) {
 
 func TestRpc_FindEpochNumber(t *testing.T) {
 	// case success
-	output, err := FindEpochNumber(uint64(1234), MainnetChainID)
+	output, err := FindEpochNumber(uint64(1234), config.MainnetChainID)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(11), output)
 
@@ -120,7 +121,7 @@ func TestRpc_FindEpochNumber(t *testing.T) {
 
 func TestRpc_FindHeadEpochNumber(t *testing.T) {
 	// case success
-	output, err := FindHeadEpochNumber(MainnetChainID)
+	output, err := FindHeadEpochNumber(config.MainnetChainID)
 	assert.NoError(t, err)
 	assert.Greater(t, output, uint64(0))
 
@@ -132,7 +133,7 @@ func TestRpc_FindHeadEpochNumber(t *testing.T) {
 
 func TestRpc_getEpochByNumber(t *testing.T) {
 	// case success
-	output, err := getEpochByNumber("0x4e20", MainnetChainID)
+	output, err := getEpochByNumber("0x4e20", config.MainnetChainID)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(228), output)
 

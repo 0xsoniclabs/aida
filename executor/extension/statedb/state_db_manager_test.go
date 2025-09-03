@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
@@ -34,7 +35,7 @@ import (
 )
 
 func TestStateDbManager_DbClosureWithoutKeepDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -56,13 +57,13 @@ func TestStateDbManager_DbClosureWithoutKeepDb(t *testing.T) {
 }
 
 func TestStateDbManager_DbClosureWithKeepDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -87,13 +88,13 @@ func TestStateDbManager_DbClosureWithKeepDb(t *testing.T) {
 }
 
 func TestStateDbManager_DoNotKeepDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = false
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -121,13 +122,13 @@ func TestStateDbManager_DoNotKeepDb(t *testing.T) {
 }
 
 func TestStateDbManager_KeepDbAndDoesntUnderflowBellowZero(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -155,13 +156,13 @@ func TestStateDbManager_KeepDbAndDoesntUnderflowBellowZero(t *testing.T) {
 }
 
 func TestStateDbManager_StateDbInfoExistenceAndReadable(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -202,12 +203,12 @@ func TestStateDbManager_OverrideArchiveMode(t *testing.T) {
 		Block: 0,
 	}
 	tmpDir := t.TempDir()
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 	cfg.ArchiveMode = false
 
 	ext := MakeStateDbManager[any](cfg, "")
@@ -252,10 +253,10 @@ func TestStateDbManager_OverrideArchiveMode(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
 			// Second, read from the src db and run in archive mode
-			cfg := &utils.Config{}
+			cfg := &config.Config{}
 			cfg.DbTmp = tmpDir
 			cfg.DbImpl = "carmen"
-			cfg.ChainID = utils.MainnetChainID
+			cfg.ChainID = config.MainnetChainID
 			cfg.ArchiveMode = true
 			cfg.StateDbSrc = dbPath
 			if test.readOnlyTool {
@@ -284,12 +285,12 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 		Block: 0,
 	}
 	tmpDir := t.TempDir()
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
 	cfg.DbVariant = "go-file"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveVariant = "ldb"
 
@@ -320,10 +321,10 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 	}
 
 	// Second, read from the src db and run in archive mode with different archive variant
-	cfg = &utils.Config{}
+	cfg = &config.Config{}
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveVariant = "s5"
 	cfg.StateDbSrc = dbPath
@@ -346,14 +347,14 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 }
 
 func TestStateDbManager_NonExistentStateDbSrc(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.StateDbSrc = "/non-existant-path/123456789"
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -374,14 +375,14 @@ func TestStateDbManager_NonExistentStateDbSrc(t *testing.T) {
 }
 
 func TestStateDbManager_StateDbSrcStateDbIsReadOnly(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	// create source database
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -460,14 +461,14 @@ func TestStateDbManager_StateDbSrcStateDbIsReadOnly(t *testing.T) {
 }
 
 func TestStateDbManager_UsingExistingSourceDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	// create source database
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -544,14 +545,14 @@ func TestStateDbManager_UsingExistingSourceDb(t *testing.T) {
 }
 
 func TestStateDbManager_UsingExistingSourceDbAndOverWrite(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	// create source database
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -652,13 +653,13 @@ func IsEmptyDirectory(name string) (bool, error) {
 }
 
 func TestStateDbManager_StateDbBlockNumberDecrements(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "geth"
 	cfg.KeepDb = true
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 
@@ -686,12 +687,12 @@ func TestStateDbManager_StateDbBlockNumberDecrements(t *testing.T) {
 }
 
 func TestStateDbManager_PreRunCreatesZeroStateDbInfo(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	tmpDir := t.TempDir()
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = config.MainnetChainID
 
 	ext := MakeStateDbManager[any](cfg, "")
 

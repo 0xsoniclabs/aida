@@ -20,10 +20,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
@@ -38,7 +38,7 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	path := t.TempDir() + "test_trace"
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 10, 11, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 10, 11, false, "")
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 	provider.EXPECT().
@@ -46,7 +46,7 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		DoAndReturn(func(from int, to int, consumer executor.Consumer[txcontext.TxContext]) error {
 			for i := from; i < to; i++ {
 				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: 3, Data: substatecontext.NewTxContext(emptyTx)})
-				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+				consumer(executor.TransactionInfo[txcontext.TxContext]{Block: i, Transaction: config.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
 			}
 			return nil
 		})
@@ -60,18 +60,18 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](10, 3), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](10, 3), gomock.Any()),
 
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](10, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](10, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](10, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](10, config.PseudoTx), gomock.Any()),
 
 		// block 11
 		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
 		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
 		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](11, 3), gomock.Any()),
 
-		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
-		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
-		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](11, utils.PseudoTx), gomock.Any()),
+		ext.EXPECT().PreTransaction(executor.AtTransaction[txcontext.TxContext](11, config.PseudoTx), gomock.Any()),
+		processor.EXPECT().Process(executor.AtTransaction[txcontext.TxContext](11, config.PseudoTx), gomock.Any()),
+		ext.EXPECT().PostTransaction(executor.AtTransaction[txcontext.TxContext](11, config.PseudoTx), gomock.Any()),
 
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](12), gomock.Any(), nil),
 	)

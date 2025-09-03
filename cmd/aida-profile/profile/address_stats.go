@@ -17,7 +17,7 @@
 package profile
 
 import (
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v2"
 )
@@ -29,9 +29,9 @@ var GetAddressStatsCommand = cli.Command{
 	Usage:     "computes usage statistics of addresses",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&config.WorkersFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
 	},
 	Description: `
 The aida-profile address-stats command requires two arguments:

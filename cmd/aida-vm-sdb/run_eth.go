@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/primer"
@@ -28,7 +29,6 @@ import (
 	log "github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,43 +40,43 @@ var RunEthTestsCmd = cli.Command{
 	Aliases:   []string{"ethtest"},
 	Flags: []cli.Flag{
 		// StateDb
-		&utils.CarmenSchemaFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbVariantFlag,
-		&utils.DbTmpFlag,
-		&utils.StateDbLoggingFlag,
+		&config.CarmenSchemaFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbVariantFlag,
+		&config.DbTmpFlag,
+		&config.StateDbLoggingFlag,
 
 		//// ShadowDb
-		&utils.ShadowDb,
-		&utils.ShadowDbImplementationFlag,
-		&utils.ShadowDbVariantFlag,
+		&config.ShadowDb,
+		&config.ShadowDbImplementationFlag,
+		&config.ShadowDbVariantFlag,
 
 		// VM
-		&utils.EvmImplementation,
-		&utils.VmImplementation,
+		&config.EvmImplementation,
+		&config.VmImplementation,
 
 		// Profiling
-		&utils.CpuProfileFlag,
-		&utils.CpuProfilePerIntervalFlag,
-		&utils.DiagnosticServerFlag,
-		&utils.MemoryBreakdownFlag,
-		&utils.MemoryProfileFlag,
-		&utils.RandomSeedFlag,
-		&utils.PrimeThresholdFlag,
+		&config.CpuProfileFlag,
+		&config.CpuProfilePerIntervalFlag,
+		&config.DiagnosticServerFlag,
+		&config.MemoryBreakdownFlag,
+		&config.MemoryProfileFlag,
+		&config.RandomSeedFlag,
+		&config.PrimeThresholdFlag,
 
 		// Utils
-		&utils.WorkersFlag,
-		&utils.ChainIDFlag,
-		&utils.ContinueOnFailureFlag,
-		&utils.ValidateFlag,
-		&utils.ValidateStateHashesFlag,
+		&config.WorkersFlag,
+		&config.ChainIDFlag,
+		&config.ContinueOnFailureFlag,
+		&config.ValidateFlag,
+		&config.ValidateStateHashesFlag,
 		&log.LogLevelFlag,
-		&utils.ErrorLoggingFlag,
-		&utils.MaxNumErrorsFlag,
+		&config.ErrorLoggingFlag,
+		&config.MaxNumErrorsFlag,
 
 		// Ethereum execution tests
-		&utils.EthTestTypeFlag,
-		&utils.ForkFlag,
+		&config.EthTestTypeFlag,
+		&config.ForkFlag,
 	},
 	Description: `
 The aida-vm-sdb geth-state-tests command requires one argument: <pathToJsonTest or pathToDirWithJsonTests>`,
@@ -84,27 +84,27 @@ The aida-vm-sdb geth-state-tests command requires one argument: <pathToJsonTest 
 
 // RunEthereumTest performs sequential block processing on a StateDb
 func RunEthereumTest(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.PathArg)
+	cfg, err := config.NewConfig(ctx, config.PathArg)
 	if err != nil {
 		return err
 	}
 
-	cfg.StateValidationMode = utils.SubsetCheck
+	cfg.StateValidationMode = config.SubsetCheck
 	cfg.ValidateTxState = true
 
 	processor, err := executor.MakeEthTestProcessor(cfg)
 	if err != nil {
 		return err
 	}
-	if !ctx.IsSet(utils.ChainIDFlag.Name) {
-		return fmt.Errorf("please specify chain ID using --%s flag (1337 for most cases for this tool)", utils.ChainIDFlag.Name)
+	if !ctx.IsSet(config.ChainIDFlag.Name) {
+		return fmt.Errorf("please specify chain ID using --%s flag (1337 for most cases for this tool)", config.ChainIDFlag.Name)
 	}
 
 	return runEth(cfg, executor.NewEthStateTestProvider(cfg), nil, processor, nil)
 }
 
 func runEth(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	stateDb state.StateDB,
 	processor executor.Processor[txcontext.TxContext],

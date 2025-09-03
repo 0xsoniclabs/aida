@@ -17,9 +17,9 @@
 package stochastic
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,20 +31,20 @@ var StochasticGenerateCommand = cli.Command{
 	ArgsUsage: "",
 	Flags: []cli.Flag{
 		&logger.LogLevelFlag,
-		&utils.BlockLengthFlag,
-		&utils.SyncPeriodLengthFlag,
-		&utils.TransactionLengthFlag,
-		&utils.ContractNumberFlag,
-		&utils.KeysNumberFlag,
-		&utils.ValuesNumberFlag,
-		&utils.SnapshotDepthFlag,
+		&config.BlockLengthFlag,
+		&config.SyncPeriodLengthFlag,
+		&config.TransactionLengthFlag,
+		&config.ContractNumberFlag,
+		&config.KeysNumberFlag,
+		&config.ValuesNumberFlag,
+		&config.SnapshotDepthFlag,
 	},
 	Description: "The stochastic produces an events.json file with uniform parameters",
 }
 
 // stochasticGenerateAction produces an event file with uniform parameters.
 func stochasticGenerateAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}

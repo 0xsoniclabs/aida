@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -37,7 +38,7 @@ import (
 
 // NewParentBlockHashProcessor creates a new instance of parent block hash processor which saves the
 // parent block hash in the blockchain. This is required for Prague fork and later (https://eips.ethereum.org/EIPS/eip-2935).
-func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func NewParentBlockHashProcessor(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return &parentBlockHashProcessor{
 		processor:    evmProcessor{},
 		cfg:          cfg,
@@ -48,7 +49,7 @@ func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext
 type parentBlockHashProcessor struct {
 	hashProvider utils.HashProvider
 	processor    iEvmProcessor
-	cfg          *utils.Config
+	cfg          *config.Config
 	extension.NilExtension[txcontext.TxContext]
 }
 
@@ -91,7 +92,7 @@ func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext],
 func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	// We are saving historic block hashes, first block must be skipped because
 	// there is no history at this point
-	if uint64(state.Block) == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
+	if uint64(state.Block) == config.KeywordBlocks[p.cfg.ChainID]["first"] {
 		return nil
 	}
 
@@ -110,7 +111,7 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return fmt.Errorf("cannot get previous block hash: %w", err)
 	}
 
-	if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
+	if err = ctx.State.BeginTransaction(config.PseudoTx); err != nil {
 		return fmt.Errorf("cannot begin transaction: %w", err)
 	}
 	var hashError error

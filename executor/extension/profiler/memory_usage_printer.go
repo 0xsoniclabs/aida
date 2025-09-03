@@ -17,14 +17,15 @@
 package profiler
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/profile"
 )
 
 // MakeMemoryUsagePrinter creates an executor.Extension that prints memory breakdown if enabled.
-func MakeMemoryUsagePrinter[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeMemoryUsagePrinter[T any](cfg *config.Config) executor.Extension[T] {
 	if !cfg.MemoryBreakdown {
 		return extension.NilExtension[T]{}
 	}
@@ -33,7 +34,7 @@ func MakeMemoryUsagePrinter[T any](cfg *utils.Config) executor.Extension[T] {
 	return makeMemoryUsagePrinter[T](cfg, log)
 }
 
-func makeMemoryUsagePrinter[T any](cfg *utils.Config, log logger.Logger) executor.Extension[T] {
+func makeMemoryUsagePrinter[T any](cfg *config.Config, log logger.Logger) executor.Extension[T] {
 	return &memoryUsagePrinter[T]{
 		log: log,
 		cfg: cfg,
@@ -43,19 +44,19 @@ func makeMemoryUsagePrinter[T any](cfg *utils.Config, log logger.Logger) executo
 type memoryUsagePrinter[T any] struct {
 	extension.NilExtension[T]
 	log logger.Logger
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (p *memoryUsagePrinter[T]) PreRun(_ executor.State[T], ctx *executor.Context) error {
 	if ctx.State != nil {
-		utils.MemoryBreakdown(ctx.State, p.cfg, p.log)
+		profile.MemoryBreakdown(ctx.State, p.cfg, p.log)
 	}
 	return nil
 }
 
 func (p *memoryUsagePrinter[T]) PostRun(_ executor.State[T], ctx *executor.Context, _ error) error {
 	if ctx.State != nil {
-		utils.MemoryBreakdown(ctx.State, p.cfg, p.log)
+		profile.MemoryBreakdown(ctx.State, p.cfg, p.log)
 	}
 	return nil
 }

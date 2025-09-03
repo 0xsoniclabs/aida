@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -80,7 +81,7 @@ func FuzzStochastic(f *testing.F) {
 	f.Fuzz(func(f *testing.T, fuzzingStr []byte) {
 
 		// generate configuration
-		cfg := utils.Config{
+		cfg := config.Config{
 			ContractNumber:    1000,
 			KeysNumber:        1000,
 			ValuesNumber:      1000,

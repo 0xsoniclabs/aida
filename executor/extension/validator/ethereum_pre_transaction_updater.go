@@ -17,22 +17,22 @@
 package validator
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeEthereumDbPreTransactionUpdater creates an extension which fixes Ethereum exceptions in pre transaction in LiveDB
-func MakeEthereumDbPreTransactionUpdater(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeEthereumDbPreTransactionUpdater(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	log := logger.NewLogger(cfg.LogLevel, "Ethereum-Exception-Updater")
 
 	return makeEthereumDbPreTransactionUpdater(cfg, log)
 }
 
-func makeEthereumDbPreTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
-	if !utils.IsEthereumNetwork(cfg.ChainID) {
+func makeEthereumDbPreTransactionUpdater(cfg *config.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
+	if !config.IsEthereumNetwork(cfg.ChainID) {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 
@@ -44,7 +44,7 @@ func makeEthereumDbPreTransactionUpdater(cfg *utils.Config, log logger.Logger) e
 
 type ethereumDbPreTransactionUpdater struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 	log logger.Logger
 }
 

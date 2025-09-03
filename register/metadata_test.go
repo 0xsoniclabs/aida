@@ -3,6 +3,7 @@ package register
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -14,7 +15,7 @@ func TestRegister_MakeRunMetadata(t *testing.T) {
 	meta := map[string]string{
 		"AppName": "testApp",
 	}
-	rm, err := MakeRunMetadata(":memory:", MakeRunIdentity(0, &utils.Config{
+	rm, err := MakeRunMetadata(":memory:", MakeRunIdentity(0, &config.Config{
 		ArchiveMode:      true,
 		ArchiveQueryRate: 99,
 	}), func() (map[string]string, error) {

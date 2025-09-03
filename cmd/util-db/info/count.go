@@ -20,10 +20,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -34,16 +34,16 @@ var printCountCommand = cli.Command{
 	Usage:     "Count records in AidaDb.",
 	ArgsUsage: "<firstBlockNum>, <lastBlockNum>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DbComponentFlag,
-		&utils.SubstateEncodingFlag,
+		&config.AidaDbFlag,
+		&config.DbComponentFlag,
+		&config.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 }
 
 // printCountAction prints count of given db component in given AidaDb
 func printCountAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -66,7 +66,7 @@ func printCountAction(ctx *cli.Context) error {
 }
 
 // printCount prints count of given db component in given AidaDb
-func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
+func printCount(cfg *config.Config, base db.BaseDB, log logger.Logger) error {
 	dbComponent, err := dbcomponent.ParseDbComponent(cfg.DbComponent)
 	if err != nil {
 		return err

@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +37,7 @@ func TestCmd_ValidateCommand(t *testing.T) {
 
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
 		Build()
 
 	// when
@@ -56,8 +58,8 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			name: "CannotParseCfg",
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name).
-				Flag(utils.ChainIDFlag.Name, 9990099).
-				Flag(utils.AidaDbFlag.Name, ""),
+				Flag(config.ChainIDFlag.Name, 9990099).
+				Flag(config.AidaDbFlag.Name, ""),
 			wantErr: "cannot parse config",
 			setup:   func(aidaDbPath string) {},
 		},
@@ -65,12 +67,12 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			name: "WrongAidaDbType",
 			argsBuilder: utils.NewArgs("test").
 				Arg(Command.Name),
-			wantErr: fmt.Sprintf("your db type (%v) cannot be validated", utils.NoType),
+			wantErr: fmt.Sprintf("your db type (%v) cannot be validated", metadata.NoType),
 			setup: func(aidaDbPath string) {
 				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
 				require.NoError(t, err)
-				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
-				err = md.SetDbType(utils.NoType)
+				md := metadata.NewAidaDbMetadata(aidaDb, "CRITICAL")
+				err = md.SetDbType(metadata.NoType)
 				require.NoError(t, err)
 				err = aidaDb.Close()
 				require.NoError(t, err)
@@ -84,7 +86,7 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			setup: func(aidaDbPath string) {
 				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
 				require.NoError(t, err)
-				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
+				md := metadata.NewAidaDbMetadata(aidaDb, "CRITICAL")
 				err = md.SetDbHash([]byte{})
 				require.NoError(t, err)
 				err = aidaDb.Close()
@@ -99,7 +101,7 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			setup: func(aidaDbPath string) {
 				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
 				require.NoError(t, err)
-				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
+				md := metadata.NewAidaDbMetadata(aidaDb, "CRITICAL")
 				err = md.SetDbHash([]byte("wrong-hash"))
 				require.NoError(t, err)
 				err = aidaDb.Close()
@@ -114,7 +116,7 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 			app := cli.NewApp()
 			app.Commands = []*cli.Command{&Command}
 			// when
-			test.argsBuilder.Flag(utils.AidaDbFlag.Name, aidaDbPath)
+			test.argsBuilder.Flag(config.AidaDbFlag.Name, aidaDbPath)
 			err := app.Run(test.argsBuilder.Build())
 
 			// then

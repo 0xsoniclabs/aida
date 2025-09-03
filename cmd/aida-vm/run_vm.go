@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
@@ -27,14 +28,13 @@ import (
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
 // RunVm runs a range of transactions on an EVM in parallel.
 func RunVm(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func RunVm(ctx *cli.Context) error {
 // aida-vm and allows to define extra extensions for observing the
 // execution, in particular during unit tests.
 func run(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	stateDb state.StateDB,
 	processor executor.Processor[txcontext.TxContext],

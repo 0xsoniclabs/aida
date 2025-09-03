@@ -19,8 +19,8 @@ package compact
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/urfave/cli/v2"
 )
@@ -31,7 +31,7 @@ var Command = cli.Command{
 	Name:   "compact",
 	Usage:  "compact target db",
 	Flags: []cli.Flag{
-		&utils.TargetDbFlag,
+		&config.TargetDbFlag,
 	},
 	Description: `
 Compacts target database.
@@ -40,7 +40,7 @@ Compacts target database.
 
 // compactAction compacts database
 func compactAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}

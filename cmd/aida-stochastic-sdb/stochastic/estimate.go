@@ -19,9 +19,9 @@ package stochastic
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -60,7 +60,7 @@ func stochasticEstimateAction(ctx *cli.Context) error {
 	estimationModel := stochastic.NewEstimationModelJSON(eventRegistryJSON)
 
 	// write simulation file
-	outputFileName := ctx.String(utils.OutputFlag.Name)
+	outputFileName := ctx.String(config.OutputFlag.Name)
 	if outputFileName == "" {
 		outputFileName = "./simulation.json"
 	}

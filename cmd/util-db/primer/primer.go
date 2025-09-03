@@ -17,10 +17,10 @@
 package primer
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/urfave/cli/v2"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 var RunPrimerCmd = cli.Command{
@@ -30,40 +30,40 @@ var RunPrimerCmd = cli.Command{
 	ArgsUsage: "<blockNum>",
 	Flags: []cli.Flag{
 		// AidaDb
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 
 		// StateDb
-		&utils.CarmenSchemaFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbVariantFlag,
-		&utils.StateDbSrcFlag,
-		&utils.DbTmpFlag,
-		&utils.StateDbLoggingFlag,
+		&config.CarmenSchemaFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbVariantFlag,
+		&config.StateDbSrcFlag,
+		&config.DbTmpFlag,
+		&config.StateDbLoggingFlag,
 
 		// ArchiveDb
-		&utils.ArchiveModeFlag,
-		&utils.ArchiveQueryRateFlag,
-		&utils.ArchiveMaxQueryAgeFlag,
-		&utils.ArchiveVariantFlag,
+		&config.ArchiveModeFlag,
+		&config.ArchiveQueryRateFlag,
+		&config.ArchiveMaxQueryAgeFlag,
+		&config.ArchiveVariantFlag,
 
 		// Profiling
-		&utils.CpuProfileFlag,
-		&utils.CpuProfilePerIntervalFlag,
-		&utils.DiagnosticServerFlag,
-		&utils.MemoryBreakdownFlag,
-		&utils.MemoryProfileFlag,
-		&utils.RandomSeedFlag,
-		&utils.PrimeThresholdFlag,
+		&config.CpuProfileFlag,
+		&config.CpuProfilePerIntervalFlag,
+		&config.DiagnosticServerFlag,
+		&config.MemoryBreakdownFlag,
+		&config.MemoryProfileFlag,
+		&config.RandomSeedFlag,
+		&config.PrimeThresholdFlag,
 
 		// Priming
-		&utils.RandomizePrimingFlag,
-		&utils.UpdateBufferSizeFlag,
+		&config.RandomizePrimingFlag,
+		&config.UpdateBufferSizeFlag,
 
 		// Utils
-		&utils.CustomDbNameFlag,
+		&config.CustomDbNameFlag,
 		&logger.LogLevelFlag,
-		&utils.TrackProgressFlag,
-		&utils.ErrorLoggingFlag,
+		&config.TrackProgressFlag,
+		&config.ErrorLoggingFlag,
 	},
 	Description: `
 The util-primer priming command requires one argument: <blockNum>

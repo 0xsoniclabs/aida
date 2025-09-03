@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package config
 
 import (
 	"errors"
@@ -724,14 +724,15 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 		}
 	}()
 
-	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
-	cc.hasMetadata = true
-	lastPatchBlock, err := getPatchFirstBlock(md.GetLastBlock())
-	if err != nil {
-		cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
-	}
-
-	return md.GetFirstBlock(), md.GetLastBlock(), lastPatchBlock, nil
+	// todo figure out
+	//md := metadata.NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
+	//cc.hasMetadata = true
+	//lastPatchBlock, err := getPatchFirstBlock(md.GetLastBlock())
+	//if err != nil {
+	//	cc.log.Warningf("Cannot get first block of the last patch of given AidaDB; %v", err)
+	//}
+	//
+	return 0, 0, 0, errors.New("todo fix")
 }
 
 // adjustBlockRange finds overlap between metadata block range and block range specified by user in command line
@@ -770,16 +771,17 @@ func (cc *configContext) setChainId() error {
 	if cc.cfg.ChainID == UnknownChainID {
 		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", ChainIDFlag.Name)
 
+		// todo figure out
 		// we check if AidaDb was set with err == nil
-		if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
-			md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
-
-			cc.cfg.ChainID = md.GetChainID()
-
-			if err = aidaDb.Close(); err != nil {
-				return fmt.Errorf("cannot close db; %v", err)
-			}
-		}
+		//if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
+		//	md := metadata.NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
+		//
+		//	cc.cfg.ChainID = md.GetChainID()
+		//
+		//	if err = aidaDb.Close(); err != nil {
+		//		return fmt.Errorf("cannot close db; %v", err)
+		//	}
+		//}
 
 		if cc.cfg.ChainID == 0 {
 			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
@@ -788,7 +790,7 @@ func (cc *configContext) setChainId() error {
 			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
 		}
 	}
-	return nil
+	return errors.New("todo fix")
 }
 
 // updateConfigBlockRange parse the command line arguments according to the mode in which selected tool runs

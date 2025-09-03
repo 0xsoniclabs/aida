@@ -19,13 +19,13 @@ package validator
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,23 +39,23 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 	tests := []struct {
 		name    string
 		vmImpl  string
-		chainId utils.ChainID
+		chainId config.ChainID
 	}{
 		{
 			name:    "SkipNonLfvm",
 			vmImpl:  "geth",
-			chainId: utils.EthereumChainID,
+			chainId: config.EthereumChainID,
 		},
 		{
 			name:    "SkipWrongChainId",
 			vmImpl:  "lfvm",
-			chainId: utils.MainnetChainID,
+			chainId: config.MainnetChainID,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &utils.Config{}
+			cfg := &config.Config{}
 			cfg.VmImpl = tt.vmImpl
 			cfg.ChainID = tt.chainId
 
@@ -82,9 +82,9 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 }
 
 func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.VmImpl = "lfvm"
-	cfg.ChainID = utils.EthereumChainID
+	cfg.ChainID = config.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -96,7 +96,7 @@ func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t 
 
 	nonExceptionBlock := 1
 
-	if _, ok := ethereumLfvmBlockExceptions[utils.EthereumChainID][nonExceptionBlock]; ok {
+	if _, ok := ethereumLfvmBlockExceptions[config.EthereumChainID][nonExceptionBlock]; ok {
 		t.Fatal("nonExceptionBlock is in ethereumLfvmBlockExceptions; invalid test conditions")
 	}
 
@@ -110,9 +110,9 @@ func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t 
 }
 
 func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.VmImpl = "lfvm"
-	cfg.ChainID = utils.EthereumChainID
+	cfg.ChainID = config.EthereumChainID
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -134,7 +134,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().GetState(common.HexToAddress("0x1"), common.HexToHash("0x1")),
 		db.EXPECT().SetState(common.HexToAddress("0x1"), common.HexToHash("0x1"), common.HexToHash("0x2")),
 		db.EXPECT().EndTransaction().Return(nil),
-		db.EXPECT().BeginTransaction(uint32(utils.PseudoTx)),
+		db.EXPECT().BeginTransaction(uint32(config.PseudoTx)),
 	)
 
 	gomock.InOrder(
@@ -175,7 +175,7 @@ func createTestTransaction() txcontext.TxContext {
 
 func getEthereumExceptionBlock() int {
 	// retrieving exception block
-	for key := range ethereumLfvmBlockExceptions[utils.EthereumChainID] {
+	for key := range ethereumLfvmBlockExceptions[config.EthereumChainID] {
 		return key
 	}
 	return -1
@@ -184,7 +184,7 @@ func getEthereumExceptionBlock() int {
 func TestEthereumDbPostTransactionUpdater_PreRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	st := executor.State[txcontext.TxContext]{}
 	ctx := new(executor.Context)
 	log.EXPECT().Warning(gomock.Any())
@@ -197,8 +197,8 @@ func TestEthereumDbPostTransactionUpdater_PreRun(t *testing.T) {
 }
 
 func TestEthereumDbPostTransactionUpdater_MakeEthereumDbPostTransactionUpdater(t *testing.T) {
-	cfg := &utils.Config{}
-	cfg.ChainID = utils.PseudoTx
+	cfg := &config.Config{}
+	cfg.ChainID = config.PseudoTx
 	ext := MakeEthereumDbPostTransactionUpdater(cfg)
 	assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 }

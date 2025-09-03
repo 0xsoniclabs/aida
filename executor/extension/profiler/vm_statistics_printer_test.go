@@ -19,14 +19,14 @@ package profiler
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/tosca/go/tosca"
 	"go.uber.org/mock/gomock"
 )
 
 func TestVirtualMachineStatisticsPrinter_WorksWithDefaultSetup(t *testing.T) {
-	cfg := utils.Config{}
+	cfg := config.Config{}
 	ext := MakeVirtualMachineStatisticsPrinter[any](&cfg)
 	ext.PostRun(executor.State[any]{}, nil, nil)
 }
@@ -38,7 +38,7 @@ func TestVirtualMachineStatisticsPrinter_TriggersStatPrintingAtEndOfRun(t *testi
 
 	interpreter.EXPECT().DumpProfile()
 
-	cfg := utils.Config{}
+	cfg := config.Config{}
 	cfg.VmImpl = "test-vm"
 	ext := MakeVirtualMachineStatisticsPrinter[any](&cfg)
 

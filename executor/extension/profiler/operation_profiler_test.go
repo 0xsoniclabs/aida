@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state"
@@ -63,7 +64,7 @@ func getTotalOpCount(a *analytics.IncrementalAnalytics) int {
 
 func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 	name := "OperationProfiler EachOpOnce"
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		Profile:         true,
 		ProfileDepth:    int(TransactionLevel),
 		First:           uint64(1),
@@ -183,7 +184,7 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 
 	for _, test := range tests {
 		name := fmt.Sprintf("OperationProfiler Random [%s]", test.args.name)
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			Profile:         true,
 			First:           uint64(test.args.first),
 			Last:            uint64(test.args.last),
@@ -292,7 +293,7 @@ func TestOperationProfiler_WithMalformedConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ext := MakeOperationProfiler[any](&utils.Config{
+		ext := MakeOperationProfiler[any](&config.Config{
 			Profile:         test.args.profile,
 			First:           test.args.first,
 			Last:            test.args.last,

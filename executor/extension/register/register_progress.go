@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -74,7 +75,7 @@ const (
 // MakeRegisterProgress creates an extention that
 //  1. Track Progress e.g. ProgressTracker
 //  2. Register the intermediate results to an external service (sqlite3 db)
-func MakeRegisterProgress(cfg *utils.Config, reportFrequency int, when whenToPrint) executor.Extension[txcontext.TxContext] {
+func MakeRegisterProgress(cfg *config.Config, reportFrequency int, when whenToPrint) executor.Extension[txcontext.TxContext] {
 	if cfg.RegisterRun == "" {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -100,7 +101,7 @@ type registerProgress struct {
 	extension.NilExtension[txcontext.TxContext]
 
 	// Configuration
-	cfg  *utils.Config
+	cfg  *config.Config
 	log  logger.Logger
 	lock sync.Mutex
 	ps   *utils.Printers

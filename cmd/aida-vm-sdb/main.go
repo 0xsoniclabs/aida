@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -49,77 +49,77 @@ var RunSubstateCmd = cli.Command{
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		// AidaDb
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 
 		// StateDb
-		&utils.CarmenCheckpointInterval,
-		&utils.CarmenCheckpointPeriod,
-		&utils.CarmenSchemaFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbVariantFlag,
-		&utils.StateDbSrcFlag,
-		&utils.StateDbSrcOverwriteFlag,
-		&utils.DbTmpFlag,
-		&utils.StateDbLoggingFlag,
-		&utils.ValidateStateHashesFlag,
+		&config.CarmenCheckpointInterval,
+		&config.CarmenCheckpointPeriod,
+		&config.CarmenSchemaFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbVariantFlag,
+		&config.StateDbSrcFlag,
+		&config.StateDbSrcOverwriteFlag,
+		&config.DbTmpFlag,
+		&config.StateDbLoggingFlag,
+		&config.ValidateStateHashesFlag,
 
 		// ArchiveDb
-		&utils.ArchiveModeFlag,
-		&utils.ArchiveQueryRateFlag,
-		&utils.ArchiveMaxQueryAgeFlag,
-		&utils.ArchiveVariantFlag,
+		&config.ArchiveModeFlag,
+		&config.ArchiveQueryRateFlag,
+		&config.ArchiveMaxQueryAgeFlag,
+		&config.ArchiveVariantFlag,
 
 		// ShadowDb
-		&utils.ShadowDb,
-		&utils.ShadowDbImplementationFlag,
-		&utils.ShadowDbVariantFlag,
+		&config.ShadowDb,
+		&config.ShadowDbImplementationFlag,
+		&config.ShadowDbVariantFlag,
 
 		// VM
-		&utils.EvmImplementation,
-		&utils.VmImplementation,
+		&config.EvmImplementation,
+		&config.VmImplementation,
 
 		// Profiling
-		&utils.CpuProfileFlag,
-		&utils.CpuProfilePerIntervalFlag,
-		&utils.DiagnosticServerFlag,
-		&utils.MemoryBreakdownFlag,
-		&utils.MemoryProfileFlag,
-		&utils.RandomSeedFlag,
-		&utils.PrimeThresholdFlag,
-		&utils.ProfileFlag,
-		&utils.ProfileDepthFlag,
-		&utils.ProfileFileFlag,
-		&utils.ProfileSqlite3Flag,
-		&utils.ProfileIntervalFlag,
-		&utils.ProfileDBFlag,
-		&utils.ProfileBlocksFlag,
+		&config.CpuProfileFlag,
+		&config.CpuProfilePerIntervalFlag,
+		&config.DiagnosticServerFlag,
+		&config.MemoryBreakdownFlag,
+		&config.MemoryProfileFlag,
+		&config.RandomSeedFlag,
+		&config.PrimeThresholdFlag,
+		&config.ProfileFlag,
+		&config.ProfileDepthFlag,
+		&config.ProfileFileFlag,
+		&config.ProfileSqlite3Flag,
+		&config.ProfileIntervalFlag,
+		&config.ProfileDBFlag,
+		&config.ProfileBlocksFlag,
 
 		// RegisterRun
-		&utils.RegisterRunFlag,
-		&utils.OverwriteRunIdFlag,
+		&config.RegisterRunFlag,
+		&config.OverwriteRunIdFlag,
 
 		// Priming
-		&utils.RandomizePrimingFlag,
-		&utils.SkipPrimingFlag,
-		&utils.UpdateBufferSizeFlag,
+		&config.RandomizePrimingFlag,
+		&config.SkipPrimingFlag,
+		&config.UpdateBufferSizeFlag,
 
 		// Utils
-		&utils.WorkersFlag,
-		&utils.ChainIDFlag,
-		&utils.ContinueOnFailureFlag,
-		&utils.SyncPeriodLengthFlag,
-		&utils.KeepDbFlag,
-		&utils.CustomDbNameFlag,
+		&config.WorkersFlag,
+		&config.ChainIDFlag,
+		&config.ContinueOnFailureFlag,
+		&config.SyncPeriodLengthFlag,
+		&config.KeepDbFlag,
+		&config.CustomDbNameFlag,
 		//&utils.MaxNumTransactionsFlag,
-		&utils.ValidateTxStateFlag,
-		&utils.ValidateFlag,
-		&utils.OverwritePreWorldStateFlag,
+		&config.ValidateTxStateFlag,
+		&config.ValidateFlag,
+		&config.OverwritePreWorldStateFlag,
 		&logger.LogLevelFlag,
-		&utils.NoHeartbeatLoggingFlag,
-		&utils.TrackProgressFlag,
-		&utils.ErrorLoggingFlag,
-		&utils.TrackerGranularityFlag,
-		&utils.SubstateEncodingFlag,
+		&config.NoHeartbeatLoggingFlag,
+		&config.TrackProgressFlag,
+		&config.ErrorLoggingFlag,
+		&config.TrackerGranularityFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 The aida-vm-sdb substate command requires two arguments: <blockNumFirst> <blockNumLast>
@@ -134,49 +134,49 @@ var RunTxGeneratorCmd = cli.Command{
 	Usage:  "Generates transactions for specified block range and executes them over StateDb",
 	Flags: []cli.Flag{
 		// TxGenerator specific flags
-		&utils.TxGeneratorTypeFlag,
+		&config.TxGeneratorTypeFlag,
 
 		// StateDb
-		&utils.CarmenSchemaFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbVariantFlag,
-		&utils.StateDbSrcFlag,
-		&utils.StateDbSrcOverwriteFlag,
-		&utils.DbTmpFlag,
-		&utils.StateDbLoggingFlag,
-		&utils.ValidateStateHashesFlag,
+		&config.CarmenSchemaFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbVariantFlag,
+		&config.StateDbSrcFlag,
+		&config.StateDbSrcOverwriteFlag,
+		&config.DbTmpFlag,
+		&config.StateDbLoggingFlag,
+		&config.ValidateStateHashesFlag,
 
 		// ShadowDb
-		&utils.ShadowDb,
-		&utils.ShadowDbImplementationFlag,
-		&utils.ShadowDbVariantFlag,
+		&config.ShadowDb,
+		&config.ShadowDbImplementationFlag,
+		&config.ShadowDbVariantFlag,
 
 		// RegisterRun
-		&utils.RegisterRunFlag,
-		&utils.OverwriteRunIdFlag,
+		&config.RegisterRunFlag,
+		&config.OverwriteRunIdFlag,
 
 		// VM
-		&utils.EvmImplementation,
-		&utils.VmImplementation,
+		&config.EvmImplementation,
+		&config.VmImplementation,
 
 		// Profiling
-		&utils.CpuProfileFlag,
-		&utils.CpuProfilePerIntervalFlag,
-		&utils.DiagnosticServerFlag,
-		&utils.MemoryBreakdownFlag,
-		&utils.MemoryProfileFlag,
+		&config.CpuProfileFlag,
+		&config.CpuProfilePerIntervalFlag,
+		&config.DiagnosticServerFlag,
+		&config.MemoryBreakdownFlag,
+		&config.MemoryProfileFlag,
 
 		// Utils
-		&utils.WorkersFlag,
-		&utils.ChainIDFlag,
-		&utils.ContinueOnFailureFlag,
-		&utils.KeepDbFlag,
-		&utils.ValidateFlag,
+		&config.WorkersFlag,
+		&config.ChainIDFlag,
+		&config.ContinueOnFailureFlag,
+		&config.KeepDbFlag,
+		&config.ValidateFlag,
 		&logger.LogLevelFlag,
-		&utils.NoHeartbeatLoggingFlag,
-		&utils.BlockLengthFlag,
-		&utils.TrackerGranularityFlag,
-		&utils.ForkFlag,
+		&config.NoHeartbeatLoggingFlag,
+		&config.BlockLengthFlag,
+		&config.TrackerGranularityFlag,
+		&config.ForkFlag,
 	},
 	Description: `
 The aida-vm-sdb tx-generator command requires two arguments: <blockNumFirst> <blockNumLast>

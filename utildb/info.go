@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -107,7 +108,7 @@ func FindBlockRangeInException(edb db.ExceptionDB) (uint64, uint64, error) {
 }
 
 // GetSubstateCount in given AidaDb
-func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
+func GetSubstateCount(cfg *config.Config, sdb db.SubstateDB) uint64 {
 	var count uint64
 
 	iter := sdb.NewSubstateIterator(int(cfg.First), 10)
@@ -123,7 +124,7 @@ func GetSubstateCount(cfg *utils.Config, sdb db.SubstateDB) uint64 {
 }
 
 // GetDeletedCount in given AidaDb
-func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
+func GetDeletedCount(cfg *config.Config, database db.BaseDB) (int, error) {
 	startingBlockBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
 
@@ -146,7 +147,7 @@ func GetDeletedCount(cfg *utils.Config, database db.BaseDB) (int, error) {
 }
 
 // GetUpdateCount in given AidaDb
-func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetUpdateCount(cfg *config.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	start := db.SubstateDBBlockPrefix(cfg.First)[2:]
@@ -167,7 +168,7 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetStateHashCount in given AidaDb
-func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetStateHashCount(cfg *config.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	hashProvider := utils.MakeHashProvider(database)
@@ -186,7 +187,7 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetBlockHashCount in given AidaDb
-func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
+func GetBlockHashCount(cfg *config.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
 	hashProvider := utils.MakeHashProvider(database)
@@ -205,7 +206,7 @@ func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 }
 
 // GetExceptionCount in given AidaDb
-func GetExceptionCount(cfg *utils.Config, database db.BaseDB) (int, error) {
+func GetExceptionCount(cfg *config.Config, database db.BaseDB) (int, error) {
 	startingBlockBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
 

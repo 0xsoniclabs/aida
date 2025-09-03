@@ -19,6 +19,8 @@ package clone
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/0xsoniclabs/substate/types/hash"
@@ -43,22 +45,22 @@ import (
 func TestClone(t *testing.T) {
 	tests := []struct {
 		name        string
-		cloningType utils.AidaDbType
+		cloningType metadata.AidaDbType
 		dbc         string
 		wantErr     string
 	}{
-		{"NoType", utils.NoType, "", "clone failed for NoType: incorrect clone type: 0"},
-		{"GenType", utils.GenType, "", "clone failed for GenType: incorrect clone type: 1"},
-		{"PatchType", utils.PatchType, "", ""},
-		{"CloneType", utils.CloneType, "", ""},
-		{"CustomTypeAll", utils.CustomType, "all", ""},
-		{"CustomTypeSubstate", utils.CustomType, "substate", ""},
-		{"CustomTypeDelete", utils.CustomType, "delete", ""},
-		{"CustomTypeUpdate", utils.CustomType, "update", ""},
-		{"CustomTypeStateHash", utils.CustomType, "state-hash", ""},
-		{"CustomTypeBlockHash", utils.CustomType, "block-hash", ""},
-		{"CustomTypeException", utils.CustomType, "exception", ""},
-		{"CustomTypeInvalid", utils.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
+		{"NoType", metadata.NoType, "", "clone failed for NoType: incorrect clone type: 0"},
+		{"GenType", metadata.GenType, "", "clone failed for GenType: incorrect clone type: 1"},
+		{"PatchType", metadata.PatchType, "", ""},
+		{"CloneType", metadata.CloneType, "", ""},
+		{"CustomTypeAll", metadata.CustomType, "all", ""},
+		{"CustomTypeSubstate", metadata.CustomType, "substate", ""},
+		{"CustomTypeDelete", metadata.CustomType, "delete", ""},
+		{"CustomTypeUpdate", metadata.CustomType, "update", ""},
+		{"CustomTypeStateHash", metadata.CustomType, "state-hash", ""},
+		{"CustomTypeBlockHash", metadata.CustomType, "block-hash", ""},
+		{"CustomTypeException", metadata.CustomType, "exception", ""},
+		{"CustomTypeInvalid", metadata.CustomType, "invalid", "invalid db component: invalid. Usage: (\"all\", \"substate\", \"delete\", \"update\", \"state-hash\", \"block-hash\", \"exception\")"},
 	}
 
 	for _, tt := range tests {
@@ -75,8 +77,8 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType, name string, dbc string) error {
-	cfg := &utils.Config{
+func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType metadata.AidaDbType, name string, dbc string) error {
+	cfg := &config.Config{
 		First:       0,
 		Last:        100,
 		Workers:     1,
@@ -222,7 +224,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 				t.Fatalf("error putting invalid db key: %v", err)
 			}
 
-			err = testClone(t, aidaDb, utils.CustomType, tt.name, tt.dbComponent)
+			err = testClone(t, aidaDb, metadata.CustomType, tt.name, tt.dbComponent)
 			if err == nil {
 				t.Fatalf("Expected error for invalid db key, but got none")
 			} else {
@@ -233,7 +235,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 }
 
 func TestClone_BlockHashes(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First:       0,
 		Last:        100,
 		Validate:    false,
@@ -244,7 +246,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CustomType)
+	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, metadata.CustomType)
 
 	assert.NoError(t, err)
 
@@ -259,7 +261,7 @@ func TestClone_BlockHashes(t *testing.T) {
 }
 
 func TestClone_LastUpdateBeforeRange(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First:       1000,
 		Last:        1001,
 		Validate:    false,
@@ -270,7 +272,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CloneType)
+	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, metadata.CloneType)
 
 	assert.NoError(t, err)
 
@@ -553,7 +555,7 @@ func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
 	require.NoError(t, err, "failed to set substate encoding")
 
 	clnr := cloner{
-		cfg: &utils.Config{
+		cfg: &config.Config{
 			First:            1,
 			Last:             10,
 			Workers:          1,
@@ -595,7 +597,7 @@ func TestCloner_PutCode_DoesNotPutNilCode(t *testing.T) {
 	dstDb.EXPECT().PutCode([]byte{123}).Times(1)
 
 	clnr := cloner{
-		cfg: &utils.Config{
+		cfg: &config.Config{
 			First:            1,
 			Last:             10,
 			Workers:          1,
@@ -628,7 +630,7 @@ func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
 	dstDb.EXPECT().PutCode([]byte{1}).Times(1)
 
 	clnr := cloner{
-		cfg: &utils.Config{
+		cfg: &config.Config{
 			First:            1,
 			Last:             10,
 			Workers:          1,
@@ -720,8 +722,8 @@ func TestClone_CorrectlyClonesData(t *testing.T) {
 	srcPath := t.TempDir()
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
-	md := utils.NewAidaDbMetadata(srcDb, "INFO")
-	err = md.SetChainID(utils.MainnetChainID)
+	md := metadata.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(config.MainnetChainID)
 	require.NoError(t, err, "failed to set chain id")
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
@@ -733,7 +735,7 @@ func TestClone_CorrectlyClonesData(t *testing.T) {
 	targetDb, err := db.NewDefaultSubstateDB(targetPath)
 	require.NoError(t, err, "failed to create target db")
 
-	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	cfg := &config.Config{First: 0, Last: 1, ChainID: config.MainnetChainID, Workers: 1}
 	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
 	require.NoError(t, err, "failed to clone codes")
 
@@ -749,8 +751,8 @@ func TestCloneCodes_PutsDataHashAsCode(t *testing.T) {
 	srcPath := t.TempDir()
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
-	md := utils.NewAidaDbMetadata(srcDb, "INFO")
-	err = md.SetChainID(utils.MainnetChainID)
+	md := metadata.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(config.MainnetChainID)
 	require.NoError(t, err, "failed to set chain id")
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
@@ -767,7 +769,7 @@ func TestCloneCodes_PutsDataHashAsCode(t *testing.T) {
 	targetDb, err := db.NewDefaultSubstateDB(targetPath)
 	require.NoError(t, err, "failed to create target db")
 
-	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	cfg := &config.Config{First: 0, Last: 1, ChainID: config.MainnetChainID, Workers: 1}
 	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
 	require.NoError(t, err, "failed to clone codes")
 

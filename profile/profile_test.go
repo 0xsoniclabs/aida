@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package profile
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/tosca/go/tosca"
@@ -33,7 +34,7 @@ func TestStartCPUProfile(t *testing.T) {
 	profilePath := filepath.Join(tempDir, "cpu.prof")
 
 	t.Run("WithValidPath", func(t *testing.T) {
-		cfg := &Config{CPUProfile: profilePath}
+		cfg := &config.Config{CPUProfile: profilePath}
 		err := StartCPUProfile(cfg)
 		assert.NoError(t, err)
 
@@ -47,14 +48,14 @@ func TestStartCPUProfile(t *testing.T) {
 
 	t.Run("WithInvalidPath", func(t *testing.T) {
 		// Set profile to a path that is inaccessible
-		cfg := &Config{CPUProfile: "/nonexistent/directory/cpu.prof"}
+		cfg := &config.Config{CPUProfile: "/nonexistent/directory/cpu.prof"}
 		err := StartCPUProfile(cfg)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "could not create CPU profile")
 	})
 
 	t.Run("WithEmptyPath", func(t *testing.T) {
-		cfg := &Config{CPUProfile: ""}
+		cfg := &config.Config{CPUProfile: ""}
 		err := StartCPUProfile(cfg)
 		assert.NoError(t, err)
 	})
@@ -62,7 +63,7 @@ func TestStartCPUProfile(t *testing.T) {
 
 func TestStopCPUProfile(t *testing.T) {
 	t.Run("WithEmptyPath", func(t *testing.T) {
-		cfg := &Config{CPUProfile: ""}
+		cfg := &config.Config{CPUProfile: ""}
 		// This should not panic
 		StopCPUProfile(cfg)
 	})
@@ -71,7 +72,7 @@ func TestStopCPUProfile(t *testing.T) {
 		tempDir := t.TempDir()
 		profilePath := filepath.Join(tempDir, "cpu_to_stop.prof")
 
-		cfg := &Config{CPUProfile: profilePath}
+		cfg := &config.Config{CPUProfile: profilePath}
 		err := StartCPUProfile(cfg)
 		assert.NoError(t, err)
 
@@ -85,7 +86,7 @@ func TestStartMemoryProfile(t *testing.T) {
 	profilePath := filepath.Join(tempDir, "mem.prof")
 
 	t.Run("WithValidPath", func(t *testing.T) {
-		cfg := &Config{MemoryProfile: profilePath}
+		cfg := &config.Config{MemoryProfile: profilePath}
 		err := StartMemoryProfile(cfg)
 		assert.NoError(t, err)
 
@@ -96,14 +97,14 @@ func TestStartMemoryProfile(t *testing.T) {
 
 	t.Run("WithInvalidPath", func(t *testing.T) {
 		// Set profile to a path that is inaccessible
-		cfg := &Config{MemoryProfile: "/nonexistent/directory/mem.prof"}
+		cfg := &config.Config{MemoryProfile: "/nonexistent/directory/mem.prof"}
 		err := StartMemoryProfile(cfg)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "could not create memory profile")
 	})
 
 	t.Run("WithEmptyPath", func(t *testing.T) {
-		cfg := &Config{MemoryProfile: ""}
+		cfg := &config.Config{MemoryProfile: ""}
 		err := StartMemoryProfile(cfg)
 		assert.NoError(t, err)
 	})
@@ -139,7 +140,7 @@ func TestMemoryBreakdown(t *testing.T) {
 	mockLogger := logger.NewMockLogger(ctrl)
 
 	t.Run("WithBreakdownEnabled", func(t *testing.T) {
-		cfg := &Config{MemoryBreakdown: true}
+		cfg := &config.Config{MemoryBreakdown: true}
 
 		// Mock memory usage with breakdown
 		mockUsage := &state.MemoryUsage{
@@ -153,7 +154,7 @@ func TestMemoryBreakdown(t *testing.T) {
 	})
 
 	t.Run("WithBreakdownEnabledButUnavailable", func(t *testing.T) {
-		cfg := &Config{
+		cfg := &config.Config{
 			MemoryBreakdown: true,
 			DbImpl:          "somedb",
 			DbVariant:       "somevariant",
@@ -172,7 +173,7 @@ func TestMemoryBreakdown(t *testing.T) {
 	})
 
 	t.Run("WithBreakdownDisabled", func(t *testing.T) {
-		cfg := &Config{MemoryBreakdown: false}
+		cfg := &config.Config{MemoryBreakdown: false}
 
 		// No method calls expected
 
@@ -194,7 +195,7 @@ func TestPrintEvmStatistics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to register interpreter factory: %v", err)
 	}
-	cfg := &Config{
+	cfg := &config.Config{
 		VmImpl: "test-vm",
 	}
 	mockLogger.EXPECT().Noticef("DumpProfile").Return()

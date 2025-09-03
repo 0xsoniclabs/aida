@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
@@ -86,7 +87,7 @@ func GetDbSize(db db.BaseDB) uint64 {
 // PrintMetadata from given AidaDb
 func PrintMetadata(aidaDb db.BaseDB) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := metadata.NewAidaDbMetadata(aidaDb, "INFO")
 
 	log.Notice("AIDA-DB INFO:")
 
@@ -137,7 +138,7 @@ func PrintMetadata(aidaDb db.BaseDB) error {
 }
 
 // printUpdateSetInfo from given AidaDb
-func printUpdateSetInfo(m utils.Metadata) {
+func printUpdateSetInfo(m metadata.Metadata) {
 	log := logger.NewLogger("INFO", "Print-Metadata")
 
 	log.Notice("UPDATE-SET INFO:")
@@ -160,18 +161,18 @@ func printUpdateSetInfo(m utils.Metadata) {
 }
 
 // printDbType from given AidaDb
-func printDbType(m *utils.AidaDbMetadata) error {
+func printDbType(m *metadata.AidaDbMetadata) error {
 	t := m.GetDbType()
 
 	var typePrint string
 	switch t {
-	case utils.GenType:
+	case metadata.GenType:
 		typePrint = "Generate"
-	case utils.CloneType:
+	case metadata.CloneType:
 		typePrint = "Clone"
-	case utils.PatchType:
+	case metadata.PatchType:
 		typePrint = "Patch"
-	case utils.NoType:
+	case metadata.NoType:
 		typePrint = "NoType"
 
 	default:
@@ -189,7 +190,7 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
-	md := utils.NewAidaDbMetadata(database, "ERROR")
+	md := metadata.NewAidaDbMetadata(database, "ERROR")
 	err = md.SetAllMetadata(1, 50, 1, 50, 250, []byte("0x0"), 1)
 	assert.NoError(t, err)
 

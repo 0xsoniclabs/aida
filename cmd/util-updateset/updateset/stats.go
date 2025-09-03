@@ -19,7 +19,7 @@ package updateset
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -30,7 +30,7 @@ var UpdateSetStatsCommand = cli.Command{
 	Usage:     "print number of accounts and storage keys in update-set",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.UpdateDbFlag,
+		&config.UpdateDbFlag,
 	},
 	Description: `
 The stats command requires one arguments: <blockNumLast> -- the last block of update-set.`,
@@ -41,7 +41,7 @@ func reportUpdateSetStats(ctx *cli.Context) error {
 	var (
 		err error
 	)
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}

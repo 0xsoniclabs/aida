@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -109,7 +110,7 @@ func CopyDir(src string, dst string) error {
 
 // WriteStateDbInfo writes stateDB implementation info and block height to a file
 // for a compatibility check when reloading
-func WriteStateDbInfo(directory string, cfg *Config, block uint64, root common.Hash, hasFinished bool) error {
+func WriteStateDbInfo(directory string, cfg *config.Config, block uint64, root common.Hash, hasFinished bool) error {
 	dbinfo := &StateDbInfo{
 		Impl:           cfg.DbImpl,
 		Variant:        cfg.DbVariant,
@@ -118,7 +119,7 @@ func WriteStateDbInfo(directory string, cfg *Config, block uint64, root common.H
 		Schema:         cfg.CarmenSchema,
 		Block:          block,
 		RootHash:       root,
-		GitCommit:      GitCommit,
+		GitCommit:      config.GitCommit,
 		CreateTime:     time.Now().UTC().Format(time.UnixDate),
 		HasFinished:    hasFinished,
 	}
@@ -146,7 +147,7 @@ func ReadStateDbInfo(dbpath string) (StateDbInfo, error) {
 }
 
 // RenameTempStateDbDirectory renames a temp directory to a meaningful name
-func RenameTempStateDbDirectory(cfg *Config, oldDirectory string, block uint64) string {
+func RenameTempStateDbDirectory(cfg *config.Config, oldDirectory string, block uint64) string {
 	var newDirectory string
 	// if custom db name is given, use it. Otherwise, generate readable name from db info.
 	if cfg.CustomDbName != "" {

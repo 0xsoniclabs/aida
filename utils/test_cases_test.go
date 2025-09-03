@@ -19,6 +19,7 @@ package utils
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +54,7 @@ func TestCases_MakeTestConfig(t *testing.T) {
 	testCases := GetStateDbTestCases()
 	cfg := MakeTestConfig(testCases[0])
 	assert.NotNil(t, cfg)
-	assert.Equal(t, MainnetChainID, cfg.ChainID)
+	assert.Equal(t, config.MainnetChainID, cfg.ChainID)
 	assert.Equal(t, "", cfg.VmImpl)
 	assert.Equal(t, "geth", cfg.DbImpl)
 	assert.Equal(t, "", cfg.ArchiveVariant)

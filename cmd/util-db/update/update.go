@@ -32,8 +32,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/klauspost/compress/gzip"
@@ -50,13 +52,13 @@ var Command = cli.Command{
 	Name:   "update",
 	Usage:  "download aida-db patches either creating new database or updating existing one",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
 		&logger.LogLevelFlag,
-		&utils.CompactDbFlag,
-		&utils.DbTmpFlag,
-		&utils.UpdateTypeFlag,
-		&utils.SubstateEncodingFlag,
+		&config.CompactDbFlag,
+		&config.DbTmpFlag,
+		&config.UpdateTypeFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: ` 
 Updates aida-db by downloading patches from aida-db generation server.
@@ -65,7 +67,7 @@ Updates aida-db by downloading patches from aida-db generation server.
 
 // updateDbAction updates aida-db by downloading patches from aida-db generation server.
 func updateDbAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func updateDbAction(ctx *cli.Context) error {
 }
 
 // update implements updating command to be called from various commands and automatically downloads aida-db patches.
-func update(cfg *utils.Config) error {
+func update(cfg *config.Config) error {
 	log := logger.NewLogger(cfg.LogLevel, "DB Update")
 	start := time.Now()
 
@@ -120,7 +122,7 @@ func update(cfg *utils.Config) error {
 }
 
 // getTargetDbBlockRange initialize aidaMetadata of targetDB
-func getTargetDbBlockRange(cfg *utils.Config) (firstAidaDbBlock uint64, lastAidaDbBlock uint64, finalErr error) {
+func getTargetDbBlockRange(cfg *config.Config) (firstAidaDbBlock uint64, lastAidaDbBlock uint64, finalErr error) {
 	// load stats of current aida-db to download just latest patches
 	_, err := os.Stat(cfg.AidaDb)
 	if err != nil {
@@ -144,7 +146,7 @@ func getTargetDbBlockRange(cfg *utils.Config) (firstAidaDbBlock uint64, lastAida
 			return 0, 0, fmt.Errorf("failed to set substate encoding. %v", err)
 		}
 
-		firstAidaDbBlock, lastAidaDbBlock, ok := utils.FindBlockRangeInSubstate(sdb)
+		firstAidaDbBlock, lastAidaDbBlock, ok := metadata.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			return 0, 0, fmt.Errorf("cannot find blocks in substate; is substate present in given db? %v", cfg.AidaDb)
 		}
@@ -153,7 +155,7 @@ func getTargetDbBlockRange(cfg *utils.Config) (firstAidaDbBlock uint64, lastAida
 }
 
 // patchesDownloader processes patch names to download then download them in pipelined process
-func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock, lastBlock uint64) error {
+func patchesDownloader(cfg *config.Config, patches []metadata.PatchJson, firstBlock, lastBlock uint64) error {
 	// create channel to push patch labels trough channel
 	patchesChan := pushPatchToChanel(patches)
 
@@ -173,10 +175,10 @@ func patchesDownloader(cfg *utils.Config, patches []utils.PatchJson, firstBlock,
 }
 
 // mergePatch takes decompressed patches and merges them into aida-db
-func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
+func mergePatch(cfg *config.Config, decompressChan chan string, errChan chan error, firstAidaDbBlock, lastAidaDbBlock uint64) error {
 	var (
 		err      error
-		targetMD *utils.AidaDbMetadata
+		targetMD *metadata.AidaDbMetadata
 		isNewDb  bool
 		log      = logger.NewLogger(cfg.LogLevel, "aida-merge-patch")
 	)
@@ -222,7 +224,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				if err != nil {
 					return fmt.Errorf("can't open aidaDb; %v", err)
 				}
-				targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+				targetMD = metadata.NewAidaDbMetadata(targetDb, cfg.LogLevel)
 
 				errOldAida := targetMD.UpdateMetadataInOldAidaDb(cfg.ChainID, firstAidaDbBlock, lastAidaDbBlock)
 				if errOldAida != nil {
@@ -246,7 +248,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 	}
 }
 
-func mergeToExistingAidaDb(cfg *utils.Config, targetMD *utils.AidaDbMetadata, extractedPatchPath string) error {
+func mergeToExistingAidaDb(cfg *config.Config, targetMD *metadata.AidaDbMetadata, extractedPatchPath string) error {
 	// merge newly extracted patch
 	patchDb, err := db.NewReadOnlyBaseDB(extractedPatchPath)
 	if err != nil {
@@ -291,7 +293,7 @@ func mergeToExistingAidaDb(cfg *utils.Config, targetMD *utils.AidaDbMetadata, ex
 }
 
 // decompressPatch takes tar.gz archives and decompresses them, then sends them for further processing
-func decompressPatch(cfg *utils.Config, patchChan chan utils.PatchJson, errChan chan error) (chan string, chan error) {
+func decompressPatch(cfg *config.Config, patchChan chan metadata.PatchJson, errChan chan error) (chan string, chan error) {
 	log := logger.NewLogger(cfg.LogLevel, "Decompress patch")
 	decompressedPatchChan := make(chan string, 1)
 	errDecompressChan := make(chan error, 1)
@@ -338,9 +340,9 @@ func decompressPatch(cfg *utils.Config, patchChan chan utils.PatchJson, errChan 
 }
 
 // downloadPatch downloads patches from server and sends them towards decompressor
-func downloadPatch(cfg *utils.Config, patchesChan chan utils.PatchJson) (chan utils.PatchJson, chan error) {
+func downloadPatch(cfg *config.Config, patchesChan chan metadata.PatchJson) (chan metadata.PatchJson, chan error) {
 	log := logger.NewLogger(cfg.LogLevel, "Download patch")
-	downloadedPatchChan := make(chan utils.PatchJson, 1)
+	downloadedPatchChan := make(chan metadata.PatchJson, 1)
 	errChan := make(chan error, 1)
 
 	go func() {
@@ -352,7 +354,7 @@ func downloadPatch(cfg *utils.Config, patchesChan chan utils.PatchJson) (chan ut
 				return
 			}
 			log.Debugf("Downloading %s...", patch.FileName)
-			patchUrl := utils.AidaDbRepositoryUrl + "/" + patch.FileName
+			patchUrl := config.AidaDbRepositoryUrl + "/" + patch.FileName
 			compressedPatchPath := filepath.Join(cfg.DbTmp, patch.FileName)
 			err := downloadFile(compressedPatchPath, cfg.DbTmp, patchUrl)
 			if err != nil {
@@ -410,8 +412,8 @@ func calculateMD5Sum(filePath string) (md5Sum string, finalErr error) {
 }
 
 // pushPatchToChanel used to pipe strings into channel
-func pushPatchToChanel(strings []utils.PatchJson) chan utils.PatchJson {
-	ch := make(chan utils.PatchJson, 1)
+func pushPatchToChanel(strings []metadata.PatchJson) chan metadata.PatchJson {
+	ch := make(chan metadata.PatchJson, 1)
 	go func() {
 		defer close(ch)
 		for _, str := range strings {
@@ -422,7 +424,7 @@ func pushPatchToChanel(strings []utils.PatchJson) chan utils.PatchJson {
 }
 
 // retrievePatchesToDownload retrieves all available patches from aida-db generation server.
-func retrievePatchesToDownload(cfg *utils.Config, targetDbLastBlock uint64) ([]utils.PatchJson, error) {
+func retrievePatchesToDownload(cfg *config.Config, targetDbLastBlock uint64) ([]metadata.PatchJson, error) {
 	if cfg.UpdateType != "stable" && cfg.UpdateType != "nightly" {
 		return nil, fmt.Errorf("please choose correct data-type with --data-type flag (stable/nightly)")
 	}
@@ -430,18 +432,18 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbLastBlock uint64) ([]u
 	var includeNightly = cfg.UpdateType == "nightly"
 
 	// download list of available availablePatches
-	availablePatches, err := utils.DownloadPatchesJson()
+	availablePatches, err := metadata.DownloadPatchesJson()
 	if err != nil {
 		return nil, fmt.Errorf("unable to download patches.json: %v", err)
 	}
 
-	hasStateHashPatch, err := utils.HasStateHashPatch(cfg.AidaDb)
+	hasStateHashPatch, err := metadata.HasStateHashPatch(cfg.AidaDb)
 	if err != nil {
 		return nil, err
 	}
 
 	// list of availablePatches to be downloaded
-	var patchesToDownload = make([]utils.PatchJson, 0)
+	var patchesToDownload = make([]metadata.PatchJson, 0)
 
 	for _, patch := range availablePatches {
 		if patch.FileName == stateHashPatchFileName+".tar.gz" {
@@ -466,7 +468,7 @@ func retrievePatchesToDownload(cfg *utils.Config, targetDbLastBlock uint64) ([]u
 }
 
 // ByToBlock is an interface that is used to sort the patches by ToBlock
-type ByToBlock []utils.PatchJson
+type ByToBlock []metadata.PatchJson
 
 func (a ByToBlock) Len() int {
 	return len(a)

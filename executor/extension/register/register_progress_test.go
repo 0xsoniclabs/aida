@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/register"
@@ -81,7 +82,7 @@ type metadataResponse struct {
 }
 
 func TestRegisterProgress_DoNothingIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = ""
 	ext := MakeRegisterProgress(cfg, 0, OnPreBlock)
 	if _, ok := ext.(extension.NilExtension[txcontext.TxContext]); !ok {
@@ -94,7 +95,7 @@ func TestRegisterProgress_TerminatesIfPathToRegisterDirDoesNotExist(t *testing.T
 		pathToRegisterDir string = filepath.Join("does", "not", "exist")
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = pathToRegisterDir // enabled here
 	cfg.First = 5
 	cfg.Last = 25
@@ -116,7 +117,7 @@ func TestRegisterProgress_TerminatesIfPathToStateDBDoesNotExist(t *testing.T) {
 		dummyStateDbPath string = filepath.Join("does", "not", "exist")
 	)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = dummyStateDbPath // enabled here
 	cfg.First = 5
 	cfg.Last = 25
@@ -179,7 +180,7 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	stateDb := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = tmpDir // enabled here
 	cfg.OverwriteRunId = dbName
 	cfg.First = 5
@@ -318,7 +319,7 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	stateDb := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = tmpDir // enabled here
 	cfg.OverwriteRunId = dbName
 
@@ -375,7 +376,7 @@ func TestRegisterProgress_ExtensionContinuesDespiteFetchEnvFailure(t *testing.T)
 
 	rm, err := register.MakeRunMetadata(
 		connection,
-		register.MakeRunIdentity(time.Now().Unix(), &utils.Config{}),
+		register.MakeRunIdentity(time.Now().Unix(), &config.Config{}),
 		mockEnvInfoFetcher,
 	)
 
@@ -391,7 +392,7 @@ func TestRegisterProgress_ExtensionContinuesDespiteFetchEnvFailure(t *testing.T)
 }
 
 func TestRegisterProgress_ChecksDefaultReportInterval(t *testing.T) {
-	tests := map[*utils.Config]uint64{
+	tests := map[*config.Config]uint64{
 		{
 			RegisterRun: "enabled",
 			CommandName: "substate",
@@ -445,7 +446,7 @@ func TestRegisterProgress_ChecksDefaultReportInterval(t *testing.T) {
 }
 
 func TestRegisterProgress_GetId(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RegisterRun = "enabled"
 	cfg.First = 5
 	cfg.Last = 25

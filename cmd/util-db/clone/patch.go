@@ -19,9 +19,10 @@ package clone
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,12 +34,12 @@ var clonePatchCommand = cli.Command{
 	Usage:     "patch is used to create aida-db patch",
 	ArgsUsage: "<blockNumFirst> <blockNumLast> <EpochNumFirst> <EpochNumLast>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.TargetDbFlag,
-		&utils.CompactDbFlag,
-		&utils.ValidateFlag,
+		&config.AidaDbFlag,
+		&config.TargetDbFlag,
+		&config.CompactDbFlag,
+		&config.ValidateFlag,
 		&logger.LogLevelFlag,
-		&utils.SubstateEncodingFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 Creates patch of aida-db for desired block range
@@ -48,7 +49,7 @@ Creates patch of aida-db for desired block range
 // clonePatchAction creates aida-db patch
 func clonePatchAction(ctx *cli.Context) error {
 	// TODO refactor
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+	cfg, err := config.NewConfig(ctx, config.NoArgs)
 	if err != nil {
 		return err
 	}
@@ -57,13 +58,13 @@ func clonePatchAction(ctx *cli.Context) error {
 		return fmt.Errorf("clone patch command requires exactly 4 arguments")
 	}
 
-	cfg.First, cfg.Last, err = utils.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
+	cfg.First, cfg.Last, err = config.SetBlockRange(ctx.Args().Get(0), ctx.Args().Get(1), cfg.ChainID)
 	if err != nil {
 		return err
 	}
 
 	var firstEpoch, lastEpoch uint64
-	firstEpoch, lastEpoch, err = utils.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
+	firstEpoch, lastEpoch, err = config.SetBlockRange(ctx.Args().Get(2), ctx.Args().Get(3), cfg.ChainID)
 	if err != nil {
 		return err
 	}
@@ -85,14 +86,14 @@ func clonePatchAction(ctx *cli.Context) error {
 }
 
 // createPatchClone creates aida-db clonePatchCommand
-func createPatchClone(cfg *utils.Config, aidaDb, targetDb db.SubstateDB, firstEpoch, lastEpoch uint64) error {
-	var cloneType = utils.PatchType
+func createPatchClone(cfg *config.Config, aidaDb, targetDb db.SubstateDB, firstEpoch, lastEpoch uint64) error {
+	var cloneType = metadata.PatchType
 	err := clone(cfg, aidaDb, targetDb, cloneType)
 	if err != nil {
 		return err
 	}
 
-	md := utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+	md := metadata.NewAidaDbMetadata(targetDb, cfg.LogLevel)
 	err = md.SetFirstEpoch(firstEpoch)
 	if err != nil {
 		return err

@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/txcontext/txgenerator"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -38,7 +38,7 @@ func TestCmd_RunTxGenerator(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = RunTxGenerator
 	app.Flags = []cli.Flag{
-		&utils.ForkFlag,
+		&config.ForkFlag,
 	}
 
 	err := app.Run([]string{RunTxGeneratorCmd.Name, "--fork", "Prague", "1"})
@@ -52,7 +52,7 @@ func TestVmSdb_TxGenerator_AllTransactionsAreProcessedInOrder(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := config.NewTestConfig(t, config.MainnetChainID, 2, 4, false, "")
 	// Simulate the execution of four transactions in three blocks.
 	provider.EXPECT().
 		Run(2, 4, gomock.Any()).

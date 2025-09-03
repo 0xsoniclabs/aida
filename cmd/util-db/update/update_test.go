@@ -27,7 +27,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -61,11 +63,11 @@ func TestUpdate_UpdateDbCommand(t *testing.T) {
 
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
 		Flag(logger.LogLevelFlag.Name, "CRITICAL").
-		Flag(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID)).
-		Flag(utils.DbTmpFlag.Name, t.TempDir()).
-		Flag(utils.SubstateEncodingFlag.Name, "protobuf").
+		Flag(config.ChainIDFlag.Name, int(config.SonicMainnetChainID)).
+		Flag(config.DbTmpFlag.Name, t.TempDir()).
+		Flag(config.SubstateEncodingFlag.Name, "protobuf").
 		Build()
 	err = app.Run(args)
 	require.NoError(t, err)
@@ -83,11 +85,11 @@ func TestCmd_UpdateCommand(t *testing.T) {
 
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
-		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
-		Flag(utils.DbTmpFlag.Name, tmpDbPath).
-		Flag(utils.UpdateTypeFlag.Name, "stable").
-		Flag(utils.SubstateEncodingFlag.Name, "protobuf").
+		Flag(config.AidaDbFlag.Name, aidaDbPath).
+		Flag(config.ChainIDFlag.Name, int(config.MainnetChainID)).
+		Flag(config.DbTmpFlag.Name, tmpDbPath).
+		Flag(config.UpdateTypeFlag.Name, "stable").
+		Flag(config.SubstateEncodingFlag.Name, "protobuf").
 		Build()
 
 	// Create a context with cancellation to control the app execution
@@ -156,29 +158,29 @@ func TestUpdate_getTargetDbBlockRange(t *testing.T) {
 		wantFirst uint64
 		wantLast  uint64
 		wantErr   string
-		setup     func(t *testing.T) *utils.Config
+		setup     func(t *testing.T) *config.Config
 	}{
 		{
 			name: "db does not exist",
-			setup: func(t *testing.T) *utils.Config {
-				return &utils.Config{AidaDb: t.TempDir() + "/nonexistent-db"}
+			setup: func(t *testing.T) *config.Config {
+				return &config.Config{AidaDb: t.TempDir() + "/nonexistent-db"}
 			},
 			wantFirst: 0, wantLast: 0, wantErr: "",
 		},
 		{
 			name: "db exists but no substates",
-			setup: func(t *testing.T) *utils.Config {
+			setup: func(t *testing.T) *config.Config {
 				aidaDbPath := t.TempDir() + "/aida-db"
 				aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 				require.NoError(t, err)
 				require.NoError(t, aidaDb.Close())
-				return &utils.Config{AidaDb: aidaDbPath, SubstateEncoding: "pb"}
+				return &config.Config{AidaDb: aidaDbPath, SubstateEncoding: "pb"}
 			},
 			wantFirst: 0, wantLast: 0, wantErr: "cannot find blocks in substate",
 		},
 		{
 			name: "db exists with substates",
-			setup: func(t *testing.T) *utils.Config {
+			setup: func(t *testing.T) *config.Config {
 				aidaDbPath := t.TempDir() + "/aida-db"
 				aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 				require.NoError(t, err)
@@ -187,7 +189,7 @@ func TestUpdate_getTargetDbBlockRange(t *testing.T) {
 				ss.Env.Number = 100
 				require.NoError(t, aidaDb.PutSubstate(ss))
 				require.NoError(t, aidaDb.Close())
-				return &utils.Config{AidaDb: aidaDbPath, SubstateEncoding: "pb"}
+				return &config.Config{AidaDb: aidaDbPath, SubstateEncoding: "pb"}
 			},
 			wantFirst: 100, wantLast: 100, wantErr: "",
 		},
@@ -221,14 +223,14 @@ func TestUpdate_CalculateMD5Sum(t *testing.T) {
 }
 
 func TestUpdate_pushToChanel(t *testing.T) {
-	patches := []utils.PatchJson{
+	patches := []metadata.PatchJson{
 		{FileName: "patch1.tar.gz", ToBlock: 10},
 		{FileName: "patch2.tar.gz", ToBlock: 20},
 	}
 
 	ch := pushPatchToChanel(patches)
 
-	var received []utils.PatchJson
+	var received []metadata.PatchJson
 	for patch := range ch {
 		received = append(received, patch)
 	}
@@ -237,12 +239,12 @@ func TestUpdate_pushToChanel(t *testing.T) {
 }
 
 func TestUpdate_retrievePatchesToDownload(t *testing.T) {
-	utils.AidaDbRepositoryUrl = utils.AidaDbRepositorySonicUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositorySonicUrl
 	defer func() {
-		utils.AidaDbRepositoryUrl = ""
+		config.AidaDbRepositoryUrl = ""
 	}()
-	patches, err := retrievePatchesToDownload(&utils.Config{
-		ChainID:    utils.SonicMainnetChainID,
+	patches, err := retrievePatchesToDownload(&config.Config{
+		ChainID:    config.SonicMainnetChainID,
 		UpdateType: "nightly",
 	}, 28_000_000)
 	require.NoError(t, err)
@@ -251,11 +253,11 @@ func TestUpdate_retrievePatchesToDownload(t *testing.T) {
 
 func TestUpdate_update(t *testing.T) {
 	aidaDbPath := t.TempDir() + "/aida-db"
-	utils.AidaDbRepositoryUrl = utils.AidaDbRepositoryTestUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositoryTestUrl
 	defer func() {
-		utils.AidaDbRepositoryUrl = ""
+		config.AidaDbRepositoryUrl = ""
 	}()
-	err := update(&utils.Config{
+	err := update(&config.Config{
 		AidaDb:     aidaDbPath,
 		UpdateType: "nightly",
 		DbTmp:      t.TempDir(),
@@ -271,11 +273,11 @@ func TestUpdate_update(t *testing.T) {
 }
 func TestUpdate_update_downloadFails(t *testing.T) {
 	aidaDbPath := t.TempDir() + "/aida-db"
-	utils.AidaDbRepositoryUrl = "https://unknownrepository.com"
+	config.AidaDbRepositoryUrl = "https://unknownrepository.com"
 	defer func() {
-		utils.AidaDbRepositoryUrl = ""
+		config.AidaDbRepositoryUrl = ""
 	}()
-	err := update(&utils.Config{
+	err := update(&config.Config{
 		AidaDb:     aidaDbPath,
 		UpdateType: "nightly",
 		DbTmp:      t.TempDir(),
@@ -315,14 +317,14 @@ func TestUpdate_mergeToExistingAidaDb_ClassicPatch(t *testing.T) {
 	})
 	require.NoError(t, err)
 	// Set correct metadata block range
-	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
+	targetMD := metadata.NewAidaDbMetadata(targetDb, "CRITICAL")
 	err = targetMD.SetBlockRange(0, want.Block-1)
 	require.NoError(t, err)
-	err = targetMD.SetChainID(utils.SonicMainnetChainID)
+	err = targetMD.SetChainID(config.SonicMainnetChainID)
 	require.NoError(t, err)
 
-	cfg := &utils.Config{
-		ChainID:  utils.SonicMainnetChainID,
+	cfg := &config.Config{
+		ChainID:  config.SonicMainnetChainID,
 		LogLevel: "CRITICAL",
 	}
 	err = mergeToExistingAidaDb(cfg, targetMD, patchPath)
@@ -350,13 +352,13 @@ func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set correct metadata block range
-	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
+	targetMD := metadata.NewAidaDbMetadata(targetDb, "CRITICAL")
 	require.NoError(t, err)
-	err = targetMD.SetChainID(utils.SonicMainnetChainID)
+	err = targetMD.SetChainID(config.SonicMainnetChainID)
 	require.NoError(t, err)
 
-	cfg := &utils.Config{
-		ChainID:  utils.SonicMainnetChainID,
+	cfg := &config.Config{
+		ChainID:  config.SonicMainnetChainID,
 		LogLevel: "CRITICAL",
 	}
 	err = mergeToExistingAidaDb(cfg, targetMD, patchPath)
@@ -373,15 +375,15 @@ func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
 	_, targetPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	targetDb, err := db.NewDefaultBaseDB(targetPath)
 	require.NoError(t, err)
-	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
+	targetMD := metadata.NewAidaDbMetadata(targetDb, "CRITICAL")
 	// set wrong block range to target db
 	err = targetMD.SetBlockRange(0, want.Block-1000)
 	require.NoError(t, err)
-	err = targetMD.SetChainID(utils.SonicMainnetChainID)
+	err = targetMD.SetChainID(config.SonicMainnetChainID)
 	require.NoError(t, err)
 
-	cfg := &utils.Config{
-		ChainID:  utils.SonicMainnetChainID,
+	cfg := &config.Config{
+		ChainID:  config.SonicMainnetChainID,
 		LogLevel: "CRITICAL",
 	}
 	err = mergeToExistingAidaDb(cfg, targetMD, patchPath)
@@ -389,20 +391,20 @@ func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
 }
 
 func TestUpdate_retrievePatchesToDownload_MustChooseUpdateType(t *testing.T) {
-	_, err := retrievePatchesToDownload(&utils.Config{
+	_, err := retrievePatchesToDownload(&config.Config{
 		UpdateType: "", // empty
 	}, 0)
 	require.ErrorContains(t, err, "please choose correct data-type")
 }
 
 func TestByToBlock_CanBeUsedToSortByToBlock(t *testing.T) {
-	patches := []utils.PatchJson{
+	patches := []metadata.PatchJson{
 		{FileName: "patch1.tar.gz", ToBlock: 10},
 		{FileName: "patch2.tar.gz", ToBlock: 20},
 		{FileName: "patch3.tar.gz", ToBlock: 15},
 	}
 
-	expected := []utils.PatchJson{
+	expected := []metadata.PatchJson{
 		{FileName: "patch1.tar.gz", ToBlock: 10},
 		{FileName: "patch3.tar.gz", ToBlock: 15},
 		{FileName: "patch2.tar.gz", ToBlock: 20},

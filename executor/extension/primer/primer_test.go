@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -36,7 +37,7 @@ import (
 )
 
 func TestStateDbPrimerExtension_NoPrimerIsCreatedIfDisabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = true
 
 	ext := MakeStateDbPrimer[any](cfg)
@@ -54,7 +55,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForExistingStateDb(t *testing.
 	mockAdapter := db.NewMockDbAdapter(ctrl)
 	mockStateDb := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		IsExistingStateDb: true,
 		First:             10,
 	}
@@ -97,7 +98,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 	stateDb := state.NewMockStateDB(ctrl)
 	aidaDbPath := t.TempDir() + "aidadb"
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		SkipPriming: false,
 		StateDbSrc:  "",
 		First:       10,
@@ -127,7 +128,7 @@ func TestStateDbPrimerExtension_NoBlockToPrime_Skip(t *testing.T) {
 
 	tmpStateDb := t.TempDir()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		SkipPriming:       false,
 		StateDbSrc:        tmpStateDb,
 		IsExistingStateDb: true,
@@ -154,7 +155,7 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aidadb"
 	stateDb := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SkipPriming = false
 	cfg.StateDbSrc = ""
 	cfg.First = 10

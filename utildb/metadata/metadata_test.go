@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package metadata
 
 import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
@@ -30,7 +31,7 @@ import (
 )
 
 func TestDownloadPatchesJson(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
@@ -43,7 +44,7 @@ func TestDownloadPatchesJson(t *testing.T) {
 }
 
 func TestGetPatchFirstBlock_Positive(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
+	config.AidaDbRepositoryUrl = config.AidaDbRepositorySonicUrl
 
 	patches, err := DownloadPatchesJson()
 	if err != nil {
@@ -352,21 +353,21 @@ func TestAidaDbMetadata_GetChainID(t *testing.T) {
 	md := NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
 	data := md.GetChainID()
-	assert.Equal(t, ChainID(100), data)
+	assert.Equal(t, config.ChainID(100), data)
 
 	mockDb = db.NewMockSubstateDB(ctrl)
 	md = NewAidaDbMetadata(mockDb, "ERROR")
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return([]byte{0, 1}, nil)
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(1), data)
+	assert.Equal(t, config.ChainID(1), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, errors.New("mock error"))
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(0), data)
+	assert.Equal(t, config.ChainID(0), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetChainID()
-	assert.Equal(t, ChainID(0), data)
+	assert.Equal(t, config.ChainID(0), data)
 }
 
 func TestAidaDbMetadata_GetTimestamp(t *testing.T) {
@@ -433,7 +434,7 @@ func TestHasStateHashPatch(t *testing.T) {
 }
 
 func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
-	for chainID := range EthereumChainIDs {
+	for chainID := range config.EthereumChainIDs {
 		md := &AidaDbMetadata{ChainId: chainID}
 		assert.NoError(t, md.findEpochs())
 		// Epochs must be unchange

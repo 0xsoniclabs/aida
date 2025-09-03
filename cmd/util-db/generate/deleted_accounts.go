@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/profile"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
@@ -43,13 +44,13 @@ var generateDeletedAccountsCommand = cli.Command{
 	Usage:     "executes full state transitions and record suicided and resurrected accounts",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.WorkersFlag,
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
-		&utils.CpuProfileFlag,
+		&config.WorkersFlag,
+		&config.AidaDbFlag,
+		&config.ChainIDFlag,
+		&config.DeletionDbFlag,
+		&config.CpuProfileFlag,
 		&logger.LogLevelFlag,
-		&utils.SubstateEncodingFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 The util-db gen-deleted-accounts command requires two arguments:
@@ -59,12 +60,12 @@ last block of the inclusive range of blocks to replay transactions.`,
 }
 
 func generateDeletedAccountsAction(ctx *cli.Context) (finalErr error) {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
 
-	if !ctx.IsSet(utils.DeletionDbFlag.Name) {
+	if !ctx.IsSet(config.DeletionDbFlag.Name) {
 		return fmt.Errorf("you need to specify where you want deletion-db to save (--deletion-db)")
 	}
 
@@ -88,14 +89,14 @@ func generateDeletedAccountsAction(ctx *cli.Context) (finalErr error) {
 }
 
 // generateDeletedAccounts replays transactions and record self-destructed accounts and resurrected accounts.
-func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
+func generateDeletedAccounts(cfg *config.Config, sdb db.SubstateDB, ddb db.DestroyedAccountDB, firstBlock uint64, lastBlock uint64) error {
 	var err error
 
-	err = utils.StartCPUProfile(cfg)
+	err = profile.StartCPUProfile(cfg)
 	if err != nil {
 		return err
 	}
-	defer utils.StopCPUProfile(cfg)
+	defer profile.StopCPUProfile(cfg)
 
 	log := logger.NewLogger(cfg.LogLevel, "Generate Deleted Accounts")
 	log.Noticef("Generate deleted accounts from block %v to block %v", firstBlock, lastBlock)
@@ -124,7 +125,7 @@ func generateDeletedAccounts(cfg *utils.Config, sdb db.SubstateDB, ddb db.Destro
 			break
 		}
 
-		if tx.Transaction < utils.PseudoTx {
+		if tx.Transaction < config.PseudoTx {
 			err = recordDeletedAccountsFromTx(tx, processor, ddb, &deleteHistory, cfg)
 			if err != nil {
 				return err
@@ -151,7 +152,7 @@ func recordDeletedAccountsFromTx(
 	processor *executor.TxProcessor,
 	ddb db.DestroyedAccountDB,
 	deleteHistory *map[common.Address]bool,
-	cfg *utils.Config,
+	cfg *config.Config,
 ) (finalErr error) {
 	ch := make(chan proxy.ContractLiveliness, channelSize)
 	var statedb state.StateDB
@@ -163,7 +164,7 @@ func recordDeletedAccountsFromTx(
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
 
-	conduit := state.NewChainConduit(utils.IsEthereumNetwork(cfg.ChainID), chainCfg)
+	conduit := state.NewChainConduit(config.IsEthereumNetwork(cfg.ChainID), chainCfg)
 	statedb, err = state.MakeOffTheChainStateDB(ss.GetInputState(), tx.Block, conduit)
 	if err != nil {
 		return err

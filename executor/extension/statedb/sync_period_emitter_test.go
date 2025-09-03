@@ -19,14 +19,14 @@ package statedb
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"go.uber.org/mock/gomock"
 )
 
 func TestSyncPeriodEmitter_Single(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SyncPeriodLength = 300
 	ext := MakeTestSyncPeriodEmitter[any](cfg)
 
@@ -52,7 +52,7 @@ func TestSyncPeriodEmitter_Single(t *testing.T) {
 }
 
 func TestSyncPeriodEmitter_MultipleSyncPeriodsSingleBlockLength(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SyncPeriodLength = 1
 	ext := MakeTestSyncPeriodEmitter[any](cfg)
 
@@ -90,7 +90,7 @@ func TestSyncPeriodEmitter_MultipleSyncPeriodsSingleBlockLength(t *testing.T) {
 }
 
 func TestSyncPeriodEmitter_MultipleSyncPeriodsWithoutBlocks(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SyncPeriodLength = 2
 	ext := MakeTestSyncPeriodEmitter[any](cfg)
 
@@ -126,7 +126,7 @@ func TestSyncPeriodEmitter_MultipleSyncPeriodsWithoutBlocks(t *testing.T) {
 }
 
 func TestSyncPeriodEmitter_DisabledBecauseOfInvalidSyncPeriodLength(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.SyncPeriodLength = 0
 	ext := MakeTestSyncPeriodEmitter[any](cfg)
 

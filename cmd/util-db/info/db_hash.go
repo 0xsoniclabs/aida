@@ -21,9 +21,10 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/cmd/util-db/flags"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -33,7 +34,7 @@ var printDbHashCommand = cli.Command{
 	Name:   "db-hash",
 	Usage:  "Prints db-hash (md5) of AidaDb. If this it is not present, it is generated.",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&config.AidaDbFlag,
 		&flags.ForceFlag,
 	},
 }
@@ -41,7 +42,7 @@ var printDbHashCommand = cli.Command{
 func printDbHashAction(ctx *cli.Context) error {
 	var force = ctx.Bool(flags.ForceFlag.Name)
 
-	aidaDb, err := db.NewReadOnlyBaseDB(ctx.String(utils.AidaDbFlag.Name))
+	aidaDb, err := db.NewReadOnlyBaseDB(ctx.String(config.AidaDbFlag.Name))
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
@@ -52,7 +53,7 @@ func printDbHashAction(ctx *cli.Context) error {
 
 	log := logger.NewLogger("INFO", "AidaDb-Db-Hash")
 
-	md := utils.NewAidaDbMetadata(aidaDb, "INFO")
+	md := metadata.NewAidaDbMetadata(aidaDb, "INFO")
 
 	// first try to extract from db
 	dbHash = md.GetDbHash()

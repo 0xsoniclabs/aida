@@ -22,18 +22,18 @@ import (
 	"os"
 	"sync"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 const inputSize = 100
 
 type dbLogger[T any] struct {
 	extension.NilExtension[T]
-	cfg    *utils.Config
+	cfg    *config.Config
 	log    logger.Logger
 	file   *os.File
 	writer *bufio.Writer
@@ -42,7 +42,7 @@ type dbLogger[T any] struct {
 }
 
 // MakeDbLogger creates an extensions which logs any Db transaction into a file and log level DEBUG
-func MakeDbLogger[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeDbLogger[T any](cfg *config.Config) executor.Extension[T] {
 	if cfg.DbLogging == "" {
 		return extension.NilExtension[T]{}
 	}
@@ -50,7 +50,7 @@ func MakeDbLogger[T any](cfg *utils.Config) executor.Extension[T] {
 	return makeDbLogger[T](cfg, logger.NewLogger(cfg.LogLevel, "Db-Logger"))
 }
 
-func makeDbLogger[T any](cfg *utils.Config, log logger.Logger) *dbLogger[T] {
+func makeDbLogger[T any](cfg *config.Config, log logger.Logger) *dbLogger[T] {
 	return &dbLogger[T]{
 		cfg:   cfg,
 		log:   log,

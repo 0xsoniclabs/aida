@@ -22,6 +22,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -30,7 +31,7 @@ import (
 )
 
 // MakeStateDbManager creates a executor.Extension that commits state of StateDb if keep-db is enabled
-func MakeStateDbManager[T any](cfg *utils.Config, knownDbPath string) executor.Extension[T] {
+func MakeStateDbManager[T any](cfg *config.Config, knownDbPath string) executor.Extension[T] {
 	return &stateDbManager[T]{
 		cfg:    cfg,
 		log:    logger.NewLogger(cfg.LogLevel, "Db manager"),
@@ -40,7 +41,7 @@ func MakeStateDbManager[T any](cfg *utils.Config, knownDbPath string) executor.E
 
 type stateDbManager[T any] struct {
 	extension.NilExtension[T]
-	cfg    *utils.Config
+	cfg    *config.Config
 	log    logger.Logger
 	dbPath string // state db path if the  db is created out side of this extension
 }

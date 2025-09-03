@@ -19,19 +19,19 @@ package primer
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithoutPreExistedStateDb(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := ethStateTestDbPrimer{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrimer")}
 
 	testData := ethtest.CreateTestTransaction(t)
@@ -61,7 +61,7 @@ func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithoutPreExistedStateDb(t *te
 }
 
 func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		IsExistingStateDb: true,
 	}
 	ext := ethStateTestDbPrimer{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrimer")}
@@ -98,7 +98,7 @@ func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *testi
 }
 
 func TestEthStateTestDbPrimer_MakeEthStateTestDbPrimer(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeEthStateTestDbPrimer(cfg)
 
 	_, ok := ext.(*ethStateTestDbPrimer)

@@ -26,9 +26,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
@@ -40,7 +40,7 @@ func TestRPCRequestProvider_WorksWithValidResponse(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -65,7 +65,7 @@ func TestRPCRequestProvider_WorksWithErrorResponse(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -90,7 +90,7 @@ func TestRPCRequestProvider_NilRequestDoesNotGetToConsumer(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -122,7 +122,7 @@ func TestRPCRequestProvider_ErrorReturnedByIteratorEndsTheApp(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -148,7 +148,7 @@ func TestRPCRequestProvider_GetLogMethodDoesNotEndIteration(t *testing.T) {
 	consumer := NewMockRPCReqConsumer(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(i, cfg, logger.NewLogger("critical", "rpc-provider-test"), nil, []string{"testfile"})
 
@@ -176,7 +176,7 @@ func TestRPCRequestProvider_ReportsAboutRun(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 	i := rpc.NewMockIterator(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.RpcRecordingPath = "test_file"
 
 	provider := openRpcRecording(i, cfg, log, nil, []string{cfg.RpcRecordingPath})
@@ -268,7 +268,7 @@ func TestOpenRpcRecording(t *testing.T) {
 		err = tmpFile.Close()
 		require.NoError(t, err)
 
-		cfg := &utils.Config{RpcRecordingPath: tmpFile.Name()}
+		cfg := &config.Config{RpcRecordingPath: tmpFile.Name()}
 
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 		require.NoError(t, err)
@@ -292,7 +292,7 @@ func TestOpenRpcRecording(t *testing.T) {
 		err = tmpFile.Close()
 		require.NoError(t, err)
 
-		cfg := &utils.Config{RpcRecordingPath: tmpDir}
+		cfg := &config.Config{RpcRecordingPath: tmpDir}
 
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 		require.NoError(t, err)
@@ -327,7 +327,7 @@ func TestOpenRpcRecording(t *testing.T) {
 		expectedFiles := []string{file1.Name(), file2.Name()}
 		sort.Strings(expectedFiles)
 
-		cfg := &utils.Config{RpcRecordingPath: tmpDir}
+		cfg := &config.Config{RpcRecordingPath: tmpDir}
 
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 		require.NoError(t, err)
@@ -346,7 +346,7 @@ func TestOpenRpcRecording(t *testing.T) {
 	})
 
 	t.Run("Error_PathNotFound", func(t *testing.T) {
-		cfg := &utils.Config{RpcRecordingPath: filepath.Join(baseDir, "nonexistent.rpc")}
+		cfg := &config.Config{RpcRecordingPath: filepath.Join(baseDir, "nonexistent.rpc")}
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 
 		assert.Error(t, err)
@@ -372,7 +372,7 @@ func TestOpenRpcRecording(t *testing.T) {
 			}
 		}(tmpFile.Name(), 0644)
 
-		cfg := &utils.Config{RpcRecordingPath: tmpFile.Name()}
+		cfg := &config.Config{RpcRecordingPath: tmpFile.Name()}
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 
 		assert.Error(t, err)
@@ -403,7 +403,7 @@ func TestOpenRpcRecording(t *testing.T) {
 			}
 		}(tmpFile.Name(), 0644)
 
-		cfg := &utils.Config{RpcRecordingPath: tmpDir}
+		cfg := &config.Config{RpcRecordingPath: tmpDir}
 		provider, err := OpenRpcRecording(cfg, cliCtx)
 
 		assert.Error(t, err)
@@ -416,7 +416,7 @@ func TestOpenRpcRecording(t *testing.T) {
 		tmpEmptyDir := filepath.Join(baseDir, "emptydir_for_panic")
 		require.NoError(t, os.Mkdir(tmpEmptyDir, 0755))
 
-		cfg := &utils.Config{RpcRecordingPath: tmpEmptyDir}
+		cfg := &config.Config{RpcRecordingPath: tmpEmptyDir}
 
 		assert.PanicsWithError(t, "runtime error: index out of range [0] with length 0", func() {
 			_, _ = OpenRpcRecording(cfg, cliCtx)
@@ -434,7 +434,7 @@ func TestRpcRequestProvider_Run_SingleFile_AllItemsConsumed(t *testing.T) {
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	provider := openRpcRecording(mockIter, cfg, testLog, cliCtx, []string{"file1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
@@ -466,7 +466,7 @@ func TestRpcRequestProvider_Run_FilteringWithFromAndTo(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{}, Response: &rpc.Response{BlockID: 5}}
@@ -505,7 +505,7 @@ func TestRpcRequestProvider_Run_ConsumerErrorInProcessFirst(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{}, Response: &rpc.Response{BlockID: 5}}
@@ -530,7 +530,7 @@ func TestRpcRequestProvider_Run_ConsumerErrorInLoop(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{}, Response: &rpc.Response{BlockID: 5}}
@@ -561,7 +561,7 @@ func TestRpcRequestProvider_Run_IteratorErrorInLoop(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{}, Response: &rpc.Response{BlockID: 5}}
@@ -590,7 +590,7 @@ func TestRpcRequestProvider_Run_IteratorReturnsNilValueInLoop(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{}, Response: &rpc.Response{BlockID: 5}}
@@ -618,7 +618,7 @@ func TestRpcRequestProvider_Run_GetLogsSkippedInLoop(t *testing.T) {
 	mockConsumer := NewMockRPCReqConsumer(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	req1 := &rpc.RequestAndResults{Query: &rpc.Body{MethodBase: "otherMethod"}, Response: &rpc.Response{BlockID: 4}}
@@ -653,7 +653,7 @@ func TestRpcRequestProvider_Run_ProcessFirst_IteratorError(t *testing.T) {
 
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	iterErr := errors.New("processFirst iter failed")
@@ -674,7 +674,7 @@ func TestRpcRequestProvider_Run_ProcessFirst_NilValue(t *testing.T) {
 	mockIter := rpc.NewMockIterator(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	mockIter.EXPECT().Next().Return(true)
@@ -694,7 +694,7 @@ func TestRpcRequestProvider_Run_ProcessFirst_NoItems_LogsCritical(t *testing.T) 
 	mockIter := rpc.NewMockIterator(ctrl)
 	testLog := logger.NewLogger("info", "rpc-provider-test")
 	cliCtx := newTestCliContext()
-	provider := openRpcRecording(mockIter, &utils.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
+	provider := openRpcRecording(mockIter, &config.Config{}, testLog, cliCtx, []string{"f1.rpc"}).(*rpcRequestProvider)
 	defer provider.Close()
 
 	mockIter.EXPECT().Next().Return(false).AnyTimes()

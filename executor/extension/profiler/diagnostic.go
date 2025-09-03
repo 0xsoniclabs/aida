@@ -24,19 +24,19 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeDiagnosticServer creates an extension which runs a background
 // HTTP server for real-time diagnosing aida processes.
-func MakeDiagnosticServer[T any](cfg *utils.Config) executor.Extension[T] {
+func MakeDiagnosticServer[T any](cfg *config.Config) executor.Extension[T] {
 	return makeDiagnosticServer[T](cfg, logger.NewLogger(cfg.LogLevel, "Diagnostic-Server"))
 }
 
-func makeDiagnosticServer[T any](cfg *utils.Config, log logger.Logger) executor.Extension[T] {
+func makeDiagnosticServer[T any](cfg *config.Config, log logger.Logger) executor.Extension[T] {
 	if cfg.DiagnosticServer < 1 || cfg.DiagnosticServer > math.MaxUint16 {
 		return extension.NilExtension[T]{}
 	}

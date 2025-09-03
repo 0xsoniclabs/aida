@@ -17,27 +17,27 @@
 package primer
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
 // MakeTxPrimer creates an extension that primes StateDb before each transaction
-func MakeTxPrimer(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeTxPrimer(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return makeTxPrimer(cfg, logger.NewLogger(cfg.LogLevel, "TxPrimer"))
 }
 
-func makeTxPrimer(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
+func makeTxPrimer(cfg *config.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
 	return &txPrimer{cfg: cfg, log: log}
 }
 
 type txPrimer struct {
 	extension.NilExtension[txcontext.TxContext]
 	primeCtx prime.Context
-	cfg      *utils.Config
+	cfg      *config.Config
 	log      logger.Logger
 }
 

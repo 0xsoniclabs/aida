@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package utils
+package rpc
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/ethereum/go-ethereum/common/math"
 )
 
@@ -41,7 +42,7 @@ type JsonRPCRequest struct {
 	JSONRPC string        `json:"jsonrpc"`
 }
 
-func SendRpcRequest(payload JsonRPCRequest, chainId ChainID) (map[string]interface{}, error) {
+func SendRpcRequest(payload JsonRPCRequest, chainId config.ChainID) (map[string]interface{}, error) {
 	url, err := GetProvider(chainId)
 	if err != nil {
 		return nil, err
@@ -73,21 +74,21 @@ func SendRpcRequest(payload JsonRPCRequest, chainId ChainID) (map[string]interfa
 	return m, nil
 }
 
-func GetProvider(chainId ChainID) (string, error) {
+func GetProvider(chainId config.ChainID) (string, error) {
 	switch chainId {
-	case SonicMainnetChainID:
+	case config.SonicMainnetChainID:
 		return RPCSonicMainnet, nil
-	case MainnetChainID:
+	case config.MainnetChainID:
 		return RPCOperaMainnet, nil
-	case TestnetChainID:
+	case config.TestnetChainID:
 		return RPCTestnet, nil
-	case EthereumChainID:
+	case config.EthereumChainID:
 		return "", ErrRPCUnsupported
-	case HoleskyChainID:
+	case config.HoleskyChainID:
 		return "", ErrRPCUnsupported
-	case HoodiChainID:
+	case config.HoodiChainID:
 		return "", ErrRPCUnsupported
-	case SepoliaChainID:
+	case config.SepoliaChainID:
 		return "", ErrRPCUnsupported
 	default:
 		return "", fmt.Errorf("unknown chain-id %v", chainId)
@@ -95,7 +96,7 @@ func GetProvider(chainId ChainID) (string, error) {
 }
 
 // FindEpochNumber via RPC request GetBlockByNumber
-func FindEpochNumber(blockNumber uint64, chainId ChainID) (uint64, error) {
+func FindEpochNumber(blockNumber uint64, chainId config.ChainID) (uint64, error) {
 	hex := strconv.FormatUint(blockNumber, 16)
 
 	blockStr := "0x" + hex
@@ -104,13 +105,13 @@ func FindEpochNumber(blockNumber uint64, chainId ChainID) (uint64, error) {
 }
 
 // FindHeadEpochNumber via RPC request GetBlockByNumber
-func FindHeadEpochNumber(chainId ChainID) (uint64, error) {
+func FindHeadEpochNumber(chainId config.ChainID) (uint64, error) {
 	blockStr := "latest"
 
 	return getEpochByNumber(blockStr, chainId)
 }
 
-func getEpochByNumber(blockStr string, chainId ChainID) (uint64, error) {
+func getEpochByNumber(blockStr string, chainId config.ChainID) (uint64, error) {
 	payload := JsonRPCRequest{
 		Method:  "ftm_getBlockByNumber",
 		Params:  []interface{}{blockStr, false},

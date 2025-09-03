@@ -20,13 +20,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
@@ -40,7 +40,7 @@ func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.KeepDb = false
 
@@ -85,7 +85,7 @@ func TestSdbReplaySubstate_StateDbPrepperIsAddedIfDbImplIsMemory(t *testing.T) {
 	operationProvider := executor.NewMockProvider[[]operation.Operation](ctrl)
 	db := state.NewMockStateDB(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "memory"
 	cfg.KeepDb = false
 
@@ -126,7 +126,7 @@ func TestSdbReplaySubstate_TxPrimerIsAddedIfDbImplIsNotMemory(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	bulkLoad := state.NewMockBulkLoad(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.KeepDb = false
 

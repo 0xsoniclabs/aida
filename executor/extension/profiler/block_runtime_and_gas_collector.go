@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/profile/blockprofile"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeBlockRuntimeAndGasCollector(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeBlockRuntimeAndGasCollector(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	if !cfg.ProfileBlocks {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
@@ -41,7 +41,7 @@ func MakeBlockRuntimeAndGasCollector(cfg *utils.Config) executor.Extension[txcon
 type BlockRuntimeAndGasCollector struct {
 	extension.NilExtension[txcontext.TxContext]
 	log        logger.Logger
-	cfg        *utils.Config
+	cfg        *config.Config
 	profileDb  blockprofile.ProfileDB
 	ctx        blockprofile.Context
 	blockTimer time.Time

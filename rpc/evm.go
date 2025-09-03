@@ -22,8 +22,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/sonic/ethapi"
 	"github.com/0xsoniclabs/sonic/opera"
 	"github.com/ethereum/go-ethereum/common"
@@ -50,7 +50,7 @@ const maxGasLimit = 9995800     // used when request does not specify gas
 const globalGasCap = 50_000_000 // highest gas allowance used for estimateGas
 
 // newEvmExecutor creates EvmExecutor for executing requests into StateDB that demand usage of EVM
-func newEvmExecutor(blockID uint64, archive state.NonCommittableStateDB, cfg *utils.Config, params map[string]interface{}, timestamp uint64) (*EvmExecutor, error) {
+func newEvmExecutor(blockID uint64, archive state.NonCommittableStateDB, cfg *config.Config, params map[string]interface{}, timestamp uint64) (*EvmExecutor, error) {
 	factory, err := cfg.GetInterpreterFactory()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get interpreter factory: %w", err)

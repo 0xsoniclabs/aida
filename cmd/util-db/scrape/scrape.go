@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
+	rpc2 "github.com/0xsoniclabs/aida/utils/rpc"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/urfave/cli/v2"
@@ -34,16 +36,16 @@ var Command = cli.Command{
 	Usage:     "Stores state hashes into TargetDb for given range",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.TargetDbFlag,
-		&utils.ChainIDFlag,
-		&utils.ClientDbFlag,
+		&config.TargetDbFlag,
+		&config.ChainIDFlag,
+		&config.ClientDbFlag,
 		&logger.LogLevelFlag,
 	},
 }
 
 // scrapeAction stores state hashes into Target for given range
 func scrapeAction(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, argErr := config.NewConfig(ctx, config.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
 	}
@@ -67,7 +69,7 @@ func scrapeAction(ctx *cli.Context) error {
 }
 
 // StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
-func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
+func StateAndBlockHashScraper(ctx context.Context, chainId config.ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
 	client, err := getClient(ctx, chainId, clientDb, log)
 	if err != nil {
 		return err
@@ -128,7 +130,7 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 }
 
 // getClient returns a rpc/ipc client
-func getClient(ctx context.Context, chainId utils.ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
+func getClient(ctx context.Context, chainId config.ChainID, clientDb string, log logger.Logger) (*rpc.Client, error) {
 	var client *rpc.Client
 	var err error
 
@@ -152,7 +154,7 @@ func getClient(ctx context.Context, chainId utils.ChainID, clientDb string, log 
 
 	// if ipc file does not exist, try to connect to RPC
 	var provider string
-	provider, err = utils.GetProvider(chainId)
+	provider, err = rpc2.GetProvider(chainId)
 	if err != nil {
 		return nil, err
 	}

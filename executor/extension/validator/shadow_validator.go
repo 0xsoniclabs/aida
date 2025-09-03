@@ -17,13 +17,13 @@
 package validator
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
-func MakeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func MakeShadowDbValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	if cfg.ShadowDb {
 		return makeShadowDbValidator(cfg)
 	}
@@ -31,7 +31,7 @@ func MakeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxCon
 	return extension.NilExtension[txcontext.TxContext]{}
 }
 
-func makeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxContext] {
+func makeShadowDbValidator(cfg *config.Config) executor.Extension[txcontext.TxContext] {
 	return &shadowDbValidator{
 		cfg: cfg,
 	}
@@ -39,7 +39,7 @@ func makeShadowDbValidator(cfg *utils.Config) executor.Extension[txcontext.TxCon
 
 type shadowDbValidator struct {
 	extension.NilExtension[txcontext.TxContext]
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (e *shadowDbValidator) PostBlock(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {

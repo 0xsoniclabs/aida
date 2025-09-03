@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/dsnet/compress/bzip2"
 )
 
@@ -110,7 +110,7 @@ func keepRelevantTraceFiles(first, last uint64, sortedList []uint64, blockFile m
 
 // GetTraceFiles returns a list of valid trace files for the specified range.
 // The files is sorted by ascending order of first block.
-func GetTraceFiles(cfg *utils.Config) ([]string, error) {
+func GetTraceFiles(cfg *config.Config) ([]string, error) {
 	var traceFiles []string
 	// load trace files from a directory if given
 	if cfg.TraceDirectory != "" {

@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -34,7 +34,7 @@ import (
 func Test_ethTestProvider_Run(t *testing.T) {
 	pathFile := createTestDataFile(t)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ArgPath: pathFile,
 		Fork:    "all",
 	}
@@ -80,7 +80,7 @@ func createTestDataFile(t *testing.T) string {
 }
 
 func TestExecutor_NewEthStateTestProvider(t *testing.T) {
-	cfg := &utils.Config{ArgPath: "somepath"}
+	cfg := &config.Config{ArgPath: "somepath"}
 	provider := NewEthStateTestProvider(cfg)
 	require.NotNil(t, provider)
 
@@ -90,13 +90,13 @@ func TestExecutor_NewEthStateTestProvider(t *testing.T) {
 }
 
 func TestEthTestProvider_Close(t *testing.T) {
-	provider := NewEthStateTestProvider(&utils.Config{})
+	provider := NewEthStateTestProvider(&config.Config{})
 
 	assert.NotPanics(t, func() { provider.Close() })
 }
 
 func TestEthTestProvider_Run_NewSplitterFails_NonExistentFile(t *testing.T) {
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ArgPath: filepath.Join(t.TempDir(), "non_existent_test_file.json"),
 		Fork:    "all",
 	}
@@ -113,7 +113,7 @@ func TestEthTestProvider_Run_NewSplitterFails_NonExistentFile(t *testing.T) {
 
 func TestEthTestProvider_Run_ConsumerError(t *testing.T) {
 	pathFile := createTestDataFile(t)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ArgPath: pathFile,
 		Fork:    "all",
 	}
@@ -139,7 +139,7 @@ func TestEthTestProvider_Run_NoTestsFromSplitter(t *testing.T) {
 	err := os.WriteFile(emptyTestFilePath, []byte(emptyTestData), 0644)
 	require.NoError(t, err)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ArgPath: emptyTestFilePath,
 		Fork:    "all",
 	}

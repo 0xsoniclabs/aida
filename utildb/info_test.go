@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -71,7 +71,7 @@ func TestInfo_FindBlockRangeInBlockHash_FirstError(t *testing.T) {
 
 func TestInfo_GetStateHashCount_Success(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 11,
 		Last:  20,
 	}
@@ -82,7 +82,7 @@ func TestInfo_GetStateHashCount_Success(t *testing.T) {
 
 func TestInfo_GetStateHashCount_Empty(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 1, // Intentionally outside of state hash range
 		Last:  1,
 	}
@@ -93,7 +93,7 @@ func TestInfo_GetStateHashCount_Empty(t *testing.T) {
 
 func TestInfo_GetBlockHashCount_Success(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 21,
 		Last:  30,
 	}
@@ -104,7 +104,7 @@ func TestInfo_GetBlockHashCount_Success(t *testing.T) {
 
 func TestInfo_GetBlockHashCount_Empty(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 1, // Intentionally outside of block hash range
 		Last:  1,
 	}
@@ -120,7 +120,7 @@ func TestInfo_GetStateHashCount_Error(t *testing.T) {
 	errWant := errors.New("test error")
 	testDb.EXPECT().Get(gomock.Any()).Return(nil, errWant).AnyTimes()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 100, // Intentionally outside of state hash range
 		Last:  100,
 	}
@@ -135,7 +135,7 @@ func TestInfo_GetBlockHashCount_Error(t *testing.T) {
 	errWant := errors.New("test error")
 	testDb.EXPECT().Get(gomock.Any()).Return(nil, errWant).AnyTimes()
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 100, // Intentionally outside of block hash range
 		Last:  100,
 	}

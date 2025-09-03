@@ -23,11 +23,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/profile"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
@@ -39,13 +40,13 @@ var StochasticRecordCommand = cli.Command{
 	Usage:     "record StateDB events while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.CpuProfileFlag,
-		&utils.SyncPeriodLengthFlag,
-		&utils.OutputFlag,
-		&utils.WorkersFlag,
-		&utils.ChainIDFlag,
-		&utils.AidaDbFlag,
-		&utils.CacheFlag,
+		&config.CpuProfileFlag,
+		&config.SyncPeriodLengthFlag,
+		&config.OutputFlag,
+		&config.WorkersFlag,
+		&config.ChainIDFlag,
+		&config.AidaDbFlag,
+		&config.CacheFlag,
 	},
 	Description: `
 The stochastic record command requires two arguments:
@@ -59,7 +60,7 @@ last block for recording events.`,
 func stochasticRecordAction(ctx *cli.Context) error {
 	var err error
 
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -67,10 +68,10 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	cfg.ValidateTxState = true
 
 	// start CPU profiling if enabled.
-	if err := utils.StartCPUProfile(cfg); err != nil {
+	if err := profile.StartCPUProfile(cfg); err != nil {
 		return err
 	}
-	defer utils.StopCPUProfile(cfg)
+	defer profile.StopCPUProfile(cfg)
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)
 	if err != nil {

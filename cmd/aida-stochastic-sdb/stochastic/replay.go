@@ -22,7 +22,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/profile"
 	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/tracer/context"
@@ -37,23 +39,23 @@ var StochasticReplayCommand = cli.Command{
 	Usage:     "Simulates StateDB operations using a random generator with realistic distributions",
 	ArgsUsage: "<simulation-length> <simulation-file>",
 	Flags: []cli.Flag{
-		&utils.BalanceRangeFlag,
-		&utils.CarmenSchemaFlag,
-		&utils.ContinueOnFailureFlag,
-		&utils.CpuProfileFlag,
-		&utils.DebugFromFlag,
-		&utils.MemoryBreakdownFlag,
-		&utils.NonceRangeFlag,
-		&utils.RandomSeedFlag,
-		&utils.StateDbImplementationFlag,
-		&utils.StateDbVariantFlag,
-		&utils.DbTmpFlag,
-		&utils.StateDbLoggingFlag,
-		&utils.TraceFileFlag,
-		&utils.TraceDebugFlag,
-		&utils.TraceFlag,
-		&utils.ShadowDbImplementationFlag,
-		&utils.ShadowDbVariantFlag,
+		&config.BalanceRangeFlag,
+		&config.CarmenSchemaFlag,
+		&config.ContinueOnFailureFlag,
+		&config.CpuProfileFlag,
+		&config.DebugFromFlag,
+		&config.MemoryBreakdownFlag,
+		&config.NonceRangeFlag,
+		&config.RandomSeedFlag,
+		&config.StateDbImplementationFlag,
+		&config.StateDbVariantFlag,
+		&config.DbTmpFlag,
+		&config.StateDbLoggingFlag,
+		&config.TraceFileFlag,
+		&config.TraceDebugFlag,
+		&config.TraceFlag,
+		&config.ShadowDbImplementationFlag,
+		&config.ShadowDbVariantFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
@@ -78,7 +80,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	}
 
 	// process configuration
-	cfg, err := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, err := config.NewConfig(ctx, config.LastBlockArg)
 	if err != nil {
 		return err
 	}
@@ -88,10 +90,10 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	log := logger.NewLogger(cfg.LogLevel, "Stochastic Replay")
 
 	// start CPU profiling if requested.
-	if err := utils.StartCPUProfile(cfg); err != nil {
+	if err := profile.StartCPUProfile(cfg); err != nil {
 		return err
 	}
-	defer utils.StopCPUProfile(cfg)
+	defer profile.StopCPUProfile(cfg)
 
 	// read simulation file
 	simulation, serr := stochastic.ReadSimulation(ctx.Args().Get(1))

@@ -20,6 +20,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor/extension/validator"
 
 	"github.com/0xsoniclabs/aida/executor"
@@ -40,13 +41,13 @@ const (
 
 // RunTxGenerator performs sequential block processing on a StateDb using transaction generator
 func RunTxGenerator(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, err := config.NewConfig(ctx, config.LastBlockArg)
 	if err != nil {
 		return err
 	}
 
-	cfg.StateValidationMode = utils.SubsetCheck
-	cfg.ChainID = utils.EthTestsChainID // Use EthTests chain ID for configurable forks
+	cfg.StateValidationMode = config.SubsetCheck
+	cfg.ChainID = config.EthTestsChainID // Use EthTests chain ID for configurable forks
 
 	db, dbPath, err := utils.PrepareStateDB(cfg)
 	if err != nil {
@@ -64,7 +65,7 @@ func RunTxGenerator(ctx *cli.Context) error {
 }
 
 func runTransactions(
-	cfg *utils.Config,
+	cfg *config.Config,
 	provider executor.Provider[txcontext.TxContext],
 	stateDb state.StateDB,
 	stateDbPath string,

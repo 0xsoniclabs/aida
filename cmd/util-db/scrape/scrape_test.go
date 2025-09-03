@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
+	rpc2 "github.com/0xsoniclabs/aida/utils/rpc"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/assert"
@@ -29,9 +31,9 @@ func TestCmd_ScrapeCommand(t *testing.T) {
 
 	args := utils.NewArgs("test").
 		Arg(Command.Name).
-		Flag(utils.TargetDbFlag.Name, targetDbPath).
-		Flag(utils.ClientDbFlag.Name, clientDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(config.TargetDbFlag.Name, targetDbPath).
+		Flag(config.ClientDbFlag.Name, clientDbPath).
+		Flag(config.ChainIDFlag.Name, int(config.MainnetChainID)).
 		Arg("1"). // blockNumFirst
 		Arg("5"). // blockNumLast - small range for testing
 		Build()
@@ -52,7 +54,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 0, 1, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -98,10 +100,10 @@ func TestStateHash_Log(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
-	log.EXPECT().Infof("Connected to RPC at %s", utils.RPCTestnet)
+	log.EXPECT().Infof("Connected to RPC at %s", rpc2.RPCTestnet)
 	log.EXPECT().Infof("Scraping block %d done!\n", uint64(10000))
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 9990, 10100, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 9990, 10100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -117,7 +119,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 0, 100, log)
+	err = StateAndBlockHashScraper(context.TODO(), config.TestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -158,7 +160,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 func Test_getClient(t *testing.T) {
 	type args struct {
 		ctx     context.Context
-		chainId utils.ChainID
+		chainId config.ChainID
 		ipcPath string
 	}
 	log := logger.NewLogger("info", "Test state hash")
@@ -168,10 +170,10 @@ func Test_getClient(t *testing.T) {
 		want    *rpc.Client
 		wantErr bool
 	}{
-		{"testGetClientRpcSonicMainnet", args{context.Background(), utils.SonicMainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcOperaMainnet", args{context.Background(), utils.MainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcTestnet", args{context.Background(), utils.TestnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientIpcNonExistant", args{context.Background(), utils.TestnetChainID, "/non-existant-path"}, nil, false},
+		{"testGetClientRpcSonicMainnet", args{context.Background(), config.SonicMainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcOperaMainnet", args{context.Background(), config.MainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcTestnet", args{context.Background(), config.TestnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientIpcNonExistant", args{context.Background(), config.TestnetChainID, "/non-existant-path"}, nil, false},
 		{"testGetClientRpcUnknownChainId", args{context.Background(), 88888, ""}, nil, true},
 	}
 	for _, tt := range tests {
@@ -196,7 +198,7 @@ func TestStateHash_GetClientIpcFail(t *testing.T) {
 	}
 
 	log := logger.NewLogger("info", "Test state hash")
-	_, err := getClient(context.Background(), utils.TestnetChainID, tmpIpcPath, log)
+	_, err := getClient(context.Background(), config.TestnetChainID, tmpIpcPath, log)
 	if err == nil {
 		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
 	}

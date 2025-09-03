@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
@@ -54,7 +55,7 @@ func TestTableHash_Empty(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.All), // Set this to the component you want to test
 	}
 
@@ -97,7 +98,7 @@ func TestTableHash_Filled(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.All), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -138,7 +139,7 @@ func TestTableHash_JustSubstate(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.Substate), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -169,7 +170,7 @@ func TestTableHash_JustDelete(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.Delete), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -200,7 +201,7 @@ func TestTableHash_JustUpdate(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.Update), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -231,7 +232,7 @@ func TestTableHash_JustStateHash(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.StateHash), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -262,7 +263,7 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.BlockHash), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -293,7 +294,7 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config with an invalid substate encoding - encoding is set in the factory automatically
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent:      string(dbcomponent.Substate),
 		SubstateEncoding: "invalid_encoding",
 	}
@@ -364,7 +365,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			log := logger.NewMockLogger(ctrl)
 
-			cfg := &utils.Config{
+			cfg := &config.Config{
 				First:       1,
 				Last:        1,
 				DbComponent: string(tc.dbComponent),
@@ -396,7 +397,7 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config with an invalid db component
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: "invalid_component",
 	}
 
@@ -421,7 +422,7 @@ func TestTableHash_JustException(t *testing.T) {
 	log := logger.NewMockLogger(ctrl)
 
 	// Create a config
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		DbComponent: string(dbcomponent.Exception), // Set this to the component you want to test
 		First:       0,
 		Last:        100, // None of the following generators must not generate record higher than this number
@@ -553,7 +554,7 @@ func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 	tests := []struct {
 		name        string
 		getHashFunc func(
-			cfg *utils.Config,
+			cfg *config.Config,
 			db db.BaseDB,
 			progressLoggerFrequency time.Duration,
 			log logger.Logger,
@@ -578,7 +579,7 @@ func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 			log := logger.NewMockLogger(ctrl)
 			aidaDb := db.NewMockBaseDB(ctrl)
 
-			cfg := &utils.Config{
+			cfg := &config.Config{
 				First: 0,
 				Last:  1,
 			}
@@ -603,7 +604,7 @@ func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
 	aidaDb := db.NewMockBaseDB(ctrl)
 	mockDb := db.NewMockDbAdapter(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 0,
 		Last:  1,
 	}
@@ -643,7 +644,7 @@ func TestTableHash_GetExceptionDbHash_OnlyGivenRange(t *testing.T) {
 	aidaDb := db.NewMockBaseDB(ctrl)
 	mockDb := db.NewMockDbAdapter(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 0,
 		Last:  1,
 	}
@@ -680,7 +681,7 @@ func TestTableHash_GetExceptionDbHash_InvalidData(t *testing.T) {
 	aidaDb := db.NewMockBaseDB(ctrl)
 	mockDb := db.NewMockDbAdapter(ctrl)
 
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		First: 0,
 		Last:  1,
 	}

@@ -21,19 +21,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestShadowDbValidator_PostBlockPass(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
@@ -57,7 +57,7 @@ func TestShadowDbValidator_PostBlockPass(t *testing.T) {
 }
 
 func TestShadowDbValidator_PostBlockReturnsError(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 
 	ctrl := gomock.NewController(t)
 	db := state.NewMockStateDB(ctrl)
@@ -91,7 +91,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 	defer ctrl.Finish()
 
 	t.Run("Success", func(t *testing.T) {
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		db := state.NewMockStateDB(ctrl)
 
@@ -110,7 +110,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		cfg := &utils.Config{}
+		cfg := &config.Config{}
 
 		db := state.NewMockStateDB(ctrl)
 
@@ -139,7 +139,7 @@ func TestShadowDbValidator_PostBlock(t *testing.T) {
 
 func TestShadowDbValidator_MakeShadowDbValidator(t *testing.T) {
 	t.Run("ShadowDbEnabled", func(t *testing.T) {
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ShadowDb: true,
 		}
 		ext := MakeShadowDbValidator(cfg)
@@ -149,7 +149,7 @@ func TestShadowDbValidator_MakeShadowDbValidator(t *testing.T) {
 		assert.True(t, ok)
 	})
 	t.Run("ShadowDbDisabled", func(t *testing.T) {
-		cfg := &utils.Config{
+		cfg := &config.Config{
 			ShadowDb: false,
 		}
 		ext := MakeShadowDbValidator(cfg)

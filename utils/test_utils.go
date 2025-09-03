@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
@@ -104,7 +105,7 @@ func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSche
 	err = db.PutSubstate(ss)
 	require.NoError(t, err)
 
-	md := NewAidaDbMetadata(db, "CRITICAL")
+	md := metadata.NewAidaDbMetadata(db, "CRITICAL")
 	// todo might cause failing tests
 	//dbHash, err := hex.DecodeString("a0d4f7616f3007bf8c02f816a60b2526")
 	//require.NoError(t, err)

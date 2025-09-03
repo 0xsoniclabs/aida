@@ -23,11 +23,11 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/generator"
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
@@ -245,7 +245,7 @@ func TestReplay_RunStochasticReplay(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	tmpDir := t.TempDir()
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		ContractNumber:    1000,
 		KeysNumber:        1000,
 		ValuesNumber:      1000,

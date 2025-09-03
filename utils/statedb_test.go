@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/state"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/substate"
@@ -76,7 +77,7 @@ func TestStatedb_PrepareStateDB(t *testing.T) {
 				Schema:         0,
 				Block:          cfg.Last,
 				RootHash:       common.Hash{},
-				GitCommit:      GitCommit,
+				GitCommit:      config.GitCommit,
 				CreateTime:     time.Now().UTC().Format(time.UnixDate),
 			}
 
@@ -144,7 +145,7 @@ func TestStatedb_PrepareStateDBEmpty(t *testing.T) {
 
 func TestStateDB_makeNewStateDB(t *testing.T) {
 	tempDir := t.TempDir()
-	cfg := &Config{
+	cfg := &config.Config{
 		DbImpl:                 "memory",
 		DbVariant:              "",
 		ShadowImpl:             "geth",
@@ -154,7 +155,7 @@ func TestStateDB_makeNewStateDB(t *testing.T) {
 		PathToStateDb:          tempDir,
 		StateDbSrc:             tempDir,
 		StateDbSrcDirectAccess: true,
-		ChainID:                MainnetChainID,
+		ChainID:                config.MainnetChainID,
 	}
 
 	db, dbPath, err := makeNewStateDB(cfg)
@@ -175,7 +176,7 @@ func TestStateDB_makeNewStateDB(t *testing.T) {
 
 func TestStateDB_useExistingStateDB(t *testing.T) {
 	tempDir := t.TempDir()
-	cfg := &Config{
+	cfg := &config.Config{
 		DbImpl:                 "memory",
 		DbVariant:              "",
 		ShadowImpl:             "geth",
@@ -185,7 +186,7 @@ func TestStateDB_useExistingStateDB(t *testing.T) {
 		PathToStateDb:          tempDir,
 		StateDbSrc:             tempDir,
 		StateDbSrcDirectAccess: true,
-		ChainID:                MainnetChainID,
+		ChainID:                config.MainnetChainID,
 	}
 
 	// Create state DB info of existing state DB
@@ -197,7 +198,7 @@ func TestStateDB_useExistingStateDB(t *testing.T) {
 		Schema:         0,
 		Block:          cfg.Last,
 		RootHash:       common.Hash{},
-		GitCommit:      GitCommit,
+		GitCommit:      config.GitCommit,
 		CreateTime:     time.Now().UTC().Format(time.UnixDate),
 	}
 

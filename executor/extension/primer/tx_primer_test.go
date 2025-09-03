@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/prime"
@@ -31,7 +32,7 @@ import (
 )
 
 func TestTxPrimer_MakeTxPrimer(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeTxPrimer(cfg)
 
 	_, ok := ext.(*txPrimer)
@@ -39,7 +40,7 @@ func TestTxPrimer_MakeTxPrimer(t *testing.T) {
 }
 
 func TestTxPrimer_PreRun(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	ext := MakeTxPrimer(cfg)
 
 	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1}
@@ -55,7 +56,7 @@ func TestTxPrimer_PreTransaction(t *testing.T) {
 	mockDb := state.NewMockStateDB(ctrl)
 	mockTxContext := txcontext.NewMockTxContext(ctrl)
 
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{
 		primeCtx: prime.NewContext(cfg, mockDb, log),

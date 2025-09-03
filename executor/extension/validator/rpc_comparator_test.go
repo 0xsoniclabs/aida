@@ -23,12 +23,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/Fantom-foundation/lachesis-base/common/littleendian"
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ const (
 )
 
 func TestRPCComparator_RPCComparatorIsNotCreatedIfNotEnabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Validate = false
 
 	c := MakeRpcComparator(cfg)
@@ -57,7 +57,7 @@ func TestRPCComparator_RPCComparatorIsNotCreatedIfNotEnabled(t *testing.T) {
 }
 
 func TestRPCComparator_PostTransactionDoesNotFailIfContinueOnFailureIsTrue(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Validate = true
 	cfg.ContinueOnFailure = true
 
@@ -91,7 +91,7 @@ func TestRPCComparator_PostTransactionDoesNotFailIfContinueOnFailureIsTrue(t *te
 }
 
 func TestRPCComparator_PostTransactionFailsWhenContinueOnFailureIsNotEnabled(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Validate = true
 	cfg.ContinueOnFailure = false
 

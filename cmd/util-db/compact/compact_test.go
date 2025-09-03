@@ -19,6 +19,7 @@ package compact
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/substate/db"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -31,7 +32,7 @@ func TestCmd_Compact(t *testing.T) {
 	app := cli.NewApp()
 	app.Action = compactAction
 	app.Flags = []cli.Flag{
-		&utils.TargetDbFlag,
+		&config.TargetDbFlag,
 	}
 
 	err := app.Run([]string{Command.Name, "--target-db", path})

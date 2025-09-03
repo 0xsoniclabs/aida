@@ -22,20 +22,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"go.uber.org/mock/gomock"
 )
 
 func TestEthStateTestValidator_PreBlockReturnsError(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ContinueOnFailure = true
 
 	ctrl := gomock.NewController(t)
@@ -69,7 +69,7 @@ func TestEthStateTestValidator_PreBlockReturnsError(t *testing.T) {
 }
 
 func TestEthStateTestValidator_PostBlockChecksError(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.ContinueOnFailure = false
 	ext := makeEthStateTestErrorValidator(cfg, nil)
 
@@ -122,7 +122,7 @@ func TestEthStateTestValidator_PostBlockChecksError(t *testing.T) {
 }
 
 func TestEthStateTestValidator_MakeEthStateTestErrorValidator(t *testing.T) {
-	cfg := &utils.Config{}
+	cfg := &config.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestErrorValidator(cfg)
 	if _, ok := ext.(executor.Extension[txcontext.TxContext]); !ok {

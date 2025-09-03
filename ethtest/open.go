@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
@@ -35,7 +36,7 @@ type ethTest interface {
 
 // getTestsWithinPath returns all tests in given directory (and subdirectories)
 // T is the type into which we want to unmarshal the tests.
-func getTestsWithinPath[T ethTest](cfg *utils.Config, testType utils.EthTestType) ([]T, error) {
+func getTestsWithinPath[T ethTest](cfg *config.Config, testType config.EthTestType) ([]T, error) {
 	path := cfg.ArgPath
 	info, err := os.Stat(path)
 	if err != nil {
@@ -54,7 +55,7 @@ func getTestsWithinPath[T ethTest](cfg *utils.Config, testType utils.EthTestType
 	// Get all files for given test types
 	var dirPaths []string
 	switch testType {
-	case utils.StateTests:
+	case config.StateTests:
 		// If all dir with all tests is passed, only runnable StateTests are extracted
 		gst := path + "/GeneralStateTests"
 		_, err = os.Stat(gst)
@@ -72,7 +73,7 @@ func getTestsWithinPath[T ethTest](cfg *utils.Config, testType utils.EthTestType
 		if len(dirPaths) == 0 {
 			dirPaths = []string{path}
 		}
-	case utils.BlockTests:
+	case config.BlockTests:
 		return nil, errors.New("blockchain test-type not yet implemented")
 	default:
 		return nil, errors.New("please chose which testType do you want to read")

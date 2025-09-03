@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
@@ -94,8 +95,8 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 
 	for name, check := range tests {
 		t.Run(name, func(t *testing.T) {
-			cfg := &utils.Config{
-				ChainID: utils.MainnetChainID,
+			cfg := &config.Config{
+				ChainID: config.MainnetChainID,
 				EvmImpl: name,
 				VmImpl:  "geth",
 			}
@@ -110,8 +111,8 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 }
 
 func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
-	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+	cfg := &config.Config{
+		ChainID: config.MainnetChainID,
 		EvmImpl: "tosca",
 		VmImpl:  "invalid",
 	}
@@ -121,8 +122,8 @@ func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
 }
 
 func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
-	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+	cfg := &config.Config{
+		ChainID: config.MainnetChainID,
 		EvmImpl: "invalid",
 		VmImpl:  "lfvm",
 	}
@@ -132,7 +133,7 @@ func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
 }
 
 func TestEthTestProcessor_DoesNotExecuteTransactionWhenBlobGasCouldExceed(t *testing.T) {
-	p, err := MakeEthTestProcessor(&utils.Config{})
+	p, err := MakeEthTestProcessor(&config.Config{})
 	if err != nil {
 		t.Fatalf("cannot make eth test processor: %v", err)
 	}
@@ -172,7 +173,7 @@ func TestEthTestProcessor_DoesNotExecuteTransactionWithInvalidTxBytes(t *testing
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p, err := MakeEthTestProcessor(&utils.Config{ChainID: utils.EthTestsChainID})
+			p, err := MakeEthTestProcessor(&config.Config{ChainID: config.EthTestsChainID})
 			if err != nil {
 				t.Fatalf("cannot make eth test processor: %v", err)
 			}
@@ -1305,8 +1306,8 @@ func TestToscaProcessor_processRegularTx(t *testing.T) {
 	mockBlockEnv.EXPECT().GetRandom().Return(&common.Hash{}).AnyTimes()
 
 	// Create the processor instance
-	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+	cfg := &config.Config{
+		ChainID: config.MainnetChainID,
 	}
 
 	processor := &toscaProcessor{
@@ -1559,13 +1560,13 @@ func TestMessageResult_Interface(t *testing.T) {
 func TestExecutor_MakeTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         *utils.Config
+		cfg         *config.Config
 		expectError bool
 	}{
 		{
 			name: "default_opera_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+			cfg: &config.Config{
+				ChainID:  config.MainnetChainID,
 				EvmImpl:  "opera",
 				LogLevel: "info",
 			},
@@ -1573,7 +1574,7 @@ func TestExecutor_MakeTxProcessor(t *testing.T) {
 		},
 		{
 			name: "ethereum_processor",
-			cfg: &utils.Config{
+			cfg: &config.Config{
 				ChainID:  1, // Ethereum mainnet
 				EvmImpl:  "ethereum",
 				LogLevel: "info",
@@ -1650,7 +1651,7 @@ func TestTxProcessor_isErrFatal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			processor := &TxProcessor{
-				cfg: &utils.Config{
+				cfg: &config.Config{
 					ContinueOnFailure: tt.continueOnFailure,
 					MaxNumErrors:      tt.maxNumErrors,
 				},
@@ -1688,7 +1689,7 @@ func TestTxProcessor_ProcessTransaction(t *testing.T) {
 	tx := 0 // Regular transaction
 
 	processor := &TxProcessor{
-		cfg:       &utils.Config{},
+		cfg:       &config.Config{},
 		numErrors: new(atomic.Int32),
 		processor: mockProcessor,
 		log:       logger.NewLogger("info", "test"),
@@ -1706,7 +1707,7 @@ func TestTxProcessor_ProcessTransaction(t *testing.T) {
 	})
 
 	// Setup for pseudo transaction test
-	pseudoTx := utils.PseudoTx
+	pseudoTx := config.PseudoTx
 
 	// Test pseudo transaction processing
 	t.Run("pseudo_transaction", func(t *testing.T) {
@@ -1781,10 +1782,10 @@ func TestAidaProcessor_processRegularTx(t *testing.T) {
 	}
 
 	// Common setup for all tests
-	cfg := &utils.Config{
+	cfg := &config.Config{
 		EvmImpl:  "opera",
 		LogLevel: "info",
-		ChainID:  utils.MainnetChainID,
+		ChainID:  config.MainnetChainID,
 	}
 
 	processor := &aidaProcessor{
@@ -1859,8 +1860,8 @@ func TestEthTestProcessor_Process(t *testing.T) {
 	mockTxProcessor := NewMockprocessor(ctrl)
 
 	// Base configuration
-	cfg := &utils.Config{
-		ChainID:  utils.SepoliaChainID,
+	cfg := &config.Config{
+		ChainID:  config.SepoliaChainID,
 		EvmImpl:  "opera",
 		LogLevel: "info",
 	}
@@ -1880,7 +1881,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 
 		// Create mocks
 		mockTx := types.NewTx(&types.DynamicFeeTx{
-			ChainID: big.NewInt(int64(utils.SepoliaChainID)),
+			ChainID: big.NewInt(int64(config.SepoliaChainID)),
 			V:       common.Big0,
 			R:       common.Big1,
 			S:       common.Big1,
@@ -1915,7 +1916,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 
 		// Create mocks
 		mockTx := types.NewTx(&types.DynamicFeeTx{
-			ChainID: big.NewInt(int64(utils.SepoliaChainID)),
+			ChainID: big.NewInt(int64(config.SepoliaChainID)),
 			V:       common.Big0,
 			R:       common.Big1,
 			S:       common.Big1,
@@ -2057,8 +2058,8 @@ func TestArchiveDbTxProcessor_Process(t *testing.T) {
 	}
 
 	// Base configuration
-	cfg := &utils.Config{
-		ChainID:  utils.SepoliaChainID,
+	cfg := &config.Config{
+		ChainID:  config.SepoliaChainID,
 		EvmImpl:  "opera",
 		LogLevel: "info",
 	}
@@ -2153,8 +2154,8 @@ func TestLiveDbTxProcessor_Process(t *testing.T) {
 	}
 
 	// Base configuration
-	cfg := &utils.Config{
-		ChainID:  utils.SepoliaChainID,
+	cfg := &config.Config{
+		ChainID:  config.SepoliaChainID,
 		EvmImpl:  "opera",
 		LogLevel: "info",
 	}
@@ -2230,13 +2231,13 @@ func TestLiveDbTxProcessor_Process(t *testing.T) {
 func TestExecutor_MakeLiveDbTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         *utils.Config
+		cfg         *config.Config
 		expectError bool
 	}{
 		{
 			name: "valid_live_db_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.SepoliaChainID,
+			cfg: &config.Config{
+				ChainID:  config.SepoliaChainID,
 				EvmImpl:  "opera",
 				LogLevel: "info",
 			},
@@ -2244,8 +2245,8 @@ func TestExecutor_MakeLiveDbTxProcessor(t *testing.T) {
 		},
 		{
 			name: "invalid_live_db_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+			cfg: &config.Config{
+				ChainID:  config.MainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},
@@ -2275,13 +2276,13 @@ func TestExecutor_MakeLiveDbTxProcessor(t *testing.T) {
 func TestExecutor_MakeArchiveDbTxProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         *utils.Config
+		cfg         *config.Config
 		expectError bool
 	}{
 		{
 			name: "valid_archive_db_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.SepoliaChainID,
+			cfg: &config.Config{
+				ChainID:  config.SepoliaChainID,
 				EvmImpl:  "opera",
 				LogLevel: "info",
 			},
@@ -2289,8 +2290,8 @@ func TestExecutor_MakeArchiveDbTxProcessor(t *testing.T) {
 		},
 		{
 			name: "invalid_archive_db_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+			cfg: &config.Config{
+				ChainID:  config.MainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},
@@ -2320,13 +2321,13 @@ func TestExecutor_MakeArchiveDbTxProcessor(t *testing.T) {
 func TestExecutor_MakeMakeEthTestProcessor(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         *utils.Config
+		cfg         *config.Config
 		expectError bool
 	}{
 		{
 			name: "valid_eth_test_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.SepoliaChainID,
+			cfg: &config.Config{
+				ChainID:  config.SepoliaChainID,
 				EvmImpl:  "opera",
 				LogLevel: "info",
 			},
@@ -2334,8 +2335,8 @@ func TestExecutor_MakeMakeEthTestProcessor(t *testing.T) {
 		},
 		{
 			name: "invalid_eth_test_processor",
-			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+			cfg: &config.Config{
+				ChainID:  config.MainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},

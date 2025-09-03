@@ -17,9 +17,10 @@
 package clone
 
 import (
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/utildb/metadata"
 	"github.com/urfave/cli/v2"
 )
 
@@ -30,13 +31,13 @@ var cloneCustomCommand = cli.Command{
 	Usage:     "clone custom creates a copy of aida-db components from specified range",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.DbComponentFlag,
-		&utils.TargetDbFlag,
-		&utils.CompactDbFlag,
-		&utils.ValidateFlag,
+		&config.AidaDbFlag,
+		&config.DbComponentFlag,
+		&config.TargetDbFlag,
+		&config.CompactDbFlag,
+		&config.ValidateFlag,
 		&logger.LogLevelFlag,
-		&utils.SubstateEncodingFlag,
+		&config.SubstateEncodingFlag,
 	},
 	Description: `
 clone custom is a specialized clone tool which copies specific components in aida-db from 
@@ -46,7 +47,7 @@ clone custom is a specialized clone tool which copies specific components in aid
 
 // cloneCustomAction creates aida-db copy or subset
 func cloneCustomAction(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	cfg, err := config.NewConfig(ctx, config.BlockRangeArgs)
 	if err != nil {
 		return err
 	}
@@ -56,7 +57,7 @@ func cloneCustomAction(ctx *cli.Context) error {
 		return err
 	}
 
-	err = clone(cfg, aidaDb, targetDb, utils.CustomType)
+	err = clone(cfg, aidaDb, targetDb, metadata.CustomType)
 	if err != nil {
 		return err
 	}

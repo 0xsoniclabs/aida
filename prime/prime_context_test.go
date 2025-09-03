@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -136,7 +137,7 @@ func TestPrimeContext_PrimeStateDB(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup the PrimeContext
 			p := &context{
-				cfg: &utils.Config{
+				cfg: &config.Config{
 					PrimeRandom:       tc.primRandom,
 					IsExistingStateDb: tc.useSrcDb,
 				},
@@ -175,7 +176,7 @@ func TestPrimeContext_PrimeStateDB_EmptyWorldState(t *testing.T) {
 	mockStateDb := state.NewMockStateDB(ctrl)
 	mockBulk := state.NewMockBulkLoad(ctrl)
 	p := &context{
-		cfg:        &utils.Config{},
+		cfg:        &config.Config{},
 		load:       mockBulk,
 		db:         mockStateDb,
 		operations: 0,
@@ -258,7 +259,7 @@ func TestPrimeContext_PrimeStateDBRandom(t *testing.T) {
 		common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"): acc2,
 	})
 	p := &context{
-		cfg: &utils.Config{
+		cfg: &config.Config{
 			RandomSeed: 0,
 		},
 		load:       nil,
@@ -419,7 +420,7 @@ func TestPrimeContext_HasPrimedIsUpdatedAfterPrimeStateDb(t *testing.T) {
 		common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"): acc,
 	})
 	p := &context{
-		cfg:        &utils.Config{},
+		cfg:        &config.Config{},
 		load:       mockBulk,
 		db:         mockStateDb,
 		operations: utils.OperationThreshold + 1,

@@ -19,17 +19,17 @@ package executor
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/aida/config"
 	statetest "github.com/0xsoniclabs/aida/ethtest"
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/0xsoniclabs/aida/utils"
 )
 
-func NewEthStateTestProvider(cfg *utils.Config) Provider[txcontext.TxContext] {
+func NewEthStateTestProvider(cfg *config.Config) Provider[txcontext.TxContext] {
 	return ethTestProvider{cfg}
 }
 
 type ethTestProvider struct {
-	cfg *utils.Config
+	cfg *config.Config
 }
 
 func (e ethTestProvider) Run(_ int, _ int, consumer Consumer[txcontext.TxContext]) error {

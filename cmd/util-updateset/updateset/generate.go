@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/0xsoniclabs/aida/config"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/prime"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
@@ -38,13 +38,13 @@ var GenUpdateSetCommand = cli.Command{
 	Usage:     "generate update-set from substate",
 	ArgsUsage: "<blockNumLast> <interval>",
 	Flags: []cli.Flag{
-		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
-		&utils.AidaDbFlag,
-		&utils.WorkersFlag,
-		&utils.UpdateDbFlag,
-		&utils.UpdateBufferSizeFlag,
-		&utils.ValidateFlag,
+		&config.ChainIDFlag,
+		&config.DeletionDbFlag,
+		&config.AidaDbFlag,
+		&config.WorkersFlag,
+		&config.UpdateDbFlag,
+		&config.UpdateBufferSizeFlag,
+		&config.ValidateFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
@@ -61,7 +61,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 	if ctx.Args().Len() != 2 {
 		return fmt.Errorf("gen-update-set command requires exactly 2 arguments")
 	}
-	cfg, argErr := utils.NewConfig(ctx, utils.LastBlockArg)
+	cfg, argErr := config.NewConfig(ctx, config.LastBlockArg)
 	if argErr != nil {
 		return argErr
 	}
@@ -127,7 +127,7 @@ func generateUpdateSet(ctx *cli.Context) error {
 }
 
 // GenUpdateSet generates a series of update sets from substate db
-func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb db.DestroyedAccountDB, first, last uint64, interval uint64) error {
+func GenUpdateSet(cfg *config.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb db.DestroyedAccountDB, first, last uint64, interval uint64) error {
 	var (
 		err               error
 		destroyedAccounts []substatetypes.Address
