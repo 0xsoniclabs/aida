@@ -31,14 +31,14 @@ func TestSingleUseArgSetRemoveArgument(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 	idx := int64(500) // choose an argument in the middle of the range
 
 	// Remove previous element
 	// expect a randomizer call during removal to refresh queue entries
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(48)).Times(1)
 	err := ia.Remove(idx)
 	if err != nil {
 		t.Fatalf("Deletion failed (%v).", err)
@@ -165,7 +165,7 @@ func TestSingleUseArgumentSetSimple(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(n, mockArgSetRandomizer))
 	if _, err := ia.Choose(statistics.NoArgID); err == nil {
 		t.Fatalf("expected an error message")
@@ -195,7 +195,7 @@ func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 

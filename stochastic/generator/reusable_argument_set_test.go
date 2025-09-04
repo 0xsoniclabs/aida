@@ -29,7 +29,7 @@ func TestReusableArgSetNewArgSet(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	if as == nil {
 		t.Errorf("Expected an argument set, but got nil")
@@ -47,7 +47,7 @@ func TestReusableArgSetChooseNoArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	_, err := as.Choose(statistics.NoArgID)
 	if err == nil {
@@ -61,7 +61,7 @@ func TestReusableArgSetChooseZeroArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	zero, err := as.Choose(statistics.ZeroArgID)
 	if err != nil {
@@ -79,9 +79,9 @@ func TestReusableArgSetChooseRandArg(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -97,9 +97,9 @@ func TestReusableArgSetChoosePrevArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -123,7 +123,7 @@ func TestReusableArgSetChooseRecentArg(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	var calls []*gomock.Call
-	calls = append(calls, mockArgSetRandomizer.EXPECT().SampleDistribution(n-1).Return(ArgumentType(4711)).Times(statistics.QueueLen))
+	calls = append(calls, mockArgSetRandomizer.EXPECT().SampleArg(n-1).Return(ArgumentType(4711)).Times(statistics.QueueLen))
 	for i := range statistics.QueueLen - 1 {
 		calls = append(calls, mockArgSetRandomizer.EXPECT().SampleQueue().Return(int(i+1)).Times(1))
 	}
@@ -147,9 +147,9 @@ func TestReusableArgSetRemove(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(minCardinality + 10)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(48)).Times(statistics.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(48)).Times(statistics.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(48)).Times(1)
 	err := as.Remove(5)
 	if err != nil {
 		t.Errorf("Unexpected error when removing a valid argument: %v", err)
