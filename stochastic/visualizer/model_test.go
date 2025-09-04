@@ -70,8 +70,9 @@ func TestEventData_PopulateEventData(t *testing.T) {
 	assert.Equal(t, float64(1), e.BlocksPerSyncPeriod)
 	assert.Equal(t, d.Operations, e.OperationLabel)
 	assert.Equal(t, d.StochasticMatrix, e.StochasticMatrix)
-	assert.Equal(t, 24, len(e.TxOperation))
-	assert.Equal(t, 30, len(e.SimplifiedMatrix))
+	// SyncPeriod, Block and Tx operations are excluded
+	assert.Equal(t, stochastic.NumOps-6, len(e.TxOperation))
+	assert.Equal(t, stochastic.NumOps, len(e.SimplifiedMatrix))
 }
 
 func TestAccessData_PopulateAccess(t *testing.T) {

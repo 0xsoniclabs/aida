@@ -233,6 +233,12 @@ func (db *inMemoryStateDB) GetCommittedState(addr common.Address, key common.Has
 	return db.ws.Get(addr).GetStorageAt(key)
 }
 
+func (db *inMemoryStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	committed := db.GetCommittedState(addr, key)
+	state := db.GetState(addr, key)
+	return state, committed
+}
+
 func (db *inMemoryStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
 	slot := slot{addr, key}
 	for state := db.state; state != nil; state = state.parent {
