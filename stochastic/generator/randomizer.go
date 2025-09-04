@@ -18,13 +18,13 @@ package generator
 
 // ArgSetRandomizer interface for argument sets
 type ArgSetRandomizer interface {
-	SampleArg(n ArgumentType) ArgumentType // sample distribution
+	SampleArg(n ArgumentType) ArgumentType // sample argument distribution
 	SampleQueue() int                      // sample queue distribution
 }
 
 // SampleArgRandomizer interface for argument sets
 type SampleArgRandomizer interface {
-	SampleArg(n ArgumentType) ArgumentType // sample distribution
+	SampleArg(n ArgumentType) ArgumentType // sample argument distribution
 }
 
 // SampleQueueRandomizer interface for argument sets
@@ -32,11 +32,13 @@ type SampleQueueRandomizer interface {
 	SampleQueue() int // sample queue distribution
 }
 
+// ProxyRandomizer struct
 type ProxyRandomizer struct {
 	sampleArg SampleArgRandomizer
 	sampleQ   SampleQueueRandomizer
 }
 
+// NewProxyRandomizer creates a new ProxyRandomizer
 func NewProxyRandomizer(argR SampleArgRandomizer, qR SampleQueueRandomizer) *ProxyRandomizer {
 	return &ProxyRandomizer{
 		sampleArg: argR,
@@ -44,10 +46,12 @@ func NewProxyRandomizer(argR SampleArgRandomizer, qR SampleQueueRandomizer) *Pro
 	}
 }
 
+// SampleArg samples an argument from a distribution with n possible arguments
 func (r *ProxyRandomizer) SampleArg(n ArgumentType) ArgumentType {
 	return r.sampleArg.SampleArg(n)
 }
 
+// SampleQueue samples an index for a queue
 func (r *ProxyRandomizer) SampleQueue() int {
 	return r.sampleQ.SampleQueue()
 }

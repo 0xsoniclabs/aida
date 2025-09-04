@@ -24,6 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
+// ExpRandomizer struct
 type ExpRandomizer struct {
 	rg     *rand.Rand
 	lambda float64
@@ -31,6 +32,7 @@ type ExpRandomizer struct {
 	ArgSetRandomizer
 }
 
+// NewExpRandomizer creates a new ExpRandomizer
 func NewExpRandomizer(rg *rand.Rand, lambda float64, qpdf []float64) *ExpRandomizer {
 	cp := make([]float64, statistics.QueueLen)
 	copy(cp, qpdf)
@@ -41,10 +43,12 @@ func NewExpRandomizer(rg *rand.Rand, lambda float64, qpdf []float64) *ExpRandomi
 	}
 }
 
+// SampleArgument samples an argument from a distribution with n possible arguments
 func (r *ExpRandomizer) SampleArgument(n int64) int64 {
 	return exponential.DiscreteSample(r.rg, r.lambda, n+1)
 }
 
+// SampleQueue samples an index for a queue
 func (r *ExpRandomizer) SampleQueue() int {
 	u := r.rg.Float64()
 
@@ -85,5 +89,80 @@ func (r *ExpRandomizer) SampleQueue() int {
 		return 1
 	}
 
+	return 0
+}
+
+// ExponentialArgRandomizer struct
+type ExponentialArgRandomizer struct {
+	rg     *rand.Rand
+	lambda float64
+}
+
+// NewExponentialArgRandomizer creates a new ExponentialArgRandomizer
+func NewExponentialArgRandomizer(rg *rand.Rand, lambda float64) *ExponentialArgRandomizer {
+	return &ExponentialArgRandomizer{
+		rg:     rg,
+		lambda: lambda,
+	}
+}
+
+// SampleArg samples an argument from a distribution with n possible arguments
+func (r *ExponentialArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
+	return ArgumentType(exponential.DiscreteSample(r.rg, r.lambda, int64(n)))
+}
+
+// EmpiricalQueueRandomizer struct
+type EmpiricalQueueRandomizer struct {
+	rg   *rand.Rand // random generator
+	qpdf []float64  // queue probability distribution function
+}
+
+// NewEmpiricalQueueRandomizer creates a new EmpiricalQueueRandomizer
+func NewEmpiricalQueueRandomizer(rg *rand.Rand, qpdf []float64) *EmpiricalQueueRandomizer {
+	if len(qpdf) != statistics.QueueLen {
+		return nil
+	}
+	cp := make([]float64, statistics.QueueLen)
+	copy(cp, qpdf)
+	return &EmpiricalQueueRandomizer{
+		rg:   rg,
+		qpdf: cp,
+	}
+}
+
+// SampleQueue samples an index for a queue
+func (r *EmpiricalQueueRandomizer) SampleQueue() int {
+	u := r.rg.Float64()
+	factor := 1.0 - r.qpdf[0]
+	if factor <= 0 {
+		for i := 1; i < statistics.QueueLen; i++ {
+			if r.qpdf[i] > 0 {
+				return i
+			}
+		}
+		return 1
+	}
+	sum := 0.0
+	c := 0.0
+	lastPositive := -1
+	for i := 1; i < statistics.QueueLen; i++ {
+		pi := r.qpdf[i] / factor
+		y := pi - c
+		t := sum + y
+		c = (t - sum) - y
+		sum = t
+		if u <= sum {
+			return i
+		}
+		if r.qpdf[i] > 0 {
+			lastPositive = i
+		}
+	}
+	if lastPositive != -1 {
+		return lastPositive
+	}
+	if statistics.QueueLen > 1 {
+		return 1
+	}
 	return 0
 }
