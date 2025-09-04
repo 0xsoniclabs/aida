@@ -16,8 +16,38 @@
 
 package generator
 
-// Randomizer interface for argument sets
-type Randomizer interface {
-	SampleDistribution(n int64) int64 // sample distribution
-	SampleQueue() int                 // sample queue distribution
+// ArgSetRandomizer interface for argument sets
+type ArgSetRandomizer interface {
+	SampleArg(n ArgumentType) ArgumentType // sample distribution
+	SampleQueue() int                      // sample queue distribution
+}
+
+// SampleArgRandomizer interface for argument sets
+type SampleArgRandomizer interface {
+	SampleArg(n ArgumentType) ArgumentType // sample distribution
+}
+
+// SampleQueueRandomizer interface for argument sets
+type SampleQueueRandomizer interface {
+	SampleQueue() int // sample queue distribution
+}
+
+type ProxyRandomizer struct {
+	sampleArg SampleArgRandomizer
+	sampleQ   SampleQueueRandomizer
+}
+
+func NewProxyRandomizer(argR SampleArgRandomizer, qR SampleQueueRandomizer) *ProxyRandomizer {
+	return &ProxyRandomizer{
+		sampleArg: argR,
+		sampleQ:   qR,
+	}
+}
+
+func (r *ProxyRandomizer) SampleArg(n ArgumentType) ArgumentType {
+	return r.sampleArg.SampleArg(n)
+}
+
+func (r *ProxyRandomizer) SampleQueue() int {
+	return r.sampleQ.SampleQueue()
 }

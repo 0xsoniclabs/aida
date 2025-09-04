@@ -17,24 +17,24 @@
 package generator
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
 // SingleUseArgumentSet data structure for generating non-reusable arguments.
 // This is an extension of the ArgumentSet data structure.
-// Deleted arguments are not reused and cannot be chosen anymore.
+// Deleted arguments are not reused and cannot be chosen anymore in the future.
 // This type of argument set is needed for self-destructing account addresses.
 type SingleUseArgumentSet struct {
-	argset      ArgumentSet    // underlying random argument set
-	ctr         ArgumentType   // counter
-	translation []ArgumentType // translation table for argument
+	argset      ArgumentSet
+	ctr         ArgumentType   // argument counter for new arguments
+	translation []ArgumentType // translation table for arguments
 	ArgumentSet
 }
 
 // NewSingleUseArgumentSet creates a new argument set whose arguments,
-// when deleted, cannot be reused.
+// when deleted, will not be reused in future.
 func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
 	t := make([]ArgumentType, argset.Size())
 	for i := range argset.Size() {
@@ -47,49 +47,41 @@ func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
 	}
 }
 
-// Choose an argument from the argument set according to the kind of argument.
+// Choose an argument from the argument set according to its kind.
 func (a *SingleUseArgumentSet) Choose(kind int) (int64, error) {
 	v, err := a.argset.Choose(kind)
 	if err != nil {
 		return 0, err
 	}
-
 	switch kind {
 	case statistics.ZeroArgID:
 		return 0, nil
-
 	case statistics.NewArgID:
 		a.ctr++
 		v := a.ctr
 		a.translation = append(a.translation, v)
 		return v, nil
-
 	default:
 		if v <= 0 || int(v) > len(a.translation) {
-			return 0, errors.New("translation index out of range")
+			return 0, fmt.Errorf("Choose: argument %v out of range [0,%v]", v, len(a.translation))
 		}
 		return a.translation[v], nil
 	}
 }
 
-// Remove deletes an indirect index.
+// Remove argument k from the argument set.
 func (a *SingleUseArgumentSet) Remove(k ArgumentType) error {
-	if k == 0 {
+	if k == 0 { // zero cannot be removed
 		return nil
 	}
-
-	// find argument in translation table
 	i := a.find(k)
 	if i < 0 {
-		return errors.New("index not found")
+		return fmt.Errorf("Remove: argument %v not found", k)
 	}
-
-	// delete index i from the translation table and the random access generator.
 	a.translation = append(a.translation[:i], a.translation[i+1:]...)
 	if err := a.argset.Remove(i); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -98,7 +90,7 @@ func (a *SingleUseArgumentSet) Size() ArgumentType {
 	return a.argset.Size()
 }
 
-// find finds the index in the translation table for a given index k.
+// find the argument in the translation table for a given argument k.
 func (a *SingleUseArgumentSet) find(k ArgumentType) ArgumentType {
 	for i := range int64(len(a.translation)) {
 		if a.translation[i] == k {

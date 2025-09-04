@@ -10,31 +10,31 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockRandomizer is a mock of Randomizer interface.
-type MockRandomizer struct {
+// MockArgSetRandomizer is a mock of ArgSetRandomizer interface.
+type MockArgSetRandomizer struct {
 	ctrl     *gomock.Controller
-	recorder *MockRandomizerMockRecorder
+	recorder *MockArgSetRandomizerMockRecorder
 }
 
-// MockRandomizerMockRecorder is the mock recorder for MockRandomizer.
-type MockRandomizerMockRecorder struct {
-	mock *MockRandomizer
+// MockArgSetRandomizerMockRecorder is the mock recorder for MockArgSetRandomizer.
+type MockArgSetRandomizerMockRecorder struct {
+	mock *MockArgSetRandomizer
 }
 
-// NewMockRandomizer creates a new mock instance.
-func NewMockRandomizer(ctrl *gomock.Controller) *MockRandomizer {
-	mock := &MockRandomizer{ctrl: ctrl}
-	mock.recorder = &MockRandomizerMockRecorder{mock}
+// NewMockArgSetRandomizer creates a new mock instance.
+func NewMockArgSetRandomizer(ctrl *gomock.Controller) *MockArgSetRandomizer {
+	mock := &MockArgSetRandomizer{ctrl: ctrl}
+	mock.recorder = &MockArgSetRandomizerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRandomizer) EXPECT() *MockRandomizerMockRecorder {
+func (m *MockArgSetRandomizer) EXPECT() *MockArgSetRandomizerMockRecorder {
 	return m.recorder
 }
 
-// SampleDistribution mocks base method.
-func (m *MockRandomizer) SampleDistribution(n int64) int64 {
+// SampleArgument mocks base method.
+func (m *MockArgSetRandomizer) SampleArgument(n int64) int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SampleDistribution", n)
 	ret0, _ := ret[0].(int64)
@@ -42,13 +42,13 @@ func (m *MockRandomizer) SampleDistribution(n int64) int64 {
 }
 
 // SampleDistribution indicates an expected call of SampleDistribution.
-func (mr *MockRandomizerMockRecorder) SampleDistribution(n interface{}) *gomock.Call {
+func (mr *MockArgSetRandomizerMockRecorder) SampleDistribution(n interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleDistribution", reflect.TypeOf((*MockRandomizer)(nil).SampleDistribution), n)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleDistribution", reflect.TypeOf((*MockArgSetRandomizer)(nil).SampleArgument), n)
 }
 
 // SampleQueue mocks base method.
-func (m *MockRandomizer) SampleQueue() int {
+func (m *MockArgSetRandomizer) SampleQueue() int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SampleQueue")
 	ret0, _ := ret[0].(int)
@@ -56,7 +56,7 @@ func (m *MockRandomizer) SampleQueue() int {
 }
 
 // SampleQueue indicates an expected call of SampleQueue.
-func (mr *MockRandomizerMockRecorder) SampleQueue() *gomock.Call {
+func (mr *MockArgSetRandomizerMockRecorder) SampleQueue() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleQueue", reflect.TypeOf((*MockRandomizer)(nil).SampleQueue))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleQueue", reflect.TypeOf((*MockArgSetRandomizer)(nil).SampleQueue))
 }

@@ -27,20 +27,17 @@ import (
 func TestReusableArgSetNewArgSet(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	// needed to fill the queue
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	if as == nil {
 		t.Errorf("Expected an argument set, but got nil")
 	}
-
-	n = ArgumentType(MaxArgumentType)
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as = NewReusableArgumentSet(n, mockRandomizer)
-	if as == nil {
-		t.Errorf("Expected an argument set, but got nil")
+	n = ArgumentType(minCardinality - 1)
+	as = NewReusableArgumentSet(n, mockArgSetRandomizer)
+	if as != nil {
+		t.Errorf("Expected an error, but got an argument set")
 	}
 }
 
@@ -48,11 +45,10 @@ func TestReusableArgSetNewArgSet(t *testing.T) {
 func TestReusableArgSetChooseNoArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	// needed to fill the queue
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	_, err := as.Choose(statistics.NoArgID)
 	if err == nil {
 		t.Errorf("Expected an error for NoArgID, but got nil")
@@ -63,11 +59,10 @@ func TestReusableArgSetChooseNoArg(t *testing.T) {
 func TestReusableArgSetChooseZeroArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	// needed to fill the queue
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	zero, err := as.Choose(statistics.ZeroArgID)
 	if err != nil {
 		t.Errorf("Expected no error for ZeroArgID got nil")
@@ -81,12 +76,12 @@ func TestReusableArgSetChooseZeroArg(t *testing.T) {
 func TestReusableArgSetChooseRandArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -100,14 +95,11 @@ func TestReusableArgSetChooseRandArg(t *testing.T) {
 func TestReusableArgSetChoosePrevArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	// needed to fill the queue
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
-
-	// load queue with a known value
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(0)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(4711)).Times(1)
 	val, err := as.Choose(statistics.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
@@ -115,8 +107,6 @@ func TestReusableArgSetChoosePrevArg(t *testing.T) {
 	if val != 4712 {
 		t.Errorf("Expected value 4711 for RandArgID, but got %d", val)
 	}
-
-	// check whether the queue returns the expected previous value
 	prev_val, err := as.Choose(statistics.PrevArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for PrevArgID: %v", err)
@@ -130,20 +120,15 @@ func TestReusableArgSetChoosePrevArg(t *testing.T) {
 func TestReusableArgSetChooseRecentArg(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-
 	var calls []*gomock.Call
-	// prepare mock calls to fill the queue with values from 1 to QueueLen
-	calls = append(calls, mockRandomizer.EXPECT().SampleDistribution(n-1).Return(ArgumentType(4711)).Times(statistics.QueueLen))
-	// prepare mock calls to select recent values in ascending order from the queue
+	calls = append(calls, mockArgSetRandomizer.EXPECT().SampleDistribution(n-1).Return(ArgumentType(4711)).Times(statistics.QueueLen))
 	for i := range statistics.QueueLen - 1 {
-		calls = append(calls, mockRandomizer.EXPECT().SampleQueue().Return(int(i+1)).Times(1))
+		calls = append(calls, mockArgSetRandomizer.EXPECT().SampleQueue().Return(int(i+1)).Times(1))
 	}
 	gomock.InOrder(calls...)
-
-	// create argument set and query each queue element subsequentially
-	as := NewReusableArgumentSet(n, mockRandomizer)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	for range statistics.QueueLen - 1 {
 		val, err := as.Choose(statistics.RecentArgID)
 		if err != nil {
@@ -156,16 +141,15 @@ func TestReusableArgSetChooseRecentArg(t *testing.T) {
 	}
 }
 
-// / TestReusableArgSetRemove tests the Remove function of an argument set
+// TestReusableArgSetRemove tests the Remove function of an argument set
 func TestReusableArgSetRemove(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockRandomizer := NewMockRandomizer(mockCtl)
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(minCardinality + 10)
-	mockRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(48)).Times(statistics.QueueLen)
-	as := NewReusableArgumentSet(n, mockRandomizer)
-
-	mockRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 1).Return(ArgumentType(48)).Times(statistics.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleDistribution(n - 2).Return(ArgumentType(48)).Times(1)
 	err := as.Remove(5)
 	if err != nil {
 		t.Errorf("Unexpected error when removing a valid argument: %v", err)
@@ -173,12 +157,10 @@ func TestReusableArgSetRemove(t *testing.T) {
 	if as.n != minCardinality+9 {
 		t.Errorf("Expected cardinality to be %d after removing an argument, but got %d", minCardinality+9, as.n)
 	}
-
 	err = as.Remove(minCardinality + 10)
 	if err == nil {
 		t.Errorf("Expected an error when removing an argument that is out of range, but got nil")
 	}
-
 	as.n = minCardinality
 	err = as.Remove(5)
 	if err == nil {

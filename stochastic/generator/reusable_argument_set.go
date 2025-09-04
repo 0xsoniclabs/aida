@@ -27,20 +27,20 @@ import (
 // with a queue of recently used arguments to produce arguments.
 // The argument set always contains the zero argument.
 type ReusableArgumentSet struct {
-	n     ArgumentType   // cardinality of argument set including the zero argument
-	queue []ArgumentType // queue for recently chosen arguments
-	rand  Randomizer     // random generator
+	n     ArgumentType     // cardinality of argument set including the zero argument
+	queue []ArgumentType   // queue for recently chosen arguments
+	rand  ArgSetRandomizer // random generator
 	ArgumentSet
 }
 
 // NewReusableArgumentSet creates a random set of arguments for StateDB operations
-func NewReusableArgumentSet(n ArgumentType, rand Randomizer) *ReusableArgumentSet {
+func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgumentSet {
 	if n < minCardinality {
 		return nil
 	}
 	queue := []ArgumentType{}
 	for range statistics.QueueLen {
-		v := rand.SampleDistribution(n-1) + 1
+		v := rand.SampleArg(n-1) + 1
 		queue = append(queue, v)
 	}
 	return &ReusableArgumentSet{
@@ -81,7 +81,7 @@ func (a *ReusableArgumentSet) Choose(kind int) (ArgumentType, error) {
 	case statistics.RandArgID:
 		for {
 			// ensure that zero argument is never returned
-			v := a.rand.SampleDistribution(a.n-1) + 1
+			v := a.rand.SampleArg(a.n-1) + 1
 			if !a.findQElem(v) {
 				a.placeQ(v)
 				return v, nil
@@ -119,7 +119,7 @@ func (a *ReusableArgumentSet) Remove(v ArgumentType) error {
 	}
 	// replace deleted last element by new element in queue
 	// (to ensure that queue elements are always in range [0,n-1])
-	j := a.rand.SampleDistribution(a.n-1) + 1
+	j := a.rand.SampleArg(a.n-1) + 1
 	for i := range statistics.QueueLen {
 		if a.queue[i] >= a.n {
 			a.queue[i] = j

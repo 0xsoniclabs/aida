@@ -28,7 +28,7 @@ type ExpRandomizer struct {
 	rg     *rand.Rand
 	lambda float64
 	qpdf   []float64
-	Randomizer
+	ArgSetRandomizer
 }
 
 func NewExpRandomizer(rg *rand.Rand, lambda float64, qpdf []float64) *ExpRandomizer {
@@ -41,7 +41,7 @@ func NewExpRandomizer(rg *rand.Rand, lambda float64, qpdf []float64) *ExpRandomi
 	}
 }
 
-func (r *ExpRandomizer) SampleDistribution(n int64) int64 {
+func (r *ExpRandomizer) SampleArgument(n int64) int64 {
 	return exponential.DiscreteSample(r.rg, r.lambda, n+1)
 }
 
