@@ -33,18 +33,18 @@ func (m *MockArgSetRandomizer) EXPECT() *MockArgSetRandomizerMockRecorder {
 	return m.recorder
 }
 
-// SampleArgument mocks base method.
-func (m *MockArgSetRandomizer) SampleArgument(n int64) int64 {
+// SampleArg mocks base method.
+func (m *MockArgSetRandomizer) SampleArg(n ArgumentType) ArgumentType {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SampleDistribution", n)
-	ret0, _ := ret[0].(int64)
+	ret := m.ctrl.Call(m, "SampleArg", n)
+	ret0, _ := ret[0].(ArgumentType)
 	return ret0
 }
 
-// SampleDistribution indicates an expected call of SampleDistribution.
-func (mr *MockArgSetRandomizerMockRecorder) SampleDistribution(n interface{}) *gomock.Call {
+// SampleArg indicates an expected call of SampleArg.
+func (mr *MockArgSetRandomizerMockRecorder) SampleArg(n interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleDistribution", reflect.TypeOf((*MockArgSetRandomizer)(nil).SampleArgument), n)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleArg", reflect.TypeOf((*MockArgSetRandomizer)(nil).SampleArg), n)
 }
 
 // SampleQueue mocks base method.
@@ -59,4 +59,78 @@ func (m *MockArgSetRandomizer) SampleQueue() int {
 func (mr *MockArgSetRandomizerMockRecorder) SampleQueue() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleQueue", reflect.TypeOf((*MockArgSetRandomizer)(nil).SampleQueue))
+}
+
+// MockSampleArgRandomizer is a mock of SampleArgRandomizer interface.
+type MockSampleArgRandomizer struct {
+	ctrl     *gomock.Controller
+	recorder *MockSampleArgRandomizerMockRecorder
+}
+
+// MockSampleArgRandomizerMockRecorder is the mock recorder for MockSampleArgRandomizer.
+type MockSampleArgRandomizerMockRecorder struct {
+	mock *MockSampleArgRandomizer
+}
+
+// NewMockSampleArgRandomizer creates a new mock instance.
+func NewMockSampleArgRandomizer(ctrl *gomock.Controller) *MockSampleArgRandomizer {
+	mock := &MockSampleArgRandomizer{ctrl: ctrl}
+	mock.recorder = &MockSampleArgRandomizerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSampleArgRandomizer) EXPECT() *MockSampleArgRandomizerMockRecorder {
+	return m.recorder
+}
+
+// SampleArg mocks base method.
+func (m *MockSampleArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SampleArg", n)
+	ret0, _ := ret[0].(ArgumentType)
+	return ret0
+}
+
+// SampleArg indicates an expected call of SampleArg.
+func (mr *MockSampleArgRandomizerMockRecorder) SampleArg(n interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleArg", reflect.TypeOf((*MockSampleArgRandomizer)(nil).SampleArg), n)
+}
+
+// MockSampleQueueRandomizer is a mock of SampleQueueRandomizer interface.
+type MockSampleQueueRandomizer struct {
+	ctrl     *gomock.Controller
+	recorder *MockSampleQueueRandomizerMockRecorder
+}
+
+// MockSampleQueueRandomizerMockRecorder is the mock recorder for MockSampleQueueRandomizer.
+type MockSampleQueueRandomizerMockRecorder struct {
+	mock *MockSampleQueueRandomizer
+}
+
+// NewMockSampleQueueRandomizer creates a new mock instance.
+func NewMockSampleQueueRandomizer(ctrl *gomock.Controller) *MockSampleQueueRandomizer {
+	mock := &MockSampleQueueRandomizer{ctrl: ctrl}
+	mock.recorder = &MockSampleQueueRandomizerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSampleQueueRandomizer) EXPECT() *MockSampleQueueRandomizerMockRecorder {
+	return m.recorder
+}
+
+// SampleQueue mocks base method.
+func (m *MockSampleQueueRandomizer) SampleQueue() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SampleQueue")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// SampleQueue indicates an expected call of SampleQueue.
+func (mr *MockSampleQueueRandomizerMockRecorder) SampleQueue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleQueue", reflect.TypeOf((*MockSampleQueueRandomizer)(nil).SampleQueue))
 }
