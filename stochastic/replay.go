@@ -82,24 +82,23 @@ func createState(cfg *utils.Config, e *EstimationModelJSON, db state.StateDB, rg
 	contracts := generator.NewSingleUseArgumentSet(
 		generator.NewReusableArgumentSet(
 			e.Contracts.NumKeys,
-			generator.NewExpRandomizer(
-				rg,
-				e.Contracts.Lambda,
-				e.Contracts.QueueDistribution,
+			generator.NewProxyRandomizer(
+				generator.NewExponentialArgRandomizer(rg, e.Contracts.Lambda),
+				generator.NewEmpiricalQueueRandomizer(rg, e.Contracts.QueueDistribution),
 			)))
+
 	keys := generator.NewReusableArgumentSet(
 		e.Keys.NumKeys,
-		generator.NewExpRandomizer(
-			rg,
-			e.Keys.Lambda,
-			e.Keys.QueueDistribution,
+		generator.NewProxyRandomizer(
+			generator.NewExponentialArgRandomizer(rg, e.Keys.Lambda),
+			generator.NewEmpiricalQueueRandomizer(rg, e.Keys.QueueDistribution),
 		))
+
 	values := generator.NewReusableArgumentSet(
 		e.Values.NumKeys,
-		generator.NewExpRandomizer(
-			rg,
-			e.Values.Lambda,
-			e.Values.QueueDistribution,
+		generator.NewProxyRandomizer(
+			generator.NewExponentialArgRandomizer(rg, e.Values.Lambda),
+			generator.NewEmpiricalQueueRandomizer(rg, e.Values.QueueDistribution),
 		))
 
 	// setup state
