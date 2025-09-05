@@ -1,0 +1,146 @@
+// Copyright 2024 Fantom Foundation
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
+package exponential
+
+import (
+	"math"
+	"math/rand"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"gonum.org/v1/gonum/stat/distuv"
+)
+
+// TODO: pointwise tests of CDF/Quantile with a list of known points (see gonum package)
+
+// TestEstimation checks the correctness of approximating a lambda for a discrete CDF.
+func TestEstimation(t *testing.T) {
+	for l := 2; l < 400; l += 5 {
+		checkEstimation(t, float64(l))
+	}
+}
+
+// checkEstimation checks whether the approximate lambda can be
+// rediscovered from a discretized CDF.
+func checkEstimation(t *testing.T, expectedLambda float64) {
+	Cdf := PiecewiseLinearCdf(expectedLambda, 10000)
+	computedLambda, err := ApproximateLambda(Cdf)
+	if err != nil {
+		t.Fatalf("Failed to approximate. Error: %v", err)
+	}
+	if math.Abs(expectedLambda-computedLambda) > 1e-1 {
+		t.Fatalf("Failed to approximate. Expected Lambda:%v Computed Lambda: %v", expectedLambda, computedLambda)
+	}
+}
+
+// TestRandomAccessRandInd checks the random selection of the queue position via a statistical test.
+func TestRandomAccessRandInd(t *testing.T) {
+	// create random generator with fixed seed value
+	rg := rand.New(rand.NewSource(999))
+
+	// parameters
+	lambda := 5.0
+	numSteps := 10000
+	idxRange := int64(10)
+
+	// populate buckets
+	counts := make([]int64, idxRange)
+	for steps := 0; steps < numSteps; steps++ {
+		counts[DiscreteSample(rg, lambda, idxRange)]++
+	}
+
+	// compute chi-squared value for observations
+	chi2 := float64(0.0)
+	for i, v := range counts {
+		// compute expected value of bucket
+		p := Cdf(lambda, float64(i+1)/float64(idxRange)) - Cdf(lambda, float64(i)/float64(idxRange))
+		expected := float64(numSteps) * p
+		err := expected - float64(v)
+		chi2 += (err * err) / expected
+		// fmt.Printf("Err: %v %v\n", v, expected)
+	}
+
+	// Perform statistical test whether uniform queue distribution is unbiased
+	// with an alpha of 0.05 and a degree of freedom of queue length minus two
+	// (no first position!).
+	alpha := 0.05
+	df := float64(idxRange - 1)
+	chi2Critical := distuv.ChiSquared{K: df, Src: nil}.Quantile(1.0 - alpha)
+	// fmt.Printf("Chi^2 value: %v Chi^2 critical value: %v df: %v\n", chi2, chi2Critical, df)
+
+	if chi2 > chi2Critical {
+		t.Fatalf("The random index selection biased.")
+	}
+}
+
+// TestMle tests the Maximum Likelihood Estimation function.
+func TestExponential_mle(t *testing.T) {
+	// Test normal case
+	result, err := mle(2.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.04348235725033439, result)
+
+	// Test with NaN lambda
+	result, err = mle(math.NaN(), 0.3)
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test with NaN mean
+	result, err = mle(2.0, math.NaN())
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test with both NaN
+	result, err = mle(math.NaN(), math.NaN())
+	assert.Error(t, err)
+	assert.Equal(t, 0.0, result)
+
+	// Test very large lambda
+	result, err = mle(100.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, -0.29, result)
+
+	// Test very small positive lambda
+	result, err = mle(1e-10, 0.3)
+	assert.NoError(t, err)
+
+	// Test zero lambda
+	// TODO maybe bug
+	result, err = mle(0.0, 0.3)
+	assert.NoError(t, err)
+	assert.True(t, math.IsNaN(result))
+
+	// Test negative lambda
+	result, err = mle(-1.0, 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.28197670686932647, result)
+
+	// Test negative mean
+	result, err = mle(-1.0, -0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.8819767068693265, result)
+
+	// Test with Infinity mean
+	result, err = mle(2.0, math.Inf(1))
+	assert.NoError(t, err)
+	assert.Equal(t, -math.Inf(1), result)
+
+	// Test with Infinity lambda
+	result, err = mle(math.Inf(1), 0.3)
+	assert.NoError(t, err)
+	assert.Equal(t, -0.3, result)
+}
