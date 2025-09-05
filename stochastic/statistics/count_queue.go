@@ -16,27 +16,24 @@
 
 package statistics
 
-// Queuing data structure for a generic FIFO queue.
-type Queuing[T comparable] struct {
+// QueueLen sets the length of counting queue (must be greater than one).
+const QueueLen = 32
+
+// countQueue data structure for a generic FIFO countQueue.
+type countQueue[T comparable] struct {
 	// queue structure
 	top  int         // index of first entry in queue
 	rear int         // index of last entry in queue
 	data [QueueLen]T // queue data
 
-	// counting statistics for queue
+	// counting statistics for queue position
 	// (counter for each position counting successful finds)
 	freq [QueueLen]uint64
 }
 
-// QueuingJSON is the JSON output for queuing statistics.
-type QueuingJSON struct {
-	// probability of a position in the queue
-	Distribution []float64 `json:"distribution"`
-}
-
-// NewQueuing creates a new queue.
-func NewQueuing[T comparable]() Queuing[T] {
-	return Queuing[T]{
+// NewCountQueue creates a new queue.
+func NewCountQueue[T comparable]() countQueue[T] {
+	return countQueue[T]{
 		top:  -1,
 		rear: -1,
 		data: [QueueLen]T{},
@@ -44,8 +41,8 @@ func NewQueuing[T comparable]() Queuing[T] {
 	}
 }
 
-// Place a new item into the queue.
-func (q *Queuing[T]) Place(item T) {
+// place a new item into the queue.
+func (q *countQueue[T]) place(item T) {
 	// is the queue empty => initialize top/rear
 	if q.top == -1 {
 		q.top, q.rear = 0, 0
@@ -63,52 +60,49 @@ func (q *Queuing[T]) Place(item T) {
 	}
 }
 
-// Find the index position of an item.
-func (q *Queuing[T]) Find(item T) int {
-
-	// if queue is empty, return -1
+// findPos the position of an argument in the counting queue.
+func (q *countQueue[T]) findPos(item T) int {
 	if q.top == -1 {
-		return -1
+		return -1 // if queue is empty, return -1 (not found)
 	}
-
-	// for non-empty queues, find item by iterating from top
-	i := q.top
+	i := q.top // for non-empty queues, find item by iterating from top
 	for {
-		// if found, return position in the FIFO queue
 		if q.data[i] == item {
+			// if found, return position in the FIFO queue
 			idx := (q.top - i + QueueLen) % QueueLen
 			q.freq[idx]++
 			return idx
 		}
-
-		// if rear of queue reached, return not found
 		if i == q.rear {
-			return -1
+			return -1 // if rear of queue reached, return not found
 		}
-
-		// go one element back
+		// go back one position in the queue
 		i = (i - 1 + QueueLen) % QueueLen
 	}
 }
 
-// NewQueuingJSON produces JSON output for for a queuing statistics.
-func (q *Queuing[T]) NewQueuingJSON() QueuingJSON {
+// QueueStatsJSON is the JSON output for queuing statistics.
+type QueueStatsJSON struct {
+	// probability of a position in the queue
+	Distribution []float64 `json:"distribution"`
+}
+
+// newQueueStatsJSON produces JSON output for for a queuing statistics.
+func (q *countQueue[T]) newQueueStatsJSON() QueueStatsJSON {
 	// Compute total frequency over all positions
 	total := uint64(0)
-	for i := 0; i < QueueLen; i++ {
+	for i := range QueueLen {
 		total += q.freq[i]
 	}
-
-	// compute index probabilities
+	// compute position probabilities
 	dist := make([]float64, QueueLen)
 	if total > 0 {
-		for i := 0; i < QueueLen; i++ {
+		for i := range QueueLen {
 			dist[i] = float64(q.freq[i]) / float64(total)
 		}
 	}
-
-	// populate new index probabilities
-	return QueuingJSON{
+	// populate position probabilities
+	return QueueStatsJSON{
 		Distribution: dist,
 	}
 }

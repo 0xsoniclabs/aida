@@ -22,6 +22,24 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 )
 
+// IDs for argument kinds
+const (
+	NoArgID     = iota // default label (for no argument)
+	ZeroArgID          // zero value access
+	NewArgID           // newly occurring value access
+	PrevArgID          // value that was previously accessed
+	RecentArgID        // value that recently accessed (time-window is fixed to statistics.QueueLen)
+	RandArgID          // random access (everything else)
+
+	NumArgKinds
+)
+
+// number of points on the ecdf
+const NumDistributionPoints = 100
+
+// QueueLen sets the length of queuing statistics.
+const QueueLen = 32
+
 // ArgumentType defines the integer type of arguments
 type ArgumentType = int64
 

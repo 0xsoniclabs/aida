@@ -235,19 +235,19 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 func TestVisualizer_FireUpWeb(t *testing.T) {
 	eventRegistry := &stochastic.EventRegistryJSON{
 		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
-		Contracts: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+		Contracts: statistics.ArgClassifierJSON{
+			Counting: statistics.ArgStatsJSON{
+				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 			},
 		},
-		Keys: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
+		Keys: statistics.ArgClassifierJSON{
+			Counting: statistics.ArgStatsJSON{
+				ECDF: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
 			},
 		},
-		Values: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
+		Values: statistics.ArgClassifierJSON{
+			Counting: statistics.ArgStatsJSON{
+				ECDF: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
 			},
 		},
 		StochasticMatrix: [][]float64{

@@ -124,9 +124,9 @@ type EstimationStatsJSON struct {
 }
 
 // NewEstimationStats creates a new EstimationStatsJSON objects for an access statistics.
-func NewEstimationStats(d *statistics.AccessJSON) EstimationStatsJSON {
+func NewEstimationStats(d *statistics.ArgClassifierJSON) EstimationStatsJSON {
 	// compute lambda
-	lambda, err := exponential.ApproximateLambda(d.Counting.ECdf)
+	lambda, err := exponential.ApproximateLambda(d.Counting.ECDF)
 	if err != nil {
 		log.Fatalf("failed to approximate lambda parameter; %v", err)
 	}
@@ -137,7 +137,7 @@ func NewEstimationStats(d *statistics.AccessJSON) EstimationStatsJSON {
 
 	return EstimationStatsJSON{
 		Lambda:            lambda,
-		NumKeys:           d.Counting.NumKeys,
+		NumKeys:           d.Counting.N,
 		QueueDistribution: distribution,
 	}
 }

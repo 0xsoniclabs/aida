@@ -181,15 +181,15 @@ func (e *EventData) PopulateEventData(d *stochastic.EventRegistryJSON) {
 }
 
 // PopulateAccess populates access stats model
-func (a *AccessData) PopulateAccess(d *statistics.AccessJSON) {
-	a.ECdf = make([][2]float64, len(d.Counting.ECdf))
-	copy(a.ECdf, d.Counting.ECdf)
-	lambda, err := exponential.ApproximateLambda(d.Counting.ECdf)
+func (a *AccessData) PopulateAccess(d *statistics.ArgClassifierJSON) {
+	a.ECdf = make([][2]float64, len(d.Counting.ECDF))
+	copy(a.ECdf, d.Counting.ECDF)
+	lambda, err := exponential.ApproximateLambda(d.Counting.ECDF)
 	if err != nil {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	a.Lambda = lambda
-	a.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumDistributionPoints)
+	a.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumECDFPoints)
 	a.QPdf = make([]float64, len(d.Queuing.Distribution))
 	copy(a.QPdf, d.Queuing.Distribution)
 }
@@ -203,5 +203,5 @@ func (s *SnapshotData) PopulateSnapshotStats(d *stochastic.EventRegistryJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	s.Lambda = lambda
-	s.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumDistributionPoints)
+	s.Cdf = exponential.PiecewiseLinearCdf(lambda, statistics.NumECDFPoints)
 }

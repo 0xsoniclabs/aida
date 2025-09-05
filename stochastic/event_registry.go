@@ -40,13 +40,13 @@ type EventRegistry struct {
 	transitFreq [numArgOps][numArgOps]uint64
 
 	// Contract-address access statistics
-	contracts statistics.Access[common.Address]
+	contracts statistics.ArgClassifier[common.Address]
 
 	// Storage-key access statistics
-	keys statistics.Access[common.Hash]
+	keys statistics.ArgClassifier[common.Hash]
 
 	// Storage-value access statistics
-	values statistics.Access[common.Hash]
+	values statistics.ArgClassifier[common.Hash]
 
 	// Previous argument-encoded operation
 	prevArgOp int
@@ -59,9 +59,9 @@ type EventRegistry struct {
 func NewEventRegistry() EventRegistry {
 	return EventRegistry{
 		prevArgOp:    numArgOps,
-		contracts:    statistics.NewAccess[common.Address](),
-		keys:         statistics.NewAccess[common.Hash](),
-		values:       statistics.NewAccess[common.Hash](),
+		contracts:    statistics.NewArgClassifier[common.Address](),
+		keys:         statistics.NewArgClassifier[common.Hash](),
+		values:       statistics.NewArgClassifier[common.Hash](),
 		snapshotFreq: map[int]uint64{},
 	}
 }
@@ -90,16 +90,13 @@ func (r *EventRegistry) RegisterAddressOp(op int, address *common.Address) {
 	}
 
 	// classify simulation arguments
-	addrClass := r.contracts.Classify(*address)
+	addrClass := r.contracts.Update(*address)
 	keyClass := statistics.NoArgID
 	valueClass := statistics.NoArgID
 
 	// update operations's frequency and transition frequency
 	// depending on type of simulation arguments
 	r.updateFreq(op, addrClass, keyClass, valueClass)
-
-	// update contract address for subsequent classification
-	r.contracts.Place(*address)
 }
 
 // RegisterAddressKeyOp registers an operation with a contract-address and a storage-key arguments.
@@ -110,17 +107,13 @@ func (r *EventRegistry) RegisterKeyOp(op int, address *common.Address, key *comm
 	}
 
 	// classify simulation arguments
-	addrClass := r.contracts.Classify(*address)
-	keyClass := r.keys.Classify(*key)
+	addrClass := r.contracts.Update(*address)
+	keyClass := r.keys.Update(*key)
 	valueClass := statistics.NoArgID
 
 	// update operations' frequency and transition frequency
 	// depending on type of simulation arguments
 	r.updateFreq(op, addrClass, keyClass, valueClass)
-
-	// update contract address and storage key for subsequent classification
-	r.contracts.Place(*address)
-	r.keys.Place(*key)
 }
 
 // RegisterAddressKeyOp registers an operation with a contract-address, a storage-key and storage-value arguments.
@@ -131,18 +124,13 @@ func (r *EventRegistry) RegisterValueOp(op int, address *common.Address, key *co
 	}
 
 	// classify simulation arguments
-	addrClass := r.contracts.Classify(*address)
-	keyClass := r.keys.Classify(*key)
-	valueClass := r.values.Classify(*value)
+	addrClass := r.contracts.Update(*address)
+	keyClass := r.keys.Update(*key)
+	valueClass := r.values.Update(*value)
 
 	// update operation's frequency and transition frequency
 	// depending on type of simulation arguments
 	r.updateFreq(op, addrClass, keyClass, valueClass)
-
-	// update contract address and storage key for subsequent classification
-	r.contracts.Place(*address)
-	r.keys.Place(*key)
-	r.values.Place(*value)
 }
 
 // updateFreq updates operation and transition frequency.
@@ -196,9 +184,9 @@ type EventRegistryJSON struct {
 	StochasticMatrix [][]float64 `json:"stochasticMatrix"` // observed stochastic matrix
 
 	// access statistics for contracts, keys, and values
-	Contracts statistics.AccessJSON `json:"contractStats"`
-	Keys      statistics.AccessJSON `json:"keyStats"`
-	Values    statistics.AccessJSON `json:"valueSats"`
+	Contracts statistics.ArgClassifierJSON `json:"contractStats"`
+	Keys      statistics.ArgClassifierJSON `json:"keyStats"`
+	Values    statistics.ArgClassifierJSON `json:"valueSats"`
 
 	// snapshot delta frequencies
 	SnapshotEcdf [][2]float64 `json:"snapshotEcdf"`
@@ -286,7 +274,7 @@ func (r *EventRegistry) NewEventRegistryJSON() EventRegistryJSON {
 		// reduce full ecdf using Visvalingam-Whyatt algorithm to
 		// "numPoints" points. See:
 		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-		simplifier := simplify.VisvalingamKeep(statistics.NumDistributionPoints)
+		simplifier := simplify.VisvalingamKeep(statistics.NumECDFPoints)
 		simplified = simplifier.Simplify(ls).(orb.LineString)
 	}
 	// convert orb.LineString to [][2]float64
@@ -299,9 +287,9 @@ func (r *EventRegistry) NewEventRegistryJSON() EventRegistryJSON {
 		FileId:           "events",
 		Operations:       label,
 		StochasticMatrix: A,
-		Contracts:        r.contracts.NewAccessJSON(),
-		Keys:             r.keys.NewAccessJSON(),
-		Values:           r.values.NewAccessJSON(),
+		Contracts:        r.contracts.NewArgClassifierJSON(),
+		Keys:             r.keys.NewArgClassifierJSON(),
+		Values:           r.values.NewArgClassifierJSON(),
 		SnapshotEcdf:     eCdf,
 	}
 }

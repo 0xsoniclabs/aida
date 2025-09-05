@@ -18,25 +18,26 @@ package statistics
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
 // TestQueuingSimple tests for existence/non-existence of elements.
 func TestQueuingSimple(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewCountQueue[int]()
 
 	// place first element
-	queue.Place(0)
+	queue.place(0)
 
 	// find first element
-	pos := queue.Find(0)
+	pos := queue.findPos(0)
 	if pos != 0 {
 		t.Fatalf("element cannot be found")
 	}
 
 	// unknown element must not be found
-	pos = queue.Find(1)
+	pos = queue.findPos(1)
 	if pos != -1 {
 		t.Fatalf("element must not be found")
 	}
@@ -45,26 +46,26 @@ func TestQueuingSimple(t *testing.T) {
 // TestQueuingSimple1 tests for existence/non-existence of elements.
 func TestQueuingSimple1(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewCountQueue[int]()
 
 	// find first element
-	pos := queue.Find(0)
+	pos := queue.findPos(0)
 	if pos != -1 {
 		t.Fatalf("Queue must be empty")
 	}
 
 	// place first element
-	queue.Place(0)
+	queue.place(0)
 
 	// place second element
-	queue.Place(1)
+	queue.place(1)
 
 	// find first element
-	pos = queue.Find(1)
+	pos = queue.findPos(1)
 	if pos != 0 {
 		t.Fatalf("first element cannot be found")
 	}
-	pos = queue.Find(0)
+	pos = queue.findPos(0)
 	if pos != 1 {
 		t.Fatalf("second element cannot be found")
 	}
@@ -73,68 +74,82 @@ func TestQueuingSimple1(t *testing.T) {
 // TestQueuingSimple2 tests for existence/non-existence of elements.
 func TestQueuingSimple2(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewCountQueue[int]()
 
 	// place first element
-	for i := 0; i < QueueLen+1; i++ {
-		queue.Place(i)
+	for i := range QueueLen + 1 {
+		queue.place(i)
 	}
 
 	// find first element
-	pos := queue.Find(0)
+	pos := queue.findPos(0)
 	if pos != -1 {
 		t.Fatalf("first element must not be found")
 	}
-	pos = queue.Find(1)
+	pos = queue.findPos(1)
 	if pos != QueueLen-1 {
 		t.Fatalf("second element must be found: %v", pos)
 	}
-	pos = queue.Find(QueueLen)
+	pos = queue.findPos(QueueLen)
 	if pos != 0 {
 		t.Fatalf("last element must be found")
 	}
 
-	queue.Place(QueueLen + 1)
+	queue.place(QueueLen + 1)
 
-	pos = queue.Find(1)
+	pos = queue.findPos(1)
 	if pos != -1 {
 		t.Fatalf("second element must not be found")
 	}
-	pos = queue.Find(2)
+	pos = queue.findPos(2)
 	if pos != QueueLen-1 {
 		t.Fatalf("third element must be found: %v", pos)
 	}
-	pos = queue.Find(QueueLen + 1)
+	pos = queue.findPos(QueueLen + 1)
 	if pos != 0 {
 		t.Fatalf("last element must be found")
+	}
+}
+
+// TestQueueJSON tests JSON output for a queue statistics.
+// It marshals the JSON output and unmarshals it again and checks whether
+// the original and unmarshaled JSON output are identical.
+func testQueueJSON(stats countQueue[int], t *testing.T) {
+	jsonX := stats.newQueueStatsJSON()
+	jOut, err := json.Marshal(jsonX)
+	if err != nil {
+		t.Fatalf("Marshalling failed to produce distribution")
+	}
+	var jsonY QueueStatsJSON
+	if err := json.Unmarshal(jOut, &jsonY); err != nil {
+		t.Fatalf("Unmarshalling failed to produce JSON")
+	}
+	if !reflect.DeepEqual(jsonX, jsonY) {
+		t.Errorf("Unmarshaling mismatch. Expected:\n%+v\nActual:\n%+v", jsonX, jsonY)
 	}
 }
 
 // TestQueuingJSON tests JSON output of distribution.
 func TestQueuingJSON(t *testing.T) {
 	// create index queue
-	queue := NewQueuing[int]()
+	queue := NewCountQueue[int]()
+
+	// check empty queue JSON output
+	testQueueJSON(queue, t)
 
 	// place first element
-	for i := 0; i < 300; i++ {
-		queue.Place(i)
+	for i := range 300 {
+		queue.place(i)
 		// find first element
-		pos := queue.Find(i)
+		pos := queue.findPos(i)
 		if pos != 0 {
 			t.Fatalf("first element must be found")
 		}
-		pos = queue.Find(i - 1)
-		pos = queue.Find(i - 2)
-		pos = queue.Find(i - 3)
+		pos = queue.findPos(i - 1)
+		pos = queue.findPos(i - 2)
+		pos = queue.findPos(i - 3)
 	}
 
-	// produce distribution in JSON format
-	jOut, err := json.Marshal(queue.NewQueuingJSON())
-	if err != nil {
-		t.Fatalf("Marshalling failed to produce distribution")
-	}
-	expected := `{"distribution":[0.25125628140703515,0.25041876046901174,0.24958123953098826,0.24874371859296482,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}`
-	if string(jOut) != expected {
-		t.Fatalf("produced wrong JSON output %v", string(jOut))
-	}
+	// check populated queue JSON output
+	testQueueJSON(queue, t)
 }
