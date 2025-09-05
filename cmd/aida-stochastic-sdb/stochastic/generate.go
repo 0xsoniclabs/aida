@@ -18,7 +18,7 @@ package stochastic
 
 import (
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
@@ -52,7 +52,7 @@ func stochasticGenerateAction(ctx *cli.Context) error {
 
 	// create a new uniformly distributed event registry
 	log.Info("Produce uniform stochastic events")
-	eventRegistry := stochastic.GenerateUniformRegistry(cfg, log)
+	eventRegistry := recorder.GenerateUniformRegistry(cfg, log)
 
 	// writing event registry in JSON format
 	if cfg.Output == "" {

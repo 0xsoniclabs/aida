@@ -24,7 +24,8 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
+	"github.com/0xsoniclabs/aida/stochastic/replayer"
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
@@ -58,7 +59,7 @@ var StochasticReplayCommand = cli.Command{
 	},
 	Description: `
 The stochastic replay command requires two argument:
-<simulation-length> <simulation.json> 
+<simulation-length> <simulation.json>
 
 <simulation-length> determines the number of blocks
 <simulation.json> contains the simulation parameters produced by the stochastic estimator.`,
@@ -94,7 +95,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	defer utils.StopCPUProfile(cfg)
 
 	// read simulation file
-	simulation, serr := stochastic.ReadSimulation(ctx.Args().Get(1))
+	simulation, serr := recorder.ReadSimulation(ctx.Args().Get(1))
 	if serr != nil {
 		return fmt.Errorf("failed reading simulation; %v", serr)
 	}
@@ -120,7 +121,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 
 	// run simulation.
 	log.Info("Run simulation")
-	runErr := stochastic.RunStochasticReplay(db, simulation, simLength, cfg, logger.NewLogger(cfg.LogLevel, "Stochastic"))
+	runErr := replayer.RunStochasticReplay(db, simulation, simLength, cfg, logger.NewLogger(cfg.LogLevel, "Stochastic"))
 
 	// print memory usage after simulation
 	if cfg.MemoryBreakdown {

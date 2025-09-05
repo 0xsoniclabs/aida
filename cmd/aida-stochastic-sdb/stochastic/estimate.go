@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
@@ -50,14 +50,14 @@ func stochasticEstimateAction(ctx *cli.Context) error {
 
 	// read event file in JSON format
 	log.Infof("Read events file %v", inputFileName)
-	eventRegistryJSON, err := stochastic.ReadEvents(inputFileName)
+	eventRegistryJSON, err := recorder.ReadEvents(inputFileName)
 	if err != nil {
 		return err
 	}
 
 	// estimate parameters
 	log.Info("Estimate parameters")
-	estimationModel := stochastic.NewEstimationModelJSON(eventRegistryJSON)
+	estimationModel := recorder.NewEstimationModelJSON(eventRegistryJSON)
 
 	// write simulation file
 	outputFileName := ctx.String(utils.OutputFlag.Name)

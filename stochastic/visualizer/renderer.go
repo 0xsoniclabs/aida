@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -281,13 +282,13 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 		graph.Close()
 		g.Close()
 	}()
-	nodes := make([]*cgraph.Node, stochastic.NumOps)
-	for op := 0; op < stochastic.NumOps; op++ {
-		nodes[op], _ = graph.CreateNode(stochastic.OpMnemo(op))
-		nodes[op].SetLabel(stochastic.OpMnemo(op))
+	nodes := make([]*cgraph.Node, operations.NumOps)
+	for op := 0; op < operations.NumOps; op++ {
+		nodes[op], _ = graph.CreateNode(operations.OpMnemo(op))
+		nodes[op].SetLabel(operations.OpMnemo(op))
 	}
-	for i := 0; i < stochastic.NumOps; i++ {
-		for j := 0; j < stochastic.NumOps; j++ {
+	for i := 0; i < operations.NumOps; i++ {
+		for j := 0; j < operations.NumOps; j++ {
 			p := events.SimplifiedMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
@@ -355,7 +356,7 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // FireUpWeb produces a data model for the recorded events and
 // visualizes with a local web-server.
-func FireUpWeb(eventRegistry *stochastic.EventRegistryJSON, addr string) {
+func FireUpWeb(eventRegistry *recorder.EventRegistryJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
 	eventModel := GetEventsData()

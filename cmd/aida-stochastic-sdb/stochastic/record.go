@@ -25,7 +25,8 @@ import (
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -96,10 +97,10 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	lastSec = time.Since(start).Seconds()
 
 	// create a new event registry
-	eventRegistry := stochastic.NewEventRegistry()
+	eventRegistry := recorder.NewEventRegistry()
 
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
-	eventRegistry.RegisterOp(stochastic.BeginSyncPeriodID)
+	eventRegistry.RegisterOp(operations.BeginSyncPeriodID)
 
 	// iterate over all substates in order
 	for iter.Next() {
@@ -110,22 +111,22 @@ func stochasticRecordAction(ctx *cli.Context) error {
 				break
 			}
 			if oldBlock != math.MaxUint64 {
-				eventRegistry.RegisterOp(stochastic.EndBlockID)
+				eventRegistry.RegisterOp(operations.EndBlockID)
 				newSyncPeriod := tx.Block / cfg.SyncPeriodLength
 				for curSyncPeriod < newSyncPeriod {
-					eventRegistry.RegisterOp(stochastic.EndSyncPeriodID)
+					eventRegistry.RegisterOp(operations.EndSyncPeriodID)
 					curSyncPeriod++
-					eventRegistry.RegisterOp(stochastic.BeginSyncPeriodID)
+					eventRegistry.RegisterOp(operations.BeginSyncPeriodID)
 				}
 			}
 			// open new block with a begin-block operation and clear index cache
-			eventRegistry.RegisterOp(stochastic.BeginBlockID)
+			eventRegistry.RegisterOp(operations.BeginBlockID)
 			oldBlock = tx.Block
 		}
 
 		var statedb state.StateDB
 		statedb = state.MakeInMemoryStateDB(substatecontext.NewWorldState(tx.InputSubstate), tx.Block)
-		statedb = stochastic.NewEventProxy(statedb, &eventRegistry)
+		statedb = recorder.NewStochasticProxy(statedb, &eventRegistry)
 		if _, err = processor.ProcessTransaction(statedb, int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)); err != nil {
 			return err
 		}
@@ -139,9 +140,9 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	}
 	// end last block
 	if oldBlock != math.MaxUint64 {
-		eventRegistry.RegisterOp(stochastic.EndBlockID)
+		eventRegistry.RegisterOp(operations.EndBlockID)
 	}
-	eventRegistry.RegisterOp(stochastic.EndSyncPeriodID)
+	eventRegistry.RegisterOp(operations.EndSyncPeriodID)
 
 	sec = time.Since(start).Seconds()
 	fmt.Printf("stochastic record: Total elapsed time: %.3f s, processed %v blocks\n", sec, cfg.Last-cfg.First+1)
@@ -160,7 +161,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 }
 
 // WriteEvents writes event file in JSON format.
-func WriteEvents(r *stochastic.EventRegistry, filename string) error {
+func WriteEvents(r *recorder.EventRegistry, filename string) error {
 	f, fErr := os.Create(filename)
 	if fErr != nil {
 		return fmt.Errorf("cannot open JSON file; %v", fErr)

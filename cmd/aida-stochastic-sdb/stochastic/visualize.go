@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/visualizer"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
@@ -54,7 +54,7 @@ func stochasticVisualizeAction(ctx *cli.Context) error {
 
 	// read events file
 	log.Infof("Read event file %v", inputFileName)
-	eventRegistry, err := stochastic.ReadEvents(inputFileName)
+	eventRegistry, err := recorder.ReadEvents(inputFileName)
 	if err != nil {
 		return err
 	}

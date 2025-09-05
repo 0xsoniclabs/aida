@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 )
@@ -187,11 +188,11 @@ func TestVisualizer_renderTransactionalOperationStats(t *testing.T) {
 func TestVisualizer_renderSimplifiedMarkovChain(t *testing.T) {
 	e := &EventData{}
 	// Initialize a simple matrix with some non-zero values
-	for i := 0; i < stochastic.NumOps; i++ {
-		for j := 0; j < stochastic.NumOps; j++ {
+	for i := 0; i < operations.NumOps; i++ {
+		for j := 0; j < operations.NumOps; j++ {
 			if i == j {
 				e.SimplifiedMatrix[i][j] = 0.5
-			} else if j == (i+1)%stochastic.NumOps {
+			} else if j == (i+1)%operations.NumOps {
 				e.SimplifiedMatrix[i][j] = 0.3
 			}
 		}
@@ -233,20 +234,20 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 }
 
 func TestVisualizer_FireUpWeb(t *testing.T) {
-	eventRegistry := &stochastic.EventRegistryJSON{
+	eventRegistry := &recorder.EventRegistryJSON{
 		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
-		Contracts: statistics.ArgClassifierJSON{
-			Counting: statistics.ArgStatsJSON{
+		Contracts: classifier.ArgClassifierJSON{
+			Counting: classifier.ArgStatsJSON{
 				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 			},
 		},
-		Keys: statistics.ArgClassifierJSON{
-			Counting: statistics.ArgStatsJSON{
+		Keys: classifier.ArgClassifierJSON{
+			Counting: classifier.ArgStatsJSON{
 				ECDF: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
 			},
 		},
-		Values: statistics.ArgClassifierJSON{
-			Counting: statistics.ArgStatsJSON{
+		Values: classifier.ArgClassifierJSON{
+			Counting: classifier.ArgStatsJSON{
 				ECDF: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
 			},
 		},
