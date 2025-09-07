@@ -30,6 +30,18 @@ func TestStochasticProxy_CreateAccount(t *testing.T) {
 	proxy.CreateAccount(addr)
 }
 
+// TestStochasticProxy_CreateContract tests the CreateContract method of StochasticProxy.
+func TestStochasticProxy_CreateContract(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+    addr := common.HexToAddress("0xbeef")
+    base.EXPECT().CreateContract(addr)
+    proxy.CreateContract(addr)
+}
+
 // TestStochasticProxy_SubBalance tests the SubBalance method of StochasticProxy.
 func TestStochasticProxy_SubBalance(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -221,6 +233,20 @@ func TestStochasticProxy_GetState(t *testing.T) {
 	assert.Equal(t, expectedValue, value)
 }
 
+// TestStochasticProxy_GetStorageRoot tests the GetStorageRoot method of StochasticProxy.
+func TestStochasticProxy_GetStorageRoot(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+    addr := common.HexToAddress("0x1234")
+    expected := common.HexToHash("0xabcd")
+    base.EXPECT().GetStorageRoot(addr).Return(expected)
+    out := proxy.GetStorageRoot(addr)
+    assert.Equal(t, expected, out)
+}
+
 // TestStochasticProxy_SetState	tests the SetState method of StochasticProxy.
 func TestStochasticProxy_SetState(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -275,6 +301,20 @@ func TestStochasticProxy_SelfDestruct(t *testing.T) {
 	base.EXPECT().SelfDestruct(addr)
 	out := proxy.SelfDestruct(addr)
 	assert.Equal(t, uint256.Int{0x0, 0x0, 0x0, 0x0}, out)
+}
+
+// TestStochasticProxy_SelfDestruct6780 tests the SelfDestruct6780 method of StochasticProxy.
+func TestStochasticProxy_SelfDestruct6780(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+    addr := common.HexToAddress("0x1234")
+    base.EXPECT().SelfDestruct6780(addr).Return(uint256.Int{}, true)
+    val, ok := proxy.SelfDestruct6780(addr)
+    assert.Equal(t, uint256.Int{}, val)
+    assert.True(t, ok)
 }
 
 // TestStochasticProxy_CancelSelfDestruct tests the CancelSelfDestruct method of StochasticProxy.
@@ -394,6 +434,24 @@ func TestStochasticProxy_RevertToSnapshot(t *testing.T) {
 	snapshotID := 1
 	base.EXPECT().RevertToSnapshot(snapshotID)
 	proxy.RevertToSnapshot(snapshotID)
+}
+
+// TestStochasticProxy_RevertToSnapshot_WithStack exercises snapshot delta recording.
+func TestStochasticProxy_RevertToSnapshot_WithStack(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+
+    base.EXPECT().Snapshot().Return(10)
+    _ = proxy.Snapshot()
+    base.EXPECT().Snapshot().Return(11)
+    _ = proxy.Snapshot()
+
+    base.EXPECT().RevertToSnapshot(10)
+    proxy.RevertToSnapshot(10)
+    assert.Equal(t, uint64(1), reg.snapshotFreq[1])
 }
 
 // TestStochasticProxy_Snapshot tests the Snapshot method of StochasticProxy.
@@ -606,6 +664,18 @@ func TestStochasticProxy_BeginTransaction(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// Test error path for BeginTransaction
+func TestStochasticProxy_BeginTransaction_Error(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+    base.EXPECT().BeginTransaction(uint32(1)).Return(errors.New("boom"))
+    err := proxy.BeginTransaction(1)
+    assert.Error(t, err)
+}
+
 // TestStochasticProxy_EndTransaction tests the EndTransaction method of StochasticProxy.
 func TestStochasticProxy_EndTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -616,6 +686,18 @@ func TestStochasticProxy_EndTransaction(t *testing.T) {
 	base.EXPECT().EndTransaction().Return(nil)
 	err := proxy.EndTransaction()
 	assert.NoError(t, err)
+}
+
+// Test error path for EndTransaction
+func TestStochasticProxy_EndTransaction_Error(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    base := state.NewMockStateDB(ctrl)
+    reg := NewEventRegistry()
+    proxy := NewStochasticProxy(base, &reg)
+    base.EXPECT().EndTransaction().Return(errors.New("boom"))
+    err := proxy.EndTransaction()
+    assert.Error(t, err)
 }
 
 // TestStochasticProxy_BeginBlock tests the BeginBlock method of StochasticProxy.
