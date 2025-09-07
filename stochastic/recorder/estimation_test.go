@@ -50,8 +50,8 @@ func TestStochastic_NewEstimationModelJSON(t *testing.T) {
 }
 
 func TestStochastic_ReadSimulation(t *testing.T) {
-	tempDir := t.TempDir()
-	tempFile := tempDir + "/simulation.json"
+    tempDir := t.TempDir()
+    tempFile := tempDir + "/simulation.json"
 	t.Run("success", func(t *testing.T) {
 		model := NewEstimationModelJSON(mockEventRegistryJSON)
 		marshal, err := json.Marshal(model)
@@ -77,20 +77,47 @@ func TestStochastic_ReadSimulation(t *testing.T) {
 		invalidFile := tempDir + "/invalid.json"
 		err := os.WriteFile(invalidFile, []byte("invalid json"), 0644)
 		assert.NoError(t, err)
-		_, err = ReadSimulation(invalidFile)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid character")
-	})
+        _, err = ReadSimulation(invalidFile)
+        assert.Error(t, err)
+        assert.Contains(t, err.Error(), "invalid character")
+    })
+
+    t.Run("not a simulation file id", func(t *testing.T) {
+        input := &EstimationModelJSON{FileId: "not-simulation"}
+        marshal, err := json.Marshal(input)
+        if err != nil {
+            t.Fatalf("Failed to marshal input: %v", err)
+        }
+        path := tempDir + "/wrong-id.json"
+        err = os.WriteFile(path, marshal, 0644)
+        if err != nil {
+            t.Fatalf("Failed to write mock file: %v", err)
+        }
+        simulation, err := ReadSimulation(path)
+        assert.Error(t, err)
+        assert.Nil(t, simulation)
+    })
+
+    t.Run("read error on directory", func(t *testing.T) {
+        dirPath := tempDir + "/dir"
+        err := os.Mkdir(dirPath, 0o755)
+        assert.NoError(t, err)
+        simulation, err := ReadSimulation(dirPath)
+        assert.Error(t, err)
+        assert.Nil(t, simulation)
+    })
 }
 
 func TestEstimationModelJSON_WriteJSON(t *testing.T) {
-	tempDir := t.TempDir()
-	tempFile := tempDir + "/simulation.json"
-	model := NewEstimationModelJSON(mockEventRegistryJSON)
-	err := model.WriteJSON(tempFile)
-	assert.NoError(t, err)
-	_, err = os.Stat(tempFile)
-	assert.NoError(t, err)
+    tempDir := t.TempDir()
+    tempFile := tempDir + "/simulation.json"
+    model := NewEstimationModelJSON(mockEventRegistryJSON)
+    err := model.WriteJSON(tempFile)
+    assert.NoError(t, err)
+    _, err = os.Stat(tempFile)
+    assert.NoError(t, err)
+    err = model.WriteJSON(tempDir)
+    assert.Error(t, err)
 }
 
 func TestStochastic_NewEstimationStats(t *testing.T) {
