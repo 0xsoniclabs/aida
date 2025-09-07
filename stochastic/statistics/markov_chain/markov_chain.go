@@ -134,6 +134,13 @@ func (mc MarkovChain) Stationary() ([]float64, error) {
 	return stationary, nil
 }
 
+func (mc MarkovChain) Label(i int) (string, error) {
+	if i < 0 || i >= mc.n {
+		return "", fmt.Errorf("Label: state is out of range (%v).", i)
+	}
+	return mc.labels[i], nil
+}
+
 // Find the state index for a given label.
 func (mc MarkovChain) FindState(label string) (int, error) {
 	for i := range mc.labels {

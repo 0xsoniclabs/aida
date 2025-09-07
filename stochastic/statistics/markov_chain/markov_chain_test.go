@@ -21,6 +21,7 @@ import (
 	"math"
 	"math/rand"
 	"testing"
+	"strconv"
 
 	"gonum.org/v1/gonum/stat/distuv"
 )
@@ -32,7 +33,7 @@ func checkStationaryDistribution(t *testing.T, n int) {
 	A := make([][]float64, n)
 	L := make([]string, n)
 	for i := range n {
-		L[i] = "s" + string(i)
+		L[i] = "s" + strconv.Itoa(i)
 		A[i] = make([]float64, n)
 		for j := range n {
 			A[i][j] = 1.0 / float64(n)
@@ -218,7 +219,7 @@ func TestRandomNextState(t *testing.T) {
 	A := make([][]float64, n)
 	L := make([]string, n)
 	for i := 0; i < n; i++ {
-		L[i] = "s" + string(i)
+		L[i] = "s" + strconv.Itoa(i)
 		A[i] = make([]float64, n)
 		for j := 0; j < n; j++ {
 			A[i][j] = 1.0 / float64(n)
@@ -236,7 +237,7 @@ func TestRandomNextState(t *testing.T) {
 	n = 5400
 	A = make([][]float64, n)
 	for i := 0; i < n; i++ {
-		L[i] = "s" + string(i)
+		L[i] = "s" + strconv.Itoa(i)
 		A[i] = make([]float64, n)
 		for j := 0; j < n; j++ {
 			A[i][j] = 1.0 / float64(n)
@@ -261,7 +262,7 @@ func TestRandomNextState(t *testing.T) {
 	L = make([]string, n)
 	for i := 0; i < n; i++ {
 		A[i] = make([]float64, n)
-		L[i] = "s" + string(i)
+		L[i] = "s" + strconv.Itoa(i)
 		for j := 0; j < n; j++ {
 			A[i][j] = ((1.0 - beta) * math.Pow(beta, float64(n)) /
 				(1.0 - math.Pow(beta, float64(n)))) *

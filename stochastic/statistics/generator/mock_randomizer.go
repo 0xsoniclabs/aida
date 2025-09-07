@@ -134,3 +134,40 @@ func (mr *MockSampleQueueRandomizerMockRecorder) SampleQueue() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleQueue", reflect.TypeOf((*MockSampleQueueRandomizer)(nil).SampleQueue))
 }
+
+// MockSnapshotSet is a mock of SnapshotSet interface.
+type MockSnapshotSet struct {
+	ctrl     *gomock.Controller
+	recorder *MockSnapshotSetMockRecorder
+}
+
+// MockSnapshotSetMockRecorder is the mock recorder for MockSnapshotSet.
+type MockSnapshotSetMockRecorder struct {
+	mock *MockSnapshotSet
+}
+
+// NewMockSnapshotSet creates a new mock instance.
+func NewMockSnapshotSet(ctrl *gomock.Controller) *MockSnapshotSet {
+	mock := &MockSnapshotSet{ctrl: ctrl}
+	mock.recorder = &MockSnapshotSetMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSnapshotSet) EXPECT() *MockSnapshotSetMockRecorder {
+	return m.recorder
+}
+
+// SampleSnapshot mocks base method.
+func (m *MockSnapshotSet) SampleSnapshot(n int) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SampleSnapshot", n)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// SampleSnapshot indicates an expected call of SampleSnapshot.
+func (mr *MockSnapshotSetMockRecorder) SampleSnapshot(n interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SampleSnapshot", reflect.TypeOf((*MockSnapshotSet)(nil).SampleSnapshot), n)
+}

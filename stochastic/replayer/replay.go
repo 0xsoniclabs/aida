@@ -49,19 +49,19 @@ const (
 // replayContext data structure as a context for simulating StateDB operations
 type replayContext struct {
 	db             state.StateDB         // StateDB database
+	traceDebug     bool                  // trace-debug flag
+	log            logger.Logger         // logger for output
 	contracts      generator.ArgumentSet // random argument generator for contracts
 	keys           generator.ArgumentSet // random argument generator for keys
 	values         generator.ArgumentSet // random argument generator for values
 	snapshots      generator.SnapshotSet // random generator for snapshot ids
+	rg             *rand.Rand            // random generator for sampling
 	totalTx        uint64                // total number of transactions
 	txNum          uint32                // current transaction number
 	blockNum       uint64                // current block number
 	syncPeriodNum  uint64                // current sync-period number
 	snapshot       []int                 // stack of active snapshots
 	selfDestructed []int64               // list of self destructed accounts
-	traceDebug     bool                  // trace-debug flag
-	rg             *rand.Rand            // random generator for sampling
-	log            logger.Logger         // logger for output
 }
 
 // newReplayContext creates a new state for execution StateDB operations
@@ -74,7 +74,6 @@ func newReplayContext(
 	snapshots generator.SnapshotSet,
 	log logger.Logger,
 ) replayContext {
-
 	// return stochastic state
 	return replayContext{
 		db:             db,
@@ -147,15 +146,19 @@ func find[T comparable](a []T, x T) int {
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
-func getStochasticMatrix(e *recorder.EstimationModelJSON) ([]string, [][]float64, int) {
+func getStochasticMatrix(e *recorder.EstimationModelJSON) (*markov_chain.MarkovChain, int, error) {
 	ops := e.Operations
 	A := e.StochasticMatrix
-	// and set initial state to BeginSyncPeriod
-	state := find(ops, operations.OpMnemo(operations.BeginSyncPeriodID))
-	if state == -1 {
-		panic("BeginSyncPeriod cannot be observed in stochastic matrix/recording failed.")
+	mc, err := markov_chain.New(A, ops)
+	if err != nil {
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)  
 	}
-	return ops, A, state
+	// and set initial state to BeginSyncPeriod
+	state, f_err := mc.FindState(operations.OpMnemo(operations.BeginSyncPeriodID))
+	if f_err != nil {
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: %v", f_err)  
+	}
+	return mc, state, nil
 }
 
 // retrieve operations and stochastic matrix from simulation object
@@ -190,8 +193,7 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 	}
 
 	// get stochastic matrix
-	ops, A, state := getStochasticMatrix(e)
-	mc, mc_err := markov_chain.New(A, ops)
+	mc, state, mc_err := getStochasticMatrix(e)
 	if mc_err != nil {
 		return fmt.Errorf("RunStochasticReplay: expected a markov chain. Error: %v", mc_err)
 	}
@@ -217,9 +219,13 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 	// inclusive range
 	log.Noticef("Simulation block range: first %v, last %v", ss.blockNum, ss.blockNum+uint64(nBlocks-1))
 	for {
+		label, err := mc.Label(state)
+		if err != nil {
+			return fmt.Errorf("RunStochasticReplay: cannot retrieve state label. Error: %v", err)
+		}
 
 		// decode opcode
-		op, addrCl, keyCl, valueCl := operations.DecodeOpcode(ops[state])
+		op, addrCl, keyCl, valueCl := operations.DecodeOpcode(label)
 
 		// keep track of stats
 		numOps++
