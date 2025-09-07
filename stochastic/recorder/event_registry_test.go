@@ -19,6 +19,8 @@ package recorder
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/operations"
@@ -342,4 +344,86 @@ func TestReadEvents_ReadErrorOnDirectory(t *testing.T) {
     events, err := ReadEvents(dir)
     assert.Error(t, err)
     assert.Nil(t, events)
+}
+
+func TestEventRegistry_WriteJSON_MarshalError(t *testing.T) {
+    r := NewEventRegistry()
+    r.RegisterSnapshotDelta(0)
+
+    tmp := t.TempDir()
+    err := r.WriteJSON(tmp + "/events.json")
+    assert.Error(t, err)
+}
+
+func TestEventRegistry_WriteJSON_WriteError(t *testing.T) {
+    if runtime.GOOS != "linux" {
+        t.Skip("/dev/full is Linux-specific")
+    }
+    r := NewEventRegistry()
+    // Avoid NaN in ecdf by using delta 1
+    r.RegisterSnapshotDelta(1)
+    err := r.WriteJSON("/dev/full")
+    assert.Error(t, err)
+}
+
+func TestEventRegistry_RegisterOp_FatalIfInvalid(t *testing.T) {
+    if os.Getenv("WANT_FATAL_REGISTER_OP") == "1" {
+        r := NewEventRegistry()
+        r.RegisterOp(-1)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterOp_FatalIfInvalid")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_OP=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf in RegisterOp")
+    }
+}
+
+func TestEventRegistry_RegisterAddressOp_FatalIfInvalid(t *testing.T) {
+    if os.Getenv("WANT_FATAL_REGISTER_ADDR") == "1" {
+        r := NewEventRegistry()
+        addr := common.Address{}
+        r.RegisterAddressOp(-1, &addr)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterAddressOp_FatalIfInvalid")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_ADDR=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf in RegisterAddressOp")
+    }
+}
+
+func TestEventRegistry_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
+    if os.Getenv("WANT_FATAL_REGISTER_KEY") == "1" {
+        r := NewEventRegistry()
+        addr := common.Address{}
+        key := common.Hash{}
+        r.RegisterKeyOp(-1, &addr, &key)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterKeyOp_FatalIfInvalid")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_KEY=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf in RegisterKeyOp")
+    }
+}
+
+func TestEventRegistry_RegisterValueOp_FatalIfInvalid(t *testing.T) {
+    if os.Getenv("WANT_FATAL_REGISTER_VALUE") == "1" {
+        r := NewEventRegistry()
+        addr := common.Address{}
+        key := common.Hash{}
+        val := common.Hash{}
+        r.RegisterValueOp(-1, &addr, &key, &val)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterValueOp_FatalIfInvalid")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_VALUE=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf in RegisterValueOp")
+    }
 }

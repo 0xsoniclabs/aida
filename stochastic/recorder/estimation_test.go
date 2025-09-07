@@ -1,12 +1,15 @@
 package recorder
 
 import (
-	"encoding/json"
-	"os"
-	"testing"
+    "encoding/json"
+    "math"
+    "os"
+    "os/exec"
+    "runtime"
+    "testing"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-	"github.com/stretchr/testify/assert"
+    "github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+    "github.com/stretchr/testify/assert"
 )
 
 var mockEventRegistryJSON = &EventRegistryJSON{
@@ -118,6 +121,60 @@ func TestEstimationModelJSON_WriteJSON(t *testing.T) {
     assert.NoError(t, err)
     err = model.WriteJSON(tempDir)
     assert.Error(t, err)
+}
+
+func TestEstimationModelJSON_WriteJSON_MarshalError(t *testing.T) {
+    tempDir := t.TempDir()
+    badModel := &EstimationModelJSON{
+        FileId:           "simulation",
+        SnapshotLambda:   math.NaN(),
+        Operations:       []string{"BB"},
+        StochasticMatrix: [][]float64{{1}},
+        Contracts:        EstimationStatsJSON{},
+        Keys:             EstimationStatsJSON{},
+        Values:           EstimationStatsJSON{},
+    }
+    err := badModel.WriteJSON(tempDir + "/bad.json")
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "unsupported value: NaN")
+}
+
+func TestFatal_NewEstimationModelJSON(t *testing.T) {
+    if os.Getenv("WANT_FATAL_NEW_ESTIMATION_MODEL") == "1" {
+        bad := &EventRegistryJSON{SnapshotEcdf: [][2]float64{{0, math.NaN()}, {1, 1}}}
+        _ = NewEstimationModelJSON(bad)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationModelJSON")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_MODEL=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf")
+    }
+}
+
+func TestFatal_NewEstimationStats(t *testing.T) {
+    if os.Getenv("WANT_FATAL_NEW_ESTIMATION_STATS") == "1" {
+        bad := &classifier.ArgClassifierJSON{Counting: classifier.ArgStatsJSON{ECDF: [][2]float64{{0, math.NaN()}, {1, 1}}}}
+        _ = NewEstimationStats(bad)
+        return
+    }
+    cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationStats")
+    cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_STATS=1")
+    err := cmd.Run()
+    if err == nil {
+        t.Fatalf("expected process to exit due to log.Fatalf")
+    }
+}
+
+func TestEstimationModelJSON_WriteJSON_WriteError(t *testing.T) {
+    if runtime.GOOS != "linux" {
+        t.Skip("/dev/full is Linux-specific")
+    }
+    model := NewEstimationModelJSON(mockEventRegistryJSON)
+    err := model.WriteJSON("/dev/full")
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "failed to convert JSON file")
 }
 
 func TestStochastic_NewEstimationStats(t *testing.T) {
