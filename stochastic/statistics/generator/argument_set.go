@@ -22,24 +22,6 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 )
 
-// IDs for argument kinds
-const (
-	NoArgID     = iota // default label (for no argument)
-	ZeroArgID          // zero value access
-	NewArgID           // newly occurring value access
-	PrevArgID          // value that was previously accessed
-	RecentArgID        // value that recently accessed (time-window is fixed to classifier.QueueLen)
-	RandArgID          // random access (everything else)
-
-	NumArgKinds
-)
-
-// number of points on the ecdf
-const NumDistributionPoints = 100
-
-// QueueLen sets the length of queuing statistics.
-const QueueLen = 32
-
 // ArgumentType defines the integer type of arguments
 type ArgumentType = int64
 
@@ -63,7 +45,7 @@ type ArgumentSet interface {
 	// (3) a new argument increasing the cardinality of the argument set, (4)
 	// a random argument not contained in the queue, (5) the previous argument
 	// (6) a recent argument contained in the queue but not the previous one.
-	Choose(kind int) (ArgumentType, error)
+	Choose(kind classifier.ArgKind) (ArgumentType, error)
 
 	// Remove an argument from set and shrink argument set by one argument.
 	Remove(v ArgumentType) error

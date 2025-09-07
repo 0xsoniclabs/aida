@@ -26,8 +26,8 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/generator"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -46,22 +46,94 @@ const (
 	FinaliseFlag = true  // flag for Finalise() StateDB operation
 )
 
-// stochasticState keeps the execution state for the stochastic simulation
-type stochasticState struct {
-	db             state.StateDB                   // StateDB database
-	contracts      *generator.SingleUseArgumentSet // index access generator for contracts
-	keys           *generator.ReusableArgumentSet  // index access generator for keys
-	values         *generator.ReusableArgumentSet  // index access generator for values
-	snapshotLambda float64                         // lambda parameter for snapshot delta distribution
-	totalTx        uint64                          // total number of transactions
-	txNum          uint32                          // current transaction number
-	blockNum       uint64                          // current block number
-	syncPeriodNum  uint64                          // current sync-period number
-	snapshot       []int                           // stack of active snapshots
-	selfDestructed []int64                         // list of self destructed accounts
-	traceDebug     bool                            // trace-debug flag
-	rg             *rand.Rand                      // random generator for sampling
-	log            logger.Logger
+// replayContext data structure as a context for simulating StateDB operations
+type replayContext struct {
+	db             state.StateDB         // StateDB database
+	contracts      generator.ArgumentSet // random argument generator for contracts
+	keys           generator.ArgumentSet // random argument generator for keys
+	values         generator.ArgumentSet // random argument generator for values
+	snapshots      generator.SnapshotSet // random generator for snapshot ids
+	totalTx        uint64                // total number of transactions
+	txNum          uint32                // current transaction number
+	blockNum       uint64                // current block number
+	syncPeriodNum  uint64                // current sync-period number
+	snapshot       []int                 // stack of active snapshots
+	selfDestructed []int64               // list of self destructed accounts
+	traceDebug     bool                  // trace-debug flag
+	rg             *rand.Rand            // random generator for sampling
+	log            logger.Logger         // logger for output
+}
+
+// newReplayContext creates a new state for execution StateDB operations
+func newReplayContext(
+	rg *rand.Rand,
+	db state.StateDB,
+	contracts generator.ArgumentSet,
+	keys generator.ArgumentSet,
+	values generator.ArgumentSet,
+	snapshots generator.SnapshotSet,
+	log logger.Logger,
+) replayContext {
+
+	// return stochastic state
+	return replayContext{
+		db:             db,
+		contracts:      contracts,
+		keys:           keys,
+		values:         values,
+		snapshots:      snapshots,
+		traceDebug:     false,
+		selfDestructed: []int64{},
+		blockNum:       1,
+		syncPeriodNum:  1,
+		rg:             rg,
+		log:            log,
+	}
+}
+
+// populateReplayContext creates a stochastic state and primes the StateDB
+func populateReplayContext(cfg *utils.Config, e *recorder.EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*replayContext, error) {
+	// produce random argument generators for contract addresses,
+	// storage-keys, storage addresses, an snapshot ids.
+
+	// random variable for contract addresses
+	contracts := generator.NewSingleUseArgumentSet(
+		generator.NewReusableArgumentSet(
+			e.Contracts.NumKeys,
+			generator.NewProxyRandomizer(
+				generator.NewExponentialArgRandomizer(rg, e.Contracts.Lambda),
+				generator.NewEmpiricalQueueRandomizer(rg, e.Contracts.QueueDistribution),
+			)))
+
+	// jandom varible for storage keys
+	keys := generator.NewReusableArgumentSet(
+		e.Keys.NumKeys,
+		generator.NewProxyRandomizer(
+			generator.NewExponentialArgRandomizer(rg, e.Keys.Lambda),
+			generator.NewEmpiricalQueueRandomizer(rg, e.Keys.QueueDistribution),
+		))
+
+	// random variable for storage values
+	values := generator.NewReusableArgumentSet(
+		e.Values.NumKeys,
+		generator.NewProxyRandomizer(
+			generator.NewExponentialArgRandomizer(rg, e.Values.Lambda),
+			generator.NewEmpiricalQueueRandomizer(rg, e.Values.QueueDistribution),
+		))
+
+	// Random variable for snapshot ids
+	snapshots := generator.NewExponentialSnapshotRandomizer(rg, e.SnapshotLambda)
+
+	// setup state
+	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
+
+	// create accounts in StateDB before starting the simulation
+	err := ss.prime()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ss, nil
 }
 
 // find is a helper function to find an element in a slice
@@ -72,46 +144,6 @@ func find[T comparable](a []T, x T) int {
 		}
 	}
 	return -1
-}
-
-// createState creates a stochastic state and primes the StateDB
-func createState(cfg *utils.Config, e *recorder.EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*stochasticState, error) {
-	// produce random access generators for contract addresses,
-	// storage-keys, and storage addresses.
-	// (NB: Contracts need an indirect access wrapper because
-	// contract addresses can be deleted by suicide.)
-	contracts := generator.NewSingleUseArgumentSet(
-		generator.NewReusableArgumentSet(
-			e.Contracts.NumKeys,
-			generator.NewProxyRandomizer(
-				generator.NewExponentialArgRandomizer(rg, e.Contracts.Lambda),
-				generator.NewEmpiricalQueueRandomizer(rg, e.Contracts.QueueDistribution),
-			)))
-
-	keys := generator.NewReusableArgumentSet(
-		e.Keys.NumKeys,
-		generator.NewProxyRandomizer(
-			generator.NewExponentialArgRandomizer(rg, e.Keys.Lambda),
-			generator.NewEmpiricalQueueRandomizer(rg, e.Keys.QueueDistribution),
-		))
-
-	values := generator.NewReusableArgumentSet(
-		e.Values.NumKeys,
-		generator.NewProxyRandomizer(
-			generator.NewExponentialArgRandomizer(rg, e.Values.Lambda),
-			generator.NewEmpiricalQueueRandomizer(rg, e.Values.QueueDistribution),
-		))
-
-	// setup state
-	ss := NewStochasticState(rg, db, contracts, keys, values, e.SnapshotLambda, log)
-
-	// create accounts in StateDB
-	err := ss.prime()
-	if err != nil {
-		return nil, err
-	}
-
-	return &ss, nil
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
@@ -152,13 +184,17 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 	log.Noticef("using random seed %d", cfg.RandomSeed)
 
 	// create a stochastic state
-	ss, err := createState(cfg, e, db, rg, log)
+	ss, err := populateReplayContext(cfg, e, db, rg, log)
 	if err != nil {
 		return err
 	}
 
 	// get stochastic matrix
 	ops, A, state := getStochasticMatrix(e)
+	mc, mc_err := markov_chain.New(A, ops)
+	if mc_err != nil {
+		return fmt.Errorf("RunStochasticReplay: expected a markov chain. Error: %v", mc_err)
+	}
 
 	// progress message setup
 	var (
@@ -225,7 +261,11 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 		}
 
 		// transit to next state in Markovian process
-		state = nextState(rg, A, state)
+		u := rg.Float64()
+		state, err = mc.Sample(state, u)
+		if err != nil {
+			return fmt.Errorf("RunStochasticReplay: Failed sampling the next state. Error: %v", err)
+		}
 	}
 
 	// print progress summary
@@ -246,27 +286,8 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 	return runErr
 }
 
-// NewStochasticState creates a new state for execution StateDB operations
-func NewStochasticState(rg *rand.Rand, db state.StateDB, contracts *generator.SingleUseArgumentSet, keys *generator.ReusableArgumentSet, values *generator.ReusableArgumentSet, snapshotLambda float64, log logger.Logger) stochasticState {
-
-	// return stochastic state
-	return stochasticState{
-		db:             db,
-		contracts:      contracts,
-		keys:           keys,
-		values:         values,
-		snapshotLambda: snapshotLambda,
-		traceDebug:     false,
-		selfDestructed: []int64{},
-		blockNum:       1,
-		syncPeriodNum:  1,
-		rg:             rg,
-		log:            log,
-	}
-}
-
 // prime StateDB accounts using account information
-func (ss *stochasticState) prime() error {
+func (ss *replayContext) prime() error {
 	numInitialAccounts := ss.contracts.Size() + 1
 	ss.log.Notice("Start priming...")
 	ss.log.Noticef("\tinitializing %v accounts\n", numInitialAccounts)
@@ -305,12 +326,12 @@ func (ss *stochasticState) prime() error {
 }
 
 // EnableDebug set traceDebug flag to true, and enable debug message when executing an operation
-func (ss *stochasticState) enableDebug() {
+func (ss *replayContext) enableDebug() {
 	ss.traceDebug = true
 }
 
 // execute StateDB operations on a stochastic state.
-func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
+func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 	var (
 		addr  common.Address
 		key   common.Hash
@@ -475,7 +496,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if snapshotNum > 0 {
 			// TODO: consider a more realistic distribution
 			// rather than the uniform distribution.
-			snapshotIdx := snapshotNum - int(exponential.DiscreteSample(rg, ss.snapshotLambda, int64(snapshotNum))) - 1
+			snapshotIdx := snapshotNum - ss.snapshots.SampleSnapshot(snapshotNum) - 1
 			if snapshotIdx < 0 {
 				snapshotIdx = 0
 			} else if snapshotIdx >= snapshotNum {
@@ -554,40 +575,8 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	}
 }
 
-// nextState produces the next state in the Markovian process.
-func nextState(rg *rand.Rand, A [][]float64, i int) int {
-	// Retrieve a random number in [0,1.0).
-	r := rg.Float64()
-
-	// Use Kahan's sum for summing values
-	// in case we have a combination of very small
-	// and very large values.
-	sum := float64(0.0)
-	c := float64(0.0)
-	k := -1
-	for j := 0; j < len(A); j++ {
-		y := A[i][j] - c
-		t := sum + y
-		c = (t - sum) - y
-		sum = t
-		if r <= sum {
-			return j
-		}
-		// If we have a numerical unstable cumulative
-		// distribution (large and small numbers that cancel
-		// each other out when summing up), we can take the last
-		// non-zero entry as a solution. It also detects
-		// stochastic matrices with a row whose row
-		// sum is not zero (return value is -1 for such a case).
-		if A[i][j] > 0.0 {
-			k = j
-		}
-	}
-	return k
-}
-
 // delete account information when suicide was invoked
-func (ss *stochasticState) deleteAccounts() {
+func (ss *replayContext) deleteAccounts() {
 	// remove account information when suicide was invoked in the block.
 	for _, addrIdx := range ss.selfDestructed {
 		if err := ss.contracts.Remove(addrIdx); err != nil {

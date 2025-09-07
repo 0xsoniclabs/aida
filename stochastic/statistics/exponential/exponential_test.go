@@ -37,7 +37,7 @@ func TestEstimation(t *testing.T) {
 // checkEstimation checks whether the approximate lambda can be
 // rediscovered from a discretized CDF.
 func checkEstimation(t *testing.T, expectedLambda float64) {
-	Cdf := PiecewiseLinearCdf(expectedLambda, 10000)
+	Cdf := PiecewiseLinearCDF(expectedLambda, 10000)
 	computedLambda, err := ApproximateLambda(Cdf)
 	if err != nil {
 		t.Fatalf("Failed to approximate. Error: %v", err)
@@ -60,14 +60,14 @@ func TestRandomAccessRandInd(t *testing.T) {
 	// populate buckets
 	counts := make([]int64, idxRange)
 	for steps := 0; steps < numSteps; steps++ {
-		counts[DiscreteSample(rg, lambda, idxRange)]++
+		counts[Sample(rg, lambda, idxRange)]++
 	}
 
 	// compute chi-squared value for observations
 	chi2 := float64(0.0)
 	for i, v := range counts {
 		// compute expected value of bucket
-		p := Cdf(lambda, float64(i+1)/float64(idxRange)) - Cdf(lambda, float64(i)/float64(idxRange))
+		p := CDF(lambda, float64(i+1)/float64(idxRange)) - CDF(lambda, float64(i)/float64(idxRange))
 		expected := float64(numSteps) * p
 		err := expected - float64(v)
 		chi2 += (err * err) / expected

@@ -20,6 +20,7 @@ import (
 	"math/rand"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	discrete_empiricial "github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 )
 
@@ -79,7 +80,7 @@ func NewExponentialArgRandomizer(rg *rand.Rand, lambda float64) *ExponentialArgR
 
 // SampleArg samples an argument from a distribution with n possible arguments
 func (r *ExponentialArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
-	return ArgumentType(exponential.DiscreteSample(r.rg, r.lambda, int64(n)))
+	return ArgumentType(exponential.Sample(r.rg, r.lambda, int64(n)))
 }
 
 // ExponentialQueueRandomizer struct
@@ -98,7 +99,7 @@ func NewExponentialQueueRandomizer(rg *rand.Rand, lambda float64) *ExponentialQu
 
 // SampleQueue samples an index for a queue
 func (r *ExponentialQueueRandomizer) SampleQueue() int {
-	return int(exponential.DiscreteSample(r.rg, r.lambda, int64(classifier.QueueLen-1))) + 1
+	return int(exponential.Sample(r.rg, r.lambda, int64(classifier.QueueLen-1))) + 1
 }
 
 // EmpiricalQueueRandomizer struct
@@ -128,25 +129,27 @@ func NewEmpiricalQueueRandomizer(rg *rand.Rand, qpdf []float64) *EmpiricalQueueR
 
 // SampleQueue samples an index for a queue
 func (r *EmpiricalQueueRandomizer) SampleQueue() int {
-	u := r.rg.Float64() // uniform random number in [0,1)
-	sum := 0.0          // Kahn's summation algorithm for probability sum
-	c := 0.0            // Compensation term of Kahn's algorithm
-	lastPositive := -1
-	for i := range len(r.pdf) {
-		pi := r.pdf[i]
-		y := pi - c
-		t := sum + y
-		c = (t - sum) - y
-		sum = t
-		if u <= sum {
-			return 1 + i
-		}
-		if r.pdf[i] > 0.0 {
-			lastPositive = i
-		}
+	return discrete_empiricial.Sample(r.pdf, r.rg.Float64()) + 1
+}
+
+// SnapshotSet interface for snapshot arguments
+type SnapshotSet interface {
+	SampleSnapshot(n int) int // sample queue distribution
+}
+
+// ExponentialSnapshotRandomizer struct
+type ExponentialSnapshotRandomizer struct {
+	rg     *rand.Rand
+	lambda float64
+}
+
+func NewExponentialSnapshotRandomizer(rg *rand.Rand, lambda float64) *ExponentialSnapshotRandomizer {
+	return &ExponentialSnapshotRandomizer{
+		rg:     rg,
+		lambda: lambda,
 	}
-	if lastPositive != -1 {
-		return 1 + lastPositive
-	}
-	return 1 // default position if all probabilities are zero
+}
+
+func (r *ExponentialSnapshotRandomizer) SampleSnapshot(n int) int {
+	return int(exponential.Sample(r.rg, r.lambda, int64(n)))
 }

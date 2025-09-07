@@ -31,19 +31,19 @@ const (
 	newtonInitLambda = 1.0   // initial parameter in Newtonion's search
 )
 
-// Cdf is the cumulative distribution function for the truncated exponential distribution with a bound of 1.
-func Cdf(lambda float64, x float64) float64 {
+// CDF is the cumulative distribution function for the truncated exponential distribution with a bound of 1.
+func CDF(lambda float64, x float64) float64 {
 	return (math.Exp(-lambda*x) - 1.0) / (math.Exp(-lambda) - 1.0)
 }
 
-// PiecewiseLinearCdf is a piecewise linear representation of the cumulative distribution function.
-func PiecewiseLinearCdf(lambda float64, n int) [][2]float64 {
+// PiecewiseLinearCDF is a piecewise linear representation of the cumulative distribution function.
+func PiecewiseLinearCDF(lambda float64, n int) [][2]float64 {
 	// The points are equi-distantly spread, i.e., 1/n.
 	fn := [][2]float64{}
 	for i := 0; i <= n; i++ {
 		x := float64(i) / float64(n)
-		p := Cdf(lambda, x)
-		fn = append(fn, [2]float64{x, p})
+		y := CDF(lambda, x)
+		fn = append(fn, [2]float64{x, y})
 	}
 	return fn
 }
@@ -53,8 +53,8 @@ func Quantile(lambda float64, p float64) float64 {
 	return math.Log(p*math.Exp(-lambda)-p+1) / -lambda
 }
 
-// DiscreteSample samples the distribution and discretizes the result for numbers in the range between 0 and n-1.
-func DiscreteSample(rg *rand.Rand, lambda float64, n int64) int64 {
+// Sample samples the distribution and discretizes the result for numbers in the range between 0 and n-1.
+func Sample(rg *rand.Rand, lambda float64, n int64) int64 {
 	return int64(float64(n) * Quantile(lambda, rg.Float64()))
 }
 
@@ -90,8 +90,8 @@ func mle(lambda float64, mean float64) (float64, error) {
 	return 1/lambda - t - mean, nil
 }
 
-// dMle computes the derivative of the Maximum Likelihood Estimation function.
-func dMle(lambda float64) (float64, error) {
+// dMLE computes the derivative of the Maximum Likelihood Estimation function.
+func dMLE(lambda float64) (float64, error) {
 	if math.IsNaN(lambda) {
 		return 0, errors.New("lambda is not a number")
 	}
@@ -114,13 +114,13 @@ func dMle(lambda float64) (float64, error) {
 func ApproximateLambda(points [][2]float64) (float64, error) {
 	m := mean(points)
 	l := newtonInitLambda
-	for step := 0; step < newtonMaxStep; step++ {
+	for range newtonMaxStep {
 		mleValue, err := mle(l, m)
 		if err != nil {
 			return 0, err
 		}
 
-		dMleValue, err := dMle(l)
+		dMleValue, err := dMLE(l)
 		if err != nil {
 			return 0, err
 		}

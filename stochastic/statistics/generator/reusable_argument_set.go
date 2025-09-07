@@ -55,7 +55,7 @@ func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgu
 // (3) a new argument increasing the cardinality of the argument set, (4)
 // a random argument not contained in the queue, (5) the previous argument
 // (6) a recent argument contained in the queue but not the previous one.
-func (a *ReusableArgumentSet) Choose(kind int) (ArgumentType, error) {
+func (a *ReusableArgumentSet) Choose(kind classifier.ArgKind) (ArgumentType, error) {
 	switch kind {
 
 	// choose no argument

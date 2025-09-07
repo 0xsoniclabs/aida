@@ -28,6 +28,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
@@ -118,7 +119,7 @@ func FuzzStochastic(f *testing.F) {
 		rg := rand.New(fSrc)
 
 		// create a stochastic state
-		ss, err := createState(&cfg, &e, db, rg, logger.NewLogger("INFO", "Fuzzing Stochastic"))
+		ss, err := populateReplayContext(&cfg, &e, db, rg, logger.NewLogger("INFO", "Fuzzing Stochastic"))
 		if err != nil {
 			f.Fatalf("failed creating stochastic state. Error: %v", err)
 			return
@@ -126,6 +127,10 @@ func FuzzStochastic(f *testing.F) {
 
 		// get stochastic matrix
 		ops, A, state := getStochasticMatrix(&e)
+		mc, err_mc := markov_chain.New(A, ops)
+		if err_mc != nil {
+			f.Fatalf("expected a markov chain. Err: %v", err_mc)
+		}
 
 		// generate operations/random parameters from fuzzing string
 		for !fSrc.End() {
@@ -142,7 +147,11 @@ func FuzzStochastic(f *testing.F) {
 			}
 
 			// transit to next state in Markovian process
-			state = nextState(rg, A, state)
+			u := rg.Float64()
+			state, err = mc.Sample(state, u)
+			if err != nil {
+				f.Errorf("Failed sampling next state. Error: %v", err)
+			}
 		}
 	})
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/stationary"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 )
 
 // EventData contains the statistical data for events that is used for visualization.
@@ -89,7 +89,11 @@ func (e *EventData) PopulateEventData(d *recorder.EventRegistryJSON) {
 
 	// Sort entries of the stationary distribution and populate
 	n := len(d.Operations)
-	stationary, _ := stationary.ComputeDistribution(d.StochasticMatrix)
+	mc, mc_err := markov_chain.New(d.StochasticMatrix, d.Operations)
+	if mc_err != nil {
+		panic("PopulateEventData: Expected a new markov chain. Error: %v")
+	}
+	stationary, _ := mc.Stationary()
 	data := []OpData{}
 	for i := 0; i < n; i++ {
 		data = append(data, OpData{
@@ -191,7 +195,7 @@ func (a *AccessData) PopulateAccess(d *classifier.ArgClassifierJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	a.Lambda = lambda
-	a.Cdf = exponential.PiecewiseLinearCdf(lambda, classifier.NumECDFPoints)
+	a.Cdf = exponential.PiecewiseLinearCDF(lambda, classifier.NumECDFPoints)
 	a.QPdf = make([]float64, len(d.Queuing.Distribution))
 	copy(a.QPdf, d.Queuing.Distribution)
 }
@@ -205,5 +209,5 @@ func (s *SnapshotData) PopulateSnapshotStats(d *recorder.EventRegistryJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	s.Lambda = lambda
-	s.Cdf = exponential.PiecewiseLinearCdf(lambda, classifier.NumECDFPoints)
+	s.Cdf = exponential.PiecewiseLinearCDF(lambda, classifier.NumECDFPoints)
 }

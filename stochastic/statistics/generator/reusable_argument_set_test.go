@@ -168,88 +168,92 @@ func TestReusableArgSetRemove(t *testing.T) {
 	}
 }
 
+// TestReusableArgSetChooseNewArgExceedsRange tests the error path in Choose function when new argument exceeds range
 func TestReusableArgSetChooseNewArgExceedsRange(t *testing.T) {
-    mockCtl := gomock.NewController(t)
-    defer mockCtl.Finish()
-    mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
-	
-    n := ArgumentType(minCardinality + 1)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
-    as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
-    as.n = MaxArgumentType
-    if _, err := as.Choose(classifier.NewArgID); err == nil {
-        t.Errorf("expected error when new value exceeds cardinality range")
-    }
+	n := ArgumentType(minCardinality + 1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+
+	as.n = MaxArgumentType
+	if _, err := as.Choose(classifier.NewArgID); err == nil {
+		t.Errorf("expected error when new value exceeds cardinality range")
+	}
 }
 
+// TestReusableArgSetChooseUnknownKind tests the error path in Choose function when an unknown argument kind is provided
 func TestReusableArgSetChooseUnknownKind(t *testing.T) {
-    mockCtl := gomock.NewController(t)
-    defer mockCtl.Finish()
-    mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
-    n := ArgumentType(minCardinality + 1)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
-    as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	n := ArgumentType(minCardinality + 1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
-    if _, err := as.Choose(9999); err == nil {
-        t.Errorf("expected error for unknown argument kind")
-    }
+	if _, err := as.Choose(9999); err == nil {
+		t.Errorf("expected error for unknown argument kind")
+	}
 }
 
+// TestReusableArgSetFindQElemFalse tests the findQElem function of an argument set for a non-existing element
 func TestReusableArgSetFindQElemTrue(t *testing.T) {
-    mockCtl := gomock.NewController(t)
-    defer mockCtl.Finish()
-    mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
-    n := ArgumentType(minCardinality + 1)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
-    as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	n := ArgumentType(minCardinality + 1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
-    elem := as.queue[0]
-    if !as.findQElem(elem) {
-        t.Errorf("expected to find existing element in queue")
-    }
+	elem := as.queue[0]
+	if !as.findQElem(elem) {
+		t.Errorf("expected to find existing element in queue")
+	}
 }
 
+// TestReusableArgSetRemoveQueueReplacement tests that removing an argument replaces it in the queue
 func TestReusableArgSetRemoveQueueReplacement(t *testing.T) {
-    mockCtl := gomock.NewController(t)
-    defer mockCtl.Finish()
-    mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
-    n := ArgumentType(minCardinality + 10)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(n - 2)).Times(classifier.QueueLen)
-    as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(0)).Times(1)
+	n := ArgumentType(minCardinality + 10)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(n - 2)).Times(classifier.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(0)).Times(1)
 
-    if err := as.Remove(1); err != nil {
-        t.Fatalf("unexpected error removing valid argument: %v", err)
-    }
+	if err := as.Remove(1); err != nil {
+		t.Fatalf("unexpected error removing valid argument: %v", err)
+	}
 
-    found := false
-    for i := range classifier.QueueLen {
-        if as.queue[i] == 1 {
-            found = true
-            break
-        }
-    }
-    if !found {
-        t.Errorf("expected at least one queue element to be replaced with j==1")
-    }
+	found := false
+	for i := range classifier.QueueLen {
+		if as.queue[i] == 1 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected at least one queue element to be replaced with j==1")
+	}
 }
 
 // TestReusableArgSetChooseRecentArgError covers error path in recentQ via invalid queue index.
 func TestReusableArgSetChooseRecentArgError(t *testing.T) {
-    mockCtl := gomock.NewController(t)
-    defer mockCtl.Finish()
-    mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
-    n := ArgumentType(minCardinality + 1)
-    mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
-    as := NewReusableArgumentSet(n, mockArgSetRandomizer)
+	n := ArgumentType(minCardinality + 1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
-    mockArgSetRandomizer.EXPECT().SampleQueue().Return(0).Times(1)
-    if _, err := as.Choose(classifier.RecentArgID); err == nil {
-        t.Errorf("expected error for invalid recent queue index")
-    }
+	mockArgSetRandomizer.EXPECT().SampleQueue().Return(0).Times(1)
+	if _, err := as.Choose(classifier.RecentArgID); err == nil {
+		t.Errorf("expected error for invalid recent queue index")
+	}
 }

@@ -48,7 +48,7 @@ func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
 }
 
 // Choose an argument from the argument set according to its kind.
-func (a *SingleUseArgumentSet) Choose(kind int) (int64, error) {
+func (a *SingleUseArgumentSet) Choose(kind classifier.ArgKind) (int64, error) {
 	v, err := a.argset.Choose(kind)
 	if err != nil {
 		return 0, err

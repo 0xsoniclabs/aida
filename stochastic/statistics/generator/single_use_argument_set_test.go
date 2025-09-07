@@ -92,6 +92,7 @@ func TestSingleUseChooseTranslationargumentOutOfRangeHigh(t *testing.T) {
 	}
 }
 
+// TestSingleUseChooseDefaultReturnsTranslatedValue tests that a valid translation returns the correct value.
 func TestSingleUseChooseDefaultReturnsTranslatedValue(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
