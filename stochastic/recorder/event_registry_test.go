@@ -266,3 +266,80 @@ func TestStochastic_ReadEvents(t *testing.T) {
 		assert.Nil(t, events)
 	})
 }
+
+func TestEventRegistry_RegisterSnapshotDelta(t *testing.T) {
+    r := NewEventRegistry()
+    r.RegisterSnapshotDelta(3)
+    r.RegisterSnapshotDelta(5)
+    assert.Equal(t, uint64(1), r.snapshotFreq[3])
+    assert.Equal(t, uint64(1), r.snapshotFreq[5])
+}
+
+func TestEventRegistry_WriteJSON_SuccessAndError(t *testing.T) {
+    r := NewEventRegistry()
+    r.RegisterOp(operations.SnapshotID)
+    r.RegisterOp(operations.SnapshotID)
+    r.RegisterSnapshotDelta(1)
+
+    tmp := t.TempDir()
+    file := tmp + "/events.json"
+    err := r.WriteJSON(file)
+    assert.NoError(t, err)
+    _, err = os.Stat(file)
+    assert.NoError(t, err)
+
+    // error path: write to a directory
+    err = r.WriteJSON(tmp)
+    assert.Error(t, err)
+}
+
+func TestEventRegistry_NewEventRegistryJSON(t *testing.T) {
+    r := NewEventRegistry()
+
+    argop1 := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+    argop2 := operations.EncodeArgOp(operations.SetStateID, classifier.NewArgID, classifier.NewArgID, classifier.NewArgID)
+
+    r.argOpFreq[argop1] = 1
+    r.argOpFreq[argop2] = 2
+
+    r.transitFreq[argop1][argop2] = 1
+    r.transitFreq[argop2][argop1] = 2
+
+    r.RegisterSnapshotDelta(0)
+    r.RegisterSnapshotDelta(1)
+
+    events := r.NewEventRegistryJSON()
+    assert.Equal(t, "events", events.FileId)
+    assert.Len(t, events.Operations, 2)
+    assert.Len(t, events.StochasticMatrix, 2)
+
+    labelIndex := map[string]int{}
+    for i, lab := range events.Operations {
+        labelIndex[lab] = i
+    }
+    exp1 := operations.EncodeOpcode(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+    exp2 := operations.EncodeOpcode(operations.SetStateID, classifier.NewArgID, classifier.NewArgID, classifier.NewArgID)
+    i1, ok1 := labelIndex[exp1]
+    i2, ok2 := labelIndex[exp2]
+    if !(ok1 && ok2) {
+        t.Fatalf("expected labels %v and %v in %v", exp1, exp2, events.Operations)
+    }
+
+    assert.InDelta(t, 0.0, events.StochasticMatrix[i1][i1], 1e-9)
+    assert.InDelta(t, 1.0, events.StochasticMatrix[i1][i2], 1e-9)
+    assert.InDelta(t, 1.0, events.StochasticMatrix[i2][i1], 1e-9)
+    assert.InDelta(t, 0.0, events.StochasticMatrix[i2][i2], 1e-9)
+
+    if len(events.SnapshotEcdf) > 0 {
+        last := events.SnapshotEcdf[len(events.SnapshotEcdf)-1]
+        assert.InDelta(t, 1.0, last[0], 1e-9)
+        assert.InDelta(t, 1.0, last[1], 1e-9)
+    }
+}
+
+func TestReadEvents_ReadErrorOnDirectory(t *testing.T) {
+    dir := t.TempDir()
+    events, err := ReadEvents(dir)
+    assert.Error(t, err)
+    assert.Nil(t, events)
+}
