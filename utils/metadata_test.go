@@ -25,6 +25,7 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
 	gethleveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/syndtr/goleveldb/leveldb"
 	"go.uber.org/mock/gomock"
 )
@@ -130,7 +131,8 @@ func TestAidaDbMetadata_DeleteMetadata(t *testing.T) {
 	mockDb.EXPECT().Delete([]byte(TypePrefix)).Return(nil)
 	mockDb.EXPECT().Delete([]byte(TimestampPrefix)).Return(nil)
 
-	md.Delete() // Should not panic or return error
+	err := md.Delete()
+	require.NoError(t, err)
 
 	// Case 2: Some deletes fail - should log errors but not fail
 	mockDb = db.NewMockSubstateDB(ctrl)
@@ -145,7 +147,8 @@ func TestAidaDbMetadata_DeleteMetadata(t *testing.T) {
 	mockDb.EXPECT().Delete([]byte(TypePrefix)).Return(mockErr)
 	mockDb.EXPECT().Delete([]byte(TimestampPrefix)).Return(mockErr)
 
-	md.Delete() // Should not panic despite errors
+	err = md.Delete()
+	require.ErrorContains(t, err, mockErr.Error())
 }
 
 func TestAidaDbMetadata_AidaDbTyString(t *testing.T) {
@@ -274,17 +277,22 @@ func TestAidaDbMetadata_GetFirstBlock(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
-	firstBlock := md.GetFirstBlock()
-	assert.Equal(t, uint64(100), firstBlock)
 
 	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(nil, errors.New("mock error"))
-	firstBlock = md.GetFirstBlock()
+	firstBlock := md.GetFirstBlock()
 	assert.Equal(t, uint64(0), firstBlock)
 
 	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(nil, leveldb.ErrNotFound)
 	firstBlock = md.GetFirstBlock()
 	assert.Equal(t, uint64(0), firstBlock)
+
+	mockDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+	firstBlock = md.GetFirstBlock()
+	assert.Equal(t, uint64(100), firstBlock)
+
+	// cached - no mock call
+	firstBlock = md.GetFirstBlock()
+	assert.Equal(t, uint64(100), firstBlock)
 }
 
 func TestAidaDbMetadata_GetLastBlock(t *testing.T) {
@@ -293,17 +301,22 @@ func TestAidaDbMetadata_GetLastBlock(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+
+	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(nil, leveldb.ErrNotFound)
 	lastBlock := md.GetLastBlock()
-	assert.Equal(t, uint64(100), lastBlock)
+	assert.Equal(t, uint64(0), lastBlock)
 
 	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(nil, errors.New("mock error"))
 	lastBlock = md.GetLastBlock()
 	assert.Equal(t, uint64(0), lastBlock)
 
-	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(nil, leveldb.ErrNotFound)
+	mockDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
 	lastBlock = md.GetLastBlock()
-	assert.Equal(t, uint64(0), lastBlock)
+	assert.Equal(t, uint64(100), lastBlock)
+
+	// cached - no mock call
+	lastBlock = md.GetLastBlock()
+	assert.Equal(t, uint64(100), lastBlock)
 }
 
 func TestAidaDbMetadata_GetFirstEpoch(t *testing.T) {
@@ -312,17 +325,22 @@ func TestAidaDbMetadata_GetFirstEpoch(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
-	data := md.GetFirstEpoch()
-	assert.Equal(t, uint64(100), data)
 
 	mockDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(nil, errors.New("mock error"))
-	data = md.GetFirstEpoch()
+	data := md.GetFirstEpoch()
 	assert.Equal(t, uint64(0), data)
 
 	mockDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetFirstEpoch()
 	assert.Equal(t, uint64(0), data)
+
+	mockDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+	data = md.GetFirstEpoch()
+	assert.Equal(t, uint64(100), data)
+
+	// cached - no mock call
+	data = md.GetFirstEpoch()
+	assert.Equal(t, uint64(100), data)
 }
 
 func TestAidaDbMetadata_GetLastEpoch(t *testing.T) {
@@ -331,17 +349,22 @@ func TestAidaDbMetadata_GetLastEpoch(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
-	data := md.GetLastEpoch()
-	assert.Equal(t, uint64(100), data)
 
 	mockDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(nil, errors.New("mock error"))
-	data = md.GetLastEpoch()
+	data := md.GetLastEpoch()
 	assert.Equal(t, uint64(0), data)
 
 	mockDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetLastEpoch()
 	assert.Equal(t, uint64(0), data)
+
+	mockDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+	data = md.GetLastEpoch()
+	assert.Equal(t, uint64(100), data)
+
+	// cached - no mock call
+	data = md.GetLastEpoch()
+	assert.Equal(t, uint64(100), data)
 }
 
 func TestAidaDbMetadata_GetChainID(t *testing.T) {
@@ -350,23 +373,22 @@ func TestAidaDbMetadata_GetChainID(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
-	data := md.GetChainID()
-	assert.Equal(t, ChainID(100), data)
-
-	mockDb = db.NewMockSubstateDB(ctrl)
-	md = NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return([]byte{0, 1}, nil)
-	data = md.GetChainID()
-	assert.Equal(t, ChainID(1), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, errors.New("mock error"))
-	data = md.GetChainID()
+	data := md.GetChainID()
 	assert.Equal(t, ChainID(0), data)
 
 	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetChainID()
 	assert.Equal(t, ChainID(0), data)
+
+	mockDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+	data = md.GetChainID()
+	assert.Equal(t, ChainID(100), data)
+
+	// cached - no mock call
+	data = md.GetChainID()
+	assert.Equal(t, ChainID(100), data)
 }
 
 func TestAidaDbMetadata_GetTimestamp(t *testing.T) {
@@ -375,17 +397,22 @@ func TestAidaDbMetadata_GetTimestamp(t *testing.T) {
 
 	mockDb := db.NewMockSubstateDB(ctrl)
 	md := NewAidaDbMetadata(mockDb, "ERROR")
-	mockDb.EXPECT().Get([]byte(TimestampPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
-	data := md.GetTimestamp()
-	assert.Equal(t, uint64(100), data)
 
 	mockDb.EXPECT().Get([]byte(TimestampPrefix)).Return(nil, errors.New("mock error"))
-	data = md.GetTimestamp()
+	data := md.GetTimestamp()
 	assert.Equal(t, uint64(0), data)
 
 	mockDb.EXPECT().Get([]byte(TimestampPrefix)).Return(nil, leveldb.ErrNotFound)
 	data = md.GetTimestamp()
 	assert.Equal(t, uint64(0), data)
+
+	mockDb.EXPECT().Get([]byte(TimestampPrefix)).Return(bigendian.Uint64ToBytes(100), nil)
+	data = md.GetTimestamp()
+	assert.Equal(t, uint64(100), data)
+
+	// cached - no mock call
+	data = md.GetTimestamp()
+	assert.Equal(t, uint64(100), data)
 }
 
 func TestAidaDbMetadata_GetDbType(t *testing.T) {
@@ -437,7 +464,7 @@ func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
 		md := &AidaDbMetadata{ChainId: chainID}
 		assert.NoError(t, md.findEpochs())
 		// Epochs must be unchange
-		assert.Equal(t, md.FirstEpoch, uint64(0))
-		assert.Equal(t, md.LastEpoch, uint64(0))
+		assert.Equal(t, md.GetFirstEpoch(), uint64(0))
+		assert.Equal(t, md.GetLastEpoch(), uint64(0))
 	}
 }

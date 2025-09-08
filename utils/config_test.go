@@ -943,6 +943,7 @@ func createFakeAidaDb(cfg *Config) error {
 		md.SetLastBlock(lastBlock),
 		md.SetFirstEpoch(firstEpoch),
 		md.SetLastEpoch(lastEpoch),
+		md.SetChainID(cfg.ChainID),
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create a metadata; %v", err)

@@ -139,7 +139,13 @@ func (md *AidaDbMetadata) GetDb() db.SubstateDB {
 }
 
 func (md *AidaDbMetadata) GenerateMetadata(chainId ChainID) error {
-	if chainId == 0 {
+	if chainId != 0 {
+		// todo is this what we want, should not user set chain-id outside this func?
+		err := md.SetChainID(chainId)
+		if err != nil {
+			return err
+		}
+	} else {
 		chainId = md.GetChainID()
 		if chainId == 0 {
 			md.log.Warningf("ChainID was nor set neither found in metadata - metadata generation will be incomplete")
@@ -506,6 +512,9 @@ func (md *AidaDbMetadata) findEpochs() error {
 	// Finding epoch number calls rpc method eth_getBlockByNumber.
 	// Ethereum does not provide information about epoch number in their RPC interface.
 	if IsEthereumNetwork(md.ChainId) {
+		zero := uint64(0)
+		md.FirstEpoch = &zero
+		md.LastEpoch = &zero
 		return nil
 	}
 
@@ -605,51 +614,51 @@ func (md *AidaDbMetadata) SetBlockRange(firstBlock uint64, lastBlock uint64) err
 }
 
 func (md *AidaDbMetadata) Delete() error {
-	var err error
+	var finalErr error
 
-	if err = md.Db.Delete([]byte(ChainIDPrefix)); err != nil {
-		return fmt.Errorf("cannot delete chain-id; %v", err)
+	if err := md.Db.Delete([]byte(ChainIDPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete chain-id; %v", err))
 	} else {
 		md.log.Debugf("ChainID deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(FirstBlockPrefix)); err != nil {
-		return fmt.Errorf("cannot delete first block; %v", err)
+	if err := md.Db.Delete([]byte(FirstBlockPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete first block; %v", err))
 	} else {
 		md.log.Debugf("First block deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(LastBlockPrefix)); err != nil {
-		return fmt.Errorf("cannot delete last block; %v", err)
+	if err := md.Db.Delete([]byte(LastBlockPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete last block; %v", err))
 	} else {
 		md.log.Debugf("Last block deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(FirstEpochPrefix)); err != nil {
-		return fmt.Errorf("cannot delete first epoch; %v", err)
+	if err := md.Db.Delete([]byte(FirstEpochPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete first epoch; %v", err))
 	} else {
 		md.log.Debugf("First epoch deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(LastEpochPrefix)); err != nil {
-		return fmt.Errorf("cannot delete last epoch; %v", err)
+	if err := md.Db.Delete([]byte(LastEpochPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete last epoch; %v", err))
 	} else {
 		md.log.Debugf("Last epoch deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(TypePrefix)); err != nil {
-		return fmt.Errorf("cannot delete db type; %v", err)
+	if err := md.Db.Delete([]byte(TypePrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete db type; %v", err))
 	} else {
 		md.log.Debugf("Timestamp deleted successfully")
 	}
 
-	if err = md.Db.Delete([]byte(TimestampPrefix)); err != nil {
-		return fmt.Errorf("cannot delete creation timestamp; %v", err)
+	if err := md.Db.Delete([]byte(TimestampPrefix)); err != nil {
+		finalErr = errors.Join(finalErr, fmt.Errorf("cannot delete creation timestamp; %v", err))
 	} else {
 		md.log.Debugf("Timestamp deleted successfully")
 	}
 
-	return nil
+	return finalErr
 }
 
 // FindBlockRangeInSubstate if AidaDb does not yet have metadata
