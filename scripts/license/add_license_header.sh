@@ -27,7 +27,7 @@ root_dir=$(readlink -f "$script_dir/../..")
 
 # list of files/directories to ignore
 # paths must be in single quotes to prevent shell expansion (will be expanded later)
-ignore_files=('carmen/*' 'sonic/*' 'tosca/*' 'mock.go')
+ignore_files=('carmen/*' 'sonic/*' 'tosca/*' '*mock.go')
 
 ## extract the flag if the script should only check the license headers
 check_only=false
