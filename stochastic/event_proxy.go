@@ -231,8 +231,12 @@ func (p *EventProxy) RevertToSnapshot(snapshot int) {
 	// find snapshot in recordings and record how many snapshots have to be unwound
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
-			p.registry.RegisterSnapshotDelta(len(p.snapshots) - i - 1)
-			p.snapshots = p.snapshots[0 : i+1]
+			delta := len(p.snapshots) - i - 1
+			p.registry.RegisterSnapshotDelta(delta)
+			// remove snapshot from the active snapshot list
+			// i.e., the snapshot given as an argument cannot
+			// be reused for another call to RevertToSnapshot
+			p.snapshots = p.snapshots[0:i]
 			break
 		}
 	}
