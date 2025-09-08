@@ -27,14 +27,20 @@ import (
 )
 
 func TestMerge_Command(t *testing.T) {
+	ss, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
+
 	path1 := t.TempDir() + "/sdb1"
 	sdb1, err := db.NewDefaultSubstateDB(path1)
 	require.NoError(t, err)
 	s1 := utils.GetTestSubstate("pb")
-	s1.Block = 10
-	s1.Transaction = 2
+	s1.Block = ss.Block + 1
+	s1.Transaction = 1
 	err = sdb1.PutSubstate(s1)
 	require.NoError(t, err)
+
+	md := utils.NewAidaDbMetadata(sdb1, "CRITICAL")
+	require.NoError(t, md.SetChainID(utils.SonicMainnetChainID))
+
 	err = sdb1.Close()
 	require.NoError(t, err)
 
@@ -42,14 +48,17 @@ func TestMerge_Command(t *testing.T) {
 	sdb2, err := db.NewDefaultSubstateDB(path2)
 	require.NoError(t, err)
 	s2 := utils.GetTestSubstate("pb")
-	s2.Block = 20
-	s2.Transaction = 3
+	s2.Block = ss.Block + 2
+	s2.Transaction = 2
 	err = sdb2.PutSubstate(s2)
 	require.NoError(t, err)
+
+	md = utils.NewAidaDbMetadata(sdb2, "CRITICAL")
+	require.NoError(t, md.SetChainID(utils.SonicMainnetChainID))
+
 	err = sdb2.Close()
 	require.NoError(t, err)
 
-	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	app := cli.NewApp()
 	app.Action = mergeAction
 	app.Flags = Command.Flags
@@ -69,11 +78,11 @@ func TestMerge_Command(t *testing.T) {
 	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	require.NoError(t, err)
 
-	gotS1, err := aidaDb.GetSubstate(10, 2)
+	gotS1, err := aidaDb.GetSubstate(s1.Block, s1.Transaction)
 	require.NoError(t, err)
 	require.NoError(t, gotS1.Equal(s1))
 
-	gotS2, err := aidaDb.GetSubstate(20, 3)
+	gotS2, err := aidaDb.GetSubstate(s2.Block, s2.Transaction)
 	require.NoError(t, err)
 	require.NoError(t, gotS2.Equal(s2))
 }

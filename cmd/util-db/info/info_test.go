@@ -48,20 +48,7 @@ func TestInfo_PrintCount(t *testing.T) {
 		wantErr string
 	}
 
-	aidaDbPath := t.TempDir() + "aida-db"
-
-	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if aidaDb == nil {
-		t.Fatal("aidaDb is nil")
-	}
-	err = aidaDb.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	_, aidaDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	tests := []testCase{
 		{
 			name: "IntegrationTest",
@@ -69,7 +56,7 @@ func TestInfo_PrintCount(t *testing.T) {
 				"info", "count",
 				"--aida-db", aidaDbPath,
 				"--db-component=all",
-				"1", "2",
+				"37534834", "37534834",
 			},
 			wantErr: "",
 		},

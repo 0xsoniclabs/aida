@@ -67,7 +67,7 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 				Arg(Command.Name),
 			wantErr: fmt.Sprintf("your db type (%v) cannot be validated", utils.NoType),
 			setup: func(aidaDbPath string) {
-				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+				aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 				require.NoError(t, err)
 				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
 				err = md.SetDbType(utils.NoType)
@@ -82,9 +82,11 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 				Arg(Command.Name),
 			wantErr: "could not find expected db hash",
 			setup: func(aidaDbPath string) {
-				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+				aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 				require.NoError(t, err)
 				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
+				err = md.SetDbType(utils.GenType)
+				require.NoError(t, err)
 				err = md.SetDbHash([]byte{})
 				require.NoError(t, err)
 				err = aidaDb.Close()
@@ -97,9 +99,11 @@ func TestCmd_ValidateCommandError(t *testing.T) {
 				Arg(Command.Name),
 			wantErr: "hashes are different",
 			setup: func(aidaDbPath string) {
-				aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+				aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 				require.NoError(t, err)
 				md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
+				err = md.SetDbType(utils.GenType)
+				require.NoError(t, err)
 				err = md.SetDbHash([]byte("wrong-hash"))
 				require.NoError(t, err)
 				err = aidaDb.Close()

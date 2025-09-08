@@ -18,6 +18,7 @@ package update
 
 import (
 	"context"
+	"errors"
 	"math"
 	"math/big"
 	"os"
@@ -34,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -48,8 +50,8 @@ func TestUpdate_UpdateDbCommand(t *testing.T) {
 
 	// Put substate with max latest block to avoid any updating
 	ss := utils.GetTestSubstate("pb")
-	ss.Block = math.MaxUint64
-	ss.Env.Number = math.MaxUint64
+	ss.Block = math.MaxInt64
+	ss.Env.Number = math.MaxInt64
 	err = aidaDb.PutSubstate(ss)
 	require.NoError(t, err)
 
@@ -237,6 +239,10 @@ func TestUpdate_pushToChanel(t *testing.T) {
 }
 
 func TestUpdate_retrievePatchesToDownload(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	md := utils.NewMockMetadata(ctrl)
+	md.EXPECT().GetLastBlock().Return(uint64(100)).Times(2)
+
 	utils.AidaDbRepositoryUrl = utils.AidaDbRepositorySonicUrl
 	defer func() {
 		utils.AidaDbRepositoryUrl = ""
@@ -244,7 +250,7 @@ func TestUpdate_retrievePatchesToDownload(t *testing.T) {
 	patches, err := retrievePatchesToDownload(&utils.Config{
 		ChainID:    utils.SonicMainnetChainID,
 		UpdateType: "nightly",
-	}, 28_000_000)
+	}, md)
 	require.NoError(t, err)
 	require.NotEmpty(t, patches)
 }
@@ -316,7 +322,7 @@ func TestUpdate_mergeToExistingAidaDb_ClassicPatch(t *testing.T) {
 	require.NoError(t, err)
 	// Set correct metadata block range
 	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
-	err = targetMD.SetBlockRange(0, want.Block-1)
+	err = errors.Join(targetMD.SetFirstBlock(0), targetMD.SetLastBlock(want.Block-1))
 	require.NoError(t, err)
 	err = targetMD.SetChainID(utils.SonicMainnetChainID)
 	require.NoError(t, err)
@@ -346,7 +352,7 @@ func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create target db
-	targetDb, err := db.NewDefaultBaseDB(targetDbPath)
+	targetDb, err := db.NewDefaultSubstateDB(targetDbPath)
 	require.NoError(t, err)
 
 	// Set correct metadata block range
@@ -371,11 +377,11 @@ func TestUpdate_mergeToExistingAidaDb_StateHashPatch(t *testing.T) {
 func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
 	want, patchPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	_, targetPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
-	targetDb, err := db.NewDefaultBaseDB(targetPath)
+	targetDb, err := db.NewDefaultSubstateDB(targetPath)
 	require.NoError(t, err)
 	targetMD := utils.NewAidaDbMetadata(targetDb, "CRITICAL")
 	// set wrong block range to target db
-	err = targetMD.SetBlockRange(0, want.Block-1000)
+	err = errors.Join(targetMD.SetFirstBlock(0), targetMD.SetLastBlock(want.Block-1000))
 	require.NoError(t, err)
 	err = targetMD.SetChainID(utils.SonicMainnetChainID)
 	require.NoError(t, err)
@@ -385,13 +391,13 @@ func TestUpdate_mergeToExistingAidaDb_BlocksDoesNotAlign(t *testing.T) {
 		LogLevel: "CRITICAL",
 	}
 	err = mergeToExistingAidaDb(cfg, targetMD, patchPath)
-	require.ErrorContains(t, err, "metadata blocks does not align")
+	require.ErrorContains(t, err, "cannot merge dbs with gap")
 }
 
 func TestUpdate_retrievePatchesToDownload_MustChooseUpdateType(t *testing.T) {
 	_, err := retrievePatchesToDownload(&utils.Config{
 		UpdateType: "", // empty
-	}, 0)
+	}, nil)
 	require.ErrorContains(t, err, "please choose correct data-type")
 }
 

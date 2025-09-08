@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -105,12 +106,11 @@ func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSche
 	require.NoError(t, err)
 
 	md := NewAidaDbMetadata(db, "CRITICAL")
-	// todo might cause failing tests
-	//dbHash, err := hex.DecodeString("a0d4f7616f3007bf8c02f816a60b2526")
-	//require.NoError(t, err)
-
+	dbHash, err := hex.DecodeString("a0d4f7616f3007bf8c02f816a60b2526")
+	require.NoError(t, err)
+	require.NoError(t, md.SetDbHash(dbHash))
 	require.NoError(t, md.GenerateMetadata(SonicMainnetChainID))
-
+	require.NoError(t, md.SetDbType(GenType))
 	require.NoError(t, db.Close())
 
 	return ss, path

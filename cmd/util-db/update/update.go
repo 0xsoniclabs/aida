@@ -82,13 +82,17 @@ func updateAction(ctx *cli.Context) error {
 }
 
 // update implements updating command to be called from various commands and automatically downloads aida-db patches.
-func update(cfg *utils.Config) error {
+func update(cfg *utils.Config) (finalErr error) {
 	log := logger.NewLogger(cfg.LogLevel, "DB Update")
 
-	targetDB, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
+	targetDB, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		finalErr = errors.Join(err, targetDB.Close())
+	}()
+
 	md := utils.NewAidaDbMetadata(targetDB, cfg.LogLevel)
 	err = md.GenerateMetadata(cfg.ChainID)
 	if err != nil {
@@ -233,7 +237,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 
 func mergeToExistingAidaDb(cfg *utils.Config, md utils.Metadata, extractedPatchPath string) error {
 	// merge newly extracted patch
-	patchDb, err := db.NewReadOnlySubstateDB(extractedPatchPath)
+	patchDb, err := db.NewDefaultSubstateDB(extractedPatchPath)
 	if err != nil {
 		return fmt.Errorf("cannot open patchDb; %v", err)
 	}
@@ -250,7 +254,7 @@ func mergeToExistingAidaDb(cfg *utils.Config, md utils.Metadata, extractedPatchP
 		}
 	}
 
-	m := utildb.NewMerger(cfg, md.GetDb(), []db.SubstateDB{patchDb}, []string{extractedPatchPath}, nil)
+	m := utildb.NewMerger(cfg, md.GetDb(), []db.SubstateDB{patchDb}, []string{extractedPatchPath})
 
 	err = m.Merge()
 	if err != nil {
@@ -419,17 +423,12 @@ func retrievePatchesToDownload(cfg *utils.Config, md utils.Metadata) ([]utils.Pa
 		return nil, fmt.Errorf("unable to download patches.json: %v", err)
 	}
 
-	hasStateHashPatch, err := utils.HasStateHashPatch(cfg.AidaDb)
-	if err != nil {
-		return nil, err
-	}
-
 	// list of availablePatches to be downloaded
 	var patchesToDownload = make([]utils.PatchJson, 0)
 
 	for _, patch := range availablePatches {
 		if patch.FileName == stateHashPatchFileName+".tar.gz" {
-			if !hasStateHashPatch {
+			if !md.HasHashPatch() {
 				patchesToDownload = append(patchesToDownload, patch)
 			}
 		}

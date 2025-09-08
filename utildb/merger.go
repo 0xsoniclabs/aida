@@ -33,19 +33,17 @@ type Merger struct {
 	targetDb      db.SubstateDB
 	sourceDbs     []db.SubstateDB
 	sourceDbPaths []string
-	md            *utils.AidaDbMetadata
 	start         time.Time
 }
 
 // NewMerger returns new instance of Merger
-func NewMerger(cfg *utils.Config, targetDb db.SubstateDB, sourceDbs []db.SubstateDB, sourceDbPaths []string, md *utils.AidaDbMetadata) *Merger {
+func NewMerger(cfg *utils.Config, targetDb db.SubstateDB, sourceDbs []db.SubstateDB, sourceDbPaths []string) *Merger {
 	return &Merger{
 		cfg:           cfg,
 		log:           logger.NewLogger(cfg.LogLevel, "aida-db-Merger"),
 		targetDb:      targetDb,
 		sourceDbs:     sourceDbs,
 		sourceDbPaths: sourceDbPaths,
-		md:            md,
 		start:         time.Now(),
 	}
 }
@@ -54,7 +52,6 @@ func NewMerger(cfg *utils.Config, targetDb db.SubstateDB, sourceDbs []db.Substat
 func (m *Merger) FinishMerge() error {
 	if !m.cfg.SkipMetadata {
 		// merge type db does not have epoch calculations yet
-		m.md.Db = m.targetDb
 		MustCloseDB(m.targetDb)
 
 		err := PrintMetadata(m.targetDb)

@@ -23,13 +23,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
 	"github.com/Fantom-foundation/lachesis-base/common/bigendian"
-	geth_leveldb "github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -86,6 +87,8 @@ type PatchJson struct {
 	Nightly            bool
 }
 
+//go:generate mockgen -source metadata.go -destination metadata_mock.go -package utils
+
 type Metadata interface {
 	// GenerateMetadata generates new or updates metadata in AidaDb.
 	GenerateMetadata(chainID ChainID) error
@@ -105,6 +108,7 @@ type Metadata interface {
 	GetDbHash() []byte
 	GetUpdatesetInterval() uint64
 	GetUpdatesetSize() uint64
+	HasHashPatch() bool
 
 	// Setters
 	SetFirstBlock(uint64) error
@@ -132,6 +136,18 @@ type AidaDbMetadata struct {
 	DbType                           AidaDbType
 	timestamp                        *uint64
 	dbHash                           []byte
+}
+
+func (md *AidaDbMetadata) HasHashPatch() bool {
+	_, err := md.Db.Get([]byte(HasStateHashPatchPrefix))
+	if err != nil {
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			md.log.Criticalf("error getting 'HasHashPatch' from db metadata: %v", err)
+		}
+		return false
+	}
+
+	return true
 }
 
 func (md *AidaDbMetadata) GetDb() db.SubstateDB {
@@ -245,6 +261,14 @@ func (md *AidaDbMetadata) Merge(src Metadata) error {
 		return fmt.Errorf("target db (%v-%v) is subset of source db (%v-%v)", targetFirstBlock, targetLastBlock, srcFirstBlock, srcLastBlock)
 	}
 
+	if srcFirstBlock < targetFirstBlock && srcLastBlock+1 < targetFirstBlock {
+		return fmt.Errorf("cannot merge dbs with gap; target db (%v-%v), source db (%v-%v)", targetFirstBlock, targetLastBlock, srcFirstBlock, srcLastBlock)
+	}
+
+	if targetFirstBlock < srcFirstBlock && targetLastBlock+1 < srcFirstBlock {
+		return fmt.Errorf("cannot merge dbs with gap; target db (%v-%v), source db (%v-%v)", targetFirstBlock, targetLastBlock, srcFirstBlock, srcLastBlock)
+	}
+
 	blocksOk := false
 	// Check alignment - dbs can overlap but cannot have gaps
 	// Target is before source
@@ -279,7 +303,12 @@ func (md *AidaDbMetadata) GetFirstBlock() uint64 {
 	firstBlockBytes, err := md.Db.Get([]byte(FirstBlockPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return 0
+			fs := md.Db.GetFirstSubstate()
+			if fs != nil {
+				blk := fs.Block
+				md.FirstBlock = &blk
+				return blk
+			}
 		}
 		md.log.Criticalf("cannot get first block from metadata; %v", err)
 		return 0
@@ -298,7 +327,13 @@ func (md *AidaDbMetadata) GetLastBlock() uint64 {
 	lastBlockBytes, err := md.Db.Get([]byte(LastBlockPrefix))
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
-			return 0
+			var ls *substate.Substate
+			ls, err = md.Db.GetLastSubstate()
+			if ls != nil {
+				blk := ls.Block
+				md.LastBlock = &blk
+				return blk
+			}
 		}
 		md.log.Criticalf("cannot get last block from metadata; %v", err)
 		return 0
@@ -564,6 +599,20 @@ func (md *AidaDbMetadata) findEpochs() error {
 	return nil
 }
 
+// FindEpochNumber via RPC request GetBlockByNumber
+func FindEpochNumber(blockNumber uint64, chainId ChainID) (uint64, error) {
+	hex := strconv.FormatUint(blockNumber, 16)
+
+	blockStr := "0x" + hex
+
+	num, err := getEpochByNumber(blockStr, chainId)
+	if err != nil && strings.Contains(err.Error(), "rpc does not know this block") {
+		// block is unknown
+		return 0, nil
+	}
+	return num, err
+}
+
 // SetFreshMetadata for an existing AidaDb without metadata
 func (md *AidaDbMetadata) SetFreshMetadata(chainID ChainID) error {
 	var err error
@@ -727,34 +776,6 @@ func getPatchFirstBlock(lastPatchBlock uint64) (uint64, error) {
 
 	return 0, fmt.Errorf("cannot find find first block for requested last block; requested: %v; available: [%v]", lastPatchBlock, availableLastBlocks)
 
-}
-
-// HasStateHashPatch checks whether given db has already acquired patch with StateHashes.
-func HasStateHashPatch(path string) (bool, error) {
-	db, err := geth_leveldb.New(path, 1024, 100, "profiling", true)
-	if err != nil {
-		// if AidaDb does not exist force downloading the state hash patch
-		if errors.Is(err, os.ErrNotExist) {
-			return false, nil
-		}
-		return false, fmt.Errorf("cannot open aida-db to check if it already has state hash patch; %v", err)
-	}
-
-	_, getErr := db.Get([]byte(HasStateHashPatchPrefix))
-
-	err = db.Close()
-	if err != nil {
-		return false, fmt.Errorf("cannot close aida-db after checking if it already has state hash patch; %v", err)
-	}
-
-	if getErr != nil {
-		if errors.Is(getErr, leveldb.ErrNotFound) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
 }
 
 // SetHasHashPatch marks AidaDb that it already has HashPatch merged so it will not get downloaded next update.

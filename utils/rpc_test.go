@@ -106,18 +106,6 @@ func TestSendRPCRequest_InvalidChainID(t *testing.T) {
 
 }
 
-func TestRpc_FindEpochNumber(t *testing.T) {
-	// case success
-	output, err := FindEpochNumber(uint64(1234), MainnetChainID)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(11), output)
-
-	// case error
-	output, err = FindEpochNumber(uint64(1234), invalidChainID)
-	assert.Error(t, err)
-	assert.Equal(t, uint64(0), output)
-}
-
 func TestRpc_FindHeadEpochNumber(t *testing.T) {
 	// case success
 	output, err := FindHeadEpochNumber(MainnetChainID)

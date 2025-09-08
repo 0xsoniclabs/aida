@@ -47,8 +47,8 @@ func TestClone(t *testing.T) {
 		dbc         string
 		wantErr     string
 	}{
-		{"NoType", utils.NoType, "", "clone failed for NoType: incorrect clone type: 0"},
-		{"GenType", utils.GenType, "", "clone failed for GenType: incorrect clone type: 1"},
+		{"NoType", utils.NoType, "", "clone failed for NoType: incorrect clone type: NoType"},
+		{"GenType", utils.GenType, "", "clone failed for GenType: incorrect clone type: Generate"},
 		{"PatchType", utils.PatchType, "", ""},
 		{"CloneType", utils.CloneType, "", ""},
 		{"CustomTypeAll", utils.CustomType, "all", ""},

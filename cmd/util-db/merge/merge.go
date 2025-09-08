@@ -63,10 +63,7 @@ func mergeAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot open db; %v", err)
 	}
 
-	var (
-		dbs []db.SubstateDB
-		md  *utils.AidaDbMetadata
-	)
+	var dbs []db.SubstateDB
 
 	if !cfg.SkipMetadata {
 		dbs, err = utildb.OpenSourceDatabases(sourcePaths)
@@ -91,7 +88,7 @@ func mergeAction(ctx *cli.Context) error {
 		return err
 	}
 
-	m := utildb.NewMerger(cfg, targetDb, dbs, sourcePaths, md)
+	m := utildb.NewMerger(cfg, targetDb, dbs, sourcePaths)
 	if err = m.Merge(); err != nil {
 		return err
 	}

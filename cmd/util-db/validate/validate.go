@@ -47,7 +47,7 @@ func validateAction(ctx *cli.Context) error {
 		return fmt.Errorf("cannot parse config; %v", err)
 	}
 
-	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
+	aidaDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}

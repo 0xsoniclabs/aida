@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -94,15 +93,6 @@ func GetProvider(chainId ChainID) (string, error) {
 	}
 }
 
-// FindEpochNumber via RPC request GetBlockByNumber
-func FindEpochNumber(blockNumber uint64, chainId ChainID) (uint64, error) {
-	hex := strconv.FormatUint(blockNumber, 16)
-
-	blockStr := "0x" + hex
-
-	return getEpochByNumber(blockStr, chainId)
-}
-
 // FindHeadEpochNumber via RPC request GetBlockByNumber
 func FindHeadEpochNumber(chainId ChainID) (uint64, error) {
 	blockStr := "latest"
@@ -123,7 +113,17 @@ func getEpochByNumber(blockStr string, chainId ChainID) (uint64, error) {
 		return 0, err
 	}
 
-	resultMap, ok := m["result"].(map[string]interface{})
+	if errMsg, ok := m["error"]; ok {
+		return 0, fmt.Errorf("rpc error: %v", errMsg)
+	}
+
+	res, ok := m["result"]
+	if ok {
+		if m["result"] == nil {
+			return 0, fmt.Errorf("rpc does not know this block: %x", blockStr)
+		}
+	}
+	resultMap, ok := res.(map[string]interface{})
 	if !ok {
 		return 0, fmt.Errorf("unexpecetd answer: %v", m)
 	}

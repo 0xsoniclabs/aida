@@ -770,14 +770,17 @@ func (cc *configContext) setChainId() error {
 	if cc.cfg.ChainID == UnknownChainID {
 		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", ChainIDFlag.Name)
 
-		// we check if AidaDb was set with err == nil
-		if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
-			md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
+		// only open aidaDb if it exists
+		if _, err := os.Stat(cc.cfg.AidaDb); err == nil {
+			// we check if AidaDb was set with err == nil
+			if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
+				md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 
-			cc.cfg.ChainID = md.GetChainID()
+				cc.cfg.ChainID = md.GetChainID()
 
-			if err = aidaDb.Close(); err != nil {
-				return fmt.Errorf("cannot close db; %v", err)
+				if err = aidaDb.Close(); err != nil {
+					return fmt.Errorf("cannot close db; %v", err)
+				}
 			}
 		}
 
