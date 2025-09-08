@@ -30,15 +30,15 @@ import (
 type Merger struct {
 	cfg           *utils.Config
 	log           logger.Logger
-	targetDb      db.BaseDB
-	sourceDbs     []db.BaseDB
+	targetDb      db.SubstateDB
+	sourceDbs     []db.SubstateDB
 	sourceDbPaths []string
 	md            *utils.AidaDbMetadata
 	start         time.Time
 }
 
 // NewMerger returns new instance of Merger
-func NewMerger(cfg *utils.Config, targetDb db.BaseDB, sourceDbs []db.BaseDB, sourceDbPaths []string, md *utils.AidaDbMetadata) *Merger {
+func NewMerger(cfg *utils.Config, targetDb db.SubstateDB, sourceDbs []db.SubstateDB, sourceDbPaths []string, md *utils.AidaDbMetadata) *Merger {
 	return &Merger{
 		cfg:           cfg,
 		log:           logger.NewLogger(cfg.LogLevel, "aida-db-Merger"),
@@ -55,13 +55,9 @@ func (m *Merger) FinishMerge() error {
 	if !m.cfg.SkipMetadata {
 		// merge type db does not have epoch calculations yet
 		m.md.Db = m.targetDb
-		err := m.md.SetAll()
-		if err != nil {
-			return err
-		}
 		MustCloseDB(m.targetDb)
 
-		err = PrintMetadata(m.cfg.AidaDb)
+		err := PrintMetadata(m.targetDb)
 		if err != nil {
 			return err
 		}

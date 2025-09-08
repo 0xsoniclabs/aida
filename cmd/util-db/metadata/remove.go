@@ -41,18 +41,14 @@ Removes block and epoch range and ChainID from metadata for given AidaDb.
 // is applied onto it
 func removeAction(ctx *cli.Context) (finalErr error) {
 	aidaDbPath := ctx.String(utils.AidaDbFlag.Name)
-
-	// open db
-	base, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
 		return err
 	}
-
 	defer func() {
-		finalErr = errors.Join(finalErr, base.Close())
+		finalErr = errors.Join(finalErr, aidaDb.Close())
 	}()
-	md := utils.NewAidaDbMetadata(base, "DEBUG")
-	md.DeleteMetadata()
-
+	md := utils.NewAidaDbMetadata(aidaDb, "DEBUG")
+	md.Delete()
 	return nil
 }

@@ -17,40 +17,48 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
-// UpdateCommand downloads aida-db and new patches
-var UpdateCommand = cli.Command{
-	Action: update,
-	Name:   "update",
-	Usage:  "download aida-db patches",
+var ScrapeCommand = cli.Command{
+	Action:    scrapePrepare,
+	Name:      "scrape",
+	Usage:     "Stores state hashes into TargetDb for given range",
+	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
+		&utils.TargetDbFlag,
 		&utils.ChainIDFlag,
+		&utils.ClientDbFlag,
 		&logger.LogLevelFlag,
-		&utils.CompactDbFlag,
-		&utils.DbTmpFlag,
-		&utils.UpdateTypeFlag,
-		&utils.SubstateEncodingFlag,
 	},
-	Description: ` 
-Updates aida-db by downloading patches from aida-db generation server.
-`,
 }
 
-// update updates aida-db by downloading patches from aida-db generation server.
-func update(ctx *cli.Context) error {
-	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
+// scrapePrepare stores state hashes into Target for given range
+func scrapePrepare(ctx *cli.Context) error {
+	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
+	if argErr != nil {
+		return argErr
+	}
+
+	log := logger.NewLogger(cfg.LogLevel, "UtilDb-Scrape")
+	log.Infof("Scraping for range %d-%d", cfg.First, cfg.Last)
+
+	database, err := db.NewDefaultBaseDB(cfg.TargetDb)
+	if err != nil {
+		return fmt.Errorf("error opening stateHash leveldb %s: %v", cfg.TargetDb, err)
+	}
+	defer database.Close()
+
+	err = utils.StateAndBlockHashScraper(ctx.Context, cfg.ChainID, cfg.ClientDb, database, cfg.First, cfg.Last, log)
 	if err != nil {
 		return err
 	}
-	if err = utildb.Update(cfg); err != nil {
-		return err
-	}
 
-	return utildb.PrintMetadata(cfg.AidaDb)
+	log.Infof("Scraping finished")
+	return nil
 }
