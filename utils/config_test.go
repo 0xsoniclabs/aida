@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math"
@@ -930,15 +931,21 @@ func createFakeAidaDb(cfg *Config) error {
 	)
 
 	// open fake aidaDB
-	testDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	testDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open patch db; %v", err)
 	}
 
 	// create fake metadata
-	err = ProcessPatchLikeMetadata(testDb, cfg.LogLevel, firstBlock, lastBlock, firstEpoch, lastEpoch, cfg.ChainID, true, nil)
+	md := NewAidaDbMetadata(testDb, "CRITICAL")
+	err = errors.Join(
+		md.SetFirstBlock(firstBlock),
+		md.SetLastBlock(lastBlock),
+		md.SetFirstEpoch(firstEpoch),
+		md.SetLastEpoch(lastEpoch),
+	)
 	if err != nil {
-		return fmt.Errorf("cannot create a metadata; %v", err)
+		return fmt.Errorf("cannot set metadata; %v", err)
 	}
 	err = testDb.Close()
 	if err != nil {
