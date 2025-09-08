@@ -187,6 +187,12 @@ func (s *carmenStateDB) GetCommittedState(addr common.Address, key common.Hash) 
 	return common.Hash(s.txCtx.GetCommittedState(carmen.Address(addr), carmen.Key(key)))
 }
 
+func (s *carmenStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	state := s.GetState(addr, key)
+	commitedState := s.GetCommittedState(addr, key)
+	return state, commitedState
+}
+
 func (s *carmenStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
 	return common.Hash(s.txCtx.GetState(carmen.Address(addr), carmen.Key(key)))
 }

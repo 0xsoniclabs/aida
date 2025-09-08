@@ -28,6 +28,7 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
+	"github.com/0xsoniclabs/aida/cmd/util-db/scrape"
 	"github.com/0xsoniclabs/aida/cmd/util-db/validate"
 	"github.com/urfave/cli/v2"
 )
@@ -47,7 +48,7 @@ var UtilDbApp = cli.App{
 		&metadata.Command,
 		&generate.Command,
 		&db.UpdateCommand,
-		&db.ScrapeCommand,
+		&scrape.Command,
 
 		//Priming only
 		&primer.RunPrimerCmd,

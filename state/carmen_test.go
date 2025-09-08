@@ -266,7 +266,16 @@ func TestCarmenState_StateOperations(t *testing.T) {
 
 			csDB.SetState(addr, key, value)
 
-			if csDB.GetState(addr, key) != value {
+			state := csDB.GetState(addr, key)
+			if state != value {
+				t.Fatal("failed to update account state")
+			}
+
+			state, committed := csDB.GetStateAndCommittedState(addr, key)
+			if state != value {
+				t.Fatal("failed to update account state")
+			}
+			if committed != (common.Hash{}) {
 				t.Fatal("failed to update account state")
 			}
 		})

@@ -335,6 +335,7 @@ func TestStochasticState_execute(t *testing.T) {
 	db.EXPECT().GetCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{})
 	db.EXPECT().GetNonce(gomock.Any()).Return(uint64(0))
 	db.EXPECT().GetState(gomock.Any(), gomock.Any()).Return(common.Hash{})
+	db.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{}, common.Hash{})
 	db.EXPECT().GetStorageRoot(gomock.Any()).Return(common.Hash{})
 	db.EXPECT().GetTransientState(gomock.Any(), gomock.Any()).Return(common.Hash{})
 	db.EXPECT().HasSelfDestructed(gomock.Any()).Return(false)

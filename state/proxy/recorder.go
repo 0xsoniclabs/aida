@@ -164,6 +164,18 @@ func (r *RecorderProxy) GetCommittedState(addr common.Address, key common.Hash) 
 	return value
 }
 
+func (r *RecorderProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	previousContract := r.ctx.PrevContract()
+	contract := r.ctx.EncodeContract(addr)
+	key, kPos := r.ctx.EncodeKey(key)
+	if previousContract == contract && kPos == 0 {
+		r.write(operation.NewGetStateAndCommittedStateLcls())
+	} else {
+		r.write(operation.NewGetStateAndCommittedState(contract, key))
+	}
+	return r.db.GetStateAndCommittedState(addr, key)
+}
+
 // GetState retrieves a value from the StateDB.
 func (r *RecorderProxy) GetState(addr common.Address, key common.Hash) common.Hash {
 	previousContract := r.ctx.PrevContract()
