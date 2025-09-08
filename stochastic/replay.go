@@ -29,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
 )
@@ -313,6 +314,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 		value common.Hash
 		db    = ss.db
 		rg    = ss.rg
+		msg   string
 	)
 
 	// fetch indexes from index access generators
@@ -334,17 +336,20 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	// print opcode and its arguments
 	if ss.traceDebug {
 		// print operation
-		ss.log.Infof("opcode:%v (%v)", opText[op], EncodeOpcode(op, addrCl, keyCl, valueCl))
+		msg = fmt.Sprintf("opcode:%v (%v) ", opText[op], EncodeOpcode(op, addrCl, keyCl, valueCl))
 
 		// print indexes of contract address, storage key, and storage value.
 		if addrCl != statistics.NoArgID {
-			ss.log.Infof(" addr-idx: %v", addrIdx)
+			msg = fmt.Sprintf("%v addr-idx: %v", msg, addrIdx)
+			msg = fmt.Sprintf("%v addr: %v", msg, addr)
 		}
 		if keyCl != statistics.NoArgID {
-			ss.log.Infof(" key-idx: %v", keyIdx)
+			msg = fmt.Sprintf("%v key-idx: %v", msg, keyIdx)
+			msg = fmt.Sprintf("%v key: %v", msg, key)
 		}
 		if valueCl != statistics.NoArgID {
-			ss.log.Infof(" value-idx: %v", valueIdx)
+			msg = fmt.Sprintf("%v value-idx: %v", msg, valueIdx)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 	}
 
@@ -352,13 +357,13 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case AddBalanceID:
 		value := rg.Int63n(BalanceRange)
 		if ss.traceDebug {
-			ss.log.Infof("value: %v", value)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 		db.AddBalance(addr, uint256.NewInt(uint64(value)), 0)
 
 	case BeginBlockID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.blockNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.blockNum)
 		}
 		err := db.BeginBlock(ss.blockNum)
 		if err != nil {
@@ -369,13 +374,13 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 
 	case BeginSyncPeriodID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.syncPeriodNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.syncPeriodNum)
 		}
 		db.BeginSyncPeriod(ss.syncPeriodNum)
 
 	case BeginTransactionID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.txNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.txNum)
 		}
 		err := db.BeginTransaction(ss.txNum)
 		if err != nil {
@@ -462,7 +467,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			}
 			snapshot := ss.snapshot[snapshotIdx]
 			if ss.traceDebug {
-				ss.log.Infof(" id: %v", snapshot)
+				msg = fmt.Sprintf("%v id: %v", msg, snapshot)
 			}
 			ss.snapshot = ss.snapshot[:snapshotIdx+1]
 
@@ -482,15 +487,27 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
 		}
 
+	case SelfDestructID:
+		db.SelfDestruct(addr)
+		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
+			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
+		}
+
+	case SelfDestruct6780ID:
+		db.SelfDestruct6780(addr)
+		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
+			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
+		}
+
 	case SetCodeID:
 		sz := rg.Intn(MaxCodeSize-1) + 1
 		if ss.traceDebug {
-			ss.log.Infof(" code-size: %v", sz)
+			msg = fmt.Sprintf("%v code-size: %v", msg, sz)
 		}
 		code := make([]byte, sz)
 		_, err := rg.Read(code)
 		if err != nil {
-			ss.log.Fatalf("error producing a random byte slice. Error: %v", err)
+			msg = fmt.Sprintf("%v error producing a random byte slice. Error: %v", msg, err)
 		}
 		db.SetCode(addr, code)
 
@@ -507,7 +524,7 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 	case SnapshotID:
 		id := db.Snapshot()
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", id)
+			msg = fmt.Sprintf("%v id: %v", msg, id)
 		}
 		ss.snapshot = append(ss.snapshot, id)
 
@@ -524,13 +541,14 @@ func (ss *stochasticState) execute(op int, addrCl int, keyCl int, valueCl int) {
 			// in the current snapshot
 			value := uint64(rg.Int63n(int64(balance)))
 			if ss.traceDebug {
-				ss.log.Infof(" value: %v", value)
+				msg = fmt.Sprintf("%v value: %v", msg, value)
 			}
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
 		ss.log.Fatalf("invalid operation %v; opcode %v", opText[op], op)
 	}
+	ss.log.Infof("%s", msg)
 }
 
 // nextState produces the next state in the Markovian process.
@@ -571,9 +589,9 @@ func toAddress(idx int64) common.Address {
 	if idx < 0 {
 		panic("invalid index")
 	} else if idx != 0 {
-		arr := make([]byte, 8)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		a.SetBytes(arr)
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		a.SetBytes(crypto.Keccak256(arr))
 	}
 	return a
 }
@@ -584,10 +602,9 @@ func toHash(idx int64) common.Hash {
 	if idx < 0 {
 		panic("invalid index")
 	} else if idx != 0 {
-		// TODO: Improve encoding so that index conversion becomes sparse.
-		arr := make([]byte, 32)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		h.SetBytes(arr)
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		return crypto.Keccak256Hash(arr)
 	}
 	return h
 }

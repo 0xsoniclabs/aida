@@ -94,11 +94,15 @@ type gethStateDB struct {
 }
 
 func (s *gethStateDB) CreateAccount(addr common.Address) {
-	s.db.CreateAccount(addr)
+	if !s.db.Exist(addr) {
+		s.db.CreateAccount(addr)
+	}
 }
 
 func (s *gethStateDB) CreateContract(addr common.Address) {
-	s.db.CreateContract(addr)
+	if s.db.Exist(addr) {
+		s.db.CreateContract(addr)
+	}
 }
 
 func (s *gethStateDB) Exist(addr common.Address) bool {
