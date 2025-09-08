@@ -209,12 +209,12 @@ func NewAidaDbMetadata(db db.SubstateDB, logLevel string) Metadata {
 func (md *AidaDbMetadata) Merge(src Metadata) error {
 	targetChainID := md.GetChainID()
 	srcChainID := src.GetChainID()
-	if targetChainID != 0 {
+	if targetChainID != UnknownChainID {
 		if targetChainID != srcChainID {
 			return fmt.Errorf("cannot merge dbs with different chainIDs; target db chainID %v, source db chainID %v", targetChainID, srcChainID)
 		}
 	} else {
-		if srcChainID == 0 {
+		if srcChainID == UnknownChainID {
 			return errors.New("cannot merge dbs with no chainIDs in metadata; you can set chainID manually using the util-db insert cmd")
 		}
 		err := md.SetChainID(srcChainID)
@@ -272,7 +272,7 @@ func (md *AidaDbMetadata) Merge(src Metadata) error {
 	blocksOk := false
 	// Check alignment - dbs can overlap but cannot have gaps
 	// Target is before source
-	if targetLastBlock+1 >= srcFirstBlock {
+	if targetLastBlock < srcFirstBlock {
 		err = md.SetLastBlock(srcLastBlock)
 		if err != nil {
 			return fmt.Errorf("cannot merge last block: %v", err)
@@ -281,7 +281,7 @@ func (md *AidaDbMetadata) Merge(src Metadata) error {
 	}
 
 	// Target is after source
-	if srcLastBlock+1 >= targetFirstBlock {
+	if targetFirstBlock > srcLastBlock {
 		err = md.SetFirstBlock(srcFirstBlock)
 		if err != nil {
 			return fmt.Errorf("cannot merge first block: %v", err)
@@ -613,55 +613,6 @@ func FindEpochNumber(blockNumber uint64, chainId ChainID) (uint64, error) {
 	return num, err
 }
 
-// SetFreshMetadata for an existing AidaDb without metadata
-func (md *AidaDbMetadata) SetFreshMetadata(chainID ChainID) error {
-	var err error
-
-	if chainID == 0 {
-		return fmt.Errorf("since you have aida-db without metadata you need to specify chain-id (--%v)", ChainIDFlag.Name)
-	}
-
-	// ChainID is Set by user in
-	if err = md.SetChainID(chainID); err != nil {
-		return err
-	}
-
-	if err = md.findEpochs(); err != nil {
-		return err
-	}
-
-	if err = md.SetTimestamp(); err != nil {
-		return err
-	}
-
-	_, err = getPatchFirstBlock(md.GetLastBlock())
-	if err != nil {
-		md.log.Warning("Uncertain AidaDbType.")
-		if err = md.SetDbType(NoType); err != nil {
-			return err
-		}
-	} else {
-		if err = md.SetDbType(GenType); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (md *AidaDbMetadata) SetBlockRange(firstBlock uint64, lastBlock uint64) error {
-	var err error
-
-	if err = md.SetFirstBlock(firstBlock); err != nil {
-		return err
-	}
-	if err = md.SetLastBlock(lastBlock); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (md *AidaDbMetadata) Delete() error {
 	var finalErr error
 
@@ -773,9 +724,7 @@ func getPatchFirstBlock(lastPatchBlock uint64) (uint64, error) {
 		}
 		availableLastBlocks += fmt.Sprintf("%v ", p.ToBlock)
 	}
-
 	return 0, fmt.Errorf("cannot find find first block for requested last block; requested: %v; available: [%v]", lastPatchBlock, availableLastBlocks)
-
 }
 
 // SetHasHashPatch marks AidaDb that it already has HashPatch merged so it will not get downloaded next update.

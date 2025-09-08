@@ -18,6 +18,7 @@ package utils
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -458,14 +459,261 @@ func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {
 	}
 }
 
-func TestMetadata_FindEpochNumber(t *testing.T) {
-	// case success
-	output, err := FindEpochNumber(uint64(1234), MainnetChainID)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(11), output)
+func TestMetadata_MergeOk(t *testing.T) {
+	// Create two real SubstateDBs in temp dirs
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
 
-	// case error
-	output, err = FindEpochNumber(uint64(1234), invalidChainID)
+	db1, err := db.NewDefaultSubstateDB(dir1)
+	require.NoError(t, err)
+	db2, err := db.NewDefaultSubstateDB(dir2)
+	require.NoError(t, err)
+
+	// Set up metadata for target
+	md1 := NewAidaDbMetadata(db1, "ERROR")
+	require.NoError(t, md1.SetChainID(SonicMainnetChainID))
+	require.NoError(t, md1.SetFirstBlock(10))
+	require.NoError(t, md1.SetLastBlock(20))
+	require.NoError(t, md1.SetDbType(GenType))
+
+	// Set up metadata for source
+	md2 := NewAidaDbMetadata(db2, "ERROR")
+	require.NoError(t, md2.SetChainID(SonicMainnetChainID))
+	require.NoError(t, md2.SetFirstBlock(21))
+	require.NoError(t, md2.SetLastBlock(30))
+	require.NoError(t, md2.SetDbType(GenType))
+
+	// Positive case: blocks align
+	err = md1.Merge(md2)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(10), md1.GetFirstBlock())
+	assert.Equal(t, uint64(30), md1.GetLastBlock())
+	assert.Equal(t, GenType, md1.GetDbType())
+
+	// Negative case: chain IDs differ
+	md3 := NewAidaDbMetadata(db2, "ERROR")
+	require.NoError(t, md3.SetChainID(200))
+	require.NoError(t, md3.SetFirstBlock(21))
+	require.NoError(t, md3.SetLastBlock(30))
+	require.NoError(t, md3.SetDbType(GenType))
+
+	err = md1.Merge(md3)
 	assert.Error(t, err)
-	assert.Equal(t, uint64(0), output)
+	assert.Contains(t, err.Error(), "cannot merge dbs with different chainIDs")
+}
+
+func TestMetadata_MergeError(t *testing.T) {
+	tests := []struct {
+		name          string
+		targetChainID ChainID
+		targetFirst   uint64
+		targetLast    uint64
+		srcFirstBlock uint64
+		srcLastBlock  uint64
+		srcChainID    ChainID
+		errMsg        string
+	}{
+		{
+			name:          "source is subset of target",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    SonicMainnetChainID,
+			targetFirst:   10,
+			targetLast:    30,
+			srcFirstBlock: 15,
+			srcLastBlock:  20,
+			errMsg:        "source db (15-20) is subset of target db (10-30)",
+		},
+		{
+			name:          "target is subset of source",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    SonicMainnetChainID,
+			targetFirst:   15,
+			targetLast:    20,
+			srcFirstBlock: 10,
+			srcLastBlock:  30,
+			errMsg:        "target db (15-20) is subset of source db (10-30)",
+		},
+		{
+			name:          "gap before target",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    SonicMainnetChainID,
+			targetFirst:   20,
+			targetLast:    30,
+			srcFirstBlock: 10,
+			srcLastBlock:  18,
+			errMsg:        "cannot merge dbs with gap; target db (20-30), source db (10-18)",
+		},
+		{
+			name:          "gap after target",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    SonicMainnetChainID,
+			targetFirst:   10,
+			targetLast:    18,
+			srcFirstBlock: 20,
+			srcLastBlock:  30,
+			errMsg:        "cannot merge dbs with gap; target db (10-18), source db (20-30)",
+		},
+		{
+			name:          "blocks do not align (overlap)",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    SonicMainnetChainID,
+			targetFirst:   10,
+			targetLast:    20,
+			srcFirstBlock: 15,
+			srcLastBlock:  25,
+			errMsg:        "blocks does not align; target db (10-20), source db (15-25)",
+		},
+		{
+			name:          "different chainIDs",
+			targetChainID: SonicMainnetChainID,
+			srcChainID:    EthereumChainID,
+			targetFirst:   10,
+			targetLast:    20,
+			srcFirstBlock: 21,
+			srcLastBlock:  25,
+			errMsg:        "cannot merge dbs with different chainIDs; target db chainID 146, source db chainID 1",
+		},
+		{
+			name:          "unknown chainIDs",
+			targetChainID: UnknownChainID,
+			srcChainID:    UnknownChainID,
+			targetFirst:   10,
+			targetLast:    20,
+			srcFirstBlock: 21,
+			srcLastBlock:  25,
+			errMsg:        "cannot merge dbs with no chainIDs in metadata; you can set chainID manually using the util-db insert cmd",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db1, err := db.NewDefaultSubstateDB(t.TempDir())
+			require.NoError(t, err)
+			db2, err := db.NewDefaultSubstateDB(t.TempDir())
+			require.NoError(t, err)
+
+			md1 := NewAidaDbMetadata(db1, "ERROR")
+			require.NoError(t, md1.SetChainID(test.targetChainID))
+			require.NoError(t, md1.SetFirstBlock(test.targetFirst))
+			require.NoError(t, md1.SetLastBlock(test.targetLast))
+			require.NoError(t, md1.SetDbType(GenType))
+
+			md2 := NewAidaDbMetadata(db2, "ERROR")
+			require.NoError(t, md2.SetChainID(test.srcChainID))
+			require.NoError(t, md2.SetFirstBlock(test.srcFirstBlock))
+			require.NoError(t, md2.SetLastBlock(test.srcLastBlock))
+			require.NoError(t, md2.SetDbType(GenType))
+
+			err = md1.Merge(md2)
+			assert.ErrorContains(t, err, test.errMsg)
+		})
+	}
+}
+
+func TestAidaDbMetadata_SetTimestamp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Case 1: Success
+	mockDb := db.NewMockSubstateDB(ctrl)
+	md := NewAidaDbMetadata(mockDb, "ERROR")
+	mockDb.EXPECT().Put([]byte(TimestampPrefix), gomock.Any()).Return(nil)
+	err := md.SetTimestamp()
+	assert.NoError(t, err)
+
+	// Case 2: Error
+	mockDb = db.NewMockSubstateDB(ctrl)
+	md = NewAidaDbMetadata(mockDb, "ERROR")
+	mockDb.EXPECT().Put([]byte(TimestampPrefix), gomock.Any()).Return(errors.New("mock error"))
+	err = md.SetTimestamp()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mock error")
+}
+
+func TestAidaDbMetadata_GetDb(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	md := NewAidaDbMetadata(mockDb, "ERROR")
+	assert.Equal(t, mockDb, md.GetDb())
+}
+
+func TestAidaDbMetadata_HasHashPatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	md := NewAidaDbMetadata(mockDb, "ERROR")
+
+	// Case 1: Found
+	mockDb.EXPECT().Get([]byte(HasStateHashPatchPrefix)).Return([]byte{1}, nil)
+	assert.True(t, md.HasHashPatch())
+
+	// Case 2: Not found
+	mockDb.EXPECT().Get([]byte(HasStateHashPatchPrefix)).Return(nil, leveldb.ErrNotFound)
+	assert.False(t, md.HasHashPatch())
+
+	// Case 3: Error
+	mockDb.EXPECT().Get([]byte(HasStateHashPatchPrefix)).Return(nil, errors.New("mock error"))
+	assert.False(t, md.HasHashPatch())
+}
+
+func TestAidaDbMetadata_GetUpdatesetSize(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	md := NewAidaDbMetadata(mockDb, "ERROR")
+
+	// Case 1: Error
+	mockDb.EXPECT().Get([]byte(db.UpdatesetSizeKey)).Return(nil, errors.New("mock error"))
+	size := md.GetUpdatesetSize()
+	assert.Equal(t, uint64(0), size)
+
+	// Case 2: Not found
+	mockDb.EXPECT().Get([]byte(db.UpdatesetSizeKey)).Return(nil, leveldb.ErrNotFound)
+	size = md.GetUpdatesetSize()
+	assert.Equal(t, uint64(0), size)
+
+	// Case 3: Success
+	mockDb.EXPECT().Get([]byte(db.UpdatesetSizeKey)).Return(bigendian.Uint64ToBytes(42), nil)
+	size = md.GetUpdatesetSize()
+	assert.Equal(t, uint64(42), size)
+
+	// Case 4: Cached value, no DB call
+	size = md.GetUpdatesetSize()
+	assert.Equal(t, uint64(42), size)
+}
+
+func TestAidaDbMetadata_GetUpdatesetInterval(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	md := NewAidaDbMetadata(mockDb, "ERROR")
+
+	// Case 1: Error
+	mockDb.EXPECT().Get([]byte(db.UpdatesetIntervalKey)).Return(nil, errors.New("mock error"))
+	interval := md.GetUpdatesetInterval()
+	assert.Equal(t, uint64(0), interval)
+
+	// Case 2: Not found
+	mockDb.EXPECT().Get([]byte(db.UpdatesetIntervalKey)).Return(nil, leveldb.ErrNotFound)
+	interval = md.GetUpdatesetInterval()
+	assert.Equal(t, uint64(0), interval)
+
+	// Case 3: Success
+	mockDb.EXPECT().Get([]byte(db.UpdatesetIntervalKey)).Return(bigendian.Uint64ToBytes(99), nil)
+	interval = md.GetUpdatesetInterval()
+	assert.Equal(t, uint64(99), interval)
+
+	// Case 4: Cached value, no DB call
+	interval = md.GetUpdatesetInterval()
+	assert.Equal(t, uint64(99), interval)
+}
+
+func TestFindEpochNumber_UnknownBlock(t *testing.T) {
+	epoch, err := FindEpochNumber(math.MaxInt64, SonicMainnetChainID)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), epoch)
 }
