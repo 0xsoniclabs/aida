@@ -18,21 +18,18 @@ package replayer
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
-	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/generator"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
+	gomock "github.com/golang/mock/gomock"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
-	 gomock "github.com/golang/mock/gomock"
 )
 
 func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
@@ -50,11 +47,11 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 
 	rg := rand.New(rand.NewSource(999))
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, nil)
-	ss.snapshot = []int{1, 2, 3, 4, 5}
-	snapshotSize := len(ss.snapshot)
+	ss.activeSnapshots = []int{1, 2, 3, 4, 5}
+	snapshotSize := len(ss.activeSnapshots)
 	ss.execute(operations.RevertToSnapshotID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-	assert.GreaterOrEqual(t, len(ss.snapshot), 1)         // must have at lest one snapshot
-	assert.LessOrEqual(t, len(ss.snapshot), snapshotSize) // must not have more than 5 snapshots
+	assert.GreaterOrEqual(t, len(ss.activeSnapshots), 1)         // must have at lest one snapshot
+	assert.LessOrEqual(t, len(ss.activeSnapshots), snapshotSize) // must not have more than 5 snapshots
 }
 
 //bfs: revisit this test case after changing the json format
@@ -167,7 +164,7 @@ func TestStochasticState_execute(t *testing.T) {
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, logger.NewLogger("INFO", "test"))
 	ss.enableDebug()
 	for i := 0; i < len(codes); i++ {
-		ss.snapshot = []int{1, 2, 3, 4, 5}
+		ss.activeSnapshots = []int{1, 2, 3, 4, 5}
 		ss.execute(operations.DecodeArgOp(codes[i]))
 	}
 }

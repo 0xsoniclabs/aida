@@ -48,20 +48,20 @@ const (
 
 // replayContext data structure as a context for simulating StateDB operations
 type replayContext struct {
-	db             state.StateDB         // StateDB database
-	traceDebug     bool                  // trace-debug flag
-	log            logger.Logger         // logger for output
-	contracts      generator.ArgumentSet // random argument generator for contracts
-	keys           generator.ArgumentSet // random argument generator for keys
-	values         generator.ArgumentSet // random argument generator for values
-	snapshots      generator.SnapshotSet // random generator for snapshot ids
-	rg             *rand.Rand            // random generator for sampling
-	totalTx        uint64                // total number of transactions
-	txNum          uint32                // current transaction number
-	blockNum       uint64                // current block number
-	syncPeriodNum  uint64                // current sync-period number
-	snapshot       []int                 // stack of active snapshots
-	selfDestructed []int64               // list of self destructed accounts
+	db              state.StateDB         // StateDB database
+	traceDebug      bool                  // trace-debug flag
+	log             logger.Logger         // logger for output
+	rg              *rand.Rand            // random generator for sampling
+	contracts       generator.ArgumentSet // random argument generator for contracts
+	selfDestructed  []int64               // list of self destructed accounts
+	keys            generator.ArgumentSet // random argument generator for keys
+	values          generator.ArgumentSet // random argument generator for values
+	snapshots       generator.SnapshotSet // random generator for snapshot ids
+	activeSnapshots []int                 // stack of active snapshots
+	totalTx         uint64                // total number of transactions
+	txNum           uint32                // current transaction number
+	blockNum        uint64                // current block number
+	syncPeriodNum   uint64                // current sync-period number
 }
 
 // newReplayContext creates a new state for execution StateDB operations
@@ -151,12 +151,12 @@ func getStochasticMatrix(e *recorder.EstimationModelJSON) (*markov_chain.MarkovC
 	A := e.StochasticMatrix
 	mc, err := markov_chain.New(A, ops)
 	if err != nil {
-		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)  
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)
 	}
 	// and set initial state to BeginSyncPeriod
 	state, f_err := mc.FindState(operations.OpMnemo(operations.BeginSyncPeriodID))
 	if f_err != nil {
-		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: %v", f_err)  
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: %v", f_err)
 	}
 	return mc, state, nil
 }
@@ -337,7 +337,7 @@ func (ss *replayContext) enableDebug() {
 }
 
 // execute StateDB operations on a stochastic state.
-func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
+func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) error {
 	var (
 		addr  common.Address
 		key   common.Hash
@@ -355,19 +355,19 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 	if addrCl != classifier.NoArgID {
 		addrIdx, err = ss.contracts.Choose(addrCl)
 		if err != nil {
-			ss.log.Fatalf("failed to generate address index: %v", err)
+			return fmt.Errorf("execute: failed to fetch contract address. Error: %v", err)
 		}
 	}
 	if keyCl != classifier.NoArgID {
 		keyIdx, err = ss.keys.Choose(keyCl)
 		if err != nil {
-			ss.log.Fatalf("failed to generate key index: %v", err)
+			return fmt.Errorf("execute: failed to fetch storage key. Error: %v", err)
 		}
 	}
 	if valueCl != classifier.NoArgID {
 		valueIdx, err = ss.values.Choose(valueCl)
 		if err != nil {
-			ss.log.Fatalf("failed to generate value index: %v", err)
+			return fmt.Errorf("execute: failed to fetch storage value. Error: %v", err)
 		}
 	}
 
@@ -432,7 +432,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if err != nil {
 			ss.log.Fatal(err)
 		}
-		ss.snapshot = []int{}
+		ss.activeSnapshots = []int{}
 		ss.selfDestructed = []int64{}
 
 	case operations.CreateAccountID:
@@ -498,7 +498,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 		db.HasSelfDestructed(addr)
 
 	case operations.RevertToSnapshotID:
-		snapshotNum := len(ss.snapshot)
+		snapshotNum := len(ss.activeSnapshots)
 		if snapshotNum > 0 {
 			// TODO: consider a more realistic distribution
 			// rather than the uniform distribution.
@@ -508,11 +508,11 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 			} else if snapshotIdx >= snapshotNum {
 				snapshotIdx = snapshotNum - 1
 			}
-			snapshot := ss.snapshot[snapshotIdx]
+			snapshot := ss.activeSnapshots[snapshotIdx]
 			if ss.traceDebug {
 				ss.log.Infof(" id: %v", snapshot)
 			}
-			ss.snapshot = ss.snapshot[:snapshotIdx+1]
+			ss.activeSnapshots = ss.activeSnapshots[:snapshotIdx+1]
 
 			// update active snapshots and perform a rollback in balance log
 			db.RevertToSnapshot(snapshot)
@@ -557,7 +557,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 		if ss.traceDebug {
 			ss.log.Infof(" id: %v", id)
 		}
-		ss.snapshot = append(ss.snapshot, id)
+		ss.activeSnapshots = append(ss.activeSnapshots, id)
 
 	case operations.SubBalanceID:
 		shadowDB := db.GetShadowDB()
@@ -577,8 +577,9 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) {
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
-		ss.log.Fatalf("invalid operation %v; opcode %v", operations.OpText[op], op)
+		return fmt.Errorf("execute: invalid operation %v; opcode %v", operations.OpText[op], op)
 	}
+	return nil
 }
 
 // delete account information when suicide was invoked
