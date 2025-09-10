@@ -28,10 +28,4 @@ echo "  First Epoch: ${FIRST_EPOCH}"
 echo "  Last Epoch: ${LAST_EPOCH}"
 echo "---------------------------------"
 
-# TODO
-#echo "Prepare from genesis if empty:"
-
-echo "Catching up source db:"
-NEXT_EPOCH=$((LAST_EPOCH + 1))
-echo "${SONIC_BIN} --datadir ${SONIC_PATH}  --mode validator --exitwhensynced.epoch ${NEXT_EPOCH}"
-
+# TODO ethereum
