@@ -115,7 +115,11 @@ func TestStochasticState_execute(t *testing.T) {
 						(operations.OpNumArgs[op] == 3 && addr != classifier.NoArgID && key != classifier.NoArgID && value != classifier.NoArgID) {
 
 						// encode to an argument-encoded operation
-						codes[op] = operations.EncodeArgOp(op, addr, key, value)
+						var err error
+						codes[op], err = operations.EncodeArgOp(op, addr, key, value)
+						if err != nil {
+							t.Fatalf("Encoding failed for %v", codes[op])
+						}
 					}
 				}
 			}
@@ -165,7 +169,11 @@ func TestStochasticState_execute(t *testing.T) {
 	ss.enableDebug()
 	for i := 0; i < len(codes); i++ {
 		ss.activeSnapshots = []int{1, 2, 3, 4, 5}
-		ss.execute(operations.DecodeArgOp(codes[i]))
+		op, addr, key, value, err := operations.DecodeArgOp(codes[i])
+		if err != nil {
+			t.Fatalf("Decoding failed for %v", codes[i])
+		}
+		ss.execute(op, addr, key, value)
 	}
 }
 

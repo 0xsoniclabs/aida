@@ -19,7 +19,6 @@ package operations
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/ethereum/go-ethereum/common"
@@ -230,62 +229,71 @@ func OpMnemo(op int) string {
 }
 
 // checkArgOp checks whether op/argument combination is valid.
-func checkArgOp(op int, contract int, key int, value int) bool {
+func checkArgOp(op int, contract int, key int, value int) error {
 	if op < 0 || op >= NumOps {
-		return false
+		return fmt.Errorf("checkArgOp: operations out of range %v not in [0,%v]", op, NumOps)
 	}
 	if contract < 0 || contract >= classifier.NumArgKinds {
-		return false
+		return fmt.Errorf("checkArgOp: contract arg out of range %v not in [0,%v]", contract, classifier.NumArgKinds)
 	}
 	if key < 0 || key >= classifier.NumArgKinds {
-		return false
+		return fmt.Errorf("checkArgOp: key arg out of range %v not in [0,%v]", key, classifier.NumArgKinds)
 	}
 	if value < 0 || value >= classifier.NumArgKinds {
-		return false
+		return fmt.Errorf("checkArgOp: value arg out of range %v not in [0,%v]", value, classifier.NumArgKinds)
 	}
 	switch OpNumArgs[op] {
 	case 0:
-		return contract == classifier.NoArgID &&
+		if !(contract == classifier.NoArgID &&
 			key == classifier.NoArgID &&
-			value == classifier.NoArgID
+			value == classifier.NoArgID) {
+			return fmt.Errorf("checkArgOp: op %v takes no arguments", op)
+		}
 	case 1:
-		return contract != classifier.NoArgID &&
+		if !(contract != classifier.NoArgID &&
 			key == classifier.NoArgID &&
-			value == classifier.NoArgID
+			value == classifier.NoArgID) {
+			return fmt.Errorf("checkArgOp: op %v takes one contract argument", op)
+		}
 	case 2:
-		return contract != classifier.NoArgID &&
+		if !(contract != classifier.NoArgID &&
 			key != classifier.NoArgID &&
-			value == classifier.NoArgID
+			value == classifier.NoArgID) {
+			return fmt.Errorf("checkArgOp: op %v takes contract and key arguments", op)
+		}
 	case 3:
-		return contract != classifier.NoArgID &&
+		if !(contract != classifier.NoArgID &&
 			key != classifier.NoArgID &&
-			value != classifier.NoArgID
+			value != classifier.NoArgID) {
+			return fmt.Errorf("checkArgOp: op %v takes contract, key and value arguments", op)
+		}
 	default:
-		return false
+		return fmt.Errorf("checkArgOp: op %v has invalid number of arguments", op)
 	}
+	return nil
 }
 
-// IsValidArgOp returns true if the encoding is valid.
+// IsValidArgOp returns true if the encoding of an operation with its argument is valid.
 func IsValidArgOp(argop int) bool {
 	if argop < 0 || argop >= NumArgOps {
 		return false
 	}
-	op, contract, key, value := DecodeArgOp(argop)
-	return checkArgOp(op, contract, key, value)
+	_, _, _, _, err := DecodeArgOp(argop)
+	return err != nil
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.
-func EncodeArgOp(op int, addr int, key int, value int) int {
-	if !checkArgOp(op, addr, key, value) {
-		log.Fatalf("EncodeArgOp: invalid operation/arguments")
+func EncodeArgOp(op int, addr int, key int, value int) (int, error) {
+	if err := checkArgOp(op, addr, key, value); err != nil {
+		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments. Error: %v", err)
 	}
-	return (((int(op)*classifier.NumArgKinds)+addr)*classifier.NumArgKinds+key)*classifier.NumArgKinds + value
+	return (((int(op)*classifier.NumArgKinds)+addr)*classifier.NumArgKinds+key)*classifier.NumArgKinds + value, nil
 }
 
-// DecodeArgOp decodes operation with arguments using Honer's scheme
-func DecodeArgOp(argop int) (int, int, int, int) {
+// DecodeArgOp decodes operation with arguments using Horner's scheme
+func DecodeArgOp(argop int) (int, int, int, int, error) {
 	if argop < 0 || argop >= NumArgOps {
-		log.Fatalf("DecodeArgOp: invalid op range")
+		return 0, 0, 0, 0, fmt.Errorf("DecodeArgOp: argument out of range %v not in [0,%v]", argop, NumArgOps)
 	}
 
 	value := argop % classifier.NumArgKinds
@@ -299,19 +307,23 @@ func DecodeArgOp(argop int) (int, int, int, int) {
 
 	op := argop
 
-	return op, addr, key, value
+	if err := checkArgOp(op, addr, key, value); err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("DecodeArgOp: invalid operation/arguments. Error: %v", err)
+	}
+
+	return op, addr, key, value, nil
 }
 
 // EncodeOpcode generates the opcode for an operation and its argument classes.
-func EncodeOpcode(op int, addr int, key int, value int) string {
-	if !checkArgOp(op, addr, key, value) {
-		log.Fatalf("EncodeOpcode: invalid operation/arguments")
+func EncodeOpcode(op int, addr int, key int, value int) (string, error) {
+	if err := checkArgOp(op, addr, key, value); err != nil {
+		return "", fmt.Errorf("EncodeOpcode: invalid operation/arguments. Error: %v", err)
 	}
 	code := fmt.Sprintf("%v%v%v%v", opMnemo[op], argMnemo[addr], argMnemo[key], argMnemo[value])
 	if len(code) != 2+OpNumArgs[op] {
-		log.Fatalf("EncodeOpcode: wrong opcode length for opcode %v", code)
+		return "", fmt.Errorf("EncodeOpcode: wrong opcode length for opcode %v (%v). Expected", code, 2+OpNumArgs[op])
 	}
-	return code
+	return code, nil
 }
 
 // validateArg checks whether argument mnemonics exists.
@@ -320,15 +332,15 @@ func validateArg(argMnemo byte) bool {
 	return ok
 }
 
-// DecodeOpcode decodes opcode producing the operation id and its argument classes
-func DecodeOpcode(opc string) (int, int, int, int) {
+// DecodeOpcode decodes an string opcode encoding operation and its argument to a tuple representation
+func DecodeOpcode(opc string) (int, int, int, int, error) {
 	mnemo := opc[:2]
 	op, ok := opId[mnemo]
 	if !ok {
-		log.Fatalf("DecodeOpcode: lookup failed for %v", mnemo)
+		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: lookup failed for %v.", mnemo)
 	}
 	if len(opc) != 2+OpNumArgs[op] {
-		log.Fatalf("DecodeOpcode: wrong opcode length for %v", opc)
+		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong opcode length for %v", opc)
 	}
 	var contract, key, value int
 	switch len(opc) - 2 {
@@ -336,21 +348,21 @@ func DecodeOpcode(opc string) (int, int, int, int) {
 		contract, key, value = classifier.NoArgID, classifier.NoArgID, classifier.NoArgID
 	case 1:
 		if !validateArg(opc[2]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)
 		}
 		contract, key, value = argId[opc[2]], classifier.NoArgID, classifier.NoArgID
 	case 2:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)
 		}
 		contract, key, value = argId[opc[2]], argId[opc[3]], classifier.NoArgID
 	case 3:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) || !validateArg(opc[4]) {
-			log.Fatalf("DecodeOpcode: wrong argument code")
+			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)
 		}
 		contract, key, value = argId[opc[2]], argId[opc[3]], argId[opc[4]]
 	}
-	return op, contract, key, value
+	return op, contract, key, value, nil
 }
 
 // ToAddress converts an address index to a contract address.

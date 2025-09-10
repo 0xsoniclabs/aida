@@ -53,7 +53,7 @@ type replayContext struct {
 	log             logger.Logger         // logger for output
 	rg              *rand.Rand            // random generator for sampling
 	contracts       generator.ArgumentSet // random argument generator for contracts
-	selfDestructed  []int64               // list of self destructed accounts
+	selfDestructed  map[int64]struct{}    // set of self destructed accounts in a block
 	keys            generator.ArgumentSet // random argument generator for keys
 	values          generator.ArgumentSet // random argument generator for values
 	snapshots       generator.SnapshotSet // random generator for snapshot ids
@@ -82,7 +82,7 @@ func newReplayContext(
 		values:         values,
 		snapshots:      snapshots,
 		traceDebug:     false,
-		selfDestructed: []int64{},
+		selfDestructed: map[int64]struct{}{},
 		blockNum:       1,
 		syncPeriodNum:  1,
 		rg:             rg,
@@ -133,16 +133,6 @@ func populateReplayContext(cfg *utils.Config, e *recorder.EstimationModelJSON, d
 	}
 
 	return &ss, nil
-}
-
-// find is a helper function to find an element in a slice
-func find[T comparable](a []T, x T) int {
-	for idx, y := range a {
-		if x == y {
-			return idx
-		}
-	}
-	return -1
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
@@ -225,7 +215,10 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 		}
 
 		// decode opcode
-		op, addrCl, keyCl, valueCl := operations.DecodeOpcode(label)
+		op, addrCl, keyCl, valueCl, err := operations.DecodeOpcode(label)
+		if err != nil {
+			return fmt.Errorf("RunStochasticReplay: cannot decode opcode. Error: %v", err)
+		}
 
 		// keep track of stats
 		numOps++
@@ -385,7 +378,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	// print opcode and its arguments
 	if ss.traceDebug {
 		// print operation
-		ss.log.Infof("opcode:%v (%v)", operations.OpText[op], operations.EncodeOpcode(op, addrCl, keyCl, valueCl))
+		opc, err := operations.EncodeOpcode(op, addrCl, keyCl, valueCl)
+		if err != nil {
+			return fmt.Errorf("execute: failed encoding opcode. Error: %v", err)
+		}
+
+		// print operation
+		ss.log.Infof("opcode:%v (%v)", operations.OpText[op], opc)
 
 		// print indexes of contract address, storage key, and storage value.
 		if addrCl != classifier.NoArgID {
@@ -416,7 +415,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Fatal(err)
 		}
 		ss.txNum = 0
-		ss.selfDestructed = []int64{}
+		ss.selfDestructed = map[int64]struct{}{} // reset selfDestructed accounts set
 
 	case operations.BeginSyncPeriodID:
 		if ss.traceDebug {
@@ -433,7 +432,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Fatal(err)
 		}
 		ss.activeSnapshots = []int{}
-		ss.selfDestructed = []int64{}
+		ss.selfDestructed = map[int64]struct{}{}
 
 	case operations.CreateAccountID:
 		db.CreateAccount(addr)
@@ -450,7 +449,9 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Fatal(err)
 		}
 		ss.blockNum++
-		ss.deleteAccounts()
+		if err := ss.deleteAccounts(); err != nil {
+			return fmt.Errorf("execute: failed deleting accounts. Error: %v", err)
+		}
 
 	case operations.EndSyncPeriodID:
 		db.EndSyncPeriod()
@@ -500,8 +501,6 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.RevertToSnapshotID:
 		snapshotNum := len(ss.activeSnapshots)
 		if snapshotNum > 0 {
-			// TODO: consider a more realistic distribution
-			// rather than the uniform distribution.
 			snapshotIdx := snapshotNum - ss.snapshots.SampleSnapshot(snapshotNum) - 1
 			if snapshotIdx < 0 {
 				snapshotIdx = 0
@@ -520,15 +519,11 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 
 	case operations.SelfDestructID:
 		db.SelfDestruct(addr)
-		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
-			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
-		}
+		ss.selfDestructed[addrIdx] = struct{}{}
 
 	case operations.SelfDestruct6780ID:
 		db.SelfDestruct6780(addr)
-		if idx := find(ss.selfDestructed, addrIdx); idx == -1 {
-			ss.selfDestructed = append(ss.selfDestructed, addrIdx)
-		}
+		ss.selfDestructed[addrIdx] = struct{}{}
 
 	case operations.SetCodeID:
 		sz := rg.Intn(MaxCodeSize-1) + 1
@@ -538,7 +533,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		code := make([]byte, sz)
 		_, err := rg.Read(code)
 		if err != nil {
-			ss.log.Fatalf("error producing a random byte slice. Error: %v", err)
+			ss.log.Fatalf("execute: error producing a random byte slice for code. Error: %v", err)
 		}
 		db.SetCode(addr, code)
 
@@ -583,12 +578,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 }
 
 // delete account information when suicide was invoked
-func (ss *replayContext) deleteAccounts() {
+func (ss *replayContext) deleteAccounts() error {
 	// remove account information when suicide was invoked in the block.
-	for _, addrIdx := range ss.selfDestructed {
+	for addrIdx, _ := range ss.selfDestructed {
 		if err := ss.contracts.Remove(addrIdx); err != nil {
-			ss.log.Fatal("failed deleting index")
+			return fmt.Errorf("deleteAccounts: failed deleting index (%v).", addrIdx)
 		}
 	}
-	ss.selfDestructed = []int64{}
+	ss.selfDestructed = map[int64]struct{}{}
+	return nil
 }

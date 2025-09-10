@@ -137,7 +137,7 @@ func (r *EventRegistry) RegisterValueOp(op int, address *common.Address, key *co
 // updateFreq updates operation and transition frequency.
 func (r *EventRegistry) updateFreq(op int, addr int, key int, value int) {
 	// encode argument classes to compute specialized operation using a Horner's scheme
-	argOp := operations.EncodeArgOp(op, addr, key, value)
+	argOp, _ := operations.EncodeArgOp(op, addr, key, value)
 
 	// increment operation's frequency depending on argument class
 	r.argOpFreq[argOp]++
@@ -200,8 +200,9 @@ func (r *EventRegistry) NewEventRegistryJSON() EventRegistryJSON {
 	for argop := 0; argop < operations.NumArgOps; argop++ {
 		if r.argOpFreq[argop] > 0 {
 			// decode argument-encoded operation
-			op, addr, key, value := operations.DecodeArgOp(argop)
-			label = append(label, operations.EncodeOpcode(op, addr, key, value))
+			op, addr, key, value, _ := operations.DecodeArgOp(argop)
+			opc, _ := operations.EncodeOpcode(op, addr, key, value)
+			label = append(label, opc)
 		}
 	}
 

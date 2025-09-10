@@ -64,31 +64,31 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistr
 	for i := 0; i < operations.NumArgOps; i++ {
 		if operations.IsValidArgOp(i) {
 			r.argOpFreq[i] = 1 // set frequency to greater than zero to emit operation
-			opI, _, _, _ := operations.DecodeArgOp(i)
+			opI, _, _, _, _ := operations.DecodeArgOp(i)
 			switch opI {
 			case operations.BeginSyncPeriodID:
-				j := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j, _ := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 				r.transitFreq[i][j] = 1
 			case operations.BeginBlockID:
-				j := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j, _ := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 				r.transitFreq[i][j] = 1
 			case operations.EndTransactionID:
-				j1 := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				j2 := operations.EncodeArgOp(operations.EndBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j1, _ := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j2, _ := operations.EncodeArgOp(operations.EndBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 				r.transitFreq[i][j1] = cfg.BlockLength - 1
 				r.transitFreq[i][j2] = 1
 			case operations.EndBlockID:
-				j1 := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				j2 := operations.EncodeArgOp(operations.EndSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j1, _ := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j2, _ := operations.EncodeArgOp(operations.EndSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 				r.transitFreq[i][j1] = cfg.SyncPeriodLength - 1
 				r.transitFreq[i][j2] = 1
 			case operations.EndSyncPeriodID:
-				j := operations.EncodeArgOp(operations.BeginSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+				j, _ := operations.EncodeArgOp(operations.BeginSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 				r.transitFreq[i][j] = 1
 			default:
 				for j := 0; j < operations.NumArgOps; j++ {
 					if operations.IsValidArgOp(j) {
-						opJ, _, _, _ := operations.DecodeArgOp(j)
+						opJ, _, _, _, _ := operations.DecodeArgOp(j)
 						if opJ != operations.BeginSyncPeriodID &&
 							opJ != operations.BeginBlockID &&
 							opJ != operations.BeginTransactionID &&

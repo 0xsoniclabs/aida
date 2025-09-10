@@ -38,10 +38,16 @@ func TestOperationDecoding(t *testing.T) {
 						(OpNumArgs[op] == 3 && addr != classifier.NoArgID && key != classifier.NoArgID && value != classifier.NoArgID) {
 
 						// encode to an argument-encoded operation
-						argop := EncodeArgOp(op, addr, key, value)
+						argop, err := EncodeArgOp(op, addr, key, value)
+						if err != nil {
+							t.Fatalf("Encoding failed for %v", argop)
+						}
 
 						// decode argument-encoded operation
-						dop, daddr, dkey, dvalue := DecodeArgOp(argop)
+						dop, daddr, dkey, dvalue, err := DecodeArgOp(argop)
+						if err != nil {
+							t.Fatalf("Decoding failed for %v %v %v %v", dop, daddr, dkey, dvalue)
+						}
 
 						if op != dop || addr != daddr || key != dkey || value != dvalue {
 							t.Fatalf("Encoding/decoding failed")
@@ -68,12 +74,18 @@ func TestOperationOpcode(t *testing.T) {
 						(OpNumArgs[op] == 3 && addr != classifier.NoArgID && key != classifier.NoArgID && value != classifier.NoArgID) {
 
 						// encode to an argument-encoded operation
-						opcode := EncodeOpcode(op, addr, key, value)
+						argop, err := EncodeOpcode(op, addr, key, value)
+						if err != nil {
+							t.Fatalf("Encoding failed for %v %v %v %v", op, addr, key, value)
+						}
 
 						// decode argument-encoded operation
-						dop, daddr, dkey, dvalue := DecodeOpcode(opcode)
+						dop, daddr, dkey, dvalue, err := DecodeOpcode(argop)
+						if err != nil {
+							t.Fatalf("Decoding failed for %v", argop)
+						}
 						if op != dop || addr != daddr || key != dkey || value != dvalue {
-							t.Fatalf("Encoding/decoding failed for %v", opcode)
+							t.Fatalf("Encoding/decoding failed for %v", argop)
 						}
 					}
 				}
@@ -95,29 +107,34 @@ func TestStochastic_OpMnemo(t *testing.T) {
 
 func TestStochastic_checkArgOp(t *testing.T) {
 	// case 1
-	valid := checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-	assert.True(t, valid)
+	err := checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	assert.Nil(t, err)
 
 	// case 2
-	valid = checkArgOp(-1, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-	assert.False(t, valid)
+	err = checkArgOp(-1, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	assert.NotNil(t, err)
 
 	// case 3
-	valid = checkArgOp(SnapshotID, -1, classifier.NoArgID, classifier.NoArgID)
-	assert.False(t, valid)
+	err = checkArgOp(SnapshotID, -1, classifier.NoArgID, classifier.NoArgID)
+	assert.NotNil(t, err)
 
 	// case 4
-	valid = checkArgOp(SnapshotID, classifier.NoArgID, -1, classifier.NoArgID)
-	assert.False(t, valid)
+	err = checkArgOp(SnapshotID, classifier.NoArgID, -1, classifier.NoArgID)
+	assert.NotNil(t, err)
 
 	// case 5
-	valid = checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, -1)
-	assert.False(t, valid)
+	err = checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, -1)
+	assert.NotNil(t, err)
 }
 
 func TestStochastic_IsValidArgOp(t *testing.T) {
-	valid := IsValidArgOp(1044)
-	assert.True(t, valid)
+	// encode to an argument-encoded operation
+	argop, err := EncodeArgOp(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	if err != nil {
+		t.Fatalf("Encoding failed")
+	}
+	valid := IsValidArgOp(argop)
+	assert.False(t, valid)
 
 	invalid := IsValidArgOp(-1)
 	assert.False(t, invalid)
