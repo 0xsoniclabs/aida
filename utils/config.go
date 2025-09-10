@@ -84,6 +84,8 @@ const (
 	// EthTestsChainID is a mock ChainID which is necessary for setting
 	// the chain rules to allow any block number for any fork.
 	EthTestsChainID ChainID = 1337
+	// Used for testing only
+	TestChainID ChainID = 42069
 )
 
 var RealChainIDs = ChainIDs{
@@ -104,6 +106,7 @@ var AllowedChainIDs = ChainIDs{
 	HoodiChainID:        "hoodi",
 	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
+	TestChainID:         "integration-tests",
 }
 var EthereumChainIDs = ChainIDs{
 	EthereumChainID: "ethereum",
@@ -527,6 +530,9 @@ func (cc *configContext) setAidaDbRepositoryUrl() error {
 		AidaDbRepositoryUrl = AidaDbRepositoryHoodiUrl
 	case SepoliaChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySepoliaUrl
+	case TestChainID:
+		AidaDbRepositoryUrl = AidaDbRepositoryTestUrl
+
 	default:
 		cc.log.Warningf("%v chain-id does not have aida-db repository url set - setting to mainnet", cc.cfg)
 		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
