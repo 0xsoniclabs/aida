@@ -18,7 +18,6 @@ package update
 
 import (
 	"context"
-	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -41,15 +40,40 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func TestUpdate_UpdateDbCommand(t *testing.T) {
+func TestUpdate_UpdateDbCommand_NewAidaDb(t *testing.T) {
+	aidaDbPath := t.TempDir() + "/aida-db"
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&Command}
+
+	args := utils.NewArgs("test").
+		Arg(Command.Name).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(logger.LogLevelFlag.Name, "CRITICAL").
+		Flag(utils.ChainIDFlag.Name, int(utils.TestChainID)).
+		Flag(utils.DbTmpFlag.Name, t.TempDir()).
+		Flag(utils.SubstateEncodingFlag.Name, "protobuf").
+		Build()
+	err := app.Run(args)
+
+	require.NoError(t, err)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
+	require.NoError(t, err)
+	firstSubstate := aidaDb.GetFirstSubstate()
+	require.Equal(t, uint64(1), firstSubstate.Block)
+	lastSubstate, err := aidaDb.GetLastSubstate()
+	require.NoError(t, err)
+	require.Equal(t, lastSubstate.Block, uint64(1924))
+}
+
+func TestUpdate_UpdateDbCommand_MergingToExistingDb(t *testing.T) {
 	aidaDbPath := t.TempDir() + "/aida-db"
 	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	require.NoError(t, err)
 
-	// Put substate with max latest block to avoid any updating
+	// Test patch starts at block 1, so we need to add a substate at block 0 to force merging
 	ss := utils.GetTestSubstate("pb")
-	ss.Block = math.MaxUint64
-	ss.Env.Number = math.MaxUint64
+	ss.Block = 1
+	ss.Env.Number = 1
 	err = aidaDb.PutSubstate(ss)
 	require.NoError(t, err)
 
@@ -63,12 +87,21 @@ func TestUpdate_UpdateDbCommand(t *testing.T) {
 		Arg(Command.Name).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(logger.LogLevelFlag.Name, "CRITICAL").
-		Flag(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.TestChainID)).
 		Flag(utils.DbTmpFlag.Name, t.TempDir()).
 		Flag(utils.SubstateEncodingFlag.Name, "protobuf").
 		Build()
 	err = app.Run(args)
 	require.NoError(t, err)
+
+	require.NoError(t, err)
+	aidaDb, err = db.NewDefaultSubstateDB(aidaDbPath)
+	require.NoError(t, err)
+	firstSubstate := aidaDb.GetFirstSubstate()
+	require.Equal(t, uint64(1), firstSubstate.Block)
+	lastSubstate, err := aidaDb.GetLastSubstate()
+	require.NoError(t, err)
+	require.Equal(t, lastSubstate.Block, uint64(1924))
 }
 
 func TestCmd_UpdateCommand(t *testing.T) {
@@ -249,26 +282,6 @@ func TestUpdate_retrievePatchesToDownload(t *testing.T) {
 	require.NotEmpty(t, patches)
 }
 
-func TestUpdate_update(t *testing.T) {
-	aidaDbPath := t.TempDir() + "/aida-db"
-	utils.AidaDbRepositoryUrl = utils.AidaDbRepositoryTestUrl
-	defer func() {
-		utils.AidaDbRepositoryUrl = ""
-	}()
-	err := update(&utils.Config{
-		AidaDb:     aidaDbPath,
-		UpdateType: "nightly",
-		DbTmp:      t.TempDir(),
-	})
-	require.NoError(t, err)
-	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
-	require.NoError(t, err)
-	ss := aidaDb.GetFirstSubstate()
-	assert.Equal(t, uint64(1), ss.Block)
-	ss, err = aidaDb.GetLastSubstate()
-	require.NoError(t, err)
-	assert.Equal(t, uint64(210080), ss.Block)
-}
 func TestUpdate_update_downloadFails(t *testing.T) {
 	aidaDbPath := t.TempDir() + "/aida-db"
 	utils.AidaDbRepositoryUrl = "https://unknownrepository.com"

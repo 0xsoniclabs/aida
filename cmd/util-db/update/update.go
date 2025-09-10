@@ -180,7 +180,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 		isNewDb = true
 	}
 
-	firstRun := true
+	isOpen := false
 
 	for {
 		select {
@@ -194,49 +194,45 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				return nil
 			}
 
-			// firstRun is triggered only when applying first patch
-			// distinction is necessary because if targetDb was empty we can move patch directly into targetPath
-			// before opening database for writing
-			if firstRun {
-				firstRun = false
-				// first patch to empty database is moved to target right away
-				// this way we can skip iteration and metadata inserts
-				if isNewDb {
-					log.Noticef("AIDA-DB was empty - directly saving first patch")
-					// move extracted patch to target location - first attempting with os.Rename because it is fastest
-					if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
-						// attempting with deep copy - needed when moving across different disks
-						if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
-							return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
-						}
+			// first patch to empty database is moved to target right away
+			// this way we can skip iteration and metadata inserts
+			if isNewDb {
+				log.Noticef("AIDA-DB was empty - directly saving first patch")
+				// move extracted patch to target location - first attempting with os.Rename because it is fastest
+				if err = os.Rename(extractedPatchPath, cfg.AidaDb); err != nil {
+					// attempting with deep copy - needed when moving across different disks
+					if err2 := utils.CopyDir(extractedPatchPath, cfg.AidaDb); err2 != nil {
+						return fmt.Errorf("unable to move patch into aida-db target; %v (%v)", err2, err)
 					}
 				}
-
-				// open targetDB only after there is already first patch or any existing previous data
-				targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
-				if err != nil {
-					return fmt.Errorf("can't open aidaDb; %v", err)
+				isNewDb = false
+			} else {
+				if !isOpen {
+					// open targetDB only after there is already first patch or any existing previous data
+					targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+					if err != nil {
+						return fmt.Errorf("can't open aidaDb; %v", err)
+					}
+					targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
+					defer func() {
+						if err = targetDb.Close(); err != nil {
+							log.Warningf("patchesDownloader: cannot close targetDb; %v", err)
+						}
+					}()
+					isOpen = true
 				}
-				targetMD = utils.NewAidaDbMetadata(targetDb, cfg.LogLevel)
 
 				errOldAida := targetMD.UpdateMetadataInOldAidaDb(cfg.ChainID, firstAidaDbBlock, lastAidaDbBlock)
 				if errOldAida != nil {
 					log.Warningf("error UpdateMetadataInOldAidaDb; %v", errOldAida)
 				}
 
-				defer func() {
-					if err = targetMD.Db.Close(); err != nil {
-						log.Warningf("patchesDownloader: cannot close targetDb; %v", err)
-					}
-				}()
-
 				// patch was already applied before opening targetDb hence we don't need to merge it anymore
-				if !isNewDb {
-					if err = mergeToExistingAidaDb(cfg, targetMD, extractedPatchPath); err != nil {
-						return err
-					}
+				if err = mergeToExistingAidaDb(cfg, targetMD, extractedPatchPath); err != nil {
+					return err
 				}
 			}
+
 		}
 	}
 }
