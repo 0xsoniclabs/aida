@@ -17,11 +17,12 @@
 package generator
 
 import (
-	"math/rand"
+    "math/rand"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-	discrete_empiricial "github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
+    "github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+    discrete_empiricial "github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
+    "github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
+    "github.com/0xsoniclabs/aida/stochastic/statistics/weibull"
 )
 
 // ArgSetRandomizer interface for argument sets
@@ -99,7 +100,49 @@ func NewExponentialQueueRandomizer(rg *rand.Rand, lambda float64) *ExponentialQu
 
 // SampleQueue samples an index for a queue
 func (r *ExponentialQueueRandomizer) SampleQueue() int {
-	return int(exponential.Sample(r.rg, r.lambda, int64(classifier.QueueLen-1))) + 1
+    return int(exponential.Sample(r.rg, r.lambda, int64(classifier.QueueLen-1))) + 1
+}
+
+// WeibullArgRandomizer struct
+type WeibullArgRandomizer struct {
+    rg     *rand.Rand
+    lambda float64
+    k      float64
+}
+
+// NewWeibullArgRandomizer creates a new WeibullArgRandomizer
+func NewWeibullArgRandomizer(rg *rand.Rand, lambda, k float64) *WeibullArgRandomizer {
+    return &WeibullArgRandomizer{
+        rg:     rg,
+        lambda: lambda,
+        k:      k,
+    }
+}
+
+// SampleArg samples an argument from a distribution with n possible arguments
+func (r *WeibullArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
+    return ArgumentType(weibull.Sample(r.rg, r.lambda, r.k, int64(n)))
+}
+
+// WeibullQueueRandomizer struct
+type WeibullQueueRandomizer struct {
+    rg     *rand.Rand
+    lambda float64
+    k      float64
+}
+
+// NewWeibullQueueRandomizer creates a new WeibullQueueRandomizer
+func NewWeibullQueueRandomizer(rg *rand.Rand, lambda, k float64) *WeibullQueueRandomizer {
+    return &WeibullQueueRandomizer{
+        rg:     rg,
+        lambda: lambda,
+        k:      k,
+    }
+}
+
+// SampleQueue samples an index for a queue
+func (r *WeibullQueueRandomizer) SampleQueue() int {
+    return int(weibull.Sample(r.rg, r.lambda, r.k, int64(classifier.QueueLen-1))) + 1
 }
 
 // EmpiricalQueueRandomizer struct
@@ -151,5 +194,24 @@ func NewExponentialSnapshotRandomizer(rg *rand.Rand, lambda float64) *Exponentia
 }
 
 func (r *ExponentialSnapshotRandomizer) SampleSnapshot(n int) int {
-	return int(exponential.Sample(r.rg, r.lambda, int64(n)))
+    return int(exponential.Sample(r.rg, r.lambda, int64(n)))
+}
+
+// WeibullSnapshotRandomizer struct
+type WeibullSnapshotRandomizer struct {
+    rg     *rand.Rand
+    lambda float64
+    k      float64
+}
+
+func NewWeibullSnapshotRandomizer(rg *rand.Rand, lambda, k float64) *WeibullSnapshotRandomizer {
+    return &WeibullSnapshotRandomizer{
+        rg:     rg,
+        lambda: lambda,
+        k:      k,
+    }
+}
+
+func (r *WeibullSnapshotRandomizer) SampleSnapshot(n int) int {
+    return int(weibull.Sample(r.rg, r.lambda, r.k, int64(n)))
 }
