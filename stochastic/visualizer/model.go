@@ -113,7 +113,7 @@ func (e *EventData) PopulateEventData(d *recorder.EventRegistryJSON) {
 	blockProb := 0.0
 	syncPeriodProb := 0.0
 	for i := 0; i < n; i++ {
-		sop, _, _, _ := operations.DecodeOpcode(d.Operations[i])
+		sop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i])
 		if sop == operations.BeginTransactionID {
 			txProb = stationary[i]
 		}
@@ -140,7 +140,7 @@ func (e *EventData) PopulateEventData(d *recorder.EventRegistryJSON) {
 				// sum all versions of an operation and normalize the value with the transaction's probability
 				sum := 0.0
 				for i := 0; i < n; i++ {
-					if sop, _, _, _ := operations.DecodeOpcode(d.Operations[i]); sop == op {
+					if sop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i]); sop == op {
 						sum += stationary[i]
 					}
 				}
@@ -167,9 +167,9 @@ func (e *EventData) PopulateEventData(d *recorder.EventRegistryJSON) {
 
 	// reduce stochastic matrix to a simplified matrix
 	for i := 0; i < n; i++ {
-		iop, _, _, _ := operations.DecodeOpcode(d.Operations[i])
+		iop, _, _, _, _ := operations.DecodeOpcode(d.Operations[i])
 		for j := 0; j < n; j++ {
-			jop, _, _, _ := operations.DecodeOpcode(d.Operations[j])
+			jop, _, _, _, _ := operations.DecodeOpcode(d.Operations[j])
 			e.SimplifiedMatrix[iop][jop] += d.StochasticMatrix[i][j]
 		}
 	}

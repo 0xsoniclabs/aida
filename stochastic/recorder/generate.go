@@ -24,7 +24,7 @@ import (
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.
-func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistry {
+func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*EventRegistry, error) {
 	r := NewEventRegistry()
 
 	// generate a uniform distribution for contracts, storage keys/values, and snapshots
@@ -33,7 +33,11 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistr
 	for i := int64(0); i < cfg.ContractNumber; i++ {
 		for j := i - classifier.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
-				r.contracts.Place(operations.ToAddress(j))
+				addr, err := operations.ToAddress(j)
+				if err != nil {
+					return nil, err
+				}
+				r.contracts.Place(addr)
 			}
 		}
 	}
@@ -42,7 +46,11 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistr
 	for i := int64(0); i < cfg.KeysNumber; i++ {
 		for j := i - classifier.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
-				r.keys.Place(operations.ToHash(j))
+				key, err := operations.ToHash(j)
+				if err != nil {
+					return nil, err
+				}
+				r.keys.Place(key)
 			}
 		}
 	}
@@ -51,7 +59,11 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistr
 	for i := int64(0); i < cfg.ValuesNumber; i++ {
 		for j := i - classifier.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
-				r.values.Place(operations.ToHash(j))
+				value, err := operations.ToHash(j)
+				if err != nil {
+					return nil, err
+				}
+				r.values.Place(value)
 			}
 		}
 	}
@@ -104,5 +116,5 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) *EventRegistr
 			}
 		}
 	}
-	return &r
+	return &r, nil
 }

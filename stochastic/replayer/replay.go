@@ -305,7 +305,10 @@ func (ss *replayContext) prime() error {
 	// initialise accounts in memory with balances greater than zero
 	// TODO why not < numInitialAccounts?
 	for i := int64(0); i <= numInitialAccounts; i++ {
-		addr := operations.ToAddress(i)
+		addr, err := operations.ToAddress(i)
+		if err != nil {
+			return err
+		}
 		db.CreateAccount(addr)
 		db.AddBalance(addr, uint256.NewInt(uint64(ss.rg.Int63n(BalanceRange))), 0)
 		pt.PrintProgress()
@@ -366,13 +369,22 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 
 	// convert index to address/hashes
 	if addrCl != classifier.NoArgID {
-		addr = operations.ToAddress(addrIdx)
+		addr, err = operations.ToAddress(addrIdx)
+		if err != nil {
+			return fmt.Errorf("execute: failed to convert index to address. Error: %v", err)
+		}
 	}
 	if keyCl != classifier.NoArgID {
-		key = operations.ToHash(keyIdx)
+		key, err = operations.ToHash(keyIdx)
+		if err != nil {
+			return fmt.Errorf("execute: failed to convert index to hash. Error: %v", err)
+		}
 	}
 	if valueCl != classifier.NoArgID {
-		value = operations.ToHash(valueIdx)
+		value, err = operations.ToHash(valueIdx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// print opcode and its arguments

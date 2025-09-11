@@ -28,8 +28,9 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		TransactionLength: 7,
 	}
 
-	r := GenerateUniformRegistry(cfg, mockLogger)
+	r, err := GenerateUniformRegistry(cfg, mockLogger)
 	assert.NotNil(t, r)
+	assert.Nil(t, err)
 
 	for i := 0; i < cfg.SnapshotDepth; i++ {
 		assert.Equal(t, uint64(1), r.snapshotFreq[i])

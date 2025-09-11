@@ -94,7 +94,7 @@ func TestOperationOpcode(t *testing.T) {
 	}
 }
 
-func TestStochastic_OpMnemo(t *testing.T) {
+func TestOperations_OpMnemo(t *testing.T) {
 	// case 1
 	out := OpMnemo(SnapshotID)
 	assert.Equal(t, "SN", out)
@@ -105,29 +105,114 @@ func TestStochastic_OpMnemo(t *testing.T) {
 	})
 }
 
-func TestStochastic_checkArgOp(t *testing.T) {
-	// case 1
+func TestOperations_EncodeArgOp(t *testing.T) {
+	argop, err := EncodeArgOp(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	assert.Nil(t, err)
+	op, addr, key, value, err := DecodeArgOp(argop)
+	assert.Nil(t, err)
+	assert.Equal(t, SetStateID, op)
+	assert.Equal(t, classifier.PrevArgID, addr)
+	assert.Equal(t, classifier.NewArgID, key)
+	assert.Equal(t, classifier.NewArgID, value)
+
+	_, err = EncodeArgOp(SetStateID, classifier.NoArgID, classifier.NoArgID, classifier.NewArgID)
+	assert.NotNil(t, err)
+}
+
+func TestOperations_DecodeArgOp(t *testing.T) {
+	_, _, _, _, err := DecodeArgOp(NumArgOps)
+	assert.NotNil(t, err)
+
+	argop := (((int(SetCodeID)*classifier.NumArgKinds)+classifier.NoArgID)*classifier.NumArgKinds+classifier.NoArgID)*classifier.NumArgKinds + classifier.NewArgID
+	_, _, _, _, err = DecodeArgOp(argop)
+	assert.NotNil(t, err)
+}
+
+func TestOperations_EncodeOpcode(t *testing.T) {
+	_, err := EncodeOpcode(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	assert.Nil(t, err)
+
+	_, err = EncodeOpcode(SetStateID, classifier.NoArgID, classifier.NewArgID, classifier.NewArgID)
+	assert.NotNil(t, err)
+}
+
+func TestOperations_checkArgOp(t *testing.T) {
 	err := checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 	assert.Nil(t, err)
 
-	// case 2
+	err = checkArgOp(SnapshotID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	assert.NotNil(t, err)
+
+	err = checkArgOp(CreateAccountID, classifier.ZeroArgID, classifier.NoArgID, classifier.NoArgID)
+	assert.Nil(t, err)
+
+	err = checkArgOp(CreateAccountID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	assert.NotNil(t, err)
+
+	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	assert.Nil(t, err)
+
+	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	assert.Nil(t, err)
+
+	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	assert.NotNil(t, err)
+
+	err = checkArgOp(SetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	assert.Nil(t, err)
+
+	err = checkArgOp(SetStateID, classifier.NoArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	assert.NotNil(t, err)
+
 	err = checkArgOp(-1, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
 	assert.NotNil(t, err)
 
-	// case 3
 	err = checkArgOp(SnapshotID, -1, classifier.NoArgID, classifier.NoArgID)
 	assert.NotNil(t, err)
 
-	// case 4
 	err = checkArgOp(SnapshotID, classifier.NoArgID, -1, classifier.NoArgID)
 	assert.NotNil(t, err)
 
-	// case 5
 	err = checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, -1)
 	assert.NotNil(t, err)
 }
 
-func TestStochastic_IsValidArgOp(t *testing.T) {
+func TestOperations_DecodeOpcode(t *testing.T) {
+	_, _, _, _, err := DecodeOpcode("XX")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("CAz")
+	assert.Nil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("GSzn")
+	assert.Nil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SSnpz")
+	assert.Nil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SS")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SSl")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SSll")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SSlll")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("CAl")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("GSll")
+	assert.NotNil(t, err)
+
+	_, _, _, _, err = DecodeOpcode("SS")
+	assert.NotNil(t, err)
+}
+
+func TestOperations_IsValidArgOp(t *testing.T) {
 	// encode to an argument-encoded operation
 	argop, err := EncodeArgOp(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
 	if err != nil {
@@ -141,4 +226,46 @@ func TestStochastic_IsValidArgOp(t *testing.T) {
 
 	invalid = IsValidArgOp(NumArgOps)
 	assert.False(t, invalid)
+}
+
+func TestOperations_ToAddress(t *testing.T) {
+	// case 1
+	key, err := ToAddress(0)
+	assert.Nil(t, err)
+	assert.Equal(t, "0x0000000000000000000000000000000000000000", key.Hex())
+
+	// case 2
+	key, err = ToAddress(1)
+	assert.Nil(t, err)
+	assert.Equal(t, "0xe73e0539db9dEb8D2e32FF19dD634AA67Ef69Fd6", key.Hex())
+
+	// case 3
+	key, err = ToAddress(16)
+	assert.Nil(t, err)
+	assert.Equal(t, "0xE42dc42fA2F6e826e4CF42cF3Ef168729B691eD1", key.Hex())
+
+	// case 4
+	_, err = ToAddress(-1)
+	assert.NotNil(t, err)
+}
+
+func TestOperations_ToHash(t *testing.T) {
+	// case 1
+	h, err := ToHash(0)
+	assert.Nil(t, err)
+	assert.Equal(t, "0x0000000000000000000000000000000000000000000000000000000000000000", h.String())
+
+	// case 2
+	h, err = ToHash(1)
+	assert.Nil(t, err)
+	assert.Equal(t, "0x054a70e1e64dddae740f584be73e0539db9deb8d2e32ff19dd634aa67ef69fd6", h.String())
+
+	// case 3
+	h, err = ToHash(16)
+	assert.Nil(t, err)
+	assert.Equal(t, "0xfba0f49e88150664b8512808e42dc42fa2f6e826e4cf42cf3ef168729b691ed1", h.String())
+
+	// case 4
+	h, err = ToHash(-1)
+	assert.NotNil(t, err)
 }

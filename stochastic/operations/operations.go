@@ -22,6 +22,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // IDs of StateDB Operations
@@ -366,28 +367,29 @@ func DecodeOpcode(opc string) (int, int, int, int, error) {
 }
 
 // ToAddress converts an address index to a contract address.
-func ToAddress(idx int64) common.Address {
+func ToAddress(idx int64) (common.Address, error) {
 	var a common.Address
 	if idx < 0 {
-		panic("invalid index")
-	} else if idx != 0 {
-		arr := make([]byte, 8)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		a.SetBytes(arr)
+		return a, fmt.Errorf("invalid index (%v)", idx)
 	}
-	return a
+	if idx != 0 {
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		a.SetBytes(crypto.Keccak256(arr))
+	}
+	return a, nil
 }
 
 // ToHash converts a key/value index to a hash
-func ToHash(idx int64) common.Hash {
+func ToHash(idx int64) (common.Hash, error) {
 	var h common.Hash
 	if idx < 0 {
-		panic("invalid index")
-	} else if idx != 0 {
-		// TODO: Improve encoding so that index conversion becomes sparse.
-		arr := make([]byte, 32)
-		binary.LittleEndian.PutUint64(arr, uint64(idx))
-		h.SetBytes(arr)
+		return h, fmt.Errorf("invalid index (%v)", idx)
 	}
-	return h
+	if idx != 0 {
+		arr := make([]byte, binary.MaxVarintLen64)
+		binary.PutVarint(arr, -idx)
+		h = crypto.Keccak256Hash(arr)
+	}
+	return h, nil
 }
