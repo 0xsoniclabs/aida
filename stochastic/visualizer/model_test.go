@@ -14,8 +14,8 @@ func TestVisualizer_GetEventsData(t *testing.T) {
 }
 
 func TestEventData_PopulateEventData(t *testing.T) {
-	d := &recorder.EventRegistryJSON{
-		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+	d := &recorder.StateJSON{
+		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		Contracts: classifier.ArgClassifierJSON{
 			Counting: classifier.ArgStatsJSON{
 				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
@@ -73,8 +73,8 @@ func TestAccessData_PopulateAccess(t *testing.T) {
 }
 
 func TestSnapshotData_PopulateSnapshot(t *testing.T) {
-	d := &recorder.EventRegistryJSON{
-		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+	d := &recorder.StateJSON{
+		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 	}
 	s := &SnapshotData{}
 	s.PopulateSnapshotStats(d)

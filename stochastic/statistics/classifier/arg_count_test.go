@@ -85,7 +85,7 @@ func TestArgCountSimple3(t *testing.T) {
 // It marshals the JSON output and unmarshals it again and checks whether
 // the original and unmarshaled JSON output are identical.
 func testArgStatJSON(stats argCount[int], t *testing.T) {
-	jsonX := stats.newArgStatsJSON()
+	jsonX := stats.json()
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
 		t.Fatalf("Marshalling failed to produce distribution")

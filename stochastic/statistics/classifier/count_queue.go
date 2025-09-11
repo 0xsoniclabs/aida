@@ -87,8 +87,8 @@ type QueueStatsJSON struct {
 	Distribution []float64 `json:"distribution"`
 }
 
-// newQueueStatsJSON produces JSON output for for a queuing statistics.
-func (q *countQueue[T]) newQueueStatsJSON() QueueStatsJSON {
+// json produces JSON output for for a queuing statistics.
+func (q *countQueue[T]) json() QueueStatsJSON {
 	// Compute total frequency over all positions
 	total := uint64(0)
 	for i := range QueueLen {

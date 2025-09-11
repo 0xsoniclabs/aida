@@ -115,7 +115,7 @@ func TestQueuingSimple2(t *testing.T) {
 // It marshals the JSON output and unmarshals it again and checks whether
 // the original and unmarshaled JSON output are identical.
 func testQueueJSON(stats countQueue[int], t *testing.T) {
-	jsonX := stats.newQueueStatsJSON()
+	jsonX := stats.json()
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
 		t.Fatalf("Marshalling failed to produce distribution")

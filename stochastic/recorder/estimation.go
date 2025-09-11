@@ -42,7 +42,7 @@ type EstimationModelJSON struct {
 }
 
 // NewEstimationModelJSON creates a new estimation model.
-func NewEstimationModelJSON(d *EventRegistryJSON) EstimationModelJSON {
+func NewEstimationModelJSON(d *StateJSON) EstimationModelJSON {
 	// copy operation codes
 	operations := make([]string, len(d.Operations))
 	copy(operations, d.Operations)
@@ -55,7 +55,7 @@ func NewEstimationModelJSON(d *EventRegistryJSON) EstimationModelJSON {
 	}
 
 	// compute snapshot lambda
-	snapshotLambda, err := exponential.ApproximateLambda(d.SnapshotEcdf)
+	snapshotLambda, err := exponential.ApproximateLambda(d.SnapshotECDF)
 	if err != nil {
 		log.Fatalf("failed to approximate lambda parameter; %v", err)
 	}

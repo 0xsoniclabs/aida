@@ -234,8 +234,8 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 }
 
 func TestVisualizer_FireUpWeb(t *testing.T) {
-	eventRegistry := &recorder.EventRegistryJSON{
-		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+	eventRegistry := &recorder.StateJSON{
+		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		Contracts: classifier.ArgClassifierJSON{
 			Counting: classifier.ArgStatsJSON{
 				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},

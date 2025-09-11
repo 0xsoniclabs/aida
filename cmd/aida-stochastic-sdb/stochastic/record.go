@@ -97,7 +97,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	lastSec = time.Since(start).Seconds()
 
 	// create a new event registry
-	eventRegistry := recorder.NewEventRegistry()
+	eventRegistry := recorder.NewState()
 
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
 	eventRegistry.RegisterOp(operations.BeginSyncPeriodID)
@@ -161,7 +161,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 }
 
 // WriteEvents writes event file in JSON format.
-func WriteEvents(r *recorder.EventRegistry, filename string) error {
+func WriteEvents(r *recorder.State, filename string) error {
 	f, fErr := os.Create(filename)
 	if fErr != nil {
 		return fmt.Errorf("cannot open JSON file; %v", fErr)

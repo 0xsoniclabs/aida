@@ -24,8 +24,8 @@ import (
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.
-func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*EventRegistry, error) {
-	r := NewEventRegistry()
+func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, error) {
+	r := NewState()
 
 	// generate a uniform distribution for contracts, storage keys/values, and snapshots
 

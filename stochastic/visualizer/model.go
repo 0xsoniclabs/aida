@@ -73,7 +73,7 @@ func GetEventsData() *EventData {
 }
 
 // PopulateEvents populates the event model from event registry.
-func (e *EventData) PopulateEventData(d *recorder.EventRegistryJSON) {
+func (e *EventData) PopulateEventData(d *recorder.StateJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)
@@ -201,10 +201,10 @@ func (a *AccessData) PopulateAccess(d *classifier.ArgClassifierJSON) {
 }
 
 // PopulateSnapStats populates snapshot stats model
-func (s *SnapshotData) PopulateSnapshotStats(d *recorder.EventRegistryJSON) {
-	s.ECdf = make([][2]float64, len(d.SnapshotEcdf))
-	copy(s.ECdf, d.SnapshotEcdf)
-	lambda, err := exponential.ApproximateLambda(d.SnapshotEcdf)
+func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StateJSON) {
+	s.ECdf = make([][2]float64, len(d.SnapshotECDF))
+	copy(s.ECdf, d.SnapshotECDF)
+	lambda, err := exponential.ApproximateLambda(d.SnapshotECDF)
 	if err != nil {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}

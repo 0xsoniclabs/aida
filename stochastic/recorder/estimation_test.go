@@ -1,19 +1,19 @@
 package recorder
 
 import (
-    "encoding/json"
-    "math"
-    "os"
-    "os/exec"
-    "runtime"
-    "testing"
+	"encoding/json"
+	"math"
+	"os"
+	"os/exec"
+	"runtime"
+	"testing"
 
-    "github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-    "github.com/stretchr/testify/assert"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/stretchr/testify/assert"
 )
 
-var mockEventRegistryJSON = &EventRegistryJSON{
-	SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+var mockEventRegistryJSON = &StateJSON{
+	SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 	Contracts: classifier.ArgClassifierJSON{
 		Counting: classifier.ArgStatsJSON{
 			ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
@@ -53,8 +53,8 @@ func TestStochastic_NewEstimationModelJSON(t *testing.T) {
 }
 
 func TestStochastic_ReadSimulation(t *testing.T) {
-    tempDir := t.TempDir()
-    tempFile := tempDir + "/simulation.json"
+	tempDir := t.TempDir()
+	tempFile := tempDir + "/simulation.json"
 	t.Run("success", func(t *testing.T) {
 		model := NewEstimationModelJSON(mockEventRegistryJSON)
 		marshal, err := json.Marshal(model)
@@ -80,101 +80,101 @@ func TestStochastic_ReadSimulation(t *testing.T) {
 		invalidFile := tempDir + "/invalid.json"
 		err := os.WriteFile(invalidFile, []byte("invalid json"), 0644)
 		assert.NoError(t, err)
-        _, err = ReadSimulation(invalidFile)
-        assert.Error(t, err)
-        assert.Contains(t, err.Error(), "invalid character")
-    })
+		_, err = ReadSimulation(invalidFile)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid character")
+	})
 
-    t.Run("not a simulation file id", func(t *testing.T) {
-        input := &EstimationModelJSON{FileId: "not-simulation"}
-        marshal, err := json.Marshal(input)
-        if err != nil {
-            t.Fatalf("Failed to marshal input: %v", err)
-        }
-        path := tempDir + "/wrong-id.json"
-        err = os.WriteFile(path, marshal, 0644)
-        if err != nil {
-            t.Fatalf("Failed to write mock file: %v", err)
-        }
-        simulation, err := ReadSimulation(path)
-        assert.Error(t, err)
-        assert.Nil(t, simulation)
-    })
+	t.Run("not a simulation file id", func(t *testing.T) {
+		input := &EstimationModelJSON{FileId: "not-simulation"}
+		marshal, err := json.Marshal(input)
+		if err != nil {
+			t.Fatalf("Failed to marshal input: %v", err)
+		}
+		path := tempDir + "/wrong-id.json"
+		err = os.WriteFile(path, marshal, 0644)
+		if err != nil {
+			t.Fatalf("Failed to write mock file: %v", err)
+		}
+		simulation, err := ReadSimulation(path)
+		assert.Error(t, err)
+		assert.Nil(t, simulation)
+	})
 
-    t.Run("read error on directory", func(t *testing.T) {
-        dirPath := tempDir + "/dir"
-        err := os.Mkdir(dirPath, 0o755)
-        assert.NoError(t, err)
-        simulation, err := ReadSimulation(dirPath)
-        assert.Error(t, err)
-        assert.Nil(t, simulation)
-    })
+	t.Run("read error on directory", func(t *testing.T) {
+		dirPath := tempDir + "/dir"
+		err := os.Mkdir(dirPath, 0o755)
+		assert.NoError(t, err)
+		simulation, err := ReadSimulation(dirPath)
+		assert.Error(t, err)
+		assert.Nil(t, simulation)
+	})
 }
 
 func TestEstimationModelJSON_WriteJSON(t *testing.T) {
-    tempDir := t.TempDir()
-    tempFile := tempDir + "/simulation.json"
-    model := NewEstimationModelJSON(mockEventRegistryJSON)
-    err := model.WriteJSON(tempFile)
-    assert.NoError(t, err)
-    _, err = os.Stat(tempFile)
-    assert.NoError(t, err)
-    err = model.WriteJSON(tempDir)
-    assert.Error(t, err)
+	tempDir := t.TempDir()
+	tempFile := tempDir + "/simulation.json"
+	model := NewEstimationModelJSON(mockEventRegistryJSON)
+	err := model.WriteJSON(tempFile)
+	assert.NoError(t, err)
+	_, err = os.Stat(tempFile)
+	assert.NoError(t, err)
+	err = model.WriteJSON(tempDir)
+	assert.Error(t, err)
 }
 
 func TestEstimationModelJSON_WriteJSON_MarshalError(t *testing.T) {
-    tempDir := t.TempDir()
-    badModel := &EstimationModelJSON{
-        FileId:           "simulation",
-        SnapshotLambda:   math.NaN(),
-        Operations:       []string{"BB"},
-        StochasticMatrix: [][]float64{{1}},
-        Contracts:        EstimationStatsJSON{},
-        Keys:             EstimationStatsJSON{},
-        Values:           EstimationStatsJSON{},
-    }
-    err := badModel.WriteJSON(tempDir + "/bad.json")
-    assert.Error(t, err)
-    assert.Contains(t, err.Error(), "unsupported value: NaN")
+	tempDir := t.TempDir()
+	badModel := &EstimationModelJSON{
+		FileId:           "simulation",
+		SnapshotLambda:   math.NaN(),
+		Operations:       []string{"BB"},
+		StochasticMatrix: [][]float64{{1}},
+		Contracts:        EstimationStatsJSON{},
+		Keys:             EstimationStatsJSON{},
+		Values:           EstimationStatsJSON{},
+	}
+	err := badModel.WriteJSON(tempDir + "/bad.json")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported value: NaN")
 }
 
 func TestFatal_NewEstimationModelJSON(t *testing.T) {
-    if os.Getenv("WANT_FATAL_NEW_ESTIMATION_MODEL") == "1" {
-        bad := &EventRegistryJSON{SnapshotEcdf: [][2]float64{{0, math.NaN()}, {1, 1}}}
-        _ = NewEstimationModelJSON(bad)
-        return
-    }
-    cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationModelJSON")
-    cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_MODEL=1")
-    err := cmd.Run()
-    if err == nil {
-        t.Fatalf("expected process to exit due to log.Fatalf")
-    }
+	if os.Getenv("WANT_FATAL_NEW_ESTIMATION_MODEL") == "1" {
+		bad := &StateJSON{SnapshotECDF: [][2]float64{{0, math.NaN()}, {1, 1}}}
+		_ = NewEstimationModelJSON(bad)
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationModelJSON")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_MODEL=1")
+	err := cmd.Run()
+	if err == nil {
+		t.Fatalf("expected process to exit due to log.Fatalf")
+	}
 }
 
 func TestFatal_NewEstimationStats(t *testing.T) {
-    if os.Getenv("WANT_FATAL_NEW_ESTIMATION_STATS") == "1" {
-        bad := &classifier.ArgClassifierJSON{Counting: classifier.ArgStatsJSON{ECDF: [][2]float64{{0, math.NaN()}, {1, 1}}}}
-        _ = NewEstimationStats(bad)
-        return
-    }
-    cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationStats")
-    cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_STATS=1")
-    err := cmd.Run()
-    if err == nil {
-        t.Fatalf("expected process to exit due to log.Fatalf")
-    }
+	if os.Getenv("WANT_FATAL_NEW_ESTIMATION_STATS") == "1" {
+		bad := &classifier.ArgClassifierJSON{Counting: classifier.ArgStatsJSON{ECDF: [][2]float64{{0, math.NaN()}, {1, 1}}}}
+		_ = NewEstimationStats(bad)
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestFatal_NewEstimationStats")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_NEW_ESTIMATION_STATS=1")
+	err := cmd.Run()
+	if err == nil {
+		t.Fatalf("expected process to exit due to log.Fatalf")
+	}
 }
 
 func TestEstimationModelJSON_WriteJSON_WriteError(t *testing.T) {
-    if runtime.GOOS != "linux" {
-        t.Skip("/dev/full is Linux-specific")
-    }
-    model := NewEstimationModelJSON(mockEventRegistryJSON)
-    err := model.WriteJSON("/dev/full")
-    assert.Error(t, err)
-    assert.Contains(t, err.Error(), "failed to convert JSON file")
+	if runtime.GOOS != "linux" {
+		t.Skip("/dev/full is Linux-specific")
+	}
+	model := NewEstimationModelJSON(mockEventRegistryJSON)
+	err := model.WriteJSON("/dev/full")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to convert JSON file")
 }
 
 func TestStochastic_NewEstimationStats(t *testing.T) {

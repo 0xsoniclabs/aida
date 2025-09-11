@@ -356,7 +356,7 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // FireUpWeb produces a data model for the recorded events and
 // visualizes with a local web-server.
-func FireUpWeb(eventRegistry *recorder.EventRegistryJSON, addr string) {
+func FireUpWeb(eventRegistry *recorder.StateJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
 	eventModel := GetEventsData()

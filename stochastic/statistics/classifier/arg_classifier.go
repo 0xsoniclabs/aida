@@ -100,5 +100,5 @@ type ArgClassifierJSON struct {
 
 // NewArgClassifierJSON produces JSON output for an access statistics.
 func (a *ArgClassifier[T]) NewArgClassifierJSON() ArgClassifierJSON {
-	return ArgClassifierJSON{a.cstats.newArgStatsJSON(), a.qstats.newQueueStatsJSON()}
+	return ArgClassifierJSON{a.cstats.json(), a.qstats.json()}
 }

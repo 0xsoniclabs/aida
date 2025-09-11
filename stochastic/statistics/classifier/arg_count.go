@@ -61,8 +61,8 @@ type ArgStatsJSON struct {
 	ECDF [][2]float64 `json:"ecdf"` // Empirical cumulative distribution function
 }
 
-// newArgStatsJSON computes the ECDF of the counting stats.
-func (s *argCount[T]) newArgStatsJSON() ArgStatsJSON {
+// json computes the ECDF of the counting stats.
+func (s *argCount[T]) json() ArgStatsJSON {
 	return s.produceJSON(NumECDFPoints)
 }
 
