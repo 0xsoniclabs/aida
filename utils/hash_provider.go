@@ -51,7 +51,6 @@ type IRpcClient interface {
 	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
 	Notify(ctx context.Context, method string, args ...interface{}) error
 	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
-	ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
 	Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error)
 	SupportsSubscriptions() bool
 }
