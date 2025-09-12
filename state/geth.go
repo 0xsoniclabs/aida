@@ -367,9 +367,7 @@ func (s *gethStateDB) AddLog(log *types.Log) {
 	s.db.AddLog(log)
 }
 func (s *gethStateDB) AddPreimage(hash common.Hash, preimage []byte) {
-	// TODO why
-	panic("Add Preimage")
-	// s.db.AddPreimage(hash, preimage)
+
 }
 
 func (s *gethStateDB) AccessEvents() *geth.AccessEvents {
@@ -530,10 +528,7 @@ func (s *gethStateDB) trieCap() error {
 	_, nodes, imgs := triedb.Size()
 	if nodes > memoryUpperLimit+ethdb.IdealBatchSize || imgs > imgUpperLimit {
 		//If we exceeded our memory allowance, flush matured singleton nodes to disk
-		err := triedb.Cap(memoryUpperLimit)
-		if err != nil {
-			return err
-		}
+		return triedb.Cap(memoryUpperLimit)
 	}
 	return nil
 }

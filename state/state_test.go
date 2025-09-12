@@ -47,9 +47,7 @@ func TestState_StorageIsEmpty_SelfDestructAndReincarnation_EmptyStateIsReportedC
 			state := factory(t)
 			defer func(state StateDB) {
 				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
+				require.NoError(t, err, "Failed to close StateDB")
 			}(state)
 			runSelfDestructAndReincarnationTest(t, state)
 		})
@@ -167,9 +165,7 @@ func TestState_StorageIsEmpty_SelfDestruct6780_EmptyStateIsReportedCorrectly(t *
 			state := factory(t)
 			defer func(state StateDB) {
 				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
+				require.NoError(t, err, "Failed to close StateDB")
 			}(state)
 			runSelfDestruct6780AndReincarnationTest(t, state)
 		})
@@ -268,9 +264,7 @@ func TestState_StorageIsEmpty_SelfDestruct6780InSameTransaction_EmptyStateIsRepo
 			state := factory(t)
 			defer func(state StateDB) {
 				err := state.Close()
-				if err != nil {
-					require.NoError(t, err, "Failed to close StateDB")
-				}
+				require.NoError(t, err, "Failed to close StateDB")
 			}(state)
 			runSelfDestruct6780InSameTransactionTest(t, state)
 		})
