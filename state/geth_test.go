@@ -292,7 +292,7 @@ func TestGethStateDB_GetCommittedState(t *testing.T) {
 	addr := common.HexToAddress("0x1234")
 	key := common.HexToHash("0x5678")
 	expected := common.HexToHash("0x9abc")
-	mockDb.EXPECT().GetCommittedState(addr, key).Return(expected)
+	mockDb.EXPECT().GetStateAndCommittedState(addr, key).Return(common.Hash{}, expected)
 	result := g.GetCommittedState(addr, key)
 	assert.Equal(t, expected, result)
 }
@@ -780,7 +780,7 @@ func TestGethStateDB_AddPreimage(t *testing.T) {
 	g := gethStateDB{}
 	hash := common.HexToHash("0x1234")
 	preimage := []byte{0x56, 0x78}
-	assert.Panics(t, func() {
+	assert.NotPanics(t, func() {
 		g.AddPreimage(hash, preimage)
 	})
 }
