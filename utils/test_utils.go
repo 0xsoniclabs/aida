@@ -17,10 +17,18 @@
 package utils
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
@@ -162,4 +170,149 @@ func (b *ArgsBuilder) Arg(value interface{}) *ArgsBuilder {
 
 func (b *ArgsBuilder) Build() []string {
 	return b.args
+}
+
+func DownloadTestDataset(outputDir string) (err error) {
+	prefix := "https://github.com/0xsoniclabs/aida/releases/download/testdata/"
+	err = downloadFile(prefix+"events.json", filepath.Join(outputDir, "events.json"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"replay.json", filepath.Join(outputDir, "replay.json"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"trace.bin", filepath.Join(outputDir, "trace.bin"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"sample-pb-db.tar.gz", filepath.Join(outputDir, "sample-pb-db.tar.gz"))
+	if err != nil {
+		return err
+	}
+	err = extractTarGz(filepath.Join(outputDir, "sample-pb-db.tar.gz"), outputDir)
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"sample-rlp-db.tar.gz", filepath.Join(outputDir, "sample-rlp-db.tar.gz"))
+	if err != nil {
+		return err
+	}
+	err = extractTarGz(filepath.Join(outputDir, "sample-rlp-db.tar.gz"), outputDir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func downloadFile(inputUrl, output string) (err error) {
+	resp, err := http.Get(inputUrl)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, resp.Body.Close())
+	}()
+
+	outFile, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, outFile.Close())
+	}()
+
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err = outFile.Sync(); err != nil {
+		return err
+	}
+	return nil
+}
+func extractTarGz(tarGzFile, outputFolder string) error {
+	// Open the tar.gz file
+	file, err := os.Open(tarGzFile)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, file.Close())
+	}()
+
+	// Create the gzip readerÏ
+	gr, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, gr.Close())
+	}()
+
+	// Create the tar reader
+	tr := tar.NewReader(gr)
+
+	// Extract the files from the tar reader
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			// Reached the end of the tar archive
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		// Determine the output file path
+		targetPath, err := filepath.Abs(filepath.Join(outputFolder, header.Name))
+		if err != nil {
+			return err
+		}
+
+		// Make sure that path does not contain ".."
+		if strings.Contains(targetPath, "..") {
+			return fmt.Errorf("tarfile is attempting to use path containing ..: %s", targetPath)
+		}
+
+		// Make sure that output file does not overwrite existing files
+		_, err = os.Stat(targetPath)
+		if err == nil || os.IsExist(err) {
+			return fmt.Errorf("tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
+		}
+
+		// Check if it's a directory
+		if header.FileInfo().IsDir() {
+			// Create the directory
+			err = os.MkdirAll(targetPath, 0755)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Create the parent directory of the file
+			err = os.MkdirAll(filepath.Dir(targetPath), 0755)
+			if err != nil {
+				return err
+			}
+
+			// Create the output file
+			file, err := os.Create(targetPath)
+			if err != nil {
+				return err
+			}
+
+			// Copy the file content from the tar reader to the output file
+			_, err = io.Copy(file, tr)
+			if err != nil {
+				return err
+			}
+
+			err = file.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
