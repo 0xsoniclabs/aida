@@ -233,16 +233,17 @@ func TestRandomNextState(t *testing.T) {
 		t.Fatalf("Uniform Markovian process is not unbiased for a small test-case. Error: %v", err)
 	}
 
-	// test larger uniform markov chain
-	n = 5400
-	A = make([][]float64, n)
-	for i := 0; i < n; i++ {
-		L[i] = "s" + strconv.Itoa(i)
-		A[i] = make([]float64, n)
-		for j := 0; j < n; j++ {
-			A[i][j] = 1.0 / float64(n)
-		}
-	}
+    // test larger uniform markov chain
+    n = 5400
+    A = make([][]float64, n)
+    L = make([]string, n)
+    for i := 0; i < n; i++ {
+        L[i] = "s" + strconv.Itoa(i)
+        A[i] = make([]float64, n)
+        for j := 0; j < n; j++ {
+            A[i][j] = 1.0 / float64(n)
+        }
+    }
 	mc, err = New(A, L)
 	if err != nil {
 		t.Fatalf("Expected markov chain. Error: %v", err)
@@ -256,22 +257,26 @@ func TestRandomNextState(t *testing.T) {
 	//  Pr(X=x_j) = (1-beta)*beta^n * (1-beta^n) / -beta ^ j
 	// for values {x_1, ..., x_n}  of random variable X and
 	// with distribution parameter beta.
-	n = 10
-	beta := 0.6
-	A = make([][]float64, n)
-	L = make([]string, n)
-	for i := 0; i < n; i++ {
-		A[i] = make([]float64, n)
-		L[i] = "s" + strconv.Itoa(i)
-		for j := 0; j < n; j++ {
-			A[i][j] = ((1.0 - beta) * math.Pow(beta, float64(n)) /
-				(1.0 - math.Pow(beta, float64(n)))) *
-				math.Pow(beta, -float64(j+1))
-		}
-	}
-	if err := checkMarkovChain(mc, n*n); err != nil {
-		t.Fatalf("Geometric Markovian process is not unbiased for a small experiment. Error: %v", err)
-	}
+    n = 10
+    beta := 0.6
+    A = make([][]float64, n)
+    L = make([]string, n)
+    for i := 0; i < n; i++ {
+        A[i] = make([]float64, n)
+        L[i] = "s" + strconv.Itoa(i)
+        for j := 0; j < n; j++ {
+            A[i][j] = ((1.0 - beta) * math.Pow(beta, float64(n)) /
+                    (1.0 - math.Pow(beta, float64(n)))) *
+                    math.Pow(beta, -float64(j+1))
+        }
+    }
+    mc, err = New(A, L)
+    if err != nil {
+        t.Fatalf("Expected a markov chain. Error: %v", err)
+    }
+    if err := checkMarkovChain(mc, n*n); err != nil {
+        t.Fatalf("Geometric Markovian process is not unbiased for a small experiment. Error: %v", err)
+    }
 }
 
 // TestInitialState checks function find
