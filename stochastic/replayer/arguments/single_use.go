@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package generator
+package arguments
 
 import (
 	"fmt"
@@ -22,25 +22,25 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic"
 )
 
-// SingleUseArgumentSet data structure for generating non-reusable arguments.
+// SingleUse data structure for generating non-reusable arguments.
 // This is an extension of the ArgumentSet data structure.
 // Deleted arguments are not reused and cannot be chosen anymore in the future.
 // This type of argument set is needed for self-destructing account addresses.
-type SingleUseArgumentSet struct {
-	argset      ArgumentSet
-	ctr         ArgumentType   // argument counter for new arguments
-	translation []ArgumentType // translation table for arguments
-	ArgumentSet
+type SingleUse struct {
+	argset      Set
+	ctr         int64   // argument counter for new arguments
+	translation []int64 // translation table for arguments
+	Set
 }
 
-// NewSingleUseArgumentSet creates a new argument set whose arguments,
+// NewSingleUse creates a new argument set whose arguments,
 // when deleted, will not be reused in future.
-func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
-	t := make([]ArgumentType, argset.Size())
+func NewSingleUse(argset Set) *SingleUse {
+	t := make([]int64, argset.Size())
 	for i := range argset.Size() {
 		t[i] = i
 	}
-	return &SingleUseArgumentSet{
+	return &SingleUse{
 		argset:      argset,
 		ctr:         argset.Size(),
 		translation: t,
@@ -48,7 +48,7 @@ func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
 }
 
 // Choose an argument from the argument set according to its kind.
-func (a *SingleUseArgumentSet) Choose(kind stochastic.ArgKind) (int64, error) {
+func (a *SingleUse) Choose(kind int) (int64, error) {
 	v, err := a.argset.Choose(kind)
 	if err != nil {
 		return 0, err
@@ -70,7 +70,7 @@ func (a *SingleUseArgumentSet) Choose(kind stochastic.ArgKind) (int64, error) {
 }
 
 // Remove argument k from the argument set.
-func (a *SingleUseArgumentSet) Remove(k ArgumentType) error {
+func (a *SingleUse) Remove(k int64) error {
 	if k == 0 { // zero cannot be removed
 		return nil
 	}
@@ -86,12 +86,12 @@ func (a *SingleUseArgumentSet) Remove(k ArgumentType) error {
 }
 
 // Size returns the number of arguments in the argument set.
-func (a *SingleUseArgumentSet) Size() ArgumentType {
+func (a *SingleUse) Size() int64 {
 	return a.argset.Size()
 }
 
 // find the argument in the translation table for a given argument k.
-func (a *SingleUseArgumentSet) find(k ArgumentType) ArgumentType {
+func (a *SingleUse) find(k int64) int64 {
 	for i := range int64(len(a.translation)) {
 		if a.translation[i] == k {
 			return i

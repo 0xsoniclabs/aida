@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ import (
 
 // TestArgCountSimple counts a single occurrence of an argument and checks whether it exists.
 func TestArgCountSimple(t *testing.T) {
-	stats := newArgCount[int]()
+	stats := newCount[int]()
 	data := 100
 	if stats.exists(data) {
 		t.Fatalf("Existence check failed")
@@ -41,7 +41,7 @@ func TestArgCountSimple(t *testing.T) {
 // TestArgCountSimple2 counts two occurrences of an argument and checks whether their
 // frequency is two.
 func TestArgCountSimple2(t *testing.T) {
-	stats := newArgCount[int]()
+	stats := newCount[int]()
 	data := 200
 	if stats.exists(data) {
 		t.Fatalf("Existence check failed")
@@ -59,7 +59,7 @@ func TestArgCountSimple2(t *testing.T) {
 // TestArgCountSimple3 counts the single occurrence of two items and checks whether
 // their frequencies are one and whether they exist.
 func TestArgCountSimple3(t *testing.T) {
-	stats := newArgCount[int]()
+	stats := newCount[int]()
 	data1 := 10
 	data2 := 11
 	if stats.exists(data1) {
@@ -84,7 +84,7 @@ func TestArgCountSimple3(t *testing.T) {
 // testArgStatJSON tests the JSON output for an argument counting statistics.
 // It marshals the JSON output and unmarshals it again and checks whether
 // the original and unmarshaled JSON output are identical.
-func testArgStatJSON(stats argCount[int], t *testing.T) {
+func testArgStatJSON(stats count[int], t *testing.T) {
 	jsonX := stats.json()
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
@@ -102,7 +102,7 @@ func testArgStatJSON(stats argCount[int], t *testing.T) {
 // TestArgCountJSON tests JSON output of distribution.
 // It tests an empty counting statistics and a populated one.
 func TestArgCountJSON(t *testing.T) {
-	stats := newArgCount[int]()
+	stats := newCount[int]()
 
 	// test an empty counting statistics
 	testArgStatJSON(stats, t)

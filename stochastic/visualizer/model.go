@@ -23,7 +23,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 )
@@ -188,7 +188,7 @@ func (e *EventData) PopulateEventData(d *recorder.StateJSON) {
 }
 
 // PopulateAccess populates access stats model
-func (a *AccessData) PopulateAccess(d *classifier.ArgClassifierJSON) {
+func (a *AccessData) PopulateAccess(d *arguments.ClassifierJSON) {
 	a.ECdf = make([][2]float64, len(d.Counting.ECDF))
 	copy(a.ECdf, d.Counting.ECDF)
 	lambda, err := exponential.ApproximateLambda(d.Counting.ECDF)
@@ -196,7 +196,7 @@ func (a *AccessData) PopulateAccess(d *classifier.ArgClassifierJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	a.Lambda = lambda
-	a.Cdf = exponential.PiecewiseLinearCDF(lambda, stochastic.NumECDFPoints)
+	a.Cdf = exponential.ToECDF(lambda, stochastic.NumECDFPoints)
 	a.QPdf = make([]float64, len(d.Queuing.Distribution))
 	copy(a.QPdf, d.Queuing.Distribution)
 }
@@ -210,5 +210,5 @@ func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StateJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	s.Lambda = lambda
-	s.Cdf = exponential.PiecewiseLinearCDF(lambda, stochastic.NumECDFPoints)
+	s.Cdf = exponential.ToECDF(lambda, stochastic.NumECDFPoints)
 }

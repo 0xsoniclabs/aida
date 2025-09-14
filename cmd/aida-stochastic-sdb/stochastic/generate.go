@@ -51,7 +51,7 @@ func stochasticGenerateAction(ctx *cli.Context) error {
 	}
 	log := logger.NewLogger(cfg.LogLevel, "StochasticGenerate")
 	log.Info("Produce uniform stochastic events")
-	state, err := recorder.GenerateUniformRegistry(cfg, log)
+	state, err := recorder.GenerateUniformState(cfg, log)
 	if err != nil {
 		return err
 	}

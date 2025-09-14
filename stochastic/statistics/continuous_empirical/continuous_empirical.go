@@ -55,13 +55,26 @@ func Quantile(f [][2]float64, y float64) float64 {
 
 // Sample
 func Sample(rg *rand.Rand, ecdf [][2]float64, n int64) int64 {
-	return int64(float64(n) * Quantile(ecdf, rg.Float64()))
+	return int64(float64(n)*Quantile(ecdf, rg.Float64()) + 0.5)
+}
+
+// Mean calculates the mean of the empirical cumulative distribution function.
+func Mean(points [][2]float64) float64 {
+	m := float64(0.0)
+	for i := 1; i < len(points); i++ {
+		x1 := points[i-1][0]
+		y1 := points[i-1][1]
+		x2 := points[i][0]
+		y2 := points[i][1]
+		m = m + (x1+x2)*(y2-y1)/2.0
+	}
+	return m
 }
 
 // Check whether the piecewise linear function is valid as a CDF.
 // The function must start at (0,0) and end at (1,1).
 // The points of the function must be monotonically increasing.
-func CheckPiecewiseLinearCDF(f [][2]float64) bool {
+func IsECDF(f [][2]float64) bool {
 	// check start point; must be the coordinate (0,0)
 	if f[0][0] != 0.0 || f[0][1] != 0 {
 		return false

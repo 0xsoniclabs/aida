@@ -31,15 +31,15 @@ var StochasticVisualizeCommand = cli.Command{
 	Action:    stochasticVisualizeAction,
 	Name:      "visualize",
 	Usage:     "produces a graphical view of the estimated parameters for various distributions",
-	ArgsUsage: "<event-file>",
+	ArgsUsage: "<state-file>",
 	Flags: []cli.Flag{
 		&utils.PortFlag,
 	},
 	Description: `
 The stochastic visualize command requires one argument:
-<events.json>
+<state.json>
 
-<events.json> is the event file produced by the stochastic recorder.`,
+<state.json> is the event file produced by the stochastic recorder.`,
 }
 
 // stochasticVisualizeAction implements the visualize command for computing statistical parameters.

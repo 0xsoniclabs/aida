@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,18 +16,18 @@ func TestVisualizer_GetEventsData(t *testing.T) {
 func TestEventData_PopulateEventData(t *testing.T) {
 	d := &recorder.StateJSON{
 		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
-		Contracts: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Contracts: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 			},
 		},
-		Keys: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Keys: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
 			},
 		},
-		Values: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Values: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
 			},
 		},
@@ -59,8 +59,8 @@ func TestEventData_PopulateEventData(t *testing.T) {
 }
 
 func TestAccessData_PopulateAccess(t *testing.T) {
-	d := &classifier.ArgClassifierJSON{
-		Counting: classifier.ArgStatsJSON{
+	d := &arguments.ClassifierJSON{
+		Counting: arguments.ArgStatsJSON{
 			ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		},
 	}

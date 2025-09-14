@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -14,30 +14,30 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import "github.com/0xsoniclabs/aida/stochastic"
 
-// ArgClassifier struct for account addresses, storage keys, and storage values.
-type ArgClassifier[T comparable] struct {
-	cstats argCount[T]   // counting statistics for arguments
-	qstats countQueue[T] // counting queue statistics for queue accesses
+// Classifier struct for account addresses, storage keys, and storage values.
+type Classifier[T comparable] struct {
+	cstats count[T] // counting statistics for arguments
+	qstats queue[T] // counting queue statistics for queue accesses
 }
 
-// NewArgClassifier creates a new argument classifier.
-func NewArgClassifier[T comparable]() ArgClassifier[T] {
-	return ArgClassifier[T]{newArgCount[T](), NewCountQueue[T]()}
+// NewClassifier creates a new argument classifier.
+func NewClassifier[T comparable]() Classifier[T] {
+	return Classifier[T]{newCount[T](), newQueue[T]()}
 }
 
-// Update the argument classifier with a new argument and return its kind.
-func (a *ArgClassifier[T]) Update(data T) stochastic.ArgKind {
-	kind := a.classify(data)
+// Classify the argument classifier with a new argument and return its kind.
+func (a *Classifier[T]) Classify(data T) int {
+	kind := a.get(data)
 	a.place(data)
 	return kind
 }
 
-// places the argument into the counting and queuing statistics.
-func (a *ArgClassifier[T]) place(data T) {
+// place() places the argument into the counting and queuing statistics.
+func (a *Classifier[T]) place(data T) {
 	var zeroValue T
 	if data == zeroValue {
 		return // don't place zero value argument into argument/queue stats
@@ -49,8 +49,8 @@ func (a *ArgClassifier[T]) place(data T) {
 	a.qstats.place(data) // place data into queuing statistics
 }
 
-// classify an argument depending on previous placements.
-func (a *ArgClassifier[T]) classify(data T) stochastic.ArgKind {
+// get classification of an argument depending on previous placements.
+func (a *Classifier[T]) get(data T) int {
 	// check zero value
 	var zeroValue T
 	if data == zeroValue {
@@ -74,16 +74,16 @@ func (a *ArgClassifier[T]) classify(data T) stochastic.ArgKind {
 	}
 }
 
-// ArgClassifierJSON is the JSON output for the quantitiative description
+// ClassifierJSON is the JSON output for the quantitiative description
 // of an argument classifier. It contains the ECDF of the counting statistics
 // and the distribution of the positions of the recently accessed arguments
 // in the queue.
-type ArgClassifierJSON struct {
+type ClassifierJSON struct {
 	Counting ArgStatsJSON   `json:"counting"`
 	Queuing  QueueStatsJSON `json:"queue"`
 }
 
-// NewArgClassifierJSON produces JSON output for an access statistics.
-func (a *ArgClassifier[T]) JSON() ArgClassifierJSON {
-	return ArgClassifierJSON{a.cstats.json(), a.qstats.json()}
+// JSON produces output for the classifier statistics.
+func (a *Classifier[T]) JSON() ClassifierJSON {
+	return ClassifierJSON{a.cstats.json(), a.qstats.json()}
 }

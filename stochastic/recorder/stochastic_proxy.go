@@ -35,70 +35,70 @@ import (
 type StochasticProxy struct {
 	db        state.StateDB // StateDB object
 	snapshots []int         // snapshot stack of currently active snapshots
-	registry  *State        // event registry for deriving statistical parameters
+	markovStats  *State      // markovStats for storing state of Markov process
 }
 
-// NewStochasticProxy creates a new StateDB proxy for recording events.
-func NewStochasticProxy(db state.StateDB, registry *State) *StochasticProxy {
+// NewStochasticProxy creates a new StateDB proxy for recording markov stats
+func NewStochasticProxy(db state.StateDB, markovStats *State) *StochasticProxy {
 	return &StochasticProxy{
 		db:        db,
 		snapshots: []int{},
-		registry:  registry,
+		markovStats:  markovStats,
 	}
 }
 
 func (p *StochasticProxy) CreateAccount(address common.Address) {
-	p.registry.RegisterAddressOp(operations.CreateAccountID, &address)
+	p.markovStats.RegisterAddressOp(operations.CreateAccountID, &address)
 	p.db.CreateAccount(address)
 }
 
 func (p *StochasticProxy) CreateContract(addr common.Address) {
-	p.registry.RegisterAddressOp(operations.CreateContractID, &addr)
+	p.markovStats.RegisterAddressOp(operations.CreateContractID, &addr)
 	p.db.CreateContract(addr)
 }
 
 func (p *StochasticProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	p.registry.RegisterAddressOp(operations.SubBalanceID, &address)
+	p.markovStats.RegisterAddressOp(operations.SubBalanceID, &address)
 	return p.db.SubBalance(address, amount, reason)
 }
 
 func (p *StochasticProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	p.registry.RegisterAddressOp(operations.AddBalanceID, &address)
+	p.markovStats.RegisterAddressOp(operations.AddBalanceID, &address)
 	return p.db.AddBalance(address, amount, reason)
 }
 
 func (p *StochasticProxy) GetBalance(address common.Address) *uint256.Int {
-	p.registry.RegisterAddressOp(operations.GetBalanceID, &address)
+	p.markovStats.RegisterAddressOp(operations.GetBalanceID, &address)
 	return p.db.GetBalance(address)
 }
 
 func (p *StochasticProxy) GetNonce(address common.Address) uint64 {
-	p.registry.RegisterAddressOp(operations.GetNonceID, &address)
+	p.markovStats.RegisterAddressOp(operations.GetNonceID, &address)
 	return p.db.GetNonce(address)
 }
 
 func (p *StochasticProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
-	p.registry.RegisterAddressOp(operations.SetNonceID, &address)
+	p.markovStats.RegisterAddressOp(operations.SetNonceID, &address)
 	p.db.SetNonce(address, nonce, reason)
 }
 
 func (p *StochasticProxy) GetCodeHash(address common.Address) common.Hash {
-	p.registry.RegisterAddressOp(operations.GetCodeHashID, &address)
+	p.markovStats.RegisterAddressOp(operations.GetCodeHashID, &address)
 	return p.db.GetCodeHash(address)
 }
 
 func (p *StochasticProxy) GetCode(address common.Address) []byte {
-	p.registry.RegisterAddressOp(operations.GetCodeID, &address)
+	p.markovStats.RegisterAddressOp(operations.GetCodeID, &address)
 	return p.db.GetCode(address)
 }
 
 func (p *StochasticProxy) SetCode(address common.Address, code []byte) []byte {
-	p.registry.RegisterAddressOp(operations.SetCodeID, &address)
+	p.markovStats.RegisterAddressOp(operations.SetCodeID, &address)
 	return p.db.SetCode(address, code)
 }
 
 func (p *StochasticProxy) GetCodeSize(address common.Address) int {
-	p.registry.RegisterAddressOp(operations.GetCodeSizeID, &address)
+	p.markovStats.RegisterAddressOp(operations.GetCodeSizeID, &address)
 	return p.db.GetCodeSize(address)
 }
 
@@ -115,57 +115,57 @@ func (p *StochasticProxy) GetRefund() uint64 {
 }
 
 func (p *StochasticProxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
-	p.registry.RegisterKeyOp(operations.GetCommittedStateID, &address, &key)
+	p.markovStats.RegisterKeyOp(operations.GetCommittedStateID, &address, &key)
 	return p.db.GetCommittedState(address, key)
 }
 
 func (p *StochasticProxy) GetState(address common.Address, key common.Hash) common.Hash {
-	p.registry.RegisterKeyOp(operations.GetStateID, &address, &key)
+	p.markovStats.RegisterKeyOp(operations.GetStateID, &address, &key)
 	return p.db.GetState(address, key)
 }
 
 func (p *StochasticProxy) GetStorageRoot(addr common.Address) common.Hash {
-	p.registry.RegisterAddressOp(operations.GetStorageRootID, &addr)
+	p.markovStats.RegisterAddressOp(operations.GetStorageRootID, &addr)
 	return p.db.GetStorageRoot(addr)
 }
 
 func (p *StochasticProxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
-	p.registry.RegisterValueOp(operations.SetStateID, &address, &key, &value)
+	p.markovStats.RegisterValueOp(operations.SetStateID, &address, &key, &value)
 	return p.db.SetState(address, key, value)
 }
 
 func (p *StochasticProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	p.registry.RegisterKeyOp(operations.GetTransientStateID, &addr, &key)
+	p.markovStats.RegisterKeyOp(operations.GetTransientStateID, &addr, &key)
 	return p.db.GetState(addr, key)
 }
 
 func (p *StochasticProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.registry.RegisterValueOp(operations.SetTransientStateID, &addr, &key, &value)
+	p.markovStats.RegisterValueOp(operations.SetTransientStateID, &addr, &key, &value)
 	p.db.SetTransientState(addr, key, value)
 }
 
 func (p *StochasticProxy) SelfDestruct(address common.Address) uint256.Int {
-	p.registry.RegisterAddressOp(operations.SelfDestructID, &address)
+	p.markovStats.RegisterAddressOp(operations.SelfDestructID, &address)
 	return p.db.SelfDestruct(address)
 }
 
 func (p *StochasticProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	p.registry.RegisterAddressOp(operations.SelfDestruct6780ID, &addr)
+	p.markovStats.RegisterAddressOp(operations.SelfDestruct6780ID, &addr)
 	return p.db.SelfDestruct6780(addr)
 }
 
 func (p *StochasticProxy) HasSelfDestructed(address common.Address) bool {
-	p.registry.RegisterAddressOp(operations.HasSelfDestructedID, &address)
+	p.markovStats.RegisterAddressOp(operations.HasSelfDestructedID, &address)
 	return p.db.HasSelfDestructed(address)
 }
 
 func (p *StochasticProxy) Exist(address common.Address) bool {
-	p.registry.RegisterAddressOp(operations.ExistID, &address)
+	p.markovStats.RegisterAddressOp(operations.ExistID, &address)
 	return p.db.Exist(address)
 }
 
 func (p *StochasticProxy) Empty(address common.Address) bool {
-	p.registry.RegisterAddressOp(operations.EmptyID, &address)
+	p.markovStats.RegisterAddressOp(operations.EmptyID, &address)
 	return p.db.Empty(address)
 }
 
@@ -192,7 +192,7 @@ func (p *StochasticProxy) AddSlotToAccessList(address common.Address, slot commo
 func (p *StochasticProxy) RevertToSnapshot(snapshot int) {
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
-			p.registry.RegisterSnapshot(len(p.snapshots) - i - 1)
+			p.markovStats.RegisterSnapshot(len(p.snapshots) - i - 1)
 			p.snapshots = p.snapshots[0:i]
 			break
 		}
@@ -201,7 +201,7 @@ func (p *StochasticProxy) RevertToSnapshot(snapshot int) {
 }
 
 func (p *StochasticProxy) Snapshot() int {
-	p.registry.RegisterOp(operations.SnapshotID)
+	p.markovStats.RegisterOp(operations.SnapshotID)
 	snapshot := p.db.Snapshot()
 	p.snapshots = append(p.snapshots, snapshot)
 	return snapshot
@@ -265,7 +265,7 @@ func (p *StochasticProxy) PrepareSubstate(substate txcontext.WorldState, block u
 }
 
 func (p *StochasticProxy) BeginTransaction(number uint32) error {
-	p.registry.RegisterOp(operations.BeginTransactionID)
+	p.markovStats.RegisterOp(operations.BeginTransactionID)
 	if err := p.db.BeginTransaction(number); err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func (p *StochasticProxy) BeginTransaction(number uint32) error {
 }
 
 func (p *StochasticProxy) EndTransaction() error {
-	p.registry.RegisterOp(operations.EndTransactionID)
+	p.markovStats.RegisterOp(operations.EndTransactionID)
 	if err := p.db.EndTransaction(); err != nil {
 		return err
 	}
@@ -283,22 +283,22 @@ func (p *StochasticProxy) EndTransaction() error {
 }
 
 func (p *StochasticProxy) BeginBlock(number uint64) error {
-	p.registry.RegisterOp(operations.BeginBlockID)
+	p.markovStats.RegisterOp(operations.BeginBlockID)
 	return p.db.BeginBlock(number)
 }
 
 func (p *StochasticProxy) EndBlock() error {
-	p.registry.RegisterOp(operations.EndBlockID)
+	p.markovStats.RegisterOp(operations.EndBlockID)
 	return p.db.EndBlock()
 }
 
 func (p *StochasticProxy) BeginSyncPeriod(number uint64) {
-	p.registry.RegisterOp(operations.BeginSyncPeriodID)
+	p.markovStats.RegisterOp(operations.BeginSyncPeriodID)
 	p.db.BeginSyncPeriod(number)
 }
 
 func (p *StochasticProxy) EndSyncPeriod() {
-	p.registry.RegisterOp(operations.EndSyncPeriodID)
+	p.markovStats.RegisterOp(operations.EndSyncPeriodID)
 	p.db.EndSyncPeriod()
 }
 

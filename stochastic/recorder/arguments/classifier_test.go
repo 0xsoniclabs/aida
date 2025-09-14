@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import (
 	"encoding/json"
@@ -27,34 +27,34 @@ import (
 // TestArgClassifierSimple tests for classifying arguments based on previous updates
 func TestArgClassifierUpdateSimple(t *testing.T) {
 	// create index arg_classifier
-	arg_classifier := NewArgClassifier[int]()
+	arg_classifier := NewClassifier[int]()
 
 	// check zero argument
-	kind := arg_classifier.Update(0)
+	kind := arg_classifier.Classify(0)
 	if kind != stochastic.ZeroArgID {
 		t.Fatalf("wrong classification %v (zero argument expected)", kind)
 	}
 
 	// check new argument
-	kind = arg_classifier.Update(1)
+	kind = arg_classifier.Classify(1)
 	if kind != stochastic.NewArgID {
 		t.Fatalf("wrong classification %v (new argument expected)", kind)
 	}
 
 	// check previous argument
-	kind = arg_classifier.Update(1)
+	kind = arg_classifier.Classify(1)
 	if kind != stochastic.PrevArgID {
 		t.Fatalf("wrong classification %v (previous argument)", kind)
 	}
 
 	// check new argument
-	kind = arg_classifier.Update(2)
+	kind = arg_classifier.Classify(2)
 	if kind != stochastic.NewArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
 
 	// check recent argument
-	kind = arg_classifier.Update(1)
+	kind = arg_classifier.Classify(1)
 	if kind != stochastic.RecentArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
@@ -65,7 +65,7 @@ func TestArgClassifierUpdateSimple(t *testing.T) {
 	}
 
 	// check random argument
-	kind = arg_classifier.Update(1)
+	kind = arg_classifier.Classify(1)
 	if kind != stochastic.RandArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
@@ -74,7 +74,7 @@ func TestArgClassifierUpdateSimple(t *testing.T) {
 // TestArgClassifierSimpleQueue tests for classifying arguments based on previous updates.
 func TestArgClassifierSimpleQueue(t *testing.T) {
 	// create index arg_classifier
-	arg_classifier := NewArgClassifier[int]()
+	arg_classifier := NewClassifier[int]()
 
 	const offset = 10
 	// place elements into the queue and ensure it overfills
@@ -83,14 +83,14 @@ func TestArgClassifierSimpleQueue(t *testing.T) {
 	}
 
 	// check previous element's class
-	class := arg_classifier.classify(stochastic.QueueLen + offset - 1)
+	class := arg_classifier.get(stochastic.QueueLen + offset - 1)
 	if class != stochastic.PrevArgID {
 		t.Fatalf("wrong classification (previous item)")
 	}
 
 	// check recent element's class (ones that should be in the queue)
 	for i := offset; i < stochastic.QueueLen+offset-1; i++ {
-		class := arg_classifier.classify(i)
+		class := arg_classifier.get(i)
 		if class != stochastic.RecentArgID {
 			t.Fatalf("wrong classification %v (recent data)", i)
 		}
@@ -98,20 +98,20 @@ func TestArgClassifierSimpleQueue(t *testing.T) {
 
 	// check class of elements that fell out of the queue
 	for i := 1; i < offset; i++ {
-		class := arg_classifier.classify(i)
+		class := arg_classifier.get(i)
 		if class != stochastic.RandArgID {
 			t.Fatalf("wrong classification %v (random data)", i)
 		}
 	}
 
 	// check class of new elements
-	class = arg_classifier.classify(stochastic.QueueLen + offset)
+	class = arg_classifier.get(stochastic.QueueLen + offset)
 	if class != stochastic.NewArgID {
 		t.Fatalf("wrong classification (new data)")
 	}
 
 	// check class of new elements
-	class = arg_classifier.classify(0)
+	class = arg_classifier.get(0)
 	if class != stochastic.ZeroArgID {
 		t.Fatalf("wrong classification (new data)")
 	}
@@ -119,13 +119,13 @@ func TestArgClassifierSimpleQueue(t *testing.T) {
 
 // TestArgClassifierJSONOutput tests for JSON output of argument classifiers.
 func TestArgClassifierJSONOutput(t *testing.T) {
-	x := NewArgClassifier[int]()
+	x := NewClassifier[int]()
 
 	// place arguments in classifier ensure that the queue overfills
 	// so that we have some random arguments for the counting statistics.
 	for i := range 2 * stochastic.QueueLen {
-		x.Update(i)
-		x.classify(i - 10)
+		x.Classify(i)
+		x.get(i - 10)
 	}
 
 	// produce stats in JSON format
@@ -136,7 +136,7 @@ func TestArgClassifierJSONOutput(t *testing.T) {
 	}
 
 	// read stats back from JSON format
-	var jsonY ArgClassifierJSON
+	var jsonY ClassifierJSON
 	if err := json.Unmarshal(jOut, &jsonY); err != nil {
 		t.Fatalf("Unmarshalling failed to reproduce distribution")
 	}

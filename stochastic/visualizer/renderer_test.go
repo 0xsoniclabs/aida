@@ -7,7 +7,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 )
@@ -236,18 +236,18 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 func TestVisualizer_FireUpWeb(t *testing.T) {
 	eventRegistry := &recorder.StateJSON{
 		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
-		Contracts: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Contracts: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 			},
 		},
-		Keys: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Keys: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
 			},
 		},
-		Values: classifier.ArgClassifierJSON{
-			Counting: classifier.ArgStatsJSON{
+		Values: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
 			},
 		},

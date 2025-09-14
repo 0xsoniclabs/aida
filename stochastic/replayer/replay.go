@@ -26,7 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/generator"
+	"github.com/0xsoniclabs/aida/stochastic/replayer/arguments"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -51,12 +51,12 @@ type replayContext struct {
 	db              state.StateDB         // StateDB database
 	traceDebug      bool                  // trace-debug flag
 	log             logger.Logger         // logger for output
-	rg              *rand.Rand            // random generator for sampling
-	contracts       generator.ArgumentSet // random argument generator for contracts
+	rg              *rand.Rand            // random arguments for sampling
+	contracts       arguments.Set         // random argument arguments for contracts
 	selfDestructed  map[int64]struct{}    // set of self destructed accounts in a block
-	keys            generator.ArgumentSet // random argument generator for keys
-	values          generator.ArgumentSet // random argument generator for values
-	snapshots       generator.SnapshotSet // random generator for snapshot ids
+	keys            arguments.Set         // random argument arguments for keys
+	values          arguments.Set         // random argument arguments for values
+	snapshots       arguments.SnapshotSet // random arguments for snapshot ids
 	activeSnapshots []int                 // stack of active snapshots
 	totalTx         uint64                // total number of transactions
 	txNum           uint32                // current transaction number
@@ -68,10 +68,10 @@ type replayContext struct {
 func newReplayContext(
 	rg *rand.Rand,
 	db state.StateDB,
-	contracts generator.ArgumentSet,
-	keys generator.ArgumentSet,
-	values generator.ArgumentSet,
-	snapshots generator.SnapshotSet,
+	contracts arguments.Set,
+	keys arguments.Set,
+	values arguments.Set,
+	snapshots arguments.SnapshotSet,
 	log logger.Logger,
 ) replayContext {
 	// return stochastic state
@@ -91,38 +91,51 @@ func newReplayContext(
 }
 
 // populateReplayContext creates a stochastic state and primes the StateDB
-func populateReplayContext(cfg *utils.Config, e *recorder.StateJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*replayContext, error) {
+func populateReplayContext(
+	cfg *utils.Config,
+	e *recorder.StateJSON,
+	db state.StateDB,
+	rg *rand.Rand,
+	log logger.Logger,
+) (*replayContext, error) {
 	// produce random variables for contract addresses,
 	// storage-keys, storage addresses, and snapshot ids.
-	contracts := generator.NewSingleUseArgumentSet(
-		generator.NewReusableArgumentSet(
-			e.Contracts.Counting.N,
-			generator.NewEmpiricalArgSetRandomizer(
-				rg,
-				e.Contracts.Queuing.Distribution,
-				e.Contracts.Counting.ECDF),
-		))
-	keys := generator.NewReusableArgumentSet(
-		e.Keys.Counting.N,
-		generator.NewEmpiricalArgSetRandomizer(
-			rg,
-			e.Keys.Queuing.Distribution,
-			e.Keys.Counting.ECDF),
+	contract_randomizer, err := arguments.NewEmpiricalRandomizer(
+		rg,
+		e.Contracts.Queuing.Distribution,
+		e.Contracts.Counting.ECDF)
+	if err != nil {
+		return nil, err
+	}
+	contracts := arguments.NewSingleUse(
+		arguments.NewReusable(e.Contracts.Counting.N, contract_randomizer),
 	)
-	values := generator.NewReusableArgumentSet(
-		e.Values.Counting.N,
-		generator.NewEmpiricalArgSetRandomizer(
-			rg,
-			e.Values.Queuing.Distribution,
-			e.Values.Counting.ECDF),
-	)
-	snapshots := generator.NewEmpiricalSnapshotRandomizer(rg, e.SnapshotECDF)
+
+	key_randomizer, err := arguments.NewEmpiricalRandomizer(
+		rg,
+		e.Keys.Queuing.Distribution,
+		e.Keys.Counting.ECDF)
+	if err != nil {
+		return nil, err
+	}
+	keys := arguments.NewReusable(e.Keys.Counting.N, key_randomizer)
+
+	value_randomizer, err := arguments.NewEmpiricalRandomizer(
+		rg,
+		e.Values.Queuing.Distribution,
+		e.Values.Counting.ECDF)
+	if err != nil {
+		return nil, err
+	}
+	values := arguments.NewReusable(e.Values.Counting.N, value_randomizer)
+
+	snapshots := arguments.NewEmpiricalSnapshotRandomizer(rg, e.SnapshotECDF)
 
 	// setup state
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
 
 	// create accounts in StateDB before starting the simulation
-	err := ss.prime()
+	err = ss.prime()
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +179,7 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, c
 	log.Noticef("nonce range %d", cfg.NonceRange)
 	NonceRange = cfg.NonceRange
 
-	// random generator
+	// random arguments
 	rg := rand.New(rand.NewSource(cfg.RandomSeed))
 	log.Noticef("using random seed %d", cfg.RandomSeed)
 
@@ -331,7 +344,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		rg    = ss.rg
 	)
 
-	// fetch indexes from index access generators only when an argument is required
+	// fetch indexes from index access argumentss only when an argument is required
 	var addrIdx int64
 	var keyIdx int64
 	var valueIdx int64

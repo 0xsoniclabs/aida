@@ -28,7 +28,7 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		TransactionLength: 7,
 	}
 
-	r, err := GenerateUniformRegistry(cfg, mockLogger)
+	r, err := GenerateUniformState(cfg, mockLogger)
 	assert.NotNil(t, r)
 	assert.Nil(t, err)
 
@@ -42,17 +42,23 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		}
 	}
 
-	bb, _ := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-	bt, _ := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	bb, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
+	bt, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
 	assert.Equal(t, uint64(1), r.transitFreq[bb][bt])
 
-	eb, _ := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-	es, _ := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	eb, err := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
+	es, err := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
 	assert.Equal(t, cfg.SyncPeriodLength-1, r.transitFreq[eb][bb])
 	assert.Equal(t, uint64(1), r.transitFreq[eb][es])
 
-	gb, _ := operations.EncodeArgOp(operations.GetBalanceID, stochastic.NewArgID, stochastic.NoArgID, stochastic.NoArgID)
-	et, _ := operations.EncodeArgOp(operations.EndTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	gb, err := operations.EncodeArgOp(operations.GetBalanceID, stochastic.NewArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
+	et, err := operations.EncodeArgOp(operations.EndTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	assert.Nil(t, err)
 	if operations.IsValidArgOp(gb) {
 		assert.Equal(t, uint64(1), r.transitFreq[gb][et])
 	}

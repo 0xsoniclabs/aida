@@ -14,19 +14,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package generator
+package arguments
 
 import (
-	"math"
-
 	"github.com/0xsoniclabs/aida/stochastic"
 )
-
-// ArgumentType defines the integer type of arguments
-type ArgumentType = int64
-
-// MaxArgumentType is the maximum value of the argument type
-const MaxArgumentType = math.MaxInt64
 
 // minCardinality is the minimum cardinality of the argument set and
 // must be substantially larger than stochastic.QueueLen.
@@ -34,22 +26,22 @@ const MaxArgumentType = math.MaxInt64
 // take a very long time and would slow down the simulation.)
 const minCardinality = 10 * stochastic.QueueLen
 
-// ArgumentSet data structure for producing random arguments
+// Set data structure for producing random arguments
 // for StateDB operations. An argument set meshes a sample distribution
 // with a queue of recently used arguments to produce arguments.
 // The argument set always contains the zero argument.
-type ArgumentSet interface {
+type Set interface {
 
 	// Choose the a random argument depending on the argument kind. There are
 	// following argument kinds: (1) no argument, (2) argument with zero value,
 	// (3) a new argument increasing the cardinality of the argument set, (4)
 	// a random argument not contained in the queue, (5) the previous argument
 	// (6) a recent argument contained in the queue but not the previous one.
-	Choose(kind stochastic.ArgKind) (ArgumentType, error)
+	Choose(kind int) (int64, error)
 
 	// Remove an argument from set and shrink argument set by one argument.
-	Remove(v ArgumentType) error
+	Remove(v int64) error
 
 	// Size returns the current size of the argument set.
-	Size() ArgumentType
+	Size() int64
 }

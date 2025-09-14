@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
@@ -28,23 +28,23 @@ import (
 // hence we compress it the distribution function to a fixed number of points.
 // See: https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
 
-// argCount data struct for a counting statistics of StateDB operations' arguments.
-type argCount[T comparable] struct {
+// count data struct for a counting statistics of StateDB operations' arguments.
+type count[T comparable] struct {
 	freq map[T]uint64 // frequency counts per argument
 }
 
-// newArgCount creates a new counting statistics for numbers.
-func newArgCount[T comparable]() argCount[T] {
-	return argCount[T]{map[T]uint64{}}
+// newCount creates a new counting statistics for numbers.
+func newCount[T comparable]() count[T] {
+	return count[T]{map[T]uint64{}}
 }
 
 // Places an item into the counting statistics.
-func (s *argCount[T]) place(data T) {
+func (s *count[T]) place(data T) {
 	s.freq[data]++
 }
 
 // exists check whether data item exists in the counting statistics.
-func (s *argCount[T]) exists(data T) bool {
+func (s *count[T]) exists(data T) bool {
 	_, ok := s.freq[data]
 	return ok
 }
@@ -56,7 +56,7 @@ type ArgStatsJSON struct {
 }
 
 // json computes the ECDF of the counting stats.
-func (s *argCount[T]) json() ArgStatsJSON {
+func (s *count[T]) json() ArgStatsJSON {
 	ecdf := continuous_empirical.ToECDF(&s.freq)
 	return ArgStatsJSON{
 		N:    int64(len(s.freq)),

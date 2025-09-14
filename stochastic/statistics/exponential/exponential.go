@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
 )
 
 // Package for the one-sided truncated exponential distribution with a bound of one.
@@ -36,8 +38,8 @@ func CDF(lambda float64, x float64) float64 {
 	return (math.Exp(-lambda*x) - 1.0) / (math.Exp(-lambda) - 1.0)
 }
 
-// PiecewiseLinearCDF is a piecewise linear representation of the cumulative distribution function.
-func PiecewiseLinearCDF(lambda float64, n int) [][2]float64 {
+// ToECDF is a piecewise linear representation of the cumulative distribution function.
+func ToECDF(lambda float64, n int) [][2]float64 {
 	// The points are equi-distantly spread, i.e., 1/n.
 	fn := [][2]float64{}
 	for i := 0; i <= n; i++ {
@@ -55,20 +57,7 @@ func Quantile(lambda float64, p float64) float64 {
 
 // Sample samples the distribution and discretizes the result for numbers in the range between 0 and n-1.
 func Sample(rg *rand.Rand, lambda float64, n int64) int64 {
-	return int64(float64(n) * Quantile(lambda, rg.Float64()))
-}
-
-// mean calculates the mean of the empirical cumulative distribution function.
-func mean(points [][2]float64) float64 {
-	m := float64(0.0)
-	for i := 1; i < len(points); i++ {
-		x1 := points[i-1][0]
-		y1 := points[i-1][1]
-		x2 := points[i][0]
-		y2 := points[i][1]
-		m = m + (x1+x2)*(y2-y1)/2.0
-	}
-	return m
+	return int64(float64(n)*Quantile(lambda, rg.Float64()) + 0.5)
 }
 
 // mle is the Maximum Likelihood Estimation function for finding a suitable lambda.
@@ -112,7 +101,7 @@ func dMLE(lambda float64) (float64, error) {
 // an error if the maximal number of steps for the convergence criteria
 // is exceeded.
 func ApproximateLambda(points [][2]float64) (float64, error) {
-	m := mean(points)
+	m := continuous_empirical.Mean(points)
 	l := newtonInitLambda
 	for range newtonMaxStep {
 		mleValue, err := mle(l, m)

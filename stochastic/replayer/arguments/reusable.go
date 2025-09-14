@@ -14,36 +14,37 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package generator
+package arguments
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/0xsoniclabs/aida/stochastic"
 )
 
-// ReusableArgumentSet data structure for producing random arguments
+// Reusable data structure for producing random arguments
 // for StateDB operations. An argument set meshes a sample distribution
 // with a queue of recently used arguments to produce arguments.
 // The argument set always contains the zero argument.
-type ReusableArgumentSet struct {
-	n     ArgumentType     // cardinality of argument set including the zero argument
-	queue []ArgumentType   // queue for recently chosen arguments
-	rand  ArgSetRandomizer // random generator
-	ArgumentSet
+type Reusable struct {
+	n     int64      // cardinality of argument set including the zero argument
+	queue []int64    // queue for recently chosen arguments
+	rand  Randomizer // random generator
+	Set
 }
 
-// NewReusableArgumentSet creates a random set of arguments for StateDB operations
-func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgumentSet {
+// NewReusable creates a random set of arguments for StateDB operations
+func NewReusable(n int64, rand Randomizer) *Reusable {
 	if n < minCardinality {
 		return nil
 	}
-	queue := []ArgumentType{}
+	queue := []int64{}
 	for range stochastic.QueueLen {
 		v := rand.SampleArg(n-1) + 1
 		queue = append(queue, v)
 	}
-	return &ReusableArgumentSet{
+	return &Reusable{
 		n:     n,
 		queue: queue,
 		rand:  rand,
@@ -55,7 +56,7 @@ func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgu
 // (3) a new argument increasing the cardinality of the argument set, (4)
 // a random argument not contained in the queue, (5) the previous argument
 // (6) a recent argument contained in the queue but not the previous one.
-func (a *ReusableArgumentSet) Choose(kind stochastic.ArgKind) (ArgumentType, error) {
+func (a *Reusable) Choose(kind int) (int64, error) {
 	switch kind {
 
 	// choose no argument
@@ -69,7 +70,7 @@ func (a *ReusableArgumentSet) Choose(kind stochastic.ArgKind) (ArgumentType, err
 
 	// choose a new argument that hasn't been used before
 	case stochastic.NewArgID:
-		if a.n == MaxArgumentType {
+		if a.n == math.MaxInt64 {
 			return 0, fmt.Errorf("Choose: new value exceeds cardinality range")
 		}
 		v := a.n
@@ -109,7 +110,7 @@ func (a *ReusableArgumentSet) Choose(kind stochastic.ArgKind) (ArgumentType, err
 }
 
 // Remove an argument from set and shrink argument set by one
-func (a *ReusableArgumentSet) Remove(v ArgumentType) error {
+func (a *Reusable) Remove(v int64) error {
 	if v <= 0 || v >= a.n {
 		return fmt.Errorf("Remove: argument (%v) out of range", v)
 	}
@@ -129,12 +130,12 @@ func (a *ReusableArgumentSet) Remove(v ArgumentType) error {
 }
 
 // Size returns the current size of the argument set.
-func (a *ReusableArgumentSet) Size() ArgumentType {
+func (a *Reusable) Size() int64 {
 	return a.n
 }
 
 // findQElem finds an element in the queue.
-func (a *ReusableArgumentSet) findQElem(elem ArgumentType) bool {
+func (a *Reusable) findQElem(elem int64) bool {
 	for i := range stochastic.QueueLen {
 		if a.queue[i] == elem {
 			return true
@@ -144,17 +145,17 @@ func (a *ReusableArgumentSet) findQElem(elem ArgumentType) bool {
 }
 
 // placeQ places element in the queue.
-func (a *ReusableArgumentSet) placeQ(elem ArgumentType) {
-	a.queue = append([]ArgumentType{elem}, a.queue[0:stochastic.QueueLen-1]...)
+func (a *Reusable) placeQ(elem int64) {
+	a.queue = append([]int64{elem}, a.queue[0:stochastic.QueueLen-1]...)
 }
 
 // lastQ returns previously queued element.
-func (a *ReusableArgumentSet) lastQ() ArgumentType {
+func (a *Reusable) lastQ() int64 {
 	return a.queue[0]
 }
 
 // recentQ returns randomly an argument in the queue but not the previous one.
-func (a *ReusableArgumentSet) recentQ() (ArgumentType, error) {
+func (a *Reusable) recentQ() (int64, error) {
 	i := a.rand.SampleQueue()
 	if i <= 0 || i >= stochastic.QueueLen {
 		return 0, fmt.Errorf("recentQ: queue index (%v) out of range for recent access", i)

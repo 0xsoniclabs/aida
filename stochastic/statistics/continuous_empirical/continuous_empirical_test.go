@@ -68,7 +68,7 @@ func TestCheckPiecewiseLinearCDF_Valid(t *testing.T) {
 		{0.8, 0.9},
 		{1.0, 1.0},
 	}
-	if ok := CheckPiecewiseLinearCDF(f); !ok {
+	if ok := IsECDF(f); !ok {
 		t.Fatalf("expected valid CDF definition")
 	}
 }
@@ -79,7 +79,7 @@ func TestCheckPiecewiseLinearCDF_BadStart(t *testing.T) {
 		{0.5, 0.4},
 		{1.0, 1.0},
 	}
-	if ok := CheckPiecewiseLinearCDF(f); ok {
+	if ok := IsECDF(f); ok {
 		t.Fatalf("expected invalid CDF due to bad start point")
 	}
 }
@@ -90,7 +90,7 @@ func TestCheckPiecewiseLinearCDF_BadEnd(t *testing.T) {
 		{0.5, 0.4},
 		{0.999, 0.999},
 	}
-	if ok := CheckPiecewiseLinearCDF(f); ok {
+	if ok := IsECDF(f); ok {
 		t.Fatalf("expected invalid CDF due to bad end point")
 	}
 }
@@ -102,7 +102,7 @@ func TestCheckPiecewiseLinearCDF_NonIncreasingX(t *testing.T) {
 		{0.5, 0.6},
 		{1.0, 1.0},
 	}
-	if ok := CheckPiecewiseLinearCDF(f); ok {
+	if ok := IsECDF(f); ok {
 		t.Fatalf("expected invalid CDF due to non-increasing x")
 	}
 }

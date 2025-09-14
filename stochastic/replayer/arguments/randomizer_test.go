@@ -1,4 +1,4 @@
-package generator
+package arguments
 
 //type constSource64 struct{ v int64 }
 
@@ -6,37 +6,18 @@ package generator
 //func (c *constSource64) Uint64() uint64  { return uint64(c.v) }
 //func (c *constSource64) Seed(seed int64) {}
 
-//func TestProxyRandomizerDelegates(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//
-//	argR := NewMockSampleArgRandomizer(ctrl)
-//	qR := NewMockSampleQueueRandomizer(ctrl)
-//
-//	argR.EXPECT().SampleArg(ArgumentType(123)).Return(ArgumentType(77))
-//	qR.EXPECT().SampleQueue().Return(9)
-//
-//	pr := NewProxyRandomizer(argR, qR)
-//
-//	if v := pr.SampleArg(123); v != 77 {
-//		t.Fatalf("expected delegated arg 77, got %d", v)
-//	}
-//	if i := pr.SampleQueue(); i != 9 {
-//		t.Fatalf("expected delegated queue 9, got %d", i)
-//	}
-//}
 
-// func TestExponentialArgRandomizerSampleRange(t *testing.T) {
-//	rg := rand.New(rand.NewSource(1))
-//	r := NewExponentialArgRandomizer(rg, 1.5)
-//	n := ArgumentType(100)
-//	for range 1000 {
-//		v := r.SampleArg(n)
-//		if v < 0 || v >= n {
-//			t.Fatalf("sampled value out of range: %d", v)
-//		}
-//	}
-//}
+func TestExponentialArgRandomizerSampleRange(t *testing.T) {
+	rg := rand.New(rand.NewSource(1))
+	r := NewExponentialArgRandomizer(rg, 1.5)
+	n := 100
+	for range 1000 {
+		v := r.SampleArg(n)
+		if v < 0 || v >= n {
+			t.Fatalf("sampled value out of range: %d", v)
+		}
+	}
+}
 
 //func TestExponentialQueueRandomizerSampleRange(t *testing.T) {
 //	rg := rand.New(rand.NewSource(2))

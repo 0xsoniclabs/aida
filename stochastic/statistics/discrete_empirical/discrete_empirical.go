@@ -16,6 +16,13 @@
 
 package discrete_empirical
 
+import (
+	"fmt"
+	"math"
+
+	"github.com/0xsoniclabs/aida/stochastic"
+)
+
 // For a given probability density function (pdf) and a uniform random number u in [0,1),
 // Sample returns an index i such that the cumulative distribution function (CDF)
 // at i is greater than or equal to u. The pdf is represented as a slice of float64,
@@ -27,20 +34,42 @@ func Sample(pdf []float64, u float64) int {
 	c := 0.0   // Compensation term of Kahn's algorithm
 	lastPositive := -1
 	for i := range len(pdf) {
-		pi := pdf[i]
-		y := pi - c
-		t := sum + y
-		c = (t - sum) - y
-		sum = t
-		if u <= sum {
-			return i
-		}
-		if pdf[i] > 0.0 {
-			lastPositive = i
+		p := pdf[i]
+		// skip if not a probability in the range [0,1]
+		if p != math.NaN() && p >= 0.0 && p <= 1.0 {
+			y := p - c
+			t := sum + y
+			c = (t - sum) - y
+			sum = t
+			if u <= sum {
+				return i
+			}
+			if pdf[i] > 0.0 {
+				lastPositive = i
+			}
 		}
 	}
 	if lastPositive != -1 {
 		return lastPositive
 	}
 	return 0 // default position if all probabilities are zero
+}
+
+// ShrinkPdf removes the first element from the given probability density function (pdf)
+func ShrinkPdf(pdf []float64) ([]float64, error) {
+	if len(pdf) != stochastic.QueueLen {
+		return nil, fmt.Errorf("invalid pdf length: %d, expected: %d", len(pdf), stochastic.QueueLen)
+	}
+	factor := 1.0 - pdf[0]
+	if factor <= 0 || factor >= 1.0 || math.IsNaN(factor) {
+		return nil, fmt.Errorf("Invalid scaling propability (%v)", factor)
+	}
+	scaled_pdf := make([]float64, stochastic.QueueLen-1)
+	for i := range stochastic.QueueLen - 1 {
+		if pdf[i+1] <= 0 || pdf[i+1] >= 1.0 || math.IsNaN(pdf[i+1]) {
+			return nil, fmt.Errorf("Invalid scaling propability (%v)", factor)
+		}
+		scaled_pdf[i] = pdf[i+1] / factor
+	}
+	return scaled_pdf, nil
 }

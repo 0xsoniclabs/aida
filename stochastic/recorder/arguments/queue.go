@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import "github.com/0xsoniclabs/aida/stochastic"
 
-// countQueue data structure for a generic FIFO countQueue.
-type countQueue[T comparable] struct {
+// queue data structure for a generic FIFO queue.
+type queue[T comparable] struct {
 	// queue structure
 	top  int                    // index of first entry in queue
 	rear int                    // index of last entry in queue
@@ -30,9 +30,9 @@ type countQueue[T comparable] struct {
 	freq [stochastic.QueueLen]uint64
 }
 
-// NewCountQueue creates a new queue.
-func NewCountQueue[T comparable]() countQueue[T] {
-	return countQueue[T]{
+// newQueue creates a new queue.
+func newQueue[T comparable]() queue[T] {
+	return queue[T]{
 		top:  -1,
 		rear: -1,
 		data: [stochastic.QueueLen]T{},
@@ -41,7 +41,7 @@ func NewCountQueue[T comparable]() countQueue[T] {
 }
 
 // place a new item into the queue.
-func (q *countQueue[T]) place(item T) {
+func (q *queue[T]) place(item T) {
 	// is the queue empty => initialize top/rear
 	if q.top == -1 {
 		q.top, q.rear = 0, 0
@@ -60,7 +60,7 @@ func (q *countQueue[T]) place(item T) {
 }
 
 // findPos the position of an argument in the counting queue.
-func (q *countQueue[T]) findPos(item T) int {
+func (q *queue[T]) findPos(item T) int {
 	if q.top == -1 {
 		return -1 // if queue is empty, return -1 (not found)
 	}
@@ -87,7 +87,7 @@ type QueueStatsJSON struct {
 }
 
 // json produces JSON output for for a queuing statistics.
-func (q *countQueue[T]) json() QueueStatsJSON {
+func (q *queue[T]) json() QueueStatsJSON {
 	// Compute total frequency over all positions
 	total := uint64(0)
 	for i := range stochastic.QueueLen {

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package classifier
+package arguments
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ import (
 // TestQueuingSimple tests for existence/non-existence of elements.
 func TestQueuingSimple(t *testing.T) {
 	// create index queue
-	queue := NewCountQueue[int]()
+	queue := newQueue[int]()
 
 	// place first element
 	queue.place(0)
@@ -48,7 +48,7 @@ func TestQueuingSimple(t *testing.T) {
 // TestQueuingSimple1 tests for existence/non-existence of elements.
 func TestQueuingSimple1(t *testing.T) {
 	// create index queue
-	queue := NewCountQueue[int]()
+	queue := newQueue[int]()
 
 	// find first element
 	pos := queue.findPos(0)
@@ -76,7 +76,7 @@ func TestQueuingSimple1(t *testing.T) {
 // TestQueuingSimple2 tests for existence/non-existence of elements.
 func TestQueuingSimple2(t *testing.T) {
 	// create index queue
-	queue := NewCountQueue[int]()
+	queue := newQueue[int]()
 
 	// place first element
 	for i := range stochastic.QueueLen + 1 {
@@ -116,7 +116,7 @@ func TestQueuingSimple2(t *testing.T) {
 // TestQueueJSON tests JSON output for a queue statistics.
 // It marshals the JSON output and unmarshals it again and checks whether
 // the original and unmarshaled JSON output are identical.
-func testQueueJSON(stats countQueue[int], t *testing.T) {
+func testQueueJSON(stats queue[int], t *testing.T) {
 	jsonX := stats.json()
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
@@ -134,7 +134,7 @@ func testQueueJSON(stats countQueue[int], t *testing.T) {
 // TestQueuingJSON tests JSON output of distribution.
 func TestQueuingJSON(t *testing.T) {
 	// create index queue
-	queue := NewCountQueue[int]()
+	queue := newQueue[int]()
 
 	// check empty queue JSON output
 	testQueueJSON(queue, t)

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package generator
+package arguments
 
 import (
 	"errors"
@@ -25,20 +25,20 @@ import (
 )
 
 // TestSingleUseArgumentSetRemoveArgument tests deletion of an argument
-func TestSingleUseArgSetRemoveArgument(t *testing.T) {
+func TestSingleUseRemoveArgument(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
-	n := ArgumentType(1000)
+	mockArgSetRandomizer := NewMockRandomizer(mockCtl)
+	n := int64(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
-	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	ia := NewSingleUseArgumentSet(ra)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(int64(0)).Times(stochastic.QueueLen)
+	ra := NewReusable(n, mockArgSetRandomizer)
+	ia := NewSingleUse(ra)
 	idx := int64(500) // choose an argument in the middle of the range
 
 	// Remove previous element
 	// expect a randomizer call during removal to refresh queue entries
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(48)).Times(1)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(int64(48)).Times(1)
 	err := ia.Remove(idx)
 	if err != nil {
 		t.Fatalf("Deletion failed (%v).", err)
@@ -56,11 +56,11 @@ func TestSingleUseArgSetRemoveArgument(t *testing.T) {
 func TestSingleUseChoosePropagatesUnderlyingError(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
 	chooseErr := errors.New("choose failed")
-	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(0), chooseErr)
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(int64(0), chooseErr)
 	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected error to propagate from underlying Choose")
 	}
@@ -70,10 +70,10 @@ func TestSingleUseChoosePropagatesUnderlyingError(t *testing.T) {
 func TestSingleUseChooseTranslationargumentOutOfRangeLow(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(0), nil)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(int64(0), nil)
 	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected translation argument out of range error for v<=0")
 	}
@@ -83,10 +83,10 @@ func TestSingleUseChooseTranslationargumentOutOfRangeLow(t *testing.T) {
 func TestSingleUseChooseTranslationargumentOutOfRangeHigh(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(6), nil)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(int64(6), nil)
 	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected translation argument out of range error for v>len(translation)")
 	}
@@ -96,10 +96,10 @@ func TestSingleUseChooseTranslationargumentOutOfRangeHigh(t *testing.T) {
 func TestSingleUseChooseDefaultReturnsTranslatedValue(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(2), nil)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(int64(2), nil)
 	v, err := ia.Choose(stochastic.PrevArgID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -113,9 +113,9 @@ func TestSingleUseChooseDefaultReturnsTranslatedValue(t *testing.T) {
 func TestSingleUseRemoveZeroIsNoop(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
 	if err := ia.Remove(0); err != nil {
 		t.Fatalf("expected nil error for k==0, got %v", err)
 	}
@@ -125,10 +125,10 @@ func TestSingleUseRemoveZeroIsNoop(t *testing.T) {
 func TestSingleUseRemoveargumentNotFound(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
-	if err := ia.Remove(ArgumentType(999)); err == nil {
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
+	if err := ia.Remove(int64(999)); err == nil {
 		t.Fatalf("expected error when removing non-existing argument")
 	}
 }
@@ -137,12 +137,12 @@ func TestSingleUseRemoveargumentNotFound(t *testing.T) {
 func TestSingleUseRemovePropagatesUnderlyingError(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
 	remErr := errors.New("remove failed")
-	mockArgSet.EXPECT().Remove(ArgumentType(3)).Return(remErr)
-	if err := ia.Remove(ArgumentType(3)); err == nil {
+	mockArgSet.EXPECT().Remove(int64(3)).Return(remErr)
+	if err := ia.Remove(int64(3)); err == nil {
 		t.Fatalf("expected error propagation from underlying Remove")
 	}
 }
@@ -151,23 +151,23 @@ func TestSingleUseRemovePropagatesUnderlyingError(t *testing.T) {
 func TestSingleUseRemoveSuccess(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSet := NewMockArgumentSet(mockCtl)
-	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
-	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Remove(ArgumentType(1)).Return(nil)
-	if err := ia.Remove(ArgumentType(1)); err != nil {
+	mockArgSet := NewMockSet(mockCtl)
+	mockArgSet.EXPECT().Size().Return(int64(5)).AnyTimes()
+	ia := NewSingleUse(mockArgSet)
+	mockArgSet.EXPECT().Remove(int64(1)).Return(nil)
+	if err := ia.Remove(int64(1)); err != nil {
 		t.Fatalf("expected nil error on successful remove, got %v", err)
 	}
 }
 
-// TestSingleUseArgumentSetSimple tests basic functionality of SingleUseArgumentSet
-func TestSingleUseArgumentSetSimple(t *testing.T) {
+// TestSingleUseSimple tests basic functionality of SingleUseArgumentSet
+func TestSingleUseSimple(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
-	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
-	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(n, mockArgSetRandomizer))
+	mockArgSetRandomizer := NewMockRandomizer(mockCtl)
+	n := int64(1000)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(int64(0)).Times(stochastic.QueueLen)
+	ia := NewSingleUse(NewReusable(n, mockArgSetRandomizer))
 	if _, err := ia.Choose(stochastic.NoArgID); err == nil {
 		t.Fatalf("expected an error message")
 	}
@@ -189,16 +189,16 @@ func TestSingleUseArgumentSetSimple(t *testing.T) {
 	}
 }
 
-// TestSingleUseArgumentSetRecentAccess tests previous accesses
-func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
+// TestSingleUseRecentAccess tests previous accesses
+func TestSingleUseRecentAccess(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
-	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
-	n := ArgumentType(1000)
+	mockArgSetRandomizer := NewMockRandomizer(mockCtl)
+	n := int64(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
-	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	ia := NewSingleUseArgumentSet(ra)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(int64(0)).Times(stochastic.QueueLen)
+	ra := NewReusable(n, mockArgSetRandomizer)
+	ia := NewSingleUse(ra)
 
 	// check a new value (must be equal to the number of elements
 	// in the argument set and must be greater than zero).

@@ -23,8 +23,8 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-// GenerateUniformRegistry produces a uniformly distributed simulation file.
-func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, error) {
+// GenerateUniformState produces a uniformly distributed state file.
+func GenerateUniformState(cfg *utils.Config, log logger.Logger) (*State, error) {
 	s := NewState()
 	log.Infof("Number of contract addresses for priming: %v", cfg.ContractNumber)
 	for i := int64(0); i < cfg.ContractNumber; i++ {
@@ -34,7 +34,7 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, erro
 				if err != nil {
 					return nil, err
 				}
-				s.contracts.Update(addr)
+				s.contracts.Classify(addr)
 			}
 		}
 	}
@@ -46,7 +46,7 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, erro
 				if err != nil {
 					return nil, err
 				}
-				s.keys.Update(key)
+				s.keys.Classify(key)
 			}
 		}
 	}
@@ -58,7 +58,7 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, erro
 				if err != nil {
 					return nil, err
 				}
-				s.values.Update(value)
+				s.values.Classify(value)
 			}
 		}
 	}
