@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package discrete_empiricial
+package discrete_empirical
 
 // For a given probability density function (pdf) and a uniform random number u in [0,1),
 // Sample returns an index i such that the cumulative distribution function (CDF)

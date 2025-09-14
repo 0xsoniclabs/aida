@@ -42,27 +42,25 @@ var StochasticGenerateCommand = cli.Command{
 	Description: "The stochastic produces an events.json file with uniform parameters",
 }
 
-// stochasticGenerateAction produces an event file with uniform parameters.
+// stochasticGenerateAction produces a state file with uniform parameters
+// for stochastic testing.
 func stochasticGenerateAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
 	if err != nil {
 		return err
 	}
 	log := logger.NewLogger(cfg.LogLevel, "StochasticGenerate")
-
-	// create a new uniformly distributed event registry
 	log.Info("Produce uniform stochastic events")
-	eventRegistry := recorder.GenerateUniformRegistry(cfg, log)
-
-	// writing event registry in JSON format
-	if cfg.Output == "" {
-		cfg.Output = "./events.json"
-	}
-	log.Noticef("Write events file %v", cfg.Output)
-	err = eventRegistry.WriteJSON(cfg.Output)
+	state, err := recorder.GenerateUniformRegistry(cfg, log)
 	if err != nil {
 		return err
 	}
-
+	if cfg.Output == "" {
+		cfg.Output = "./state.json"
+	}
+	log.Noticef("Write state file %v", cfg.Output)
+	if err := state.Write(cfg.Output); err != nil {
+		return err
+	}
 	return nil
 }

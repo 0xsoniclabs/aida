@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math"
 
-	discrete_empiricial "github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -75,7 +75,7 @@ func (mc MarkovChain) Sample(i int, x float64) (int, error) {
 	if x < 0 || x >= 1.0 {
 		return 0, fmt.Errorf("probabilistic argument (%v) is not in interval [0,1]", x)
 	}
-	y := discrete_empiricial.Sample(mc.a[i], x)
+	y := discrete_empirical.Sample(mc.a[i], x)
 	if y < 0 || y >= mc.n {
 		return 0, fmt.Errorf("Sample: next state (%v) out of range", y)
 	}

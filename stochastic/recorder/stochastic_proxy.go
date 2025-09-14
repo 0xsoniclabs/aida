@@ -16,8 +16,6 @@
 
 package recorder
 
-// TODO: Provide Mocking tests for proxy
-
 import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
@@ -35,7 +33,7 @@ import (
 
 // StochasticProxy data structure for counting StateDB operations and their arguments.
 type StochasticProxy struct {
-	db        state.StateDB // real StateDB object
+	db        state.StateDB // StateDB object
 	snapshots []int         // snapshot stack of currently active snapshots
 	registry  *State        // event registry for deriving statistical parameters
 }

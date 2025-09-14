@@ -19,8 +19,8 @@ package generator
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-	"github.com/golang/mock/gomock"
+	"github.com/0xsoniclabs/aida/stochastic"
+	"go.uber.org/mock/gomock"
 )
 
 // TestReusableArgSetNewArgSet tests the creation of a new argument set
@@ -29,7 +29,7 @@ func TestReusableArgSetNewArgSet(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	if as == nil {
 		t.Errorf("Expected an argument set, but got nil")
@@ -47,9 +47,9 @@ func TestReusableArgSetChooseNoArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	_, err := as.Choose(classifier.NoArgID)
+	_, err := as.Choose(stochastic.NoArgID)
 	if err == nil {
 		t.Errorf("Expected an error for NoArgID, but got nil")
 	}
@@ -61,9 +61,9 @@ func TestReusableArgSetChooseZeroArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	zero, err := as.Choose(classifier.ZeroArgID)
+	zero, err := as.Choose(stochastic.ZeroArgID)
 	if err != nil {
 		t.Errorf("Expected no error for ZeroArgID got nil")
 	}
@@ -79,10 +79,10 @@ func TestReusableArgSetChooseRandArg(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(4711)).Times(1)
-	val, err := as.Choose(classifier.RandArgID)
+	val, err := as.Choose(stochastic.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
 	}
@@ -97,17 +97,17 @@ func TestReusableArgSetChoosePrevArg(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(4711)).Times(1)
-	val, err := as.Choose(classifier.RandArgID)
+	val, err := as.Choose(stochastic.RandArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for RandArgID: %v", err)
 	}
 	if val != 4712 {
 		t.Errorf("Expected value 4711 for RandArgID, but got %d", val)
 	}
-	prev_val, err := as.Choose(classifier.PrevArgID)
+	prev_val, err := as.Choose(stochastic.PrevArgID)
 	if err != nil {
 		t.Errorf("Unexpected error for PrevArgID: %v", err)
 	}
@@ -123,14 +123,14 @@ func TestReusableArgSetChooseRecentArg(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	var calls []*gomock.Call
-	calls = append(calls, mockArgSetRandomizer.EXPECT().SampleArg(n-1).Return(ArgumentType(4711)).Times(classifier.QueueLen))
-	for i := range classifier.QueueLen - 1 {
+	calls = append(calls, mockArgSetRandomizer.EXPECT().SampleArg(n-1).Return(ArgumentType(4711)).Times(stochastic.QueueLen))
+	for i := range stochastic.QueueLen - 1 {
 		calls = append(calls, mockArgSetRandomizer.EXPECT().SampleQueue().Return(int(i+1)).Times(1))
 	}
-	gomock.InOrder(calls...)
+	gomock.InOrder(calls)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
-	for range classifier.QueueLen - 1 {
-		val, err := as.Choose(classifier.RecentArgID)
+	for range stochastic.QueueLen - 1 {
+		val, err := as.Choose(stochastic.RecentArgID)
 		if err != nil {
 			t.Errorf("Unexpected error for RandArgID: %v", err)
 		}
@@ -147,7 +147,7 @@ func TestReusableArgSetRemove(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(minCardinality + 10)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(48)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(48)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(48)).Times(1)
 	err := as.Remove(5)
@@ -175,11 +175,11 @@ func TestReusableArgSetChooseNewArgExceedsRange(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
 	n := ArgumentType(minCardinality + 1)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
 	as.n = MaxArgumentType
-	if _, err := as.Choose(classifier.NewArgID); err == nil {
+	if _, err := as.Choose(stochastic.NewArgID); err == nil {
 		t.Errorf("expected error when new value exceeds cardinality range")
 	}
 }
@@ -191,7 +191,7 @@ func TestReusableArgSetChooseUnknownKind(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
 	n := ArgumentType(minCardinality + 1)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
 	if _, err := as.Choose(9999); err == nil {
@@ -206,7 +206,7 @@ func TestReusableArgSetFindQElemTrue(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
 	n := ArgumentType(minCardinality + 1)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
 	elem := as.queue[0]
@@ -222,7 +222,7 @@ func TestReusableArgSetRemoveQueueReplacement(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
 	n := ArgumentType(minCardinality + 10)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(n - 2)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(n - 2)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	mockArgSetRandomizer.EXPECT().SampleArg(n - 2).Return(ArgumentType(0)).Times(1)
 
@@ -231,7 +231,7 @@ func TestReusableArgSetRemoveQueueReplacement(t *testing.T) {
 	}
 
 	found := false
-	for i := range classifier.QueueLen {
+	for i := range stochastic.QueueLen {
 		if as.queue[i] == 1 {
 			found = true
 			break
@@ -249,11 +249,11 @@ func TestReusableArgSetChooseRecentArgError(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 
 	n := ArgumentType(minCardinality + 1)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	as := NewReusableArgumentSet(n, mockArgSetRandomizer)
 
 	mockArgSetRandomizer.EXPECT().SampleQueue().Return(0).Times(1)
-	if _, err := as.Choose(classifier.RecentArgID); err == nil {
+	if _, err := as.Choose(stochastic.RecentArgID); err == nil {
 		t.Errorf("expected error for invalid recent queue index")
 	}
 }

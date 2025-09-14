@@ -18,85 +18,99 @@ package recorder
 
 import (
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/0xsoniclabs/aida/utils"
 )
 
 // GenerateUniformRegistry produces a uniformly distributed simulation file.
 func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, error) {
-	r := NewState()
-
-	// generate a uniform distribution for contracts, storage keys/values, and snapshots
-
+	s := NewState()
 	log.Infof("Number of contract addresses for priming: %v", cfg.ContractNumber)
 	for i := int64(0); i < cfg.ContractNumber; i++ {
-		for j := i - classifier.QueueLen - 1; j <= i; j++ {
+		for j := i - stochastic.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
 				addr, err := operations.ToAddress(j)
 				if err != nil {
 					return nil, err
 				}
-				r.contracts.Place(addr)
+				s.contracts.Update(addr)
 			}
 		}
 	}
-
 	log.Infof("Number of storage keys for priming: %v", cfg.KeysNumber)
 	for i := int64(0); i < cfg.KeysNumber; i++ {
-		for j := i - classifier.QueueLen - 1; j <= i; j++ {
+		for j := i - stochastic.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
 				key, err := operations.ToHash(j)
 				if err != nil {
 					return nil, err
 				}
-				r.keys.Place(key)
+				s.keys.Update(key)
 			}
 		}
 	}
-
 	log.Infof("Number of storage values for priming: %v", cfg.ValuesNumber)
 	for i := int64(0); i < cfg.ValuesNumber; i++ {
-		for j := i - classifier.QueueLen - 1; j <= i; j++ {
+		for j := i - stochastic.QueueLen - 1; j <= i; j++ {
 			if j >= 0 {
 				value, err := operations.ToHash(j)
 				if err != nil {
 					return nil, err
 				}
-				r.values.Place(value)
+				s.values.Update(value)
 			}
 		}
 	}
-
 	log.Infof("Snapshot depth: %v", cfg.KeysNumber)
 	for i := 0; i < cfg.SnapshotDepth; i++ {
-		r.snapshotFreq[i] = 1
+		s.snapshotFreq[i] = 1
 	}
-
 	for i := 0; i < operations.NumArgOps; i++ {
 		if operations.IsValidArgOp(i) {
-			r.argOpFreq[i] = 1 // set frequency to greater than zero to emit operation
+			s.argOpFreq[i] = 1 // set frequency to greater than zero to emit operation
 			opI, _, _, _, _ := operations.DecodeArgOp(i)
 			switch opI {
 			case operations.BeginSyncPeriodID:
-				j, _ := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				r.transitFreq[i][j] = 1
+				j, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				s.transitFreq[i][j] = 1
 			case operations.BeginBlockID:
-				j, _ := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				r.transitFreq[i][j] = 1
+				j, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				s.transitFreq[i][j] = 1
 			case operations.EndTransactionID:
-				j1, _ := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				j2, _ := operations.EncodeArgOp(operations.EndBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				r.transitFreq[i][j1] = cfg.BlockLength - 1
-				r.transitFreq[i][j2] = 1
+				j1, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				j2, err := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				s.transitFreq[i][j1] = cfg.BlockLength - 1
+				s.transitFreq[i][j2] = 1
 			case operations.EndBlockID:
-				j1, _ := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				j2, _ := operations.EncodeArgOp(operations.EndSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				r.transitFreq[i][j1] = cfg.SyncPeriodLength - 1
-				r.transitFreq[i][j2] = 1
+				j1, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				j2, err := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				s.transitFreq[i][j1] = cfg.SyncPeriodLength - 1
+				s.transitFreq[i][j2] = 1
 			case operations.EndSyncPeriodID:
-				j, _ := operations.EncodeArgOp(operations.BeginSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-				r.transitFreq[i][j] = 1
+				j, err := operations.EncodeArgOp(operations.BeginSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+				if err != nil {
+					return nil, err
+				}
+				s.transitFreq[i][j] = 1
 			default:
 				for j := 0; j < operations.NumArgOps; j++ {
 					if operations.IsValidArgOp(j) {
@@ -107,14 +121,14 @@ func GenerateUniformRegistry(cfg *utils.Config, log logger.Logger) (*State, erro
 							opJ != operations.EndTransactionID &&
 							opJ != operations.EndBlockID &&
 							opJ != operations.EndSyncPeriodID {
-							r.transitFreq[i][j] = cfg.TransactionLength - 1
+							s.transitFreq[i][j] = cfg.TransactionLength - 1
 						} else if opJ == operations.EndTransactionID {
-							r.transitFreq[i][j] = 1
+							s.transitFreq[i][j] = 1
 						}
 					}
 				}
 			}
 		}
 	}
-	return &r, nil
+	return &s, nil
 }

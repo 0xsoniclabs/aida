@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-	"github.com/golang/mock/gomock"
+	"github.com/0xsoniclabs/aida/stochastic"
+	"go.uber.org/mock/gomock"
 )
 
 // TestSingleUseArgumentSetRemoveArgument tests deletion of an argument
@@ -31,7 +31,7 @@ func TestSingleUseArgSetRemoveArgument(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 	idx := int64(500) // choose an argument in the middle of the range
@@ -60,8 +60,8 @@ func TestSingleUseChoosePropagatesUnderlyingError(t *testing.T) {
 	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
 	ia := NewSingleUseArgumentSet(mockArgSet)
 	chooseErr := errors.New("choose failed")
-	mockArgSet.EXPECT().Choose(classifier.PrevArgID).Return(ArgumentType(0), chooseErr)
-	if _, err := ia.Choose(classifier.PrevArgID); err == nil {
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(0), chooseErr)
+	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected error to propagate from underlying Choose")
 	}
 }
@@ -73,8 +73,8 @@ func TestSingleUseChooseTranslationargumentOutOfRangeLow(t *testing.T) {
 	mockArgSet := NewMockArgumentSet(mockCtl)
 	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
 	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(classifier.PrevArgID).Return(ArgumentType(0), nil)
-	if _, err := ia.Choose(classifier.PrevArgID); err == nil {
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(0), nil)
+	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected translation argument out of range error for v<=0")
 	}
 }
@@ -86,8 +86,8 @@ func TestSingleUseChooseTranslationargumentOutOfRangeHigh(t *testing.T) {
 	mockArgSet := NewMockArgumentSet(mockCtl)
 	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
 	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(classifier.PrevArgID).Return(ArgumentType(6), nil)
-	if _, err := ia.Choose(classifier.PrevArgID); err == nil {
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(6), nil)
+	if _, err := ia.Choose(stochastic.PrevArgID); err == nil {
 		t.Fatalf("expected translation argument out of range error for v>len(translation)")
 	}
 }
@@ -99,8 +99,8 @@ func TestSingleUseChooseDefaultReturnsTranslatedValue(t *testing.T) {
 	mockArgSet := NewMockArgumentSet(mockCtl)
 	mockArgSet.EXPECT().Size().Return(ArgumentType(5)).AnyTimes()
 	ia := NewSingleUseArgumentSet(mockArgSet)
-	mockArgSet.EXPECT().Choose(classifier.PrevArgID).Return(ArgumentType(2), nil)
-	v, err := ia.Choose(classifier.PrevArgID)
+	mockArgSet.EXPECT().Choose(stochastic.PrevArgID).Return(ArgumentType(2), nil)
+	v, err := ia.Choose(stochastic.PrevArgID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -166,25 +166,25 @@ func TestSingleUseArgumentSetSimple(t *testing.T) {
 	defer mockCtl.Finish()
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	ia := NewSingleUseArgumentSet(NewReusableArgumentSet(n, mockArgSetRandomizer))
-	if _, err := ia.Choose(classifier.NoArgID); err == nil {
+	if _, err := ia.Choose(stochastic.NoArgID); err == nil {
 		t.Fatalf("expected an error message")
 	}
 
 	// check zero argument class (must be zero)
-	if idx, err := ia.Choose(classifier.ZeroArgID); idx != 0 || err != nil {
+	if idx, err := ia.Choose(stochastic.ZeroArgID); idx != 0 || err != nil {
 		t.Fatalf("expected a zero value")
 	}
 
 	// check a new value (must be equal to the number of elements
 	// in the argument set and must be greater than zero).
-	if idx, err := ia.Choose(classifier.NewArgID); idx != ia.Size() || idx < 1 || err != nil {
+	if idx, err := ia.Choose(stochastic.NewArgID); idx != ia.Size() || idx < 1 || err != nil {
 		t.Fatalf("expected a new argument (%v, %v)", idx, ia.Size())
 	}
 
 	// run check again.
-	if idx, err := ia.Choose(classifier.NewArgID); idx != ia.Size() || idx < 1 || err != nil {
+	if idx, err := ia.Choose(stochastic.NewArgID); idx != ia.Size() || idx < 1 || err != nil {
 		t.Fatalf("expected a new argument (%v, %v)", idx, ia.Size())
 	}
 }
@@ -196,30 +196,30 @@ func TestSingleUseArgumentSetRecentAccess(t *testing.T) {
 	mockArgSetRandomizer := NewMockArgSetRandomizer(mockCtl)
 	n := ArgumentType(1000)
 	// needed to fill the queue
-	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(classifier.QueueLen)
+	mockArgSetRandomizer.EXPECT().SampleArg(n - 1).Return(ArgumentType(0)).Times(stochastic.QueueLen)
 	ra := NewReusableArgumentSet(n, mockArgSetRandomizer)
 	ia := NewSingleUseArgumentSet(ra)
 
 	// check a new value (must be equal to the number of elements
 	// in the argument set and must be greater than zero).
-	idx1, err1 := ia.Choose(classifier.NewArgID)
+	idx1, err1 := ia.Choose(stochastic.NewArgID)
 	if idx1 != ra.n || idx1 < 1 || err1 != nil {
 		t.Fatalf("expected a new argument")
 	}
-	idx2, err2 := ia.Choose(classifier.PrevArgID)
+	idx2, err2 := ia.Choose(stochastic.PrevArgID)
 	if idx1 != idx2 || err2 != nil {
 		t.Fatalf("previous argument access failed. (%v, %v)", idx1, idx2)
 	}
-	idx3, err3 := ia.Choose(classifier.PrevArgID)
+	idx3, err3 := ia.Choose(stochastic.PrevArgID)
 	if idx2 != idx3 || err3 != nil {
 		t.Fatalf("previous argument access failed.")
 	}
 	// in the argument set and must be greater than zero).
-	idx4, err4 := ia.Choose(classifier.NewArgID)
+	idx4, err4 := ia.Choose(stochastic.NewArgID)
 	if idx4 != ra.n || idx4 < 1 || err4 != nil {
 		t.Fatalf("expected a new argument")
 	}
-	idx5, err5 := ia.Choose(classifier.PrevArgID)
+	idx5, err5 := ia.Choose(stochastic.PrevArgID)
 	if idx5 == idx3 || err5 != nil {
 		t.Fatalf("previous previous argument access must not be identical.")
 	}

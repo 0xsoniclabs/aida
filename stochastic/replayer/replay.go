@@ -23,9 +23,9 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/generator"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 	"github.com/0xsoniclabs/aida/utils"
@@ -64,7 +64,7 @@ type replayContext struct {
 	syncPeriodNum   uint64                // current sync-period number
 }
 
-// newReplayContext creates a new state for execution StateDB operations
+// newReplayContext creates a new replay context for execution StateDB operations stochastically.
 func newReplayContext(
 	rg *rand.Rand,
 	db state.StateDB,
@@ -91,37 +91,32 @@ func newReplayContext(
 }
 
 // populateReplayContext creates a stochastic state and primes the StateDB
-func populateReplayContext(cfg *utils.Config, e *recorder.EstimationModelJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*replayContext, error) {
-	// produce random argument generators for contract addresses,
-	// storage-keys, storage addresses, an snapshot ids.
-
-	// random variable for contract addresses
+func populateReplayContext(cfg *utils.Config, e *recorder.StateJSON, db state.StateDB, rg *rand.Rand, log logger.Logger) (*replayContext, error) {
+	// produce random variables for contract addresses,
+	// storage-keys, storage addresses, and snapshot ids.
 	contracts := generator.NewSingleUseArgumentSet(
 		generator.NewReusableArgumentSet(
-			e.Contracts.NumKeys,
-			generator.NewProxyRandomizer(
-				generator.NewExponentialArgRandomizer(rg, e.Contracts.Lambda),
-				generator.NewEmpiricalQueueRandomizer(rg, e.Contracts.QueueDistribution),
-			)))
-
-	// jandom varible for storage keys
+			e.Contracts.Counting.N,
+			generator.NewEmpiricalArgSetRandomizer(
+				rg,
+				e.Contracts.Queuing.Distribution,
+				e.Contracts.Counting.ECDF),
+		))
 	keys := generator.NewReusableArgumentSet(
-		e.Keys.NumKeys,
-		generator.NewProxyRandomizer(
-			generator.NewExponentialArgRandomizer(rg, e.Keys.Lambda),
-			generator.NewEmpiricalQueueRandomizer(rg, e.Keys.QueueDistribution),
-		))
-
-	// random variable for storage values
+		e.Keys.Counting.N,
+		generator.NewEmpiricalArgSetRandomizer(
+			rg,
+			e.Keys.Queuing.Distribution,
+			e.Keys.Counting.ECDF),
+	)
 	values := generator.NewReusableArgumentSet(
-		e.Values.NumKeys,
-		generator.NewProxyRandomizer(
-			generator.NewExponentialArgRandomizer(rg, e.Values.Lambda),
-			generator.NewEmpiricalQueueRandomizer(rg, e.Values.QueueDistribution),
-		))
-
-	// Random variable for snapshot ids
-	snapshots := generator.NewExponentialSnapshotRandomizer(rg, e.SnapshotLambda)
+		e.Values.Counting.N,
+		generator.NewEmpiricalArgSetRandomizer(
+			rg,
+			e.Values.Queuing.Distribution,
+			e.Values.Counting.ECDF),
+	)
+	snapshots := generator.NewEmpiricalSnapshotRandomizer(rg, e.SnapshotECDF)
 
 	// setup state
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
@@ -136,14 +131,13 @@ func populateReplayContext(cfg *utils.Config, e *recorder.EstimationModelJSON, d
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
-func getStochasticMatrix(e *recorder.EstimationModelJSON) (*markov_chain.MarkovChain, int, error) {
+func getStochasticMatrix(e *recorder.StateJSON) (*markov_chain.MarkovChain, int, error) {
 	ops := e.Operations
 	A := e.StochasticMatrix
 	mc, err := markov_chain.New(A, ops)
 	if err != nil {
 		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)
 	}
-	// and set initial state to BeginSyncPeriod
 	state, f_err := mc.FindState(operations.OpMnemo(operations.BeginSyncPeriodID))
 	if f_err != nil {
 		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: %v", f_err)
@@ -157,7 +151,7 @@ func getStochasticMatrix(e *recorder.EstimationModelJSON) (*markov_chain.MarkovC
 // It requires the simulation model and simulation length. The trace-debug flag
 // enables/disables the printing of StateDB operations and their arguments on
 // the screen.
-func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
+func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
 	var (
 		opFrequency [operations.NumOps]uint64 // operation frequency
 		numOps      uint64                    // total number of operations
@@ -285,7 +279,7 @@ func RunStochasticReplay(db state.StateDB, e *recorder.EstimationModelJSON, nBlo
 	return runErr
 }
 
-// prime StateDB accounts using account information
+// prime creates initial accounts in the StateDB before starting the simulation.
 func (ss *replayContext) prime() error {
 	numInitialAccounts := ss.contracts.Size() + 1
 	ss.log.Notice("Start priming...")
@@ -301,12 +295,9 @@ func (ss *replayContext) prime() error {
 	if err != nil {
 		return err
 	}
-
-	// initialise accounts in memory with balances greater than zero
-	// TODO why not < numInitialAccounts?
-	for i := int64(0); i <= numInitialAccounts; i++ {
-		addr, err := operations.ToAddress(i)
-		if err != nil {
+	for i := range int64(numInitialAccounts) {
+		var addr common.Address
+		if addr, err = operations.ToAddress(i); err != nil {
 			return err
 		}
 		db.CreateAccount(addr)
@@ -314,12 +305,10 @@ func (ss *replayContext) prime() error {
 		pt.PrintProgress()
 	}
 	ss.log.Notice("Finalizing...")
-	err = db.EndTransaction()
-	if err != nil {
+	if err = db.EndTransaction(); err != nil {
 		return err
 	}
-	err = db.EndBlock()
-	if err != nil {
+	if err = db.EndBlock(); err != nil {
 		return err
 	}
 	db.EndSyncPeriod()
@@ -348,19 +337,19 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	var valueIdx int64
 	var err error
 
-	if addrCl != classifier.NoArgID {
+	if addrCl != stochastic.NoArgID {
 		addrIdx, err = ss.contracts.Choose(addrCl)
 		if err != nil {
 			return fmt.Errorf("execute: failed to fetch contract address. Error: %v", err)
 		}
 	}
-	if keyCl != classifier.NoArgID {
+	if keyCl != stochastic.NoArgID {
 		keyIdx, err = ss.keys.Choose(keyCl)
 		if err != nil {
 			return fmt.Errorf("execute: failed to fetch storage key. Error: %v", err)
 		}
 	}
-	if valueCl != classifier.NoArgID {
+	if valueCl != stochastic.NoArgID {
 		valueIdx, err = ss.values.Choose(valueCl)
 		if err != nil {
 			return fmt.Errorf("execute: failed to fetch storage value. Error: %v", err)
@@ -368,19 +357,19 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	}
 
 	// convert index to address/hashes
-	if addrCl != classifier.NoArgID {
+	if addrCl != stochastic.NoArgID {
 		addr, err = operations.ToAddress(addrIdx)
 		if err != nil {
 			return fmt.Errorf("execute: failed to convert index to address. Error: %v", err)
 		}
 	}
-	if keyCl != classifier.NoArgID {
+	if keyCl != stochastic.NoArgID {
 		key, err = operations.ToHash(keyIdx)
 		if err != nil {
 			return fmt.Errorf("execute: failed to convert index to hash. Error: %v", err)
 		}
 	}
-	if valueCl != classifier.NoArgID {
+	if valueCl != stochastic.NoArgID {
 		value, err = operations.ToHash(valueIdx)
 		if err != nil {
 			return err
@@ -399,13 +388,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		ss.log.Infof("opcode:%v (%v)", operations.OpText[op], opc)
 
 		// print indexes of contract address, storage key, and storage value.
-		if addrCl != classifier.NoArgID {
+		if addrCl != stochastic.NoArgID {
 			ss.log.Infof(" addr-idx: %v", addrIdx)
 		}
-		if keyCl != classifier.NoArgID {
+		if keyCl != stochastic.NoArgID {
 			ss.log.Infof(" key-idx: %v", keyIdx)
 		}
-		if valueCl != classifier.NoArgID {
+		if valueCl != stochastic.NoArgID {
 			ss.log.Infof(" value-idx: %v", valueIdx)
 		}
 	}
@@ -461,9 +450,12 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Fatal(err)
 		}
 		ss.blockNum++
-		if err := ss.deleteAccounts(); err != nil {
-			return fmt.Errorf("execute: failed deleting accounts. Error: %v", err)
+		for addrIdx, _ := range ss.selfDestructed {
+			if err := ss.contracts.Remove(addrIdx); err != nil {
+				return fmt.Errorf("deleteAccounts: failed deleting index (%v).", addrIdx)
+			}
 		}
+		ss.selfDestructed = map[int64]struct{}{}
 
 	case operations.EndSyncPeriodID:
 		db.EndSyncPeriod()
@@ -567,13 +559,8 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		ss.activeSnapshots = append(ss.activeSnapshots, id)
 
 	case operations.SubBalanceID:
-		shadowDB := db.GetShadowDB()
 		var balance uint64
-		if shadowDB == nil {
-			balance = db.GetBalance(addr).Uint64()
-		} else {
-			balance = shadowDB.GetBalance(addr).Uint64()
-		}
+		balance = db.GetBalance(addr).Uint64()
 		if balance > 0 {
 			// get a delta that does not exceed current balance
 			// in the current snapshot
@@ -586,17 +573,5 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	default:
 		return fmt.Errorf("execute: invalid operation %v; opcode %v", operations.OpText[op], op)
 	}
-	return nil
-}
-
-// delete account information when suicide was invoked
-func (ss *replayContext) deleteAccounts() error {
-	// remove account information when suicide was invoked in the block.
-	for addrIdx, _ := range ss.selfDestructed {
-		if err := ss.contracts.Remove(addrIdx); err != nil {
-			return fmt.Errorf("deleteAccounts: failed deleting index (%v).", addrIdx)
-		}
-	}
-	ss.selfDestructed = map[int64]struct{}{}
 	return nil
 }

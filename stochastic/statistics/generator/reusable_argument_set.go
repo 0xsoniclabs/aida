@@ -19,7 +19,7 @@ package generator
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic"
 )
 
 // ReusableArgumentSet data structure for producing random arguments
@@ -39,7 +39,7 @@ func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgu
 		return nil
 	}
 	queue := []ArgumentType{}
-	for range classifier.QueueLen {
+	for range stochastic.QueueLen {
 		v := rand.SampleArg(n-1) + 1
 		queue = append(queue, v)
 	}
@@ -55,20 +55,20 @@ func NewReusableArgumentSet(n ArgumentType, rand ArgSetRandomizer) *ReusableArgu
 // (3) a new argument increasing the cardinality of the argument set, (4)
 // a random argument not contained in the queue, (5) the previous argument
 // (6) a recent argument contained in the queue but not the previous one.
-func (a *ReusableArgumentSet) Choose(kind classifier.ArgKind) (ArgumentType, error) {
+func (a *ReusableArgumentSet) Choose(kind stochastic.ArgKind) (ArgumentType, error) {
 	switch kind {
 
 	// choose no argument
-	case classifier.NoArgID:
+	case stochastic.NoArgID:
 		return 0, fmt.Errorf("Choose: illegal invocation for no argument")
 
 	// choose zero argument (only way to return a zero value argument; other argument kinds
 	// will result in a non-zero result).
-	case classifier.ZeroArgID:
+	case stochastic.ZeroArgID:
 		return 0, nil
 
 	// choose a new argument that hasn't been used before
-	case classifier.NewArgID:
+	case stochastic.NewArgID:
 		if a.n == MaxArgumentType {
 			return 0, fmt.Errorf("Choose: new value exceeds cardinality range")
 		}
@@ -78,7 +78,7 @@ func (a *ReusableArgumentSet) Choose(kind classifier.ArgKind) (ArgumentType, err
 		return v, nil
 
 	// choose a randomised argument that is not contained in the queue
-	case classifier.RandArgID:
+	case stochastic.RandArgID:
 		for {
 			// ensure that zero argument is never returned
 			v := a.rand.SampleArg(a.n-1) + 1
@@ -89,13 +89,13 @@ func (a *ReusableArgumentSet) Choose(kind classifier.ArgKind) (ArgumentType, err
 		}
 
 	// choose the previous argument
-	case classifier.PrevArgID:
+	case stochastic.PrevArgID:
 		v := a.lastQ()
 		a.placeQ(v)
 		return v, nil
 
 	// choose a recent argument that is not the previous one
-	case classifier.RecentArgID:
+	case stochastic.RecentArgID:
 		if v, err := a.recentQ(); err == nil {
 			a.placeQ(v)
 			return v, nil
@@ -120,7 +120,7 @@ func (a *ReusableArgumentSet) Remove(v ArgumentType) error {
 	// replace deleted last element by new element in queue
 	// (to ensure that queue elements are always in range [0,n-1])
 	j := a.rand.SampleArg(a.n-1) + 1
-	for i := range classifier.QueueLen {
+	for i := range stochastic.QueueLen {
 		if a.queue[i] >= a.n {
 			a.queue[i] = j
 		}
@@ -135,7 +135,7 @@ func (a *ReusableArgumentSet) Size() ArgumentType {
 
 // findQElem finds an element in the queue.
 func (a *ReusableArgumentSet) findQElem(elem ArgumentType) bool {
-	for i := range classifier.QueueLen {
+	for i := range stochastic.QueueLen {
 		if a.queue[i] == elem {
 			return true
 		}
@@ -145,7 +145,7 @@ func (a *ReusableArgumentSet) findQElem(elem ArgumentType) bool {
 
 // placeQ places element in the queue.
 func (a *ReusableArgumentSet) placeQ(elem ArgumentType) {
-	a.queue = append([]ArgumentType{elem}, a.queue[0:classifier.QueueLen-1]...)
+	a.queue = append([]ArgumentType{elem}, a.queue[0:stochastic.QueueLen-1]...)
 }
 
 // lastQ returns previously queued element.
@@ -156,7 +156,7 @@ func (a *ReusableArgumentSet) lastQ() ArgumentType {
 // recentQ returns randomly an argument in the queue but not the previous one.
 func (a *ReusableArgumentSet) recentQ() (ArgumentType, error) {
 	i := a.rand.SampleQueue()
-	if i <= 0 || i >= classifier.QueueLen {
+	if i <= 0 || i >= stochastic.QueueLen {
 		return 0, fmt.Errorf("recentQ: queue index (%v) out of range for recent access", i)
 	}
 	return a.queue[i], nil

@@ -19,7 +19,7 @@ package operations
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,14 +28,14 @@ func TestOperationDecoding(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := range NumOps {
-		for addr := range classifier.NumArgKinds {
-			for key := range classifier.NumArgKinds {
-				for value := range classifier.NumArgKinds {
+		for addr := range stochastic.NumArgKinds {
+			for key := range stochastic.NumArgKinds {
+				for value := range stochastic.NumArgKinds {
 					// check legality of argument/op combination
-					if (OpNumArgs[op] == 0 && addr == classifier.NoArgID && key == classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 1 && addr != classifier.NoArgID && key == classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 2 && addr != classifier.NoArgID && key != classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 3 && addr != classifier.NoArgID && key != classifier.NoArgID && value != classifier.NoArgID) {
+					if (OpNumArgs[op] == 0 && addr == stochastic.NoArgID && key == stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 1 && addr != stochastic.NoArgID && key == stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 2 && addr != stochastic.NoArgID && key != stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 3 && addr != stochastic.NoArgID && key != stochastic.NoArgID && value != stochastic.NoArgID) {
 
 						// encode to an argument-encoded operation
 						argop, err := EncodeArgOp(op, addr, key, value)
@@ -64,14 +64,14 @@ func TestOperationOpcode(t *testing.T) {
 	// enumerate whole operation space with arguments
 	// and check encoding/decoding whether it is symmetric.
 	for op := range NumOps {
-		for addr := range classifier.NumArgKinds {
-			for key := range classifier.NumArgKinds {
-				for value := range classifier.NumArgKinds {
+		for addr := range stochastic.NumArgKinds {
+			for key := range stochastic.NumArgKinds {
+				for value := range stochastic.NumArgKinds {
 					// check legality of argument/op combination
-					if (OpNumArgs[op] == 0 && addr == classifier.NoArgID && key == classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 1 && addr != classifier.NoArgID && key == classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 2 && addr != classifier.NoArgID && key != classifier.NoArgID && value == classifier.NoArgID) ||
-						(OpNumArgs[op] == 3 && addr != classifier.NoArgID && key != classifier.NoArgID && value != classifier.NoArgID) {
+					if (OpNumArgs[op] == 0 && addr == stochastic.NoArgID && key == stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 1 && addr != stochastic.NoArgID && key == stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 2 && addr != stochastic.NoArgID && key != stochastic.NoArgID && value == stochastic.NoArgID) ||
+						(OpNumArgs[op] == 3 && addr != stochastic.NoArgID && key != stochastic.NoArgID && value != stochastic.NoArgID) {
 
 						// encode to an argument-encoded operation
 						argop, err := EncodeOpcode(op, addr, key, value)
@@ -106,16 +106,16 @@ func TestOperations_OpMnemo(t *testing.T) {
 }
 
 func TestOperations_EncodeArgOp(t *testing.T) {
-	argop, err := EncodeArgOp(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	argop, err := EncodeArgOp(SetStateID, stochastic.PrevArgID, stochastic.NewArgID, stochastic.NewArgID)
 	assert.Nil(t, err)
 	op, addr, key, value, err := DecodeArgOp(argop)
 	assert.Nil(t, err)
 	assert.Equal(t, SetStateID, op)
-	assert.Equal(t, classifier.PrevArgID, addr)
-	assert.Equal(t, classifier.NewArgID, key)
-	assert.Equal(t, classifier.NewArgID, value)
+	assert.Equal(t, stochastic.PrevArgID, addr)
+	assert.Equal(t, stochastic.NewArgID, key)
+	assert.Equal(t, stochastic.NewArgID, value)
 
-	_, err = EncodeArgOp(SetStateID, classifier.NoArgID, classifier.NoArgID, classifier.NewArgID)
+	_, err = EncodeArgOp(SetStateID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NewArgID)
 	assert.NotNil(t, err)
 }
 
@@ -123,57 +123,57 @@ func TestOperations_DecodeArgOp(t *testing.T) {
 	_, _, _, _, err := DecodeArgOp(NumArgOps)
 	assert.NotNil(t, err)
 
-	argop := (((int(SetCodeID)*classifier.NumArgKinds)+classifier.NoArgID)*classifier.NumArgKinds+classifier.NoArgID)*classifier.NumArgKinds + classifier.NewArgID
+	argop := (((int(SetCodeID)*stochastic.NumArgKinds)+stochastic.NoArgID)*stochastic.NumArgKinds+stochastic.NoArgID)*stochastic.NumArgKinds + stochastic.NewArgID
 	_, _, _, _, err = DecodeArgOp(argop)
 	assert.NotNil(t, err)
 }
 
 func TestOperations_EncodeOpcode(t *testing.T) {
-	_, err := EncodeOpcode(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	_, err := EncodeOpcode(SetStateID, stochastic.PrevArgID, stochastic.NewArgID, stochastic.NewArgID)
 	assert.Nil(t, err)
 
-	_, err = EncodeOpcode(SetStateID, classifier.NoArgID, classifier.NewArgID, classifier.NewArgID)
+	_, err = EncodeOpcode(SetStateID, stochastic.NoArgID, stochastic.NewArgID, stochastic.NewArgID)
 	assert.NotNil(t, err)
 }
 
 func TestOperations_checkArgOp(t *testing.T) {
-	err := checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	err := checkArgOp(SnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	assert.Nil(t, err)
 
-	err = checkArgOp(SnapshotID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	err = checkArgOp(SnapshotID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(CreateAccountID, classifier.ZeroArgID, classifier.NoArgID, classifier.NoArgID)
+	err = checkArgOp(CreateAccountID, stochastic.ZeroArgID, stochastic.NoArgID, stochastic.NoArgID)
 	assert.Nil(t, err)
 
-	err = checkArgOp(CreateAccountID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	err = checkArgOp(CreateAccountID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.NoArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	err = checkArgOp(GetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.NoArgID)
 	assert.Nil(t, err)
 
-	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.NoArgID)
+	err = checkArgOp(GetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.NoArgID)
 	assert.Nil(t, err)
 
-	err = checkArgOp(GetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	err = checkArgOp(GetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(SetStateID, classifier.ZeroArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	err = checkArgOp(SetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	assert.Nil(t, err)
 
-	err = checkArgOp(SetStateID, classifier.NoArgID, classifier.ZeroArgID, classifier.ZeroArgID)
+	err = checkArgOp(SetStateID, stochastic.NoArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(-1, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	err = checkArgOp(-1, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(SnapshotID, -1, classifier.NoArgID, classifier.NoArgID)
+	err = checkArgOp(SnapshotID, -1, stochastic.NoArgID, stochastic.NoArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(SnapshotID, classifier.NoArgID, -1, classifier.NoArgID)
+	err = checkArgOp(SnapshotID, stochastic.NoArgID, -1, stochastic.NoArgID)
 	assert.NotNil(t, err)
 
-	err = checkArgOp(SnapshotID, classifier.NoArgID, classifier.NoArgID, -1)
+	err = checkArgOp(SnapshotID, stochastic.NoArgID, stochastic.NoArgID, -1)
 	assert.NotNil(t, err)
 }
 
@@ -214,7 +214,7 @@ func TestOperations_DecodeOpcode(t *testing.T) {
 
 func TestOperations_IsValidArgOp(t *testing.T) {
 	// encode to an argument-encoded operation
-	argop, err := EncodeArgOp(SetStateID, classifier.PrevArgID, classifier.NewArgID, classifier.NewArgID)
+	argop, err := EncodeArgOp(SetStateID, stochastic.PrevArgID, stochastic.NewArgID, stochastic.NewArgID)
 	if err != nil {
 		t.Fatalf("Encoding failed")
 	}

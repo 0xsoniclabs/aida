@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/stochastic"
 )
 
 // TestQueuingSimple tests for existence/non-existence of elements.
@@ -77,7 +79,7 @@ func TestQueuingSimple2(t *testing.T) {
 	queue := NewCountQueue[int]()
 
 	// place first element
-	for i := range QueueLen + 1 {
+	for i := range stochastic.QueueLen + 1 {
 		queue.place(i)
 	}
 
@@ -87,25 +89,25 @@ func TestQueuingSimple2(t *testing.T) {
 		t.Fatalf("first element must not be found")
 	}
 	pos = queue.findPos(1)
-	if pos != QueueLen-1 {
+	if pos != stochastic.QueueLen-1 {
 		t.Fatalf("second element must be found: %v", pos)
 	}
-	pos = queue.findPos(QueueLen)
+	pos = queue.findPos(stochastic.QueueLen)
 	if pos != 0 {
 		t.Fatalf("last element must be found")
 	}
 
-	queue.place(QueueLen + 1)
+	queue.place(stochastic.QueueLen + 1)
 
 	pos = queue.findPos(1)
 	if pos != -1 {
 		t.Fatalf("second element must not be found")
 	}
 	pos = queue.findPos(2)
-	if pos != QueueLen-1 {
+	if pos != stochastic.QueueLen-1 {
 		t.Fatalf("third element must be found: %v", pos)
 	}
-	pos = queue.findPos(QueueLen + 1)
+	pos = queue.findPos(stochastic.QueueLen + 1)
 	if pos != 0 {
 		t.Fatalf("last element must be found")
 	}

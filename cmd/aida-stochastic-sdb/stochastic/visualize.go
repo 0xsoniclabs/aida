@@ -54,7 +54,7 @@ func stochasticVisualizeAction(ctx *cli.Context) error {
 
 	// read events file
 	log.Infof("Read event file %v", inputFileName)
-	eventRegistry, err := recorder.ReadEvents(inputFileName)
+	eventRegistry, err := recorder.Read(inputFileName)
 	if err != nil {
 		return err
 	}

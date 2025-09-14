@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/0xsoniclabs/aida/stochastic"
 )
 
 // TestArgClassifierSimple tests for classifying arguments based on previous updates
@@ -29,42 +31,42 @@ func TestArgClassifierUpdateSimple(t *testing.T) {
 
 	// check zero argument
 	kind := arg_classifier.Update(0)
-	if kind != ZeroArgID {
+	if kind != stochastic.ZeroArgID {
 		t.Fatalf("wrong classification %v (zero argument expected)", kind)
 	}
 
 	// check new argument
 	kind = arg_classifier.Update(1)
-	if kind != NewArgID {
+	if kind != stochastic.NewArgID {
 		t.Fatalf("wrong classification %v (new argument expected)", kind)
 	}
 
 	// check previous argument
 	kind = arg_classifier.Update(1)
-	if kind != PrevArgID {
+	if kind != stochastic.PrevArgID {
 		t.Fatalf("wrong classification %v (previous argument)", kind)
 	}
 
 	// check new argument
 	kind = arg_classifier.Update(2)
-	if kind != NewArgID {
+	if kind != stochastic.NewArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
 
 	// check recent argument
 	kind = arg_classifier.Update(1)
-	if kind != RecentArgID {
+	if kind != stochastic.RecentArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
 
 	// place arguments into the queue and ensure to displace one and two
-	for i := range QueueLen {
-		arg_classifier.Place(i + 3)
+	for i := range stochastic.QueueLen {
+		arg_classifier.place(i + 3)
 	}
 
 	// check random argument
 	kind = arg_classifier.Update(1)
-	if kind != RandArgID {
+	if kind != stochastic.RandArgID {
 		t.Fatalf("wrong classification %v (new argument)", kind)
 	}
 }
@@ -76,41 +78,41 @@ func TestArgClassifierSimpleQueue(t *testing.T) {
 
 	const offset = 10
 	// place elements into the queue and ensure it overfills
-	for i := range QueueLen + offset {
-		arg_classifier.Place(i)
+	for i := range stochastic.QueueLen + offset {
+		arg_classifier.place(i)
 	}
 
 	// check previous element's class
-	class := arg_classifier.Classify(QueueLen + offset - 1)
-	if class != PrevArgID {
+	class := arg_classifier.classify(stochastic.QueueLen + offset - 1)
+	if class != stochastic.PrevArgID {
 		t.Fatalf("wrong classification (previous item)")
 	}
 
 	// check recent element's class (ones that should be in the queue)
-	for i := offset; i < QueueLen+offset-1; i++ {
-		class := arg_classifier.Classify(i)
-		if class != RecentArgID {
+	for i := offset; i < stochastic.QueueLen+offset-1; i++ {
+		class := arg_classifier.classify(i)
+		if class != stochastic.RecentArgID {
 			t.Fatalf("wrong classification %v (recent data)", i)
 		}
 	}
 
 	// check class of elements that fell out of the queue
 	for i := 1; i < offset; i++ {
-		class := arg_classifier.Classify(i)
-		if class != RandArgID {
+		class := arg_classifier.classify(i)
+		if class != stochastic.RandArgID {
 			t.Fatalf("wrong classification %v (random data)", i)
 		}
 	}
 
 	// check class of new elements
-	class = arg_classifier.Classify(QueueLen + offset)
-	if class != NewArgID {
+	class = arg_classifier.classify(stochastic.QueueLen + offset)
+	if class != stochastic.NewArgID {
 		t.Fatalf("wrong classification (new data)")
 	}
 
 	// check class of new elements
-	class = arg_classifier.Classify(0)
-	if class != ZeroArgID {
+	class = arg_classifier.classify(0)
+	if class != stochastic.ZeroArgID {
 		t.Fatalf("wrong classification (new data)")
 	}
 }
@@ -121,13 +123,13 @@ func TestArgClassifierJSONOutput(t *testing.T) {
 
 	// place arguments in classifier ensure that the queue overfills
 	// so that we have some random arguments for the counting statistics.
-	for i := range 2 * QueueLen {
+	for i := range 2 * stochastic.QueueLen {
 		x.Update(i)
-		x.Classify(i - 10)
+		x.classify(i - 10)
 	}
 
 	// produce stats in JSON format
-	jsonX := x.NewArgClassifierJSON()
+	jsonX := x.JSON()
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
 		t.Fatalf("Marshalling failed to produce distribution")

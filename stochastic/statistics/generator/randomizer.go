@@ -17,12 +17,11 @@
 package generator
 
 import (
-    "math/rand"
+	"math/rand"
 
-    "github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
-    discrete_empiricial "github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
-    "github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
-    "github.com/0xsoniclabs/aida/stochastic/statistics/weibull"
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
 )
 
 // ArgSetRandomizer interface for argument sets
@@ -31,187 +30,63 @@ type ArgSetRandomizer interface {
 	SampleQueue() int                      // sample queue distribution
 }
 
-// SampleArgRandomizer interface for argument sets
-type SampleArgRandomizer interface {
-	SampleArg(n ArgumentType) ArgumentType // sample argument distribution
-}
-
-// SampleQueueRandomizer interface for argument sets
-type SampleQueueRandomizer interface {
-	SampleQueue() int // sample queue distribution
-}
-
 // ProxyRandomizer struct
-type ProxyRandomizer struct {
-	sampleArg SampleArgRandomizer
-	sampleQ   SampleQueueRandomizer
-}
-
-// NewProxyRandomizer creates a proxy for SampleArgRandomizer and SampleQueueRandomizer
-func NewProxyRandomizer(argR SampleArgRandomizer, qR SampleQueueRandomizer) *ProxyRandomizer {
-	return &ProxyRandomizer{
-		sampleArg: argR,
-		sampleQ:   qR,
-	}
-}
-
-// SampleArg samples an argument from a distribution with n possible arguments
-func (r *ProxyRandomizer) SampleArg(n ArgumentType) ArgumentType {
-	return r.sampleArg.SampleArg(n)
-}
-
-// SampleQueue samples an index for a queue
-func (r *ProxyRandomizer) SampleQueue() int {
-	return r.sampleQ.SampleQueue()
-}
-
-// ExponentialArgRandomizer struct
-type ExponentialArgRandomizer struct {
-	rg     *rand.Rand
-	lambda float64
-}
-
-// NewExponentialArgRandomizer creates a new ExponentialArgRandomizer
-func NewExponentialArgRandomizer(rg *rand.Rand, lambda float64) *ExponentialArgRandomizer {
-	return &ExponentialArgRandomizer{
-		rg:     rg,
-		lambda: lambda,
-	}
-}
-
-// SampleArg samples an argument from a distribution with n possible arguments
-func (r *ExponentialArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
-	return ArgumentType(exponential.Sample(r.rg, r.lambda, int64(n)))
-}
-
-// ExponentialQueueRandomizer struct
-type ExponentialQueueRandomizer struct {
-	rg     *rand.Rand
-	lambda float64
-}
-
-// NewExponentialQueueRandomizer creates a new ExponentialQueueRandomizer
-func NewExponentialQueueRandomizer(rg *rand.Rand, lambda float64) *ExponentialQueueRandomizer {
-	return &ExponentialQueueRandomizer{
-		rg:     rg,
-		lambda: lambda,
-	}
-}
-
-// SampleQueue samples an index for a queue
-func (r *ExponentialQueueRandomizer) SampleQueue() int {
-    return int(exponential.Sample(r.rg, r.lambda, int64(classifier.QueueLen-1))) + 1
-}
-
-// WeibullArgRandomizer struct
-type WeibullArgRandomizer struct {
-    rg     *rand.Rand
-    lambda float64
-    k      float64
-}
-
-// NewWeibullArgRandomizer creates a new WeibullArgRandomizer
-func NewWeibullArgRandomizer(rg *rand.Rand, lambda, k float64) *WeibullArgRandomizer {
-    return &WeibullArgRandomizer{
-        rg:     rg,
-        lambda: lambda,
-        k:      k,
-    }
-}
-
-// SampleArg samples an argument from a distribution with n possible arguments
-func (r *WeibullArgRandomizer) SampleArg(n ArgumentType) ArgumentType {
-    return ArgumentType(weibull.Sample(r.rg, r.lambda, r.k, int64(n)))
-}
-
-// WeibullQueueRandomizer struct
-type WeibullQueueRandomizer struct {
-    rg     *rand.Rand
-    lambda float64
-    k      float64
-}
-
-// NewWeibullQueueRandomizer creates a new WeibullQueueRandomizer
-func NewWeibullQueueRandomizer(rg *rand.Rand, lambda, k float64) *WeibullQueueRandomizer {
-    return &WeibullQueueRandomizer{
-        rg:     rg,
-        lambda: lambda,
-        k:      k,
-    }
-}
-
-// SampleQueue samples an index for a queue
-func (r *WeibullQueueRandomizer) SampleQueue() int {
-    return int(weibull.Sample(r.rg, r.lambda, r.k, int64(classifier.QueueLen-1))) + 1
-}
-
-// EmpiricalQueueRandomizer struct
-type EmpiricalQueueRandomizer struct {
-	rg  *rand.Rand // random generator
-	pdf []float64  // probability distribution function of queue indices 1..QueueLen-1 (excluding zero)
+type EmpiricalArgSetRandomizer struct {
+	rg   *rand.Rand
+	pdf  []float64    // probability distribution function of queue from [1, QueueLen-1]
+	ecdf [][2]float64 // empirical cumulative distribution function
 }
 
 // NewEmpiricalQueueRandomizer creates a new EmpiricalQueueRandomizer
-func NewEmpiricalQueueRandomizer(rg *rand.Rand, qpdf []float64) *EmpiricalQueueRandomizer {
-	if len(qpdf) != classifier.QueueLen {
+func NewEmpiricalArgSetRandomizer(rg *rand.Rand, qpdf []float64, ecdf [][2]float64) *EmpiricalArgSetRandomizer {
+	if len(qpdf) != stochastic.QueueLen {
 		return nil
 	}
 	factor := 1.0 - qpdf[0]
 	if factor <= 0 {
 		return nil
 	}
-	cp := make([]float64, classifier.QueueLen-1)
-	for i := range classifier.QueueLen - 1 {
+	cp := make([]float64, stochastic.QueueLen-1)
+	for i := range stochastic.QueueLen - 1 {
 		cp[i] = qpdf[i+1] / factor
 	}
-	return &EmpiricalQueueRandomizer{
-		rg:  rg,
-		pdf: cp,
+	return &EmpiricalArgSetRandomizer{
+		rg:   rg,
+		pdf:  cp,
+		ecdf: ecdf,
 	}
 }
 
+// SampleArg samples an argument from a distribution with n possible arguments
+func (r *EmpiricalArgSetRandomizer) SampleArg(n ArgumentType) ArgumentType {
+	return ArgumentType(continuous_empirical.Sample(r.rg, r.ecdf, int64(n)))
+}
+
 // SampleQueue samples an index for a queue
-func (r *EmpiricalQueueRandomizer) SampleQueue() int {
-	return discrete_empiricial.Sample(r.pdf, r.rg.Float64()) + 1
+func (r *EmpiricalArgSetRandomizer) SampleQueue() int {
+	return discrete_empirical.Sample(r.pdf, r.rg.Float64()) + 1
 }
 
 // SnapshotSet interface for snapshot arguments
 type SnapshotSet interface {
-	SampleSnapshot(n int) int // sample queue distribution
+	SampleSnapshot(n int) int // sample snapshot set for an active snapshot stack size
 }
 
-// ExponentialSnapshotRandomizer struct
-type ExponentialSnapshotRandomizer struct {
-	rg     *rand.Rand
-	lambda float64
+// ProxyRandomizer struct
+type EmpiricalSnapshotRandomizer struct {
+	rg   *rand.Rand
+	ecdf [][2]float64 // empirical cumulative distribution function
 }
 
-func NewExponentialSnapshotRandomizer(rg *rand.Rand, lambda float64) *ExponentialSnapshotRandomizer {
-	return &ExponentialSnapshotRandomizer{
-		rg:     rg,
-		lambda: lambda,
+// NewEmpiricalSnapshotRandomizer creates a new EmpiricalSnapshotRandomizer
+func NewEmpiricalSnapshotRandomizer(rg *rand.Rand, ecdf [][2]float64) *EmpiricalSnapshotRandomizer {
+	return &EmpiricalSnapshotRandomizer{
+		rg:   rg,
+		ecdf: ecdf,
 	}
 }
 
-func (r *ExponentialSnapshotRandomizer) SampleSnapshot(n int) int {
-    return int(exponential.Sample(r.rg, r.lambda, int64(n)))
-}
-
-// WeibullSnapshotRandomizer struct
-type WeibullSnapshotRandomizer struct {
-    rg     *rand.Rand
-    lambda float64
-    k      float64
-}
-
-func NewWeibullSnapshotRandomizer(rg *rand.Rand, lambda, k float64) *WeibullSnapshotRandomizer {
-    return &WeibullSnapshotRandomizer{
-        rg:     rg,
-        lambda: lambda,
-        k:      k,
-    }
-}
-
-func (r *WeibullSnapshotRandomizer) SampleSnapshot(n int) int {
-    return int(weibull.Sample(r.rg, r.lambda, r.k, int64(n)))
+// SampleSnapshot samples an argument from a distribution with n possible arguments
+func (r *EmpiricalSnapshotRandomizer) SampleSnapshot(n int) int {
+	return int(continuous_empirical.Sample(r.rg, r.ecdf, int64(n)))
 }

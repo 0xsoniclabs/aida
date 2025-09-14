@@ -20,6 +20,7 @@ import (
 	"log"
 	"sort"
 
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
@@ -195,7 +196,7 @@ func (a *AccessData) PopulateAccess(d *classifier.ArgClassifierJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	a.Lambda = lambda
-	a.Cdf = exponential.PiecewiseLinearCDF(lambda, classifier.NumECDFPoints)
+	a.Cdf = exponential.PiecewiseLinearCDF(lambda, stochastic.NumECDFPoints)
 	a.QPdf = make([]float64, len(d.Queuing.Distribution))
 	copy(a.QPdf, d.Queuing.Distribution)
 }
@@ -209,5 +210,5 @@ func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StateJSON) {
 		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
 	}
 	s.Lambda = lambda
-	s.Cdf = exponential.PiecewiseLinearCDF(lambda, classifier.NumECDFPoints)
+	s.Cdf = exponential.PiecewiseLinearCDF(lambda, stochastic.NumECDFPoints)
 }

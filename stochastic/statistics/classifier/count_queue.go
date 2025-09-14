@@ -16,19 +16,18 @@
 
 package classifier
 
-// QueueLen sets the length of counting queue (must be greater than one).
-const QueueLen = 32
+import "github.com/0xsoniclabs/aida/stochastic"
 
 // countQueue data structure for a generic FIFO countQueue.
 type countQueue[T comparable] struct {
 	// queue structure
-	top  int         // index of first entry in queue
-	rear int         // index of last entry in queue
-	data [QueueLen]T // queue data
+	top  int                    // index of first entry in queue
+	rear int                    // index of last entry in queue
+	data [stochastic.QueueLen]T // queue data
 
 	// counting statistics for queue position
 	// (counter for each position counting successful finds)
-	freq [QueueLen]uint64
+	freq [stochastic.QueueLen]uint64
 }
 
 // NewCountQueue creates a new queue.
@@ -36,8 +35,8 @@ func NewCountQueue[T comparable]() countQueue[T] {
 	return countQueue[T]{
 		top:  -1,
 		rear: -1,
-		data: [QueueLen]T{},
-		freq: [QueueLen]uint64{},
+		data: [stochastic.QueueLen]T{},
+		freq: [stochastic.QueueLen]uint64{},
 	}
 }
 
@@ -51,12 +50,12 @@ func (q *countQueue[T]) place(item T) {
 	}
 
 	// put new item into the queue
-	q.top = (q.top + 1) % QueueLen
+	q.top = (q.top + 1) % stochastic.QueueLen
 	q.data[q.top] = item
 
 	// update rear of queue
 	if q.top == q.rear {
-		q.rear = (q.rear + 1) % QueueLen
+		q.rear = (q.rear + 1) % stochastic.QueueLen
 	}
 }
 
@@ -69,7 +68,7 @@ func (q *countQueue[T]) findPos(item T) int {
 	for {
 		if q.data[i] == item {
 			// if found, return position in the FIFO queue
-			idx := (q.top - i + QueueLen) % QueueLen
+			idx := (q.top - i + stochastic.QueueLen) % stochastic.QueueLen
 			q.freq[idx]++
 			return idx
 		}
@@ -77,7 +76,7 @@ func (q *countQueue[T]) findPos(item T) int {
 			return -1 // if rear of queue reached, return not found
 		}
 		// go back one position in the queue
-		i = (i - 1 + QueueLen) % QueueLen
+		i = (i - 1 + stochastic.QueueLen) % stochastic.QueueLen
 	}
 }
 
@@ -91,13 +90,13 @@ type QueueStatsJSON struct {
 func (q *countQueue[T]) json() QueueStatsJSON {
 	// Compute total frequency over all positions
 	total := uint64(0)
-	for i := range QueueLen {
+	for i := range stochastic.QueueLen {
 		total += q.freq[i]
 	}
 	// compute position probabilities
-	dist := make([]float64, QueueLen)
+	dist := make([]float64, stochastic.QueueLen)
 	if total > 0 {
-		for i := range QueueLen {
+		for i := range stochastic.QueueLen {
 			dist[i] = float64(q.freq[i]) / float64(total)
 		}
 	}

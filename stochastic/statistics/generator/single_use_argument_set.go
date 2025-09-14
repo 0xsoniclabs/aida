@@ -19,7 +19,7 @@ package generator
 import (
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic"
 )
 
 // SingleUseArgumentSet data structure for generating non-reusable arguments.
@@ -48,15 +48,15 @@ func NewSingleUseArgumentSet(argset ArgumentSet) *SingleUseArgumentSet {
 }
 
 // Choose an argument from the argument set according to its kind.
-func (a *SingleUseArgumentSet) Choose(kind classifier.ArgKind) (int64, error) {
+func (a *SingleUseArgumentSet) Choose(kind stochastic.ArgKind) (int64, error) {
 	v, err := a.argset.Choose(kind)
 	if err != nil {
 		return 0, err
 	}
 	switch kind {
-	case classifier.ZeroArgID:
+	case stochastic.ZeroArgID:
 		return 0, nil
-	case classifier.NewArgID:
+	case stochastic.NewArgID:
 		a.ctr++
 		v := a.ctr
 		a.translation = append(a.translation, v)

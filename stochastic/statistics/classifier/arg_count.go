@@ -17,10 +17,7 @@
 package classifier
 
 import (
-	"sort"
-
-	"github.com/paulmach/orb"
-	"github.com/paulmach/orb/simplify"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
 )
 
 // Argument counting statistics counts the occurrence of arguments in StateDB operations
@@ -30,9 +27,6 @@ import (
 // to a manageable size. The number of arguments in a StateDB can be very large and
 // hence we compress it the distribution function to a fixed number of points.
 // See: https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-
-// NumECDFPoints sets the number of points in the empirical cumulative distribution function.
-const NumECDFPoints = 300
 
 // argCount data struct for a counting statistics of StateDB operations' arguments.
 type argCount[T comparable] struct {
@@ -45,7 +39,7 @@ func newArgCount[T comparable]() argCount[T] {
 }
 
 // Places an item into the counting statistics.
-func (s *argCount[T]) Place(data T) {
+func (s *argCount[T]) place(data T) {
 	s.freq[data]++
 }
 
@@ -63,59 +57,9 @@ type ArgStatsJSON struct {
 
 // json computes the ECDF of the counting stats.
 func (s *argCount[T]) json() ArgStatsJSON {
-	return s.produceJSON(NumECDFPoints)
-}
-
-// produceJSON computes the ECDF and set the number field in the JSON struct.
-func (s *argCount[T]) produceJSON(numPoints int) ArgStatsJSON {
-	// sort frequency entries for arguments by frequency (highest frequency first)
-	n := len(s.freq)
-	args := make([]T, 0, n)
-	total := uint64(0)
-	for arg, freq := range s.freq {
-		args = append(args, arg)
-		total += freq
-	}
-	sort.SliceStable(args, func(i, j int) bool {
-		return s.freq[args[i]] > s.freq[args[j]]
-	})
-	var compressFreqs orb.LineString
-	if n > 0 {
-		ls := orb.LineString{}
-		// print points of the empirical cumulative freq
-		sumP := float64(0.0)
-		// Correction term for Kahan's sum
-		cP := float64(0.0)
-		// add first point to line string
-		ls = append(ls, orb.Point{0.0, 0.0})
-		// iterate through all items
-		for i := range n {
-			// Implement Kahan's summation to avoid errors
-			// for accumulated probabilities (they might be very small)
-			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
-			f := float64(s.freq[args[i]]) / float64(total)
-			x := (float64(i) + 0.5) / float64(n)
-			yP := f - cP
-			tP := sumP + yP
-			cP = (tP - sumP) - yP
-			sumP = tP
-			// add new point to Ecdf
-			ls = append(ls, orb.Point{x, sumP})
-		}
-		// add last point
-		ls = append(ls, orb.Point{1.0, 1.0})
-		// reduce full ecdf using Visvalingam-Whyatt algorithm to
-		// "numPoints" points. See:
-		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-		simplifier := simplify.VisvalingamKeep(numPoints)
-		compressFreqs = simplifier.Simplify(ls).(orb.LineString)
-	}
-	ecdf := make([][2]float64, len(compressFreqs))
-	for i := range compressFreqs {
-		ecdf[i] = [2]float64(compressFreqs[i])
-	}
+	ecdf := continuous_empirical.ToECDF(&s.freq)
 	return ArgStatsJSON{
-		N:    int64(n),
+		N:    int64(len(s.freq)),
 		ECDF: ecdf,
 	}
 }

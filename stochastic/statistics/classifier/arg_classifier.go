@@ -16,22 +16,7 @@
 
 package classifier
 
-// Argument classifier for StateDB arguments (account addresses, storage keys,  and storage values).
-// The  classifier is based on a combination of counting and queuing statistics to classify arguments
-// into the following kinds:
-const (
-	NoArgID     = iota // no argument
-	ZeroArgID          // zero argument
-	PrevArgID          // previously seen argument (last access)
-	RecentArgID        // recent argument value (found in the counting queue)
-	RandArgID          // random access (pick randomly from argument set)
-	NewArgID           // new argument (not seen before and increases the argument set)
-
-	NumArgKinds // number of argument kinds
-)
-
-// ArgKind is the type for argument kinds.
-type ArgKind = int
+import "github.com/0xsoniclabs/aida/stochastic"
 
 // ArgClassifier struct for account addresses, storage keys, and storage values.
 type ArgClassifier[T comparable] struct {
@@ -45,47 +30,47 @@ func NewArgClassifier[T comparable]() ArgClassifier[T] {
 }
 
 // Update the argument classifier with a new argument and return its kind.
-func (a *ArgClassifier[T]) Update(data T) ArgKind {
-	kind := a.Classify(data)
-	a.Place(data)
+func (a *ArgClassifier[T]) Update(data T) stochastic.ArgKind {
+	kind := a.classify(data)
+	a.place(data)
 	return kind
 }
 
-// Places the argument into the counting and queuing statistics.
-func (a *ArgClassifier[T]) Place(data T) {
+// places the argument into the counting and queuing statistics.
+func (a *ArgClassifier[T]) place(data T) {
 	var zeroValue T
 	if data == zeroValue {
 		return // don't place zero value argument into argument/queue stats
 	}
 	if a.qstats.findPos(data) == -1 {
 		// argument not found in the counting queue; place into counting statistics
-		a.cstats.Place(data)
+		a.cstats.place(data)
 	}
 	a.qstats.place(data) // place data into queuing statistics
 }
 
-// Classify an argument depending on previous placements.
-func (a *ArgClassifier[T]) Classify(data T) ArgKind {
+// classify an argument depending on previous placements.
+func (a *ArgClassifier[T]) classify(data T) stochastic.ArgKind {
 	// check zero value
 	var zeroValue T
 	if data == zeroValue {
-		return ZeroArgID
+		return stochastic.ZeroArgID
 	}
 	switch a.qstats.findPos(data) {
 	case -1:
 		// data not found in the queuing statistics
 		// => check argument counting statistics
 		if !a.cstats.exists(data) {
-			return NewArgID
+			return stochastic.NewArgID
 		} else {
-			return RandArgID
+			return stochastic.RandArgID
 		}
 	case 0:
 		// previous entry
-		return PrevArgID
+		return stochastic.PrevArgID
 	default:
 		// data found in queuing statistics with a queue position > 0
-		return RecentArgID
+		return stochastic.RecentArgID
 	}
 }
 
@@ -99,6 +84,6 @@ type ArgClassifierJSON struct {
 }
 
 // NewArgClassifierJSON produces JSON output for an access statistics.
-func (a *ArgClassifier[T]) NewArgClassifierJSON() ArgClassifierJSON {
+func (a *ArgClassifier[T]) JSON() ArgClassifierJSON {
 	return ArgClassifierJSON{a.cstats.json(), a.qstats.json()}
 }

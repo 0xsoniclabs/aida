@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -64,7 +64,7 @@ const (
 )
 
 // NumArgOps gives the number of operations with encoded argument kinds
-const NumArgOps = NumOps * classifier.NumArgKinds * classifier.NumArgKinds * classifier.NumArgKinds
+const NumArgOps = NumOps * stochastic.NumArgKinds * stochastic.NumArgKinds * stochastic.NumArgKinds
 
 // OpText translates IDs to operation's text
 var OpText = map[int]string{
@@ -204,21 +204,21 @@ var opId = map[string]int{
 
 // argMnemo is the argument-class mnemonics table.
 var argMnemo = map[int]string{
-	classifier.NoArgID:     "",
-	classifier.ZeroArgID:   "z",
-	classifier.NewArgID:    "n",
-	classifier.PrevArgID:   "p",
-	classifier.RecentArgID: "q",
-	classifier.RandArgID:   "r",
+	stochastic.NoArgID:     "",
+	stochastic.ZeroArgID:   "z",
+	stochastic.NewArgID:    "n",
+	stochastic.PrevArgID:   "p",
+	stochastic.RecentArgID: "q",
+	stochastic.RandArgID:   "r",
 }
 
 // argId is the argument-class id table.
 var argId = map[byte]int{
-	'z': classifier.ZeroArgID,
-	'n': classifier.NewArgID,
-	'p': classifier.PrevArgID,
-	'q': classifier.RecentArgID,
-	'r': classifier.RandArgID,
+	'z': stochastic.ZeroArgID,
+	'n': stochastic.NewArgID,
+	'p': stochastic.PrevArgID,
+	'q': stochastic.RecentArgID,
+	'r': stochastic.RandArgID,
 }
 
 // OpMnemo returns the mnemonic code for an operation.
@@ -234,38 +234,38 @@ func checkArgOp(op int, contract int, key int, value int) error {
 	if op < 0 || op >= NumOps {
 		return fmt.Errorf("checkArgOp: operations out of range %v not in [0,%v]", op, NumOps)
 	}
-	if contract < 0 || contract >= classifier.NumArgKinds {
-		return fmt.Errorf("checkArgOp: contract arg out of range %v not in [0,%v]", contract, classifier.NumArgKinds)
+	if contract < 0 || contract >= stochastic.NumArgKinds {
+		return fmt.Errorf("checkArgOp: contract arg out of range %v not in [0,%v]", contract, stochastic.NumArgKinds)
 	}
-	if key < 0 || key >= classifier.NumArgKinds {
-		return fmt.Errorf("checkArgOp: key arg out of range %v not in [0,%v]", key, classifier.NumArgKinds)
+	if key < 0 || key >= stochastic.NumArgKinds {
+		return fmt.Errorf("checkArgOp: key arg out of range %v not in [0,%v]", key, stochastic.NumArgKinds)
 	}
-	if value < 0 || value >= classifier.NumArgKinds {
-		return fmt.Errorf("checkArgOp: value arg out of range %v not in [0,%v]", value, classifier.NumArgKinds)
+	if value < 0 || value >= stochastic.NumArgKinds {
+		return fmt.Errorf("checkArgOp: value arg out of range %v not in [0,%v]", value, stochastic.NumArgKinds)
 	}
 	switch OpNumArgs[op] {
 	case 0:
-		if !(contract == classifier.NoArgID &&
-			key == classifier.NoArgID &&
-			value == classifier.NoArgID) {
+		if !(contract == stochastic.NoArgID &&
+			key == stochastic.NoArgID &&
+			value == stochastic.NoArgID) {
 			return fmt.Errorf("checkArgOp: op %v takes no arguments", op)
 		}
 	case 1:
-		if !(contract != classifier.NoArgID &&
-			key == classifier.NoArgID &&
-			value == classifier.NoArgID) {
+		if !(contract != stochastic.NoArgID &&
+			key == stochastic.NoArgID &&
+			value == stochastic.NoArgID) {
 			return fmt.Errorf("checkArgOp: op %v takes one contract argument", op)
 		}
 	case 2:
-		if !(contract != classifier.NoArgID &&
-			key != classifier.NoArgID &&
-			value == classifier.NoArgID) {
+		if !(contract != stochastic.NoArgID &&
+			key != stochastic.NoArgID &&
+			value == stochastic.NoArgID) {
 			return fmt.Errorf("checkArgOp: op %v takes contract and key arguments", op)
 		}
 	case 3:
-		if !(contract != classifier.NoArgID &&
-			key != classifier.NoArgID &&
-			value != classifier.NoArgID) {
+		if !(contract != stochastic.NoArgID &&
+			key != stochastic.NoArgID &&
+			value != stochastic.NoArgID) {
 			return fmt.Errorf("checkArgOp: op %v takes contract, key and value arguments", op)
 		}
 	default:
@@ -288,7 +288,7 @@ func EncodeArgOp(op int, addr int, key int, value int) (int, error) {
 	if err := checkArgOp(op, addr, key, value); err != nil {
 		return 0, fmt.Errorf("EncodeArgOp: invalid operation/arguments. Error: %v", err)
 	}
-	return (((int(op)*classifier.NumArgKinds)+addr)*classifier.NumArgKinds+key)*classifier.NumArgKinds + value, nil
+	return (((int(op)*stochastic.NumArgKinds)+addr)*stochastic.NumArgKinds+key)*stochastic.NumArgKinds + value, nil
 }
 
 // DecodeArgOp decodes operation with arguments using Horner's scheme
@@ -297,14 +297,14 @@ func DecodeArgOp(argop int) (int, int, int, int, error) {
 		return 0, 0, 0, 0, fmt.Errorf("DecodeArgOp: argument out of range %v not in [0,%v]", argop, NumArgOps)
 	}
 
-	value := argop % classifier.NumArgKinds
-	argop = argop / classifier.NumArgKinds
+	value := argop % stochastic.NumArgKinds
+	argop = argop / stochastic.NumArgKinds
 
-	key := argop % classifier.NumArgKinds
-	argop = argop / classifier.NumArgKinds
+	key := argop % stochastic.NumArgKinds
+	argop = argop / stochastic.NumArgKinds
 
-	addr := argop % classifier.NumArgKinds
-	argop = argop / classifier.NumArgKinds
+	addr := argop % stochastic.NumArgKinds
+	argop = argop / stochastic.NumArgKinds
 
 	op := argop
 
@@ -346,17 +346,17 @@ func DecodeOpcode(opc string) (int, int, int, int, error) {
 	var contract, key, value int
 	switch len(opc) - 2 {
 	case 0:
-		contract, key, value = classifier.NoArgID, classifier.NoArgID, classifier.NoArgID
+		contract, key, value = stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID
 	case 1:
 		if !validateArg(opc[2]) {
 			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)
 		}
-		contract, key, value = argId[opc[2]], classifier.NoArgID, classifier.NoArgID
+		contract, key, value = argId[opc[2]], stochastic.NoArgID, stochastic.NoArgID
 	case 2:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) {
 			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)
 		}
-		contract, key, value = argId[opc[2]], argId[opc[3]], classifier.NoArgID
+		contract, key, value = argId[opc[2]], argId[opc[3]], stochastic.NoArgID
 	case 3:
 		if !validateArg(opc[2]) || !validateArg(opc[3]) || !validateArg(opc[4]) {
 			return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong argument code %v", opc)

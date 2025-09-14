@@ -19,7 +19,7 @@ package generator
 import (
 	"math"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
+	"github.com/0xsoniclabs/aida/stochastic"
 )
 
 // ArgumentType defines the integer type of arguments
@@ -29,10 +29,10 @@ type ArgumentType = int64
 const MaxArgumentType = math.MaxInt64
 
 // minCardinality is the minimum cardinality of the argument set and
-// must be substantially larger than classifier.QueueLen.
+// must be substantially larger than stochastic.QueueLen.
 // (Otherwise sampling for arguments with class RandomValueID may
 // take a very long time and would slow down the simulation.)
-const minCardinality = 10 * classifier.QueueLen
+const minCardinality = 10 * stochastic.QueueLen
 
 // ArgumentSet data structure for producing random arguments
 // for StateDB operations. An argument set meshes a sample distribution
@@ -45,7 +45,7 @@ type ArgumentSet interface {
 	// (3) a new argument increasing the cardinality of the argument set, (4)
 	// a random argument not contained in the queue, (5) the previous argument
 	// (6) a recent argument contained in the queue but not the previous one.
-	Choose(kind classifier.ArgKind) (ArgumentType, error)
+	Choose(kind stochastic.ArgKind) (ArgumentType, error)
 
 	// Remove an argument from set and shrink argument set by one argument.
 	Remove(v ArgumentType) error

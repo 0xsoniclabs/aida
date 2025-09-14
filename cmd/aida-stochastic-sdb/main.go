@@ -32,7 +32,6 @@ func initStochasticApp() *cli.App {
 		Copyright: "(c) 2022-23 Fantom Foundation",
 		Flags:     []cli.Flag{},
 		Commands: []*cli.Command{
-			&stochastic.StochasticEstimateCommand,
 			&stochastic.StochasticGenerateCommand,
 			&stochastic.StochasticRecordCommand,
 			&stochastic.StochasticReplayCommand,

@@ -95,7 +95,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	defer utils.StopCPUProfile(cfg)
 
 	// read simulation file
-	simulation, serr := recorder.ReadSimulation(ctx.Args().Get(1))
+	simulation, serr := recorder.Read(ctx.Args().Get(1))
 	if serr != nil {
 		return fmt.Errorf("failed reading simulation; %v", serr)
 	}

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/classifier"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -42,17 +42,17 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		}
 	}
 
-	bb, _ := operations.EncodeArgOp(operations.BeginBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-	bt, _ := operations.EncodeArgOp(operations.BeginTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	bb, _ := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	bt, _ := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	assert.Equal(t, uint64(1), r.transitFreq[bb][bt])
 
-	eb, _ := operations.EncodeArgOp(operations.EndBlockID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
-	es, _ := operations.EncodeArgOp(operations.EndSyncPeriodID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	eb, _ := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	es, _ := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	assert.Equal(t, cfg.SyncPeriodLength-1, r.transitFreq[eb][bb])
 	assert.Equal(t, uint64(1), r.transitFreq[eb][es])
 
-	gb, _ := operations.EncodeArgOp(operations.GetBalanceID, classifier.NewArgID, classifier.NoArgID, classifier.NoArgID)
-	et, _ := operations.EncodeArgOp(operations.EndTransactionID, classifier.NoArgID, classifier.NoArgID, classifier.NoArgID)
+	gb, _ := operations.EncodeArgOp(operations.GetBalanceID, stochastic.NewArgID, stochastic.NoArgID, stochastic.NoArgID)
+	et, _ := operations.EncodeArgOp(operations.EndTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	if operations.IsValidArgOp(gb) {
 		assert.Equal(t, uint64(1), r.transitFreq[gb][et])
 	}

@@ -29,7 +29,7 @@ func TestArgCountSimple(t *testing.T) {
 	if stats.exists(data) {
 		t.Fatalf("Existence check failed")
 	}
-	stats.Place(data)
+	stats.place(data)
 	if !stats.exists(data) {
 		t.Fatalf("Existence check failed")
 	}
@@ -46,8 +46,8 @@ func TestArgCountSimple2(t *testing.T) {
 	if stats.exists(data) {
 		t.Fatalf("Existence check failed")
 	}
-	stats.Place(data)
-	stats.Place(data)
+	stats.place(data)
+	stats.place(data)
 	if !stats.exists(data) {
 		t.Fatalf("Existence check failed")
 	}
@@ -68,8 +68,8 @@ func TestArgCountSimple3(t *testing.T) {
 	if stats.exists(data2) {
 		t.Fatalf("Existence check failed")
 	}
-	stats.Place(data1)
-	stats.Place(data2)
+	stats.place(data1)
+	stats.place(data2)
 	if !stats.exists(data1) || !stats.exists(data2) {
 		t.Fatalf("Existence check failed")
 	}
@@ -109,9 +109,9 @@ func TestArgCountJSON(t *testing.T) {
 
 	// test a populate counting statistics
 	for i := 1; i <= 10; i++ {
-		stats.Place(i)
+		stats.place(i)
 	}
-	stats.Place(1)
-	stats.Place(10)
+	stats.place(1)
+	stats.place(10)
 	testArgStatJSON(stats, t)
 }

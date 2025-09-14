@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package discrete_empiricial
+package discrete_empirical
 
 import (
 	"math"
@@ -74,4 +74,3 @@ func TestSample_NumericalStabilityKahanPathIsExercised(t *testing.T) {
 		t.Fatalf("u≈1: want 7, got %d", got)
 	}
 }
-

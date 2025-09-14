@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"testing"
 	"strconv"
+	"testing"
 
 	"gonum.org/v1/gonum/stat/distuv"
 )

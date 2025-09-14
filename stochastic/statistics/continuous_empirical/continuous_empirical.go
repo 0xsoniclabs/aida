@@ -14,7 +14,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package continous_empiricial
+package continuous_empirical
+
+import (
+	"math/rand"
+	"sort"
+
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/paulmach/orb"
+	"github.com/paulmach/orb/simplify"
+)
 
 // CDF computes the Cumulative Distribution Function of parameter x
 // for a given piecewise linear function. The piecewise linear function
@@ -31,6 +40,22 @@ func CDF(f [][2]float64, x float64) float64 {
 		}
 	}
 	return 1.0 // x is 1.0 or greater
+}
+
+// Inverse CDF
+func Quantile(f [][2]float64, y float64) float64 {
+	for i := range len(f) - 1 {
+		if f[i+1][1] >= y {
+			scale := (y - f[i][1]) / (f[i+1][1] - f[i][1])
+			return f[i][0] + scale*(f[i+1][0]-f[i][0])
+		}
+	}
+	return 1.0 // x is 1.0 or greater
+}
+
+// Sample
+func Sample(rg *rand.Rand, ecdf [][2]float64, n int64) int64 {
+	return int64(float64(n) * Quantile(ecdf, rg.Float64()))
 }
 
 // Check whether the piecewise linear function is valid as a CDF.
@@ -56,4 +81,124 @@ func CheckPiecewiseLinearCDF(f [][2]float64) bool {
 		}
 	}
 	return true
+}
+
+// ToECDF computes the empirical cumulative distribution function (eCDF)
+// from a counting statistics. The eCDF is represented as a piecewise linear
+// function with a fixed number of points (NumECDFPoints). The eCDF is
+// computed using the Visvalingam-Whyatt algorithm to reduce the number of
+// points in the eCDF. See:
+// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
+func ToCountECDF(count *map[int]uint64) [][2]float64 {
+
+	// determine the maximum argument and total frequency
+	totalFreq := uint64(0)
+	maxArg := 0
+	for arg, freq := range *count {
+		totalFreq += freq
+		if maxArg < arg {
+			maxArg = arg
+		}
+	}
+
+	var simplified orb.LineString
+
+	// if no data-points, nothing to plot
+	if len(*count) > 0 {
+
+		// construct full eCdf as LineString
+		ls := orb.LineString{}
+
+		// print points of the empirical cumulative freq
+		sumP := float64(0.0)
+
+		// Correction term for Kahan's sum
+		cP := float64(0.0)
+
+		// add first point to line string
+		ls = append(ls, orb.Point{0.0, 0.0})
+
+		// iterate through all deltas
+		for arg := 0; arg <= maxArg; arg++ {
+			// Implement Kahan's summation to avoid errors
+			// for accumulated probabilities (they might be very small)
+			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+			f := float64((*count)[arg]) / float64(totalFreq)
+			x := float64(arg) / float64(maxArg)
+
+			yP := f - cP
+			tP := sumP + yP
+			cP = (tP - sumP) - yP
+			sumP = tP
+
+			// add new point to Ecdf
+			ls = append(ls, orb.Point{x, sumP})
+		}
+
+		// add last point
+		ls = append(ls, orb.Point{1.0, 1.0})
+
+		// reduce full ecdf using Visvalingam-Whyatt algorithm to
+		// "numPoints" points. See:
+		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
+		simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
+		simplified = simplifier.Simplify(ls).(orb.LineString)
+	}
+
+	// convert orb.LineString to [][2]float64
+	ecdf := make([][2]float64, len(simplified))
+	for i := range simplified {
+		ecdf[i] = [2]float64(simplified[i])
+	}
+	return ecdf
+}
+
+func ToECDF[T comparable](count *map[T]uint64) [][2]float64 {
+	// sort frequency entries for arguments by frequency (highest frequency first)
+	n := len(*count)
+	args := make([]T, 0, n)
+	total := uint64(0)
+	for arg, freq := range *count {
+		args = append(args, arg)
+		total += freq
+	}
+	sort.SliceStable(args, func(i, j int) bool {
+		return (*count)[args[i]] > (*count)[args[j]]
+	})
+	var compressFreqs orb.LineString
+	if n > 0 {
+		ls := orb.LineString{}
+		// print points of the empirical cumulative freq
+		sumP := float64(0.0)
+		// Correction term for Kahan's sum
+		cP := float64(0.0)
+		// add first point to line string
+		ls = append(ls, orb.Point{0.0, 0.0})
+		// iterate through all items
+		for i := range n {
+			// Implement Kahan's summation to avoid errors
+			// for accumulated probabilities (they might be very small)
+			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+			f := float64((*count)[args[i]]) / float64(total)
+			x := (float64(i) + 0.5) / float64(n)
+			yP := f - cP
+			tP := sumP + yP
+			cP = (tP - sumP) - yP
+			sumP = tP
+			// add new point to Ecdf
+			ls = append(ls, orb.Point{x, sumP})
+		}
+		// add last point
+		ls = append(ls, orb.Point{1.0, 1.0})
+		// reduce full ecdf using Visvalingam-Whyatt algorithm to
+		// "numPoints" points. See:
+		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
+		simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
+		compressFreqs = simplifier.Simplify(ls).(orb.LineString)
+	}
+	ecdf := make([][2]float64, len(compressFreqs))
+	for i := range compressFreqs {
+		ecdf[i] = [2]float64(compressFreqs[i])
+	}
+	return ecdf
 }
