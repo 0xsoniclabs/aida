@@ -37,37 +37,24 @@ type MarkovChain struct {
 
 // New creates a new MarkovChain.
 func New(a [][]float64, labels []string) (*MarkovChain, error) {
-	// A label can be used only once per state
-	label_count := map[string]int{}
-	for k, c := range label_count {
-		if c > 1 {
-			return nil, fmt.Errorf("New: the state (%v) occurs more than once (%v)", k, c)
-		}
-	}
-	// check that a is a square nxn matrix and the rows sum to one
 	n := len(labels)
 	if len(a) != n {
-		return nil, fmt.Errorf("New: number of lables (%v) mismatch the number of rows (%v)", len(a), n)
+		return nil, fmt.Errorf("New: number of labels (%v) mismatches number of rows (%v)", n, len(a))
 	}
+
+	labelCount := map[string]int{}
 	for i := range n {
 		if len(a[i]) != n {
 			return nil, fmt.Errorf("New: number of columns (%v) in row (%v) is not equal to the number of labels (%v)", len(a[i]), i, n)
 		}
-		label_count[labels[i]]++
-		// check that the row total is one
-		total := 0.0
-		for j := range n {
-			total += a[i][j]
-		}
-		if math.Abs(total-1.0) > estimationEps {
-			return nil, fmt.Errorf("New: the row sum of row (%v) is not one (%v)", i, total)
+		labelCount[labels[i]]++
+	}
+	for k, c := range labelCount {
+		if c > 1 {
+			return nil, fmt.Errorf("New: the state (%v) occurs more than once (%v)", k, c)
 		}
 	}
-	return &MarkovChain{
-		a:      a,
-		labels: labels,
-		n:      n,
-	}, nil
+	return &MarkovChain{a: a, labels: labels, n: n}, nil
 }
 
 // Sample the next state in a markov chain for a given state i.
@@ -136,7 +123,7 @@ func (mc MarkovChain) Stationary() ([]float64, error) {
 
 func (mc MarkovChain) Label(i int) (string, error) {
 	if i < 0 || i >= mc.n {
-		return "", fmt.Errorf("Label: state is out of range (%v).", i)
+		return "", fmt.Errorf("Label: state is out of range (%v)", i)
 	}
 	return mc.labels[i], nil
 }
@@ -148,5 +135,5 @@ func (mc MarkovChain) FindState(label string) (int, error) {
 			return i, nil
 		}
 	}
-	return 0, fmt.Errorf("FindState: cannot find state (%s) in markov chain", label)
+	return -1, nil
 }

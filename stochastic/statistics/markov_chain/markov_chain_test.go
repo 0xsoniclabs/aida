@@ -236,6 +236,7 @@ func TestRandomNextState(t *testing.T) {
 	// test larger uniform markov chain
 	n = 5400
 	A = make([][]float64, n)
+	L = make([]string, n)
 	for i := 0; i < n; i++ {
 		L[i] = "s" + strconv.Itoa(i)
 		A[i] = make([]float64, n)
@@ -268,6 +269,10 @@ func TestRandomNextState(t *testing.T) {
 				(1.0 - math.Pow(beta, float64(n)))) *
 				math.Pow(beta, -float64(j+1))
 		}
+	}
+	mc, err = New(A, L)
+	if err != nil {
+		t.Fatalf("Expected a markov chain. Error: %v", err)
 	}
 	if err := checkMarkovChain(mc, n*n); err != nil {
 		t.Fatalf("Geometric Markovian process is not unbiased for a small experiment. Error: %v", err)
