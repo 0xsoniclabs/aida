@@ -21,12 +21,14 @@ import (
     "testing"
 
     "github.com/0xsoniclabs/aida/logger"
+    logmock "github.com/0xsoniclabs/aida/logger"
     "github.com/0xsoniclabs/aida/state"
     "github.com/0xsoniclabs/aida/stochastic"
     "github.com/0xsoniclabs/aida/stochastic/operations"
     repArgs "github.com/0xsoniclabs/aida/stochastic/replayer/arguments"
     "github.com/0xsoniclabs/aida/stochastic/recorder"
     recArgs "github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
+    "github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
     "github.com/0xsoniclabs/aida/utils"
     "github.com/ethereum/go-ethereum/common"
     "github.com/holiman/uint256"
@@ -138,6 +140,7 @@ func TestExecute_AllOps(t *testing.T) {
     _ = ss.execute(operations.GetCodeHashID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
     _ = ss.execute(operations.GetCodeID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
     _ = ss.execute(operations.GetCodeSizeID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
+    _ = ss.execute(operations.GetNonceID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
     _ = ss.execute(operations.GetStorageRootID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
     _ = ss.execute(operations.HasSelfDestructedID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
     _ = ss.execute(operations.SetCodeID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
@@ -344,7 +347,7 @@ func TestRunStochasticReplay_Success(t *testing.T) {
         SnapshotECDF:     [][2]float64{{0, 0}, {1, 1}},
     }
 
-    cfg := &utils.Config{BalanceRange: 100, NonceRange: 100, RandomSeed: 1, Debug: true, DebugFrom: 2}
+    cfg := &utils.Config{BalanceRange: 100, NonceRange: 100, RandomSeed: 1, Debug: true, DebugFrom: 1}
     log := logger.NewLogger("INFO", "test")
     if err := RunStochasticReplay(db, e, 2, cfg, log); err != nil {
         t.Fatalf("unexpected error: %v", err)
@@ -397,6 +400,40 @@ func TestRunStochasticReplay_ErrorBreaks(t *testing.T) {
     }
 }
 
+// TestRunStochasticReplay_ErrorContinue ensures ContinueOnFailure lets the loop proceed and finish.
+func TestRunStochasticReplay_ErrorContinue(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(assert.AnError)
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
+    labels := []string{
+        operations.OpMnemo(operations.BeginSyncPeriodID),
+        operations.OpMnemo(operations.EndBlockID),
+    }
+    A := [][]float64{{0, 1}, {1, 0}}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.5
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.5 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+    cfg := &utils.Config{BalanceRange: 10, NonceRange: 10, RandomSeed: 2, ContinueOnFailure: true}
+    if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
+        t.Fatalf("expected aggregated error even when continuing on failure")
+    }
+}
+
 // TestEnableDebug covers the trivial enableDebug method.
 func TestEnableDebug(t *testing.T) {
     ss := newReplayContext(rand.New(rand.NewSource(1)), nil, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
@@ -429,7 +466,18 @@ func TestRunStochasticReplay_InvalidInitialState(t *testing.T) {
     ctrl := gomock.NewController(t)
     defer ctrl.Finish()
     db := state.NewMockStateDB(ctrl)
-    db.EXPECT().GetShadowDB().Return(nil)
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    // allow priming
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
     cfg := &utils.Config{BalanceRange: 10, NonceRange: 10, RandomSeed: 3}
 
     // MC with only an unknown label; BeginSyncPeriod not present -> initial state index -1
@@ -437,10 +485,42 @@ func TestRunStochasticReplay_InvalidInitialState(t *testing.T) {
     A := [][]float64{{1.0}}
     qpdf := make([]float64, stochastic.QueueLen)
     qpdf[0] = 0.5
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.5 / float64(stochastic.QueueLen-1) }
     cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
     e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
     if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
         t.Fatalf("expected error due to invalid initial state")
+    }
+}
+
+// TestRunStochasticReplay_CannotDecodeOpcode returns error when encountering an unknown label.
+func TestRunStochasticReplay_CannotDecodeOpcode(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    // priming expectations
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
+    // labels: valid initial BS, then unknown "ZZ"
+    labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID), "ZZ"}
+    A := [][]float64{{0, 1}, {1, 1}} // second row not used (we error before)
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.4
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.6 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+    cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
+    if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
+        t.Fatalf("expected decode opcode error during run")
     }
 }
 
@@ -472,6 +552,18 @@ func TestExecute_ChooseErrors(t *testing.T) {
     ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
     if err := ss.execute(operations.GetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.NoArgID); err == nil {
         t.Fatalf("expected error for key Choose failure")
+    }
+
+    // value choose failure
+    contracts = repArgs.NewMockSet(ctrl)
+    keys = repArgs.NewMockSet(ctrl)
+    values = repArgs.NewMockSet(ctrl)
+    contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
+    keys.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
+    values.EXPECT().Choose(gomock.Any()).Return(int64(0), assert.AnError)
+    ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+    if err := ss.execute(operations.SetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.RandArgID); err == nil {
+        t.Fatalf("expected error for value Choose failure")
     }
 }
 
@@ -548,6 +640,221 @@ func TestExecute_ConvertIndexErrors(t *testing.T) {
     if err := ss.execute(operations.SetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.RandArgID); err == nil {
         t.Fatalf("expected value conversion error")
     }
+}
+
+// TestExecute_FatalBranches covers logger.Fatal branches without exiting the process using a mock logger.
+func TestExecute_FatalBranches(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    lg := logmock.NewMockLogger(ctrl)
+    // BeginBlock error path
+    db.EXPECT().BeginBlock(gomock.Any()).Return(assert.AnError)
+    lg.EXPECT().Fatal(gomock.Any()).Times(1)
+    ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
+    _ = ss.execute(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+
+    // BeginTransaction error path
+    db = state.NewMockStateDB(ctrl)
+    lg = logmock.NewMockLogger(ctrl)
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(assert.AnError)
+    lg.EXPECT().Fatal(gomock.Any()).Times(1)
+    ss = newReplayContext(rand.New(rand.NewSource(2)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
+    _ = ss.execute(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+
+    // EndTransaction error path
+    db = state.NewMockStateDB(ctrl)
+    lg = logmock.NewMockLogger(ctrl)
+    db.EXPECT().EndTransaction().Return(assert.AnError)
+    lg.EXPECT().Fatal(gomock.Any()).Times(1)
+    ss = newReplayContext(rand.New(rand.NewSource(3)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
+    _ = ss.execute(operations.EndTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+
+    // EndBlock error path
+    db = state.NewMockStateDB(ctrl)
+    lg = logmock.NewMockLogger(ctrl)
+    db.EXPECT().EndBlock().Return(assert.AnError)
+    lg.EXPECT().Fatal(gomock.Any()).Times(1)
+    ss = newReplayContext(rand.New(rand.NewSource(4)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
+    _ = ss.execute(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+}
+
+// TestPopulateReplayContext_PrimeError ensures errors from prime() propagate.
+func TestPopulateReplayContext_PrimeError(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    rg := rand.New(rand.NewSource(7))
+    lg := logger.NewLogger("INFO", "test")
+    cfg := &utils.Config{BalanceRange: 10, NonceRange: 10}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.2
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.8 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: []string{operations.OpMnemo(operations.BeginSyncPeriodID)}, StochasticMatrix: [][]float64{{1.0}}, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+
+    // Cause prime to fail at BeginBlock
+    db.EXPECT().BeginSyncPeriod(uint64(0))
+    db.EXPECT().BeginBlock(uint64(0)).Return(assert.AnError)
+    if _, err := populateReplayContext(cfg, e, db, rg, lg); err == nil {
+        t.Fatalf("expected prime error to propagate from populateReplayContext")
+    }
+}
+
+// TestRunStochasticReplay_ProgressLogBranch forces progress log condition.
+func TestRunStochasticReplay_ProgressLogBranch(t *testing.T) {
+    // override interval to 0 so condition sec-lastSec >= 0 holds
+    old := progressLogIntervalSec
+    progressLogIntervalSec = 0
+    defer func() { progressLogIntervalSec = old }()
+
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    // priming expectations
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
+    labels := []string{
+        operations.OpMnemo(operations.BeginSyncPeriodID),
+        operations.OpMnemo(operations.EndBlockID),
+    }
+    A := [][]float64{{0, 1}, {1, 0}}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.3
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.7 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+    cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
+    if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+}
+
+// TestRunStochasticReplay_LabelError forces label retrieval error via seam.
+func TestRunStochasticReplay_LabelError(t *testing.T) {
+    // Override mcLabel to error once, then restore
+    old := mcLabel
+    mcLabel = func(_ *markov_chain.MarkovChain, _ int) (string, error) { return "", assert.AnError }
+    defer func() { mcLabel = old }()
+
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+
+    // Valid MC
+    labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID)}
+    A := [][]float64{{1.0}}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.5
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.5 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0,0},{1,1}}}
+    cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
+    if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
+        t.Fatalf("expected label retrieval error")
+    }
+}
+
+// TestRunStochasticReplay_SampleError forces sample error via seam.
+func TestRunStochasticReplay_SampleError(t *testing.T) {
+    old := mcSample
+    mcSample = func(_ *markov_chain.MarkovChain, _ int, _ float64) (int, error) { return 0, assert.AnError }
+    defer func() { mcSample = old }()
+
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
+    labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID), operations.OpMnemo(operations.EndBlockID)}
+    A := [][]float64{{0,1},{1,0}}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.5
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.5 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0,0},{1,1}}}
+    cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
+    if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
+        t.Fatalf("expected sample error")
+    }
+}
+
+// TestRunStochasticReplay_EnableDebugInLoop covers the in-loop debug enabling branch.
+func TestRunStochasticReplay_EnableDebugInLoop(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+    db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+    db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+    db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+    db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+    db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+    db.EXPECT().EndBlock().Return(nil).AnyTimes()
+    db.EXPECT().EndSyncPeriod().AnyTimes()
+    db.EXPECT().Error().Return(nil).AnyTimes()
+
+    labels := []string{
+        operations.OpMnemo(operations.BeginSyncPeriodID),
+        operations.OpMnemo(operations.EndBlockID),
+    }
+    A := [][]float64{{0,1},{1,0}}
+    qpdf := make([]float64, stochastic.QueueLen)
+    qpdf[0] = 0.5
+    for i := 1; i < len(qpdf); i++ { qpdf[i] = 0.5 / float64(stochastic.QueueLen-1) }
+    cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0,0},{1,1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+    e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0,0},{1,1}}}
+    cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10, Debug: true, DebugFrom: 2}
+    if err := RunStochasticReplay(db, e, 2, cfg, logger.NewLogger("INFO", "test")); err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+}
+
+// TestExecute_SetCodeRandomReadError forces randReadBytes error and expects Fatalf.
+func TestExecute_SetCodeRandomReadError(t *testing.T) {
+    old := randReadBytes
+    randReadBytes = func(_ *rand.Rand, _ []byte) (int, error) { return 0, assert.AnError }
+    defer func() { randReadBytes = old }()
+
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+    db := state.NewMockStateDB(ctrl)
+    lg := logmock.NewMockLogger(ctrl)
+    // contracts choose to supply addr
+    contracts := repArgs.NewMockSet(ctrl)
+    contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
+    lg.EXPECT().Fatalf(gomock.Any(), gomock.Any()).Times(1)
+    ss := newReplayContext(rand.New(rand.NewSource(10)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, lg)
+    // Expect no SetCode call since we error before it
+    _ = ss.execute(operations.SetCodeID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID)
 }
 
 // TestPopulateReplayContext_Errors covers randomizer ctor error branches.
