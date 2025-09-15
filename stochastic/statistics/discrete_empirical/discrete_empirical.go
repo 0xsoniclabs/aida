@@ -61,9 +61,9 @@ func ShrinkPdf(pdf []float64) ([]float64, error) {
 		return nil, fmt.Errorf("invalid pdf length: %d, expected: %d", len(pdf), stochastic.QueueLen)
 	}
 	factor := 1.0 - pdf[0]
-	if factor <= 0 || factor >= 1.0 || math.IsNaN(factor) {
-		return nil, fmt.Errorf("Invalid scaling propability (%v)", factor)
-	}
+	//if factor > 1.0 {
+	//	return nil, fmt.Errorf("Invalid scaling propability (%v)", factor)
+	//	}
 	scaled_pdf := make([]float64, stochastic.QueueLen-1)
 	for i := range stochastic.QueueLen - 1 {
 		if pdf[i+1] <= 0 || pdf[i+1] >= 1.0 || math.IsNaN(pdf[i+1]) {

@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestEventRegistryUpdateFreq checks some operation labels with their argument classes.
-func TestEventRegistryUpdateFreq(t *testing.T) {
+// TestStateUpdateFreq checks some operation labels with their argument classes.
+func TestStateUpdateFreq(t *testing.T) {
 	r := NewState()
 
 	// check that frequencies of argument-encoded operations and
@@ -96,7 +96,7 @@ func TestEventRegistryUpdateFreq(t *testing.T) {
 	}
 }
 
-// check frequencies
+// checkFrequencies checks whether the operation and transit frequencies match the expected ones.
 func checkFrequencies(r *State, opFreq [operations.NumArgOps]uint64, transitFreq [operations.NumArgOps][operations.NumArgOps]uint64) bool {
 	for i := 0; i < operations.NumArgOps; i++ {
 		if r.argOpFreq[i] != opFreq[i] {
@@ -111,15 +111,14 @@ func checkFrequencies(r *State, opFreq [operations.NumArgOps]uint64, transitFreq
 	return true
 }
 
-// TestEventRegistryOperation checks registration for operations
-func TestEventRegistryOperation(t *testing.T) {
+// TestStateOperation checks operation registrations and their argument classes.
+func TestStateOperation(t *testing.T) {
 	// operation/transit frequencies
 	var (
 		opFreq      [operations.NumArgOps]uint64
 		transitFreq [operations.NumArgOps][operations.NumArgOps]uint64
 	)
 
-	// create new event registry
 	r := NewState()
 
 	// check that frequencies are zero.
@@ -166,15 +165,14 @@ func TestEventRegistryOperation(t *testing.T) {
 	}
 }
 
-// TestEventRegistryZeroOperation checks zero value, new and previous argument classes.
-func TestEventRegistryZeroOperation(t *testing.T) {
+// TestStateZeroOperation checks zero value, new and previous argument classes.
+func TestStateZeroOperation(t *testing.T) {
 	// operation/transit frequencies
 	var (
 		opFreq      [operations.NumArgOps]uint64
 		transitFreq [operations.NumArgOps][operations.NumArgOps]uint64
 	)
 
-	// create new event registry
 	r := NewState()
 
 	// check that frequencies are zero.
@@ -215,61 +213,63 @@ func TestEventRegistryZeroOperation(t *testing.T) {
 	}
 }
 
+// TestStochastic_ReadState tests reading state from a JSON file.
 func TestStochastic_ReadState(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("success", func(t *testing.T) {
 		input := &StateJSON{
-			FileId: "events",
+			FileId: "state",
 		}
 		marshal, err := json.Marshal(input)
 		if err != nil {
-			t.Fatalf("cannot marshal EventRegistryJSON; %v", err)
+			t.Fatalf("cannot marshal StateJSON; %v", err)
 		}
-		err = os.WriteFile(tempDir+"/events.json", marshal, 0644)
+		err = os.WriteFile(tempDir+"/state.json", marshal, 0644)
 		if err != nil {
-			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+			t.Fatalf("cannot write StateJSON to file; %v", err)
 		}
 
-		events, err := Read(tempDir + "/events.json")
+		state, err := Read(tempDir + "/state.json")
 		assert.NoError(t, err)
-		assert.NotNil(t, events)
+		assert.NotNil(t, state)
 	})
 
-	t.Run("not events file", func(t *testing.T) {
+	t.Run("no state file", func(t *testing.T) {
 		input := &StateJSON{}
 		marshal, err := json.Marshal(input)
 		if err != nil {
-			t.Fatalf("cannot marshal EventRegistryJSON; %v", err)
+			t.Fatalf("cannot marshal StateJSON; %v", err)
 		}
-		err = os.WriteFile(tempDir+"/events.json", marshal, 0644)
+		err = os.WriteFile(tempDir+"/state.json", marshal, 0644)
 		if err != nil {
-			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+			t.Fatalf("cannot write StateJSON to file; %v", err)
 		}
 
-		events, err := Read(tempDir + "/events.json")
+		state, err := Read(tempDir + "/state.json")
 		assert.Error(t, err)
-		assert.Nil(t, events)
+		assert.Nil(t, state)
 	})
 
-	t.Run("not json", func(t *testing.T) {
-		err := os.WriteFile(tempDir+"/events.json", []byte{}, 0644)
+	t.Run("no json", func(t *testing.T) {
+		err := os.WriteFile(tempDir+"/state.json", []byte{}, 0644)
 		if err != nil {
-			t.Fatalf("cannot write EventRegistryJSON to file; %v", err)
+			t.Fatalf("cannot write StateJSON to file; %v", err)
 		}
-		events, err := Read(tempDir + "/events.json")
+		state, err := Read(tempDir + "/state.json")
 		assert.Error(t, err)
-		assert.Nil(t, events)
+		assert.Nil(t, state)
 	})
 
-	t.Run("not exist", func(t *testing.T) {
-		events, err := Read(tempDir + "/1234.json")
+	t.Run("no exist", func(t *testing.T) {
+		state, err := Read(tempDir + "/1234.json")
 		assert.Error(t, err)
-		assert.Nil(t, events)
+		assert.Nil(t, state)
 	})
 }
 
-func TestEventRegistry_RegisterSnapshotDelta(t *testing.T) {
+// TestState_RegisterSnapshotDelta checks snapshot registrations.
+func TestState_RegisterSnapshotDelta(t *testing.T) {
 	r := NewState()
 	r.RegisterSnapshot(3)
 	r.RegisterSnapshot(5)
@@ -277,13 +277,14 @@ func TestEventRegistry_RegisterSnapshotDelta(t *testing.T) {
 	assert.Equal(t, uint64(1), r.snapshotFreq[5])
 }
 
-func TestEventRegistry_WriteJSON_SuccessAndError(t *testing.T) {
+// TestState_WriteJSON_SuccessAndError tests writing state to a JSON file.
+func TestState_WriteJSON_SuccessAndError(t *testing.T) {
 	r := NewState()
 	r.RegisterSnapshot(1)
 	r.RegisterSnapshot(1)
 
 	tmp := t.TempDir()
-	file := tmp + "/events.json"
+	file := tmp + "/state.json"
 	err := r.Write(file)
 	assert.NoError(t, err)
 	_, err = os.Stat(file)
@@ -294,7 +295,8 @@ func TestEventRegistry_WriteJSON_SuccessAndError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEventRegistry_NewEventRegistryJSON(t *testing.T) {
+// TestState_JSON checks JSON output of state.
+func TestState_JSON(t *testing.T) {
 	r := NewState()
 
 	argop1, _ := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
@@ -309,13 +311,13 @@ func TestEventRegistry_NewEventRegistryJSON(t *testing.T) {
 	r.RegisterSnapshot(0)
 	r.RegisterSnapshot(1)
 
-	events := r.JSON()
-	assert.Equal(t, "events", events.FileId)
-	assert.Len(t, events.Operations, 2)
-	assert.Len(t, events.StochasticMatrix, 2)
+	state := r.JSON()
+	assert.Equal(t, "state", state.FileId)
+	assert.Len(t, state.Operations, 2)
+	assert.Len(t, state.StochasticMatrix, 2)
 
 	labelIndex := map[string]int{}
-	for i, lab := range events.Operations {
+	for i, lab := range state.Operations {
 		labelIndex[lab] = i
 	}
 	exp1, _ := operations.EncodeOpcode(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
@@ -323,38 +325,41 @@ func TestEventRegistry_NewEventRegistryJSON(t *testing.T) {
 	i1, ok1 := labelIndex[exp1]
 	i2, ok2 := labelIndex[exp2]
 	if !(ok1 && ok2) {
-		t.Fatalf("expected labels %v and %v in %v", exp1, exp2, events.Operations)
+		t.Fatalf("expected labels %v and %v in %v", exp1, exp2, state.Operations)
 	}
 
-	assert.InDelta(t, 0.0, events.StochasticMatrix[i1][i1], 1e-9)
-	assert.InDelta(t, 1.0, events.StochasticMatrix[i1][i2], 1e-9)
-	assert.InDelta(t, 1.0, events.StochasticMatrix[i2][i1], 1e-9)
-	assert.InDelta(t, 0.0, events.StochasticMatrix[i2][i2], 1e-9)
+	assert.InDelta(t, 0.0, state.StochasticMatrix[i1][i1], 1e-9)
+	assert.InDelta(t, 1.0, state.StochasticMatrix[i1][i2], 1e-9)
+	assert.InDelta(t, 1.0, state.StochasticMatrix[i2][i1], 1e-9)
+	assert.InDelta(t, 0.0, state.StochasticMatrix[i2][i2], 1e-9)
 
-	if len(events.SnapshotECDF) > 0 {
-		last := events.SnapshotECDF[len(events.SnapshotECDF)-1]
+	if len(state.SnapshotECDF) > 0 {
+		last := state.SnapshotECDF[len(state.SnapshotECDF)-1]
 		assert.InDelta(t, 1.0, last[0], 1e-9)
 		assert.InDelta(t, 1.0, last[1], 1e-9)
 	}
 }
 
+// TestReadState_ReadErrorOnDirectory tests reading state from a directory instead of a file.
 func TestReadState_ReadErrorOnDirectory(t *testing.T) {
 	dir := t.TempDir()
-	events, err := Read(dir)
+	state, err := Read(dir)
 	assert.Error(t, err)
-	assert.Nil(t, events)
+	assert.Nil(t, state)
 }
 
-func TestEventRegistry_WriteJSON_MarshalError(t *testing.T) {
+// TestState_WriteJSON_MarshalError tests error handling during JSON marshalling.
+func TestState_WriteJSON_MarshalError(t *testing.T) {
 	r := NewState()
 	r.RegisterSnapshot(0)
 
 	tmp := t.TempDir()
-	err := r.Write(tmp + "/events.json")
+	err := r.Write(tmp + "/state.json")
 	assert.Error(t, err)
 }
 
-func TestEventRegistry_WriteJSON_WriteError(t *testing.T) {
+// TestState_WriteJSON_WriteError tests error handling during file writing.
+func TestState_WriteJSON_WriteError(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("/dev/full is Linux-specific")
 	}
@@ -365,13 +370,14 @@ func TestEventRegistry_WriteJSON_WriteError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEventRegistry_RegisterOp_FatalIfInvalid(t *testing.T) {
+// The following tests check that invalid operation registrations cause a fatal error.
+func TestState_RegisterOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_REGISTER_OP") == "1" {
 		r := NewState()
 		r.RegisterOp(-1)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterOp_FatalIfInvalid")
+	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterOp_FatalIfInvalid")
 	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_OP=1")
 	err := cmd.Run()
 	if err == nil {
@@ -379,14 +385,14 @@ func TestEventRegistry_RegisterOp_FatalIfInvalid(t *testing.T) {
 	}
 }
 
-func TestEventRegistry_RegisterAddressOp_FatalIfInvalid(t *testing.T) {
+func TestState_RegisterAddressOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_REGISTER_ADDR") == "1" {
 		r := NewState()
 		addr := common.Address{}
 		r.RegisterAddressOp(-1, &addr)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterAddressOp_FatalIfInvalid")
+	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterAddressOp_FatalIfInvalid")
 	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_ADDR=1")
 	err := cmd.Run()
 	if err == nil {
@@ -394,7 +400,7 @@ func TestEventRegistry_RegisterAddressOp_FatalIfInvalid(t *testing.T) {
 	}
 }
 
-func TestEventRegistry_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
+func TestState_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_REGISTER_KEY") == "1" {
 		r := NewState()
 		addr := common.Address{}
@@ -402,7 +408,7 @@ func TestEventRegistry_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
 		r.RegisterKeyOp(-1, &addr, &key)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterKeyOp_FatalIfInvalid")
+	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterKeyOp_FatalIfInvalid")
 	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_KEY=1")
 	err := cmd.Run()
 	if err == nil {
@@ -410,7 +416,7 @@ func TestEventRegistry_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
 	}
 }
 
-func TestEventRegistry_RegisterValueOp_FatalIfInvalid(t *testing.T) {
+func TestState_RegisterValueOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_REGISTER_VALUE") == "1" {
 		r := NewState()
 		addr := common.Address{}
@@ -419,7 +425,7 @@ func TestEventRegistry_RegisterValueOp_FatalIfInvalid(t *testing.T) {
 		r.RegisterValueOp(-1, &addr, &key, &val)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestEventRegistry_RegisterValueOp_FatalIfInvalid")
+	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterValueOp_FatalIfInvalid")
 	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_VALUE=1")
 	err := cmd.Run()
 	if err == nil {

@@ -1,20 +1,43 @@
 package arguments
 
+import (
+	"math/rand"
+	"testing"
+
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
+)
+
 //type constSource64 struct{ v int64 }
 
 //func (c *constSource64) Int63() int64    { return c.v }
 //func (c *constSource64) Uint64() uint64  { return uint64(c.v) }
 //func (c *constSource64) Seed(seed int64) {}
 
-
-func TestExponentialArgRandomizerSampleRange(t *testing.T) {
+func TestEmpiricalRandomizer(t *testing.T) {
 	rg := rand.New(rand.NewSource(1))
-	r := NewExponentialArgRandomizer(rg, 1.5)
-	n := 100
+	qpdf := make([]float64, stochastic.QueueLen)
+	qpdf[0] = 0.5
+	k := 5
+	qpdf[k+1] = 0.5
+	n := int64(100)
+	ecdf := exponential.ToECDF(5.0, stochastic.NumECDFPoints)
+	r, err := NewEmpiricalRandomizer(rg, qpdf, ecdf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r == nil {
+		t.Fatalf("unexpected nil EmpiricalRandomizer")
+	}
 	for range 1000 {
 		v := r.SampleArg(n)
 		if v < 0 || v >= n {
 			t.Fatalf("sampled value out of range: %d", v)
+		}
+	}
+	for range 20 {
+		if v := r.SampleQueue(); v != 1+k {
+			t.Fatalf("expected %d, got %d", 1+k, v)
 		}
 	}
 }
