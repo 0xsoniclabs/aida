@@ -34,6 +34,13 @@ import (
 	"github.com/holiman/uint256"
 )
 
+var (
+    progressLogIntervalSec = 15
+    randReadBytes = func(rg *rand.Rand, buf []byte) (int, error) { return rg.Read(buf) }
+    mcLabel = func(mc *markov_chain.MarkovChain, state int) (string, error) { return mc.Label(state) }
+    mcSample = func(mc *markov_chain.MarkovChain, i int, u float64) (int, error) { return mc.Sample(i, u) }
+)
+
 // Parameterisable simulation constants
 var (
 	BalanceRange int64 = 100000  // balance range for generating randomized values
@@ -151,10 +158,10 @@ func getStochasticMatrix(e *recorder.StateJSON) (*markov_chain.MarkovChain, int,
 	if err != nil {
 		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)
 	}
-	state, f_err := mc.FindState(operations.OpMnemo(operations.BeginSyncPeriodID))
-	if f_err != nil {
-		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: %v", f_err)
-	}
+    state, _ := mc.FindState(operations.OpMnemo(operations.BeginSyncPeriodID))
+    if state < 0 {
+        return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: not found")
+    }
 	return mc, state, nil
 }
 
@@ -216,10 +223,10 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, c
 	// inclusive range
 	log.Noticef("Simulation block range: first %v, last %v", ss.blockNum, ss.blockNum+uint64(nBlocks-1))
 	for {
-		label, err := mc.Label(state)
-		if err != nil {
-			return fmt.Errorf("RunStochasticReplay: cannot retrieve state label. Error: %v", err)
-		}
+        label, err := mcLabel(mc, state)
+        if err != nil {
+            return fmt.Errorf("RunStochasticReplay: cannot retrieve state label. Error: %v", err)
+        }
 
 		// decode opcode
 		op, addrCl, keyCl, valueCl, err := operations.DecodeOpcode(label)
@@ -248,10 +255,10 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, c
 
 		// report progress
 		sec = time.Since(start).Seconds()
-		if sec-lastSec >= 15 {
-			log.Debugf("Elapsed time: %.0f s, at block %v", sec, block)
-			lastSec = sec
-		}
+        if sec-lastSec >= float64(progressLogIntervalSec) {
+            log.Debugf("Elapsed time: %.0f s, at block %v", sec, block)
+            lastSec = sec
+        }
 
 		// check for errors
 		if err := ss.db.Error(); err != nil {
@@ -268,10 +275,10 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, c
 
 		// transit to next state in Markovian process
 		u := rg.Float64()
-		state, err = mc.Sample(state, u)
-		if err != nil {
-			return fmt.Errorf("RunStochasticReplay: Failed sampling the next state. Error: %v", err)
-		}
+        state, err = mcSample(mc, state, u)
+        if err != nil {
+            return fmt.Errorf("RunStochasticReplay: Failed sampling the next state. Error: %v", err)
+        }
 	}
 
 	// print progress summary
@@ -548,10 +555,11 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Infof(" code-size: %v", sz)
 		}
 		code := make([]byte, sz)
-		_, err := rg.Read(code)
-		if err != nil {
-			ss.log.Fatalf("execute: error producing a random byte slice for code. Error: %v", err)
-		}
+        _, err := randReadBytes(rg, code)
+        if err != nil {
+            ss.log.Fatalf("execute: error producing a random byte slice for code. Error: %v", err)
+            return nil
+        }
 		db.SetCode(addr, code)
 
 	case operations.SetNonceID:
