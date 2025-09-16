@@ -72,7 +72,7 @@ func runTransactions(
 	extra []executor.Extension[txcontext.TxContext],
 ) error {
 
-	var progressReportFrequency int = txGeneratorDefaultProgressReportFrequency
+	var progressReportFrequency = txGeneratorDefaultProgressReportFrequency
 	if cfg.BlockLength > 0 {
 		progressReportFrequency = int(math.Ceil(float64(50_000) / float64(cfg.BlockLength)))
 	}

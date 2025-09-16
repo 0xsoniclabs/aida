@@ -19,29 +19,41 @@ package main
 import (
 	"fmt"
 	"os"
+	"testing"
 
-	"github.com/0xsoniclabs/aida/cmd/aida-profile/profile"
-	"github.com/urfave/cli/v2"
+	"github.com/0xsoniclabs/aida/utils"
 )
 
-// main implements aida-profile cli.
-func main() {
-	app := cli.App{
-		Name:      "Aida Storage Profile Manager",
-		HelpName:  "profile",
-		Usage:     "profile on the world-state",
-		Copyright: "(c) 2025 Sonic Labs",
-		Commands: []*cli.Command{
-			&profile.GetCodeSizeCommand,
-			&profile.GetStorageUpdateSizeCommand,
-			&profile.GetAddressStatsCommand,
-			&profile.GetKeyStatsCommand,
-			&profile.GetLocationStatsCommand,
-		},
+var testDataDir string
+
+func TestMain(m *testing.M) {
+	fmt.Println("Performing global setup...")
+
+	// setup
+	tempDir, err := os.MkdirTemp("", "profile_test_*")
+	if err != nil {
+		fmt.Printf("Failed to create temp dir: %v\n", err)
+		os.Exit(1)
 	}
-	if err := app.Run(os.Args); err != nil {
-		code := 1
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(code)
+	testDataDir = tempDir
+	err = utils.DownloadTestDataset(testDataDir)
+	fmt.Printf("Downloaded test data: %s\n", testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to download test dataset: %v\n", err)
+		_ = os.RemoveAll(testDataDir)
+		os.Exit(1)
 	}
+
+	// run
+	exitCode := m.Run()
+
+	// teardown
+	err = os.RemoveAll(testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to remove temp dir: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Performing global teardown...")
+	os.Exit(exitCode)
 }

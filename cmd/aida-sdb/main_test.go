@@ -25,11 +25,14 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/0xsoniclabs/aida/utils"
 )
 
 var (
 	testTraceFile = "trace-test/trace.dat"
 	testTraceDir  = "trace-test"
+	testDataDir   = "testdata"
 )
 
 // TestMain runs global setup, test cases then global teardown
@@ -55,6 +58,21 @@ func setup() {
 		fmt.Errorf("unable to create direcotry. %v", err)
 	}
 
+	// setup
+	tempDir, err := os.MkdirTemp("", "profile_test_*")
+	if err != nil {
+		fmt.Printf("Failed to create temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	testDataDir = tempDir
+	err = utils.DownloadTestDataset(testDataDir)
+	fmt.Printf("Downloaded test data: %s\n", testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to download test dataset: %v\n", err)
+		_ = os.RemoveAll(testDataDir)
+		os.Exit(1)
+	}
+
 	fmt.Printf("Setup completed\n")
 }
 
@@ -63,6 +81,11 @@ func teardown() {
 	// Do something here.
 	os.RemoveAll(testTraceDir)
 	os.RemoveAll("substate.test")
+	err := os.RemoveAll(testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to remove temp dir: %v\n", err)
+		os.Exit(1)
+	}
 	fmt.Printf("Teardown completed\n")
 }
 

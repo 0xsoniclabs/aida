@@ -14,34 +14,38 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package stochastic
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
+	"testing"
 
-	"github.com/0xsoniclabs/aida/cmd/aida-profile/profile"
+	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
-// main implements aida-profile cli.
-func main() {
-	app := cli.App{
-		Name:      "Aida Storage Profile Manager",
-		HelpName:  "profile",
-		Usage:     "profile on the world-state",
-		Copyright: "(c) 2025 Sonic Labs",
-		Commands: []*cli.Command{
-			&profile.GetCodeSizeCommand,
-			&profile.GetStorageUpdateSizeCommand,
-			&profile.GetAddressStatsCommand,
-			&profile.GetKeyStatsCommand,
-			&profile.GetLocationStatsCommand,
-		},
-	}
-	if err := app.Run(os.Args); err != nil {
-		code := 1
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(code)
-	}
+func TestCmd_RunStochasticGenerateCommand(t *testing.T) {
+	// given
+	tmpDir := t.TempDir()
+	outputFile := filepath.Join(tmpDir, "test_events.json")
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&StochasticGenerateCommand}
+	args := utils.NewArgs("test").
+		Arg(StochasticGenerateCommand.Name).
+		Flag(utils.OutputFlag.Name, outputFile).
+		Flag(utils.SyncPeriodLengthFlag.Name, 400).
+		Flag(utils.ContractNumberFlag.Name, 100).
+		Build()
+
+	// when
+	err := app.Run(args)
+
+	// then
+	assert.NoError(t, err)
+	stat, err := os.Stat(outputFile)
+	require.NoError(t, err)
+	assert.NotZero(t, stat.Size())
 }

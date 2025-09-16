@@ -17,6 +17,7 @@
 package primer
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/urfave/cli/v2"
@@ -41,7 +42,9 @@ func RunPrimer(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer aidaDb.Close()
+	defer func(aidaDb db.BaseDB) {
+		err = errors.Join(err, aidaDb.Close())
+	}(aidaDb)
 
 	// set config for primming command
 	cfg.StateValidationMode = utils.SubsetCheck

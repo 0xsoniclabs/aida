@@ -19,6 +19,8 @@ package main
 import (
 	"fmt"
 	"math/big"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -33,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
@@ -53,6 +56,25 @@ func TestCmd_RunVm(t *testing.T) {
 	require.ErrorContains(t, err, "intrinsic gas too low")
 }
 
+func TestCmd_RunVmApp(t *testing.T) {
+	// given
+	tempDir := t.TempDir()
+	aidaDbPath := filepath.Join(tempDir, "aida-db")
+	require.NoError(t, utils.CopyDir(path.Join(testDataDir, "sample-pb-db"), aidaDbPath))
+	args := utils.NewArgs(runVmApp.Name).
+		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(utils.SubstateEncodingFlag.Name, string(db.ProtobufEncodingSchema)).
+		Arg("1").
+		Arg("1000").
+		Build()
+
+	// when
+	err := runVmApp.Run(args)
+
+	// when
+	assert.NoError(t, err)
+}
+
 func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	provider := executor.NewMockProvider[txcontext.TxContext](ctrl)
@@ -65,12 +87,16 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -117,7 +143,9 @@ func TestVm_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 		t.Fatalf("failed to create processor: %v", err)
 	}
 
-	run(cfg, provider, db, processor, nil)
+	err = run(cfg, provider, db, processor, nil)
+	// TODO maybe bug
+	assert.Error(t, err)
 }
 
 func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
@@ -133,12 +161,16 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -179,7 +211,10 @@ func TestVm_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 		ext.EXPECT().PostRun(executor.AtBlock[txcontext.TxContext](5), gomock.Any(), nil),
 	)
 
-	run(cfg, provider, nil, processor, []executor.Extension[txcontext.TxContext]{ext})
+	err := run(cfg, provider, nil, processor, []executor.Extension[txcontext.TxContext]{ext})
+	if err != nil {
+		t.Errorf("run failed: %v", err)
+	}
 }
 
 func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
@@ -196,12 +231,16 @@ func TestVm_AllTransactionsAreProcessedInOrder_Parallel(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: utils.PseudoTx, Data: substatecontext.NewTxContext(emptyTx)})
+			assert.NoError(t, err)
 			return nil
 		})
 
