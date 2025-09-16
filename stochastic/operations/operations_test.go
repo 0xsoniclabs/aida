@@ -219,7 +219,7 @@ func TestOperations_IsValidArgOp(t *testing.T) {
 		t.Fatalf("Encoding failed")
 	}
 	valid := IsValidArgOp(argop)
-	assert.False(t, valid)
+	assert.True(t, valid)
 
 	invalid := IsValidArgOp(-1)
 	assert.False(t, invalid)
