@@ -8,11 +8,6 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 )
 
-//type constSource64 struct{ v int64 }
-
-    "github.com/0xsoniclabs/aida/stochastic"
-)
-
 func TestEmpiricalRandomizer(t *testing.T) {
 	rg := rand.New(rand.NewSource(1))
 	qpdf := make([]float64, stochastic.QueueLen)
