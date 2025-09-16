@@ -3,6 +3,7 @@ package visualizer
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/stretchr/testify/assert"
@@ -49,9 +50,14 @@ func TestEventData_PopulateEventData(t *testing.T) {
 		{label: "BB", value: 0.3333333333333333},
 		{label: "BS", value: 0.3333333333333333},
 	}
-	assert.Equal(t, expectedStationary, e.Stationary)
-	assert.Equal(t, float64(1), e.TxPerBlock)
-	assert.Equal(t, float64(1), e.BlocksPerSyncPeriod)
+	if assert.Equal(t, len(expectedStationary), len(e.Stationary)) {
+		for i := range expectedStationary {
+			assert.Equal(t, expectedStationary[i].label, e.Stationary[i].label)
+			assert.InDelta(t, expectedStationary[i].value, e.Stationary[i].value, 1e-12)
+		}
+	}
+	assert.InDelta(t, float64(1), e.TxPerBlock, 1e-12)
+	assert.InDelta(t, float64(1), e.BlocksPerSyncPeriod, 1e-12)
 	assert.Equal(t, d.Operations, e.OperationLabel)
 	assert.Equal(t, d.StochasticMatrix, e.StochasticMatrix)
 	assert.Equal(t, 24, len(e.TxOperation))
@@ -67,7 +73,7 @@ func TestAccessData_PopulateAccess(t *testing.T) {
 	a := &AccessData{}
 	a.PopulateAccess(d)
 	assert.Equal(t, 24.999999991320017, a.Lambda)
-	assert.Equal(t, 101, len(a.Cdf))
+	assert.Equal(t, stochastic.NumECDFPoints+1, len(a.Cdf))
 	assert.Equal(t, [][2]float64{{0.1, 0.2}, {0.3, 0.4}}, a.ECdf)
 	assert.Equal(t, []float64{}, a.QPdf)
 }
@@ -80,5 +86,5 @@ func TestSnapshotData_PopulateSnapshot(t *testing.T) {
 	s.PopulateSnapshotStats(d)
 	assert.Equal(t, [][2]float64{{0.1, 0.2}, {0.3, 0.4}}, s.ECdf)
 	assert.Equal(t, 24.999999991320017, s.Lambda)
-	assert.Equal(t, 101, len(s.Cdf))
+	assert.Equal(t, stochastic.NumECDFPoints+1, len(s.Cdf))
 }

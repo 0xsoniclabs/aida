@@ -280,7 +280,7 @@ func IsValidArgOp(argop int) bool {
 		return false
 	}
 	_, _, _, _, err := DecodeArgOp(argop)
-	return err != nil
+	return err == nil
 }
 
 // EncodeArgOp encodes operation and argument classes via Horner's scheme to a single value.

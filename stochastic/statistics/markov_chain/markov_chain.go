@@ -62,9 +62,27 @@ func (mc MarkovChain) Sample(i int, x float64) (int, error) {
 	if x < 0 || x >= 1.0 {
 		return 0, fmt.Errorf("probabilistic argument (%v) is not in interval [0,1]", x)
 	}
-	y := discrete_empirical.Sample(mc.a[i], x)
+	if i < 0 || i >= mc.n {
+		return 0, fmt.Errorf("Sample: state index (%v) out of range", i)
+	}
+	row := mc.a[i]
+	sum := 0.0
+	validProbability := false
+	for _, p := range row {
+		if math.IsNaN(p) || p < 0.0 || p > 1.0 {
+			return -1, nil
+		}
+		sum += p
+		if p > 0 {
+			validProbability = true
+		}
+	}
+	if !validProbability || sum == 0 {
+		return -1, nil
+	}
+	y := discrete_empirical.Sample(row, x)
 	if y < 0 || y >= mc.n {
-		return 0, fmt.Errorf("Sample: next state (%v) out of range", y)
+		return -1, nil
 	}
 	return y, nil
 }

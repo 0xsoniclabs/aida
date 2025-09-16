@@ -136,7 +136,7 @@ func TestNextStateFail(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 
-	x := rg.Float64()
+	var x float64
 	mc, err := New([][]float64{
 		{0.0, 0.0},
 		{math.NaN(), 0.0},

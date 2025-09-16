@@ -77,9 +77,8 @@ func (r *State) RegisterOp(op int) {
 	)
 }
 
-// RegisterOp registers an operation with no arguments
+// RegisterSnapshot registers the delta between snapshot identifiers.
 func (r *State) RegisterSnapshot(delta int) {
-	r.RegisterOp(operations.SnapshotID)
 	r.snapshotFreq[delta]++
 }
 
