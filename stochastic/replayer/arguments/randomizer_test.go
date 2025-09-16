@@ -8,11 +8,6 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 )
 
-//type constSource64 struct{ v int64 }
-
-    "github.com/0xsoniclabs/aida/stochastic"
-)
-
 func TestEmpiricalRandomizer(t *testing.T) {
 	rg := rand.New(rand.NewSource(1))
 	qpdf := make([]float64, stochastic.QueueLen)
@@ -43,28 +38,28 @@ func TestEmpiricalRandomizer(t *testing.T) {
 
 // TestEmpiricalRandomizer_SampleQueueRange ensures SampleQueue stays within [1,QueueLen-1].
 func TestEmpiricalRandomizer_SampleQueueRange(t *testing.T) {
-    rg := rand.New(rand.NewSource(1337))
+	rg := rand.New(rand.NewSource(1337))
 
-    // Valid qpdf: pdf[0] in (0,1), others positive and <1; shape doesn’t matter for range.
-    qpdf := make([]float64, stochastic.QueueLen)
-    qpdf[0] = 0.1
-    rest := 0.9 / float64(stochastic.QueueLen-1)
-    for i := 1; i < len(qpdf); i++ {
-        qpdf[i] = rest
-    }
+	// Valid qpdf: pdf[0] in (0,1), others positive and <1; shape doesn't matter for range.
+	qpdf := make([]float64, stochastic.QueueLen)
+	qpdf[0] = 0.1
+	rest := 0.9 / float64(stochastic.QueueLen-1)
+	for i := 1; i < len(qpdf); i++ {
+		qpdf[i] = rest
+	}
 
-    // Simple ECDF; not used by SampleQueue but required by constructor.
-    ecdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	// Simple ECDF; not used by SampleQueue but required by constructor.
+	ecdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
 
-    r, err := NewEmpiricalRandomizer(rg, qpdf, ecdf)
-    if err != nil {
-        t.Fatalf("unexpected error constructing EmpiricalRandomizer: %v", err)
-    }
+	r, err := NewEmpiricalRandomizer(rg, qpdf, ecdf)
+	if err != nil {
+		t.Fatalf("unexpected error constructing EmpiricalRandomizer: %v", err)
+	}
 
-    for i := 0; i < 1000; i++ {
-        v := r.SampleQueue()
-        if v < 1 || v >= stochastic.QueueLen {
-            t.Fatalf("queue index out of range: %d", v)
-        }
-    }
+	for i := 0; i < 1000; i++ {
+		v := r.SampleQueue()
+		if v < 1 || v >= stochastic.QueueLen {
+			t.Fatalf("queue index out of range: %d", v)
+		}
+	}
 }
