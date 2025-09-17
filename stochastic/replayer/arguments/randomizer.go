@@ -24,26 +24,26 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete"
 )
 
-// Randomizer interface for argument sets
+// Randomizer interface for argument and queue sampling
 type Randomizer interface {
 	SampleArg(n int64) int64 // sample argument distribution
 	SampleQueue() int        // sample queue distribution
 }
 
-// EmpiricalRandomizer struct for randomizing arguments
-type EmpiricalRandomizer struct {
+// RandomizerData struct
+type RandomizerData struct {
 	rg    *rand.Rand
-	q_pmf []float64    // probability distribution function of queue from [1, QueueLen-1] excluding first element in queue
-	a_cdf [][2]float64 // empirical cumulative distribution function for arguments
+	q_pmf []float64    // probability mass function of queue indexes from [1, QueueLen-1]
+	a_cdf [][2]float64 // cumulative distribution function for arguments
 }
 
-// NewEmpiricalRandomizer creates a new randomizer
-func NewEmpiricalRandomizer(rg *rand.Rand, q_pmf []float64, a_cdf [][2]float64) (*EmpiricalRandomizer, error) {
+// NewRandomizer creates a new randomizer instance
+func NewRandomizer(rg *rand.Rand, q_pmf []float64, a_cdf [][2]float64) (*RandomizerData, error) {
 	nq_pmf, err := discrete.Shrink(q_pmf)
 	if err != nil {
 		return nil, fmt.Errorf("NewEmpiricalRandomizer: cannot shrink pdf by one. Error: %v", err)
 	}
-	return &EmpiricalRandomizer{
+	return &RandomizerData{
 		rg:    rg,
 		q_pmf: nq_pmf,
 		a_cdf: a_cdf,
@@ -51,11 +51,11 @@ func NewEmpiricalRandomizer(rg *rand.Rand, q_pmf []float64, a_cdf [][2]float64) 
 }
 
 // SampleArg samples an argument from a distribution with n possible arguments
-func (r *EmpiricalRandomizer) SampleArg(n int64) int64 {
+func (r *RandomizerData) SampleArg(n int64) int64 {
 	return continuous.Sample(r.rg, r.a_cdf, int64(n))
 }
 
 // SampleQueue samples an index for a queue
-func (r *EmpiricalRandomizer) SampleQueue() int {
+func (r *RandomizerData) SampleQueue() int {
 	return discrete.Sample(r.rg, r.q_pmf) + 1
 }

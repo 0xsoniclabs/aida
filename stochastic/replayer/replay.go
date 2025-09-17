@@ -107,7 +107,7 @@ func populateReplayContext(
 ) (*replayContext, error) {
 	// produce random variables for contract addresses,
 	// storage-keys, storage addresses, and snapshot ids.
-	contract_randomizer, err := arguments.NewEmpiricalRandomizer(
+	contract_randomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Contracts.Queuing.Distribution,
 		e.Contracts.Counting.ECDF)
@@ -118,7 +118,7 @@ func populateReplayContext(
 		arguments.NewReusable(e.Contracts.Counting.N, contract_randomizer),
 	)
 
-	key_randomizer, err := arguments.NewEmpiricalRandomizer(
+	key_randomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Keys.Queuing.Distribution,
 		e.Keys.Counting.ECDF)
@@ -127,7 +127,7 @@ func populateReplayContext(
 	}
 	keys := arguments.NewReusable(e.Keys.Counting.N, key_randomizer)
 
-	value_randomizer, err := arguments.NewEmpiricalRandomizer(
+	value_randomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Values.Queuing.Distribution,
 		e.Values.Counting.ECDF)
