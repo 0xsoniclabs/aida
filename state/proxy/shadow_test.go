@@ -94,6 +94,115 @@ func TestShadowState_InitCloseShadowDB(t *testing.T) {
 	}
 }
 
+func TestShadowVmStateDb_SnapshotVerifiesHashes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockStateDB(ctrl)
+	shadow := state.NewMockStateDB(ctrl)
+
+	vm := &shadowVmStateDb{
+		prime:            prime,
+		shadow:           shadow,
+		snapshots:        nil,
+		log:              logger.NewLogger("debug", "shadow-test"),
+		compareStateHash: true,
+	}
+
+	gomock.InOrder(
+		prime.EXPECT().Snapshot().Return(1),
+		shadow.EXPECT().Snapshot().Return(2),
+		prime.EXPECT().GetHash().Return(common.BytesToHash([]byte{0x01}), nil),
+		shadow.EXPECT().GetHash().Return(common.BytesToHash([]byte{0x01}), nil),
+	)
+
+	idx := vm.Snapshot()
+	assert.Equal(t, 0, idx)
+	assert.Len(t, vm.snapshots, 1)
+	assert.NoError(t, vm.err)
+}
+
+func TestShadowVmStateDb_SnapshotHashMismatchSetsError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockStateDB(ctrl)
+	shadow := state.NewMockStateDB(ctrl)
+
+	vm := &shadowVmStateDb{
+		prime:            prime,
+		shadow:           shadow,
+		snapshots:        nil,
+		log:              logger.NewLogger("debug", "shadow-test"),
+		compareStateHash: true,
+	}
+
+	gomock.InOrder(
+		prime.EXPECT().Snapshot().Return(10),
+		shadow.EXPECT().Snapshot().Return(20),
+		prime.EXPECT().GetHash().Return(common.BytesToHash([]byte{0xAA}), nil),
+		shadow.EXPECT().GetHash().Return(common.BytesToHash([]byte{0xBB}), nil),
+	)
+
+	_ = vm.Snapshot()
+	assert.Error(t, vm.err)
+	assert.Contains(t, vm.err.Error(), "Snapshot.GetHash")
+}
+
+func TestShadowVmStateDb_SnapshotMissingHashImplementation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockStateDB(ctrl)
+	shadow := state.NewMockVmStateDB(ctrl)
+
+	vm := &shadowVmStateDb{
+		prime:            prime,
+		shadow:           shadow,
+		snapshots:        nil,
+		log:              logger.NewLogger("debug", "shadow-test"),
+		compareStateHash: true,
+	}
+
+	prime.EXPECT().Snapshot().Return(5)
+	shadow.EXPECT().Snapshot().Return(7)
+	prime.EXPECT().GetHash().Return(common.Hash{0x01}, nil)
+
+	_ = vm.Snapshot()
+	assert.Error(t, vm.err)
+	assert.Contains(t, vm.err.Error(), "hash verification failed")
+}
+
+func TestShadowStateDb_BeginBlockVerifiesHashes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockStateDB(ctrl)
+	shadow := state.NewMockStateDB(ctrl)
+
+	stateDb := &shadowStateDb{
+		shadowVmStateDb: shadowVmStateDb{
+			prime:            prime,
+			shadow:           shadow,
+			snapshots:        nil,
+			log:              logger.NewLogger("debug", "shadow-test"),
+			compareStateHash: true,
+		},
+		prime:  prime,
+		shadow: shadow,
+	}
+
+	gomock.InOrder(
+		prime.EXPECT().BeginBlock(uint64(33)).Return(nil),
+		shadow.EXPECT().BeginBlock(uint64(33)).Return(nil),
+		prime.EXPECT().GetHash().Return(common.Hash{0x05}, nil),
+		shadow.EXPECT().GetHash().Return(common.Hash{0x05}, nil),
+	)
+
+	assert.NoError(t, stateDb.BeginBlock(33))
+	assert.NoError(t, stateDb.err)
+}
+
 // TestShadowState_AccountLifecycle tests account operations - create, check if it exists, if it's empty, suicide and suicide confirmation
 func TestShadowState_AccountLifecycle(t *testing.T) {
 	for _, ctc := range state.GetCarmenStateTestCases() {
@@ -2321,40 +2430,4 @@ func TestShadowBulkLoad_Close(t *testing.T) {
 	mockBulkLoad.EXPECT().Close().Return(nil).Times(2)
 	err := shadow.Close()
 	assert.NoError(t, err)
-}
-
-func TestShadowVmStateDb_getHashPair_ReportsError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPrime := state.NewMockStateDB(ctrl)
-	mockShadow := state.NewMockStateDB(ctrl)
-
-	mockLogger := logger.NewLogger("CRITICAL", "test")
-	shadow := &shadowVmStateDb{
-		prime:            mockPrime,
-		shadow:           mockShadow,
-		snapshots:        []snapshotPair{},
-		err:              nil,
-		log:              mockLogger,
-		compareStateHash: false,
-	}
-
-	t.Run("first hash diverges", func(t *testing.T) {
-		mockPrime.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x1})
-		mockShadow.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x0}, common.Hash{0x1})
-		_, _ = shadow.getHashPair("testOp", func(s state.VmStateDB) (common.Hash, common.Hash) {
-			return s.GetStateAndCommittedState(common.Address{0x1}, common.Hash{0x2})
-		})
-		assert.ErrorContains(t, shadow.err, "(first hash) diverged from shadow DB")
-	})
-
-	t.Run("second hash diverges", func(t *testing.T) {
-		mockPrime.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x1})
-		mockShadow.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x0})
-		_, _ = shadow.getHashPair("testOp", func(s state.VmStateDB) (common.Hash, common.Hash) {
-			return s.GetStateAndCommittedState(common.Address{0x1}, common.Hash{0x2})
-		})
-		assert.ErrorContains(t, shadow.err, "(second hash) diverged from shadow DB")
-	})
 }
