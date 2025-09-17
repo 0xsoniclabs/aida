@@ -2431,3 +2431,39 @@ func TestShadowBulkLoad_Close(t *testing.T) {
 	err := shadow.Close()
 	assert.NoError(t, err)
 }
+
+func TestShadowVmStateDb_getHashPair_ReportsError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPrime := state.NewMockStateDB(ctrl)
+	mockShadow := state.NewMockStateDB(ctrl)
+
+	mockLogger := logger.NewLogger("CRITICAL", "test")
+	shadow := &shadowVmStateDb{
+		prime:            mockPrime,
+		shadow:           mockShadow,
+		snapshots:        []snapshotPair{},
+		err:              nil,
+		log:              mockLogger,
+		compareStateHash: false,
+	}
+
+	t.Run("first hash diverges", func(t *testing.T) {
+		mockPrime.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x1})
+		mockShadow.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x0}, common.Hash{0x1})
+		_, _ = shadow.getHashPair("testOp", func(s state.VmStateDB) (common.Hash, common.Hash) {
+			return s.GetStateAndCommittedState(common.Address{0x1}, common.Hash{0x2})
+		})
+		assert.ErrorContains(t, shadow.err, "(first hash) diverged from shadow DB")
+	})
+
+	t.Run("second hash diverges", func(t *testing.T) {
+		mockPrime.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x1})
+		mockShadow.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).Return(common.Hash{0x1}, common.Hash{0x0})
+		_, _ = shadow.getHashPair("testOp", func(s state.VmStateDB) (common.Hash, common.Hash) {
+			return s.GetStateAndCommittedState(common.Address{0x1}, common.Hash{0x2})
+		})
+		assert.ErrorContains(t, shadow.err, "(second hash) diverged from shadow DB")
+	})
+}
