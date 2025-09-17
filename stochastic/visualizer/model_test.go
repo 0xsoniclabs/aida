@@ -3,7 +3,6 @@ package visualizer
 import (
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +42,7 @@ func TestEventData_PopulateEventData(t *testing.T) {
 			"BS",
 		},
 	}
-	e := &EventData{}
+	e := &StateData{}
 	e.PopulateEventData(d)
 	expectedStationary := []OpData{
 		{label: "BT", value: 0.3333333333333333},
@@ -70,12 +69,10 @@ func TestAccessData_PopulateAccess(t *testing.T) {
 			ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		},
 	}
-	a := &AccessData{}
+	a := &ArgumentData{}
 	a.PopulateAccess(d)
-	assert.Equal(t, 24.999999991320017, a.Lambda)
-	assert.Equal(t, stochastic.NumECDFPoints+1, len(a.Cdf))
-	assert.Equal(t, [][2]float64{{0.1, 0.2}, {0.3, 0.4}}, a.ECdf)
-	assert.Equal(t, []float64{}, a.QPdf)
+	assert.Equal(t, [][2]float64{{0.1, 0.2}, {0.3, 0.4}}, a.A_CDF)
+	assert.Equal(t, []float64{}, a.Q_PMF)
 }
 
 func TestSnapshotData_PopulateSnapshot(t *testing.T) {
@@ -85,6 +82,4 @@ func TestSnapshotData_PopulateSnapshot(t *testing.T) {
 	s := &SnapshotData{}
 	s.PopulateSnapshotStats(d)
 	assert.Equal(t, [][2]float64{{0.1, 0.2}, {0.3, 0.4}}, s.ECdf)
-	assert.Equal(t, 24.999999991320017, s.Lambda)
-	assert.Equal(t, stochastic.NumECDFPoints+1, len(s.Cdf))
 }

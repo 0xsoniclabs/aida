@@ -79,7 +79,7 @@ func convertCountingData(data [][2]float64) []opts.LineData {
 }
 
 // newCountingChart creates a line chart for a counting statistic.
-func newCountingChart(title string, subtitle string, lambda float64, ecdf [][2]float64, cdf [][2]float64) *charts.Line {
+func newCountingChart(title string, subtitle string, ecdf [][2]float64) *charts.Line {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme: types.ThemeChalk,
@@ -101,8 +101,7 @@ func newCountingChart(title string, subtitle string, lambda float64, ecdf [][2]f
 			Title:    title,
 			Subtitle: subtitle,
 		}))
-	sLambda := fmt.Sprintf("%v", lambda)
-	chart.AddSeries("eCDF", convertCountingData(ecdf)).AddSeries("CDF, λ="+sLambda, convertCountingData(cdf))
+	chart.AddSeries("ECDF", convertCountingData(ecdf))
 	return chart
 }
 
@@ -110,17 +109,11 @@ func newCountingChart(title string, subtitle string, lambda float64, ecdf [][2]f
 func renderCounting(w http.ResponseWriter, r *http.Request) {
 	events := GetEventsData()
 	contracts := newCountingChart("Counting Statistics", "for Contract-Addresses",
-		events.Contracts.Lambda,
-		events.Contracts.ECdf,
-		events.Contracts.Cdf)
+		events.Contracts.A_CDF)
 	keys := newCountingChart("Counting Statistics", "for Storage-Keys",
-		events.Keys.Lambda,
-		events.Keys.ECdf,
-		events.Keys.Cdf)
+		events.Keys.A_CDF)
 	values := newCountingChart("Counting Statistics", "for Storage-Values",
-		events.Values.Lambda,
-		events.Values.ECdf,
-		events.Values.Cdf)
+		events.Values.A_CDF)
 
 	// TODO: Set HTML title via GlobalOption
 	page := components.NewPage()
@@ -152,8 +145,7 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 			Subtitle: "Delta Distribution",
 		}))
 	events := GetEventsData()
-	sLambda := fmt.Sprintf("%v", events.Snapshot.Lambda)
-	chart.AddSeries("eCDF", convertCountingData(events.Snapshot.ECdf)).AddSeries("CDF, λ="+sLambda, convertCountingData(events.Snapshot.Cdf))
+	chart.AddSeries("eCDF", convertCountingData(events.Snapshot.ECdf))
 	chart.Render(w)
 }
 
@@ -191,7 +183,7 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 			Title:    "Queuing Probabilities",
 			Subtitle: "for contract-addresses, storage-keys, and storage-values",
 		}))
-	scatter.AddSeries("Contract", convertQueuingData(events.Contracts.QPdf)).AddSeries("Keys", convertQueuingData(events.Keys.QPdf)).AddSeries("Values", convertQueuingData(events.Values.QPdf))
+	scatter.AddSeries("Contract", convertQueuingData(events.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(events.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(events.Values.Q_PMF))
 	scatter.Render(w)
 }
 

@@ -17,22 +17,19 @@
 package visualizer
 
 import (
-	"log"
 	"sort"
 
-	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
 )
 
-// EventData contains the statistical data for events that is used for visualization.
-type EventData struct {
-	Contracts AccessData   // contract-address view model
-	Keys      AccessData   // storage-key view model
-	Values    AccessData   // storage-value view model
+// StateData contains the statistical visualisation data for the markov chain
+type StateData struct {
+	Contracts ArgumentData // contract-address view model
+	Keys      ArgumentData // storage-key view model
+	Values    ArgumentData // storage-value view model
 	Snapshot  SnapshotData // snapshot view model
 
 	Stationary          []OpData                                      // stationary distribution model
@@ -44,19 +41,15 @@ type EventData struct {
 	SimplifiedMatrix    [operations.NumOps][operations.NumOps]float64 // simplified stochastic matrix
 }
 
-// AccessData contains the statistical data for access statistics that is used for visualization.
-type AccessData struct {
-	ECdf   [][2]float64 // empirical cumulative distribution function of counting stats
-	QPdf   []float64    // queuing distribution function
-	Lambda float64      // exponential Distribution Parameter
-	Cdf    [][2]float64 // parameterised cumulative distribution function
+// ArgumentData contains the statistical data for access statistics that is used for visualization.
+type ArgumentData struct {
+	A_CDF [][2]float64 // empirical cumulative distribution function of counting stats
+	Q_PMF []float64    // queuing distribution function
 }
 
 // SnapshotData contains the statistical data for snapshot deltas used for visualization.
 type SnapshotData struct {
-	ECdf   [][2]float64 // empirical cumulative distribution function
-	Lambda float64      // exponential Distribution Parameter
-	Cdf    [][2]float64 // parameterised cumulative distribution function
+	ECdf [][2]float64 // empirical cumulative distribution function
 }
 
 // OpData stores a single operation and its probability (for stead-state)
@@ -66,15 +59,15 @@ type OpData struct {
 }
 
 // events is the singleton for the viewing model.
-var events EventData
+var events StateData
 
 // GetEventsData returns the pointer to the singleton.
-func GetEventsData() *EventData {
+func GetEventsData() *StateData {
 	return &events
 }
 
 // PopulateEvents populates the event model from event registry.
-func (e *EventData) PopulateEventData(d *recorder.StateJSON) {
+func (e *StateData) PopulateEventData(d *recorder.StateJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)
@@ -188,27 +181,15 @@ func (e *EventData) PopulateEventData(d *recorder.StateJSON) {
 }
 
 // PopulateAccess populates access stats model
-func (a *AccessData) PopulateAccess(d *arguments.ClassifierJSON) {
-	a.ECdf = make([][2]float64, len(d.Counting.ECDF))
-	copy(a.ECdf, d.Counting.ECDF)
-	lambda, err := exponential.ApproximateLambda(d.Counting.ECDF)
-	if err != nil {
-		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
-	}
-	a.Lambda = lambda
-	a.Cdf = exponential.ToECDF(lambda, stochastic.NumECDFPoints)
-	a.QPdf = make([]float64, len(d.Queuing.Distribution))
-	copy(a.QPdf, d.Queuing.Distribution)
+func (a *ArgumentData) PopulateAccess(d *arguments.ClassifierJSON) {
+	a.A_CDF = make([][2]float64, len(d.Counting.ECDF))
+	copy(a.A_CDF, d.Counting.ECDF)
+	a.Q_PMF = make([]float64, len(d.Queuing.Distribution))
+	copy(a.Q_PMF, d.Queuing.Distribution)
 }
 
 // PopulateSnapStats populates snapshot stats model
 func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StateJSON) {
 	s.ECdf = make([][2]float64, len(d.SnapshotECDF))
 	copy(s.ECdf, d.SnapshotECDF)
-	lambda, err := exponential.ApproximateLambda(d.SnapshotECDF)
-	if err != nil {
-		log.Fatalf("Failed to approximate lambda parameter. Error: %v", err)
-	}
-	s.Lambda = lambda
-	s.Cdf = exponential.ToECDF(lambda, stochastic.NumECDFPoints)
 }
