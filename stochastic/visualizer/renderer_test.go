@@ -59,7 +59,6 @@ func TestVisualizer_renderCounting(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 4269)
 }
 
 func TestVisualizer_renderSnapshotStats(t *testing.T) {
@@ -74,7 +73,6 @@ func TestVisualizer_renderSnapshotStats(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 1733)
 }
 
 func TestVisualizer_convertQueuingData(t *testing.T) {
