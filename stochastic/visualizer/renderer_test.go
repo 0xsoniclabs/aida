@@ -46,10 +46,10 @@ func TestVisualizer_newCountingChart(t *testing.T) {
 }
 
 func TestVisualizer_renderCounting(t *testing.T) {
-	events := GetEventsData()
-	events.Contracts.A_CDF = [][2]float64{{1.0, 0.5}}
-	events.Keys.A_CDF = [][2]float64{{1.0, 0.6}}
-	events.Values.A_CDF = [][2]float64{{1.0, 0.7}}
+	data := GetData()
+	data.Contracts.A_CDF = [][2]float64{{1.0, 0.5}}
+	data.Keys.A_CDF = [][2]float64{{1.0, 0.6}}
+	data.Values.A_CDF = [][2]float64{{1.0, 0.7}}
 
 	req, err := http.NewRequest("GET", "/counting-stats", nil)
 	assert.NoError(t, err)
@@ -63,8 +63,8 @@ func TestVisualizer_renderCounting(t *testing.T) {
 }
 
 func TestVisualizer_renderSnapshotStats(t *testing.T) {
-	events := GetEventsData()
-	events.Snapshot.ECdf = [][2]float64{{1.0, 0.5}}
+	data := GetData()
+	data.Snapshot.ECdf = [][2]float64{{1.0, 0.5}}
 
 	req, err := http.NewRequest("GET", "/snapshot-stats", nil)
 	assert.NoError(t, err)
@@ -224,7 +224,7 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 }
 
 func TestVisualizer_FireUpWeb(t *testing.T) {
-	eventRegistry := &recorder.StateJSON{
+	stateJSON := &recorder.StateJSON{
 		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		Contracts: arguments.ClassifierJSON{
 			Counting: arguments.ArgStatsJSON{
@@ -255,7 +255,7 @@ func TestVisualizer_FireUpWeb(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		go func() {
-			FireUpWeb(eventRegistry, "0")
+			FireUpWeb(stateJSON, "0")
 		}()
 	})
 }

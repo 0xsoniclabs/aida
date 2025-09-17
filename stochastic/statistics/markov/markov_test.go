@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package markov_chain
+package markov
 
 import (
 	"fmt"
@@ -163,7 +163,7 @@ func TestNextStateFail(t *testing.T) {
 // rows are identical to avoid the calculation of a stationary
 // distribution for an arbitrary matrix. Also the convergence
 // is too slow for an arbitrary matrix.
-func checkMarkovChain(mc *MarkovChain, numSteps int) error {
+func checkMarkovChain(mc *Chain, numSteps int) error {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 

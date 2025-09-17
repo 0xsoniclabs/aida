@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVisualizer_GetEventsData(t *testing.T) {
-	out := GetEventsData()
+func TestVisualizer_GetData(t *testing.T) {
+	out := GetData()
 	assert.NotNil(t, out)
 }
 
-func TestEventData_PopulateEventData(t *testing.T) {
+func TestData_PopulateData(t *testing.T) {
 	d := &recorder.StateJSON{
 		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 		Contracts: arguments.ClassifierJSON{
@@ -43,7 +43,7 @@ func TestEventData_PopulateEventData(t *testing.T) {
 		},
 	}
 	e := &StateData{}
-	e.PopulateEventData(d)
+	e.PopulateData(d)
 	expectedStationary := []OpData{
 		{label: "BT", value: 0.3333333333333333},
 		{label: "BB", value: 0.3333333333333333},

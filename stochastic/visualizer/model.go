@@ -22,7 +22,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/markov_chain"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/markov"
 )
 
 // StateData contains the statistical visualisation data for the markov chain
@@ -58,16 +58,16 @@ type OpData struct {
 	value float64 // operation's value (either probability or frequency)
 }
 
-// events is the singleton for the viewing model.
-var events StateData
+// state is the singleton for the viewing model.
+var state StateData
 
-// GetEventsData returns the pointer to the singleton.
-func GetEventsData() *StateData {
-	return &events
+// GetData returns the pointer to the singleton.
+func GetData() *StateData {
+	return &state
 }
 
-// PopulateEvents populates the event model from event registry.
-func (e *StateData) PopulateEventData(d *recorder.StateJSON) {
+// PopulateData populates the model from the JSON struct
+func (e *StateData) PopulateData(d *recorder.StateJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)
@@ -83,9 +83,9 @@ func (e *StateData) PopulateEventData(d *recorder.StateJSON) {
 
 	// Sort entries of the stationary distribution and populate
 	n := len(d.Operations)
-	mc, mc_err := markov_chain.New(d.StochasticMatrix, d.Operations)
+	mc, mc_err := markov.New(d.StochasticMatrix, d.Operations)
 	if mc_err != nil {
-		panic("PopulateEventData: Expected a new markov chain. Error: %v")
+		panic("PopulateData: Expected a new markov chain. Error: %v")
 	}
 	stationary, _ := mc.Stationary()
 	data := []OpData{}

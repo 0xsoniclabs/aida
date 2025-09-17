@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package markov_chain
+package markov
 
 import (
 	"fmt"
@@ -28,15 +28,15 @@ const (
 	estimationEps = 1e-9 // epsilon for stationary distribution
 )
 
-// MarkovChain
-type MarkovChain struct {
+// Chain
+type Chain struct {
 	n      int         // number of states
 	a      [][]float64 // stochastic matrix
 	labels []string    // labels of states
 }
 
 // New creates a new MarkovChain.
-func New(a [][]float64, labels []string) (*MarkovChain, error) {
+func New(a [][]float64, labels []string) (*Chain, error) {
 	n := len(labels)
 	if len(a) != n {
 		return nil, fmt.Errorf("New: number of labels (%v) mismatches number of rows (%v)", n, len(a))
@@ -54,11 +54,11 @@ func New(a [][]float64, labels []string) (*MarkovChain, error) {
 			return nil, fmt.Errorf("New: the state (%v) occurs more than once (%v)", k, c)
 		}
 	}
-	return &MarkovChain{a: a, labels: labels, n: n}, nil
+	return &Chain{a: a, labels: labels, n: n}, nil
 }
 
 // Sample the next state in a markov chain for a given state i.
-func (mc MarkovChain) Sample(i int, x float64) (int, error) {
+func (mc Chain) Sample(i int, x float64) (int, error) {
 	if x < 0 || x >= 1.0 {
 		return 0, fmt.Errorf("probabilistic argument (%v) is not in interval [0,1]", x)
 	}
@@ -88,7 +88,7 @@ func (mc MarkovChain) Sample(i int, x float64) (int, error) {
 }
 
 // Stationary computes the stationary distribution of a Markov Chain.
-func (mc MarkovChain) Stationary() ([]float64, error) {
+func (mc Chain) Stationary() ([]float64, error) {
 	// flatten matrix for gonum package
 	elements := []float64{}
 	for i := range mc.n {
@@ -139,7 +139,7 @@ func (mc MarkovChain) Stationary() ([]float64, error) {
 	return stationary, nil
 }
 
-func (mc MarkovChain) Label(i int) (string, error) {
+func (mc Chain) Label(i int) (string, error) {
 	if i < 0 || i >= mc.n {
 		return "", fmt.Errorf("Label: state is out of range (%v)", i)
 	}
@@ -147,7 +147,7 @@ func (mc MarkovChain) Label(i int) (string, error) {
 }
 
 // Find the state index for a given label.
-func (mc MarkovChain) FindState(label string) (int, error) {
+func (mc Chain) FindState(label string) (int, error) {
 	for i := range mc.labels {
 		if mc.labels[i] == label {
 			return i, nil

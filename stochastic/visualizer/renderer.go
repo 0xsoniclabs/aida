@@ -107,13 +107,13 @@ func newCountingChart(title string, subtitle string, ecdf [][2]float64) *charts.
 
 // renderCounting renders counting statistics.
 func renderCounting(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	contracts := newCountingChart("Counting Statistics", "for Contract-Addresses",
-		events.Contracts.A_CDF)
+		data.Contracts.A_CDF)
 	keys := newCountingChart("Counting Statistics", "for Storage-Keys",
-		events.Keys.A_CDF)
+		data.Keys.A_CDF)
 	values := newCountingChart("Counting Statistics", "for Storage-Values",
-		events.Values.A_CDF)
+		data.Values.A_CDF)
 
 	// TODO: Set HTML title via GlobalOption
 	page := components.NewPage()
@@ -144,8 +144,8 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 			Title:    "Snapshot Statistics",
 			Subtitle: "Delta Distribution",
 		}))
-	events := GetEventsData()
-	chart.AddSeries("eCDF", convertCountingData(events.Snapshot.ECdf))
+	data := GetData()
+	chart.AddSeries("eCDF", convertCountingData(data.Snapshot.ECdf))
 	chart.Render(w)
 }
 
@@ -160,7 +160,7 @@ func convertQueuingData(data []float64) []opts.ScatterData {
 
 // renderQueuing renders a queuing statistics.
 func renderQueuing(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	scatter := charts.NewScatter()
 	scatter.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -183,7 +183,7 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 			Title:    "Queuing Probabilities",
 			Subtitle: "for contract-addresses, storage-keys, and storage-values",
 		}))
-	scatter.AddSeries("Contract", convertQueuingData(events.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(events.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(events.Values.Q_PMF))
+	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
 	scatter.Render(w)
 }
 
@@ -207,7 +207,7 @@ func convertOperationLabel(data []OpData) []string {
 
 // renderOperationStats renders the stationary distribution.
 func renderOperationStats(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -230,15 +230,15 @@ func renderOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: "StateDB Operations",
 		}))
-	bar.SetXAxis(convertOperationLabel(events.Stationary)).AddSeries("Stationary Distribution", convertOperationData(events.Stationary))
+	bar.SetXAxis(convertOperationLabel(data.Stationary)).AddSeries("Stationary Distribution", convertOperationData(data.Stationary))
 	bar.XYReversal()
 	bar.Render(w)
 }
 
 // renderTransactionalOperationStats renders the average number of operations per transaction.
 func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
-	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", events.TxPerBlock, events.BlocksPerSyncPeriod)
+	data := GetData()
+	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", data.TxPerBlock, data.BlocksPerSyncPeriod)
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -261,13 +261,13 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: title,
 		}))
-	bar.SetXAxis(convertOperationLabel(events.TxOperation)).AddSeries("Ops/Tx", convertOperationData(events.TxOperation))
+	bar.SetXAxis(convertOperationLabel(data.TxOperation)).AddSeries("Ops/Tx", convertOperationData(data.TxOperation))
 	bar.Render(w)
 }
 
 // renderSimplifiedMarkovChain renders a reduced markov chain whose nodes have no argument classes.
 func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
@@ -281,7 +281,7 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := 0; i < operations.NumOps; i++ {
 		for j := 0; j < operations.NumOps; j++ {
-			p := events.SimplifiedMatrix[i][j]
+			p := data.SimplifiedMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -307,22 +307,22 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // renderMarkovChain renders a markov chain.
 func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
-	events := GetEventsData()
+	data := GetData()
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
 		graph.Close()
 		g.Close()
 	}()
-	n := len(events.OperationLabel)
+	n := len(data.OperationLabel)
 	nodes := make([]*cgraph.Node, n)
 	for i := 0; i < n; i++ {
-		nodes[i], _ = graph.CreateNode(events.OperationLabel[i])
-		nodes[i].SetLabel(events.OperationLabel[i])
+		nodes[i], _ = graph.CreateNode(data.OperationLabel[i])
+		nodes[i].SetLabel(data.OperationLabel[i])
 	}
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
-			p := events.StochasticMatrix[i][j]
+			p := data.StochasticMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -346,13 +346,13 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, txt)
 }
 
-// FireUpWeb produces a data model for the recorded events and
+// FireUpWeb produces a data model for the recorded markov state and
 // visualizes with a local web-server.
-func FireUpWeb(eventRegistry *recorder.StateJSON, addr string) {
+func FireUpWeb(stateJSON *recorder.StateJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
-	eventModel := GetEventsData()
-	eventModel.PopulateEventData(eventRegistry)
+	model := GetData()
+	model.PopulateData(stateJSON)
 
 	// create web server
 	http.HandleFunc("/", renderMain)
