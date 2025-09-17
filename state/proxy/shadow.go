@@ -78,6 +78,10 @@ type snapshotPair struct {
 	prime, shadow int
 }
 
+type vmStateHasher interface {
+	GetHash() (common.Hash, error)
+}
+
 func (s *shadowVmStateDb) CreateAccount(addr common.Address) {
 	err := s.run("CreateAccount", func(s state.VmStateDB) error {
 		s.CreateAccount(addr)
@@ -191,6 +195,7 @@ func (s *shadowVmStateDb) Snapshot() int {
 		s.prime.Snapshot(),
 		s.shadow.Snapshot(),
 	}
+	s.verifyStateHash("Snapshot")
 	s.snapshots = append(s.snapshots, pair)
 	return len(s.snapshots) - 1
 }
@@ -201,15 +206,24 @@ func (s *shadowVmStateDb) RevertToSnapshot(id int) {
 	}
 	s.prime.RevertToSnapshot(s.snapshots[id].prime)
 	s.shadow.RevertToSnapshot(s.snapshots[id].shadow)
+	s.verifyStateHash("RevertToSnapshot")
 }
 
 func (s *shadowVmStateDb) BeginTransaction(tx uint32) error {
 	s.snapshots = s.snapshots[0:0]
-	return s.run("BeginTransaction", func(s state.VmStateDB) error { return s.BeginTransaction(tx) })
+	if err := s.run("BeginTransaction", func(s state.VmStateDB) error { return s.BeginTransaction(tx) }); err != nil {
+		return err
+	}
+	s.verifyStateHash("BeginTransaction")
+	return nil
 }
 
 func (s *shadowVmStateDb) EndTransaction() error {
-	return s.run("EndTransaction", func(s state.VmStateDB) error { return s.EndTransaction() })
+	if err := s.run("EndTransaction", func(s state.VmStateDB) error { return s.EndTransaction() }); err != nil {
+		return err
+	}
+	s.verifyStateHash("EndTransaction")
+	return nil
 }
 
 func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
@@ -223,11 +237,37 @@ func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
 }
 
 func (s *shadowStateDb) BeginBlock(blk uint64) error {
-	return s.run("BeginBlock", func(s state.StateDB) error { return s.BeginBlock(blk) })
+	if err := s.run("BeginBlock", func(s state.StateDB) error { return s.BeginBlock(blk) }); err != nil {
+		return err
+	}
+	s.verifyStateHash("BeginBlock")
+	return nil
 }
 
 func (s *shadowStateDb) EndBlock() error {
-	return s.run("EndBlock", func(s state.StateDB) error { return s.EndBlock() })
+	if err := s.run("EndBlock", func(s state.StateDB) error { return s.EndBlock() }); err != nil {
+		return err
+	}
+	s.verifyStateHash("EndBlock")
+	return nil
+}
+
+func (s *shadowVmStateDb) verifyStateHash(opName string) {
+	if !s.compareStateHash {
+		return
+	}
+	_, err := s.getStateHash(opName+".GetHash", func(db state.VmStateDB) (common.Hash, error) {
+		hasher, ok := db.(vmStateHasher)
+		if !ok {
+			return common.Hash{}, fmt.Errorf("%T does not implement GetHash", db)
+		}
+		return hasher.GetHash()
+	})
+	if err != nil {
+		wrapped := fmt.Errorf("%s hash verification failed: %w", opName, err)
+		s.err = errors.Join(s.err, wrapped)
+		s.log.Errorf("failed to verify state hash after %s: %v", opName, err)
+	}
 }
 
 func (s *shadowStateDb) BeginSyncPeriod(number uint64) {
