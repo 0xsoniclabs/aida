@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -80,7 +80,7 @@ func (mc MarkovChain) Sample(i int, x float64) (int, error) {
 	if !validProbability || sum == 0 {
 		return -1, nil
 	}
-	y := discrete_empirical.Sample(row, x)
+	y := discrete.Quantile(row, x)
 	if y < 0 || y >= mc.n {
 		return -1, nil
 	}

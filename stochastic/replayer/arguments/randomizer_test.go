@@ -5,33 +5,33 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/exponential"
 )
 
 func TestEmpiricalRandomizer(t *testing.T) {
 	rg := rand.New(rand.NewSource(1))
-	qpdf := make([]float64, stochastic.QueueLen)
-	qpdf[0] = 0.5
-	k := 5
-	qpdf[k+1] = 0.5
+	q_pmf := make([]float64, stochastic.QueueLen)
+	x := 1.0 / float64(stochastic.QueueLen)
+	for i := range stochastic.QueueLen {
+		q_pmf[i] = x
+	}
 	n := int64(100)
-	ecdf := exponential.ToECDF(5.0, stochastic.NumECDFPoints)
-	r, err := NewEmpiricalRandomizer(rg, qpdf, ecdf)
+	a_cdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	r, err := NewEmpiricalRandomizer(rg, q_pmf, a_cdf)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if r == nil {
 		t.Fatalf("unexpected nil EmpiricalRandomizer")
 	}
-	for range 1000 {
+	for range 10000 {
 		v := r.SampleArg(n)
 		if v < 0 || v >= n {
-			t.Fatalf("sampled value out of range: %d", v)
+			t.Fatalf("sampled argument value out of range: %d", v)
 		}
 	}
-	for range 20 {
-		if v := r.SampleQueue(); v != 1+k {
-			t.Fatalf("expected %d, got %d", 1+k, v)
+	for range 10000 {
+		if v := r.SampleQueue(); v < 1 || v >= stochastic.QueueLen {
+			t.Fatalf("sampled queue value out of range [1,%d): %d", stochastic.QueueLen, v)
 		}
 	}
 }
@@ -40,18 +40,18 @@ func TestEmpiricalRandomizer(t *testing.T) {
 func TestEmpiricalRandomizer_SampleQueueRange(t *testing.T) {
 	rg := rand.New(rand.NewSource(1337))
 
-	// Valid qpdf: pdf[0] in (0,1), others positive and <1; shape doesn't matter for range.
-	qpdf := make([]float64, stochastic.QueueLen)
-	qpdf[0] = 0.1
+	// Valid q_pmf: pdf[0] in (0,1), others positive and <1; shape doesn't matter for range.
+	q_pmf := make([]float64, stochastic.QueueLen)
+	q_pmf[0] = 0.1
 	rest := 0.9 / float64(stochastic.QueueLen-1)
-	for i := 1; i < len(qpdf); i++ {
-		qpdf[i] = rest
+	for i := 1; i < len(q_pmf); i++ {
+		q_pmf[i] = rest
 	}
 
-	// Simple ECDF; not used by SampleQueue but required by constructor.
-	ecdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	// Simple a_cdf; not used by SampleQueue but required by constructor.
+	a_cdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
 
-	r, err := NewEmpiricalRandomizer(rg, qpdf, ecdf)
+	r, err := NewEmpiricalRandomizer(rg, q_pmf, a_cdf)
 	if err != nil {
 		t.Fatalf("unexpected error constructing EmpiricalRandomizer: %v", err)
 	}

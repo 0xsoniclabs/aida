@@ -19,7 +19,7 @@ package arguments
 import (
 	"math/rand"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
 // SnapshotSet interface for snapshot arguments
@@ -30,18 +30,18 @@ type SnapshotSet interface {
 // EmpiricalSnapshotRandomizer struct for snapshot arguments
 type EmpiricalSnapshotRandomizer struct {
 	rg   *rand.Rand
-	ecdf [][2]float64 // empirical cumulative distribution function
+	scdf [][2]float64 // empirical cumulative distribution function for snapshot deltas
 }
 
 // NewEmpiricalSnapshotRandomizer creates a new EmpiricalSnapshotRandomizer
 func NewEmpiricalSnapshotRandomizer(rg *rand.Rand, ecdf [][2]float64) *EmpiricalSnapshotRandomizer {
 	return &EmpiricalSnapshotRandomizer{
 		rg:   rg,
-		ecdf: ecdf,
+		scdf: ecdf,
 	}
 }
 
 // SampleSnapshot samples an argument from a distribution with n possible arguments
 func (r *EmpiricalSnapshotRandomizer) SampleSnapshot(n int) int {
-	return int(continuous_empirical.Sample(r.rg, r.ecdf, int64(n)))
+	return int(continuous.Sample(r.rg, r.scdf, int64(n)))
 }

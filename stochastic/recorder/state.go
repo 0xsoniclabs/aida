@@ -28,7 +28,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
 // State counts states and transitions for a Markov-Process
@@ -186,7 +186,7 @@ func (r *State) JSON() StateJSON {
 		Contracts:        r.contracts.JSON(),
 		Keys:             r.keys.JSON(),
 		Values:           r.values.JSON(),
-		SnapshotECDF:     continuous_empirical.ToCountECDF(&r.snapshotFreq),
+		SnapshotECDF:     continuous.ToCountECDF(&r.snapshotFreq),
 	}
 }
 

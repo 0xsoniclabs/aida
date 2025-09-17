@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
-	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/discrete"
 )
 
 // Randomizer interface for argument sets
@@ -32,30 +32,30 @@ type Randomizer interface {
 
 // EmpiricalRandomizer struct for randomizing arguments
 type EmpiricalRandomizer struct {
-	rg   *rand.Rand
-	pdf  []float64    // probability distribution function of queue from [1, QueueLen-1] excluding first element in queue
-	ecdf [][2]float64 // empirical cumulative distribution function
+	rg    *rand.Rand
+	q_pmf []float64    // probability distribution function of queue from [1, QueueLen-1] excluding first element in queue
+	a_cdf [][2]float64 // empirical cumulative distribution function for arguments
 }
 
 // NewEmpiricalRandomizer creates a new randomizer
-func NewEmpiricalRandomizer(rg *rand.Rand, qpdf []float64, ecdf [][2]float64) (*EmpiricalRandomizer, error) {
-	npdf, err := discrete_empirical.ShrinkPdf(qpdf)
+func NewEmpiricalRandomizer(rg *rand.Rand, q_pmf []float64, a_cdf [][2]float64) (*EmpiricalRandomizer, error) {
+	nq_pmf, err := discrete.Shrink(q_pmf)
 	if err != nil {
 		return nil, fmt.Errorf("NewEmpiricalRandomizer: cannot shrink pdf by one. Error: %v", err)
 	}
 	return &EmpiricalRandomizer{
-		rg:   rg,
-		pdf:  npdf,
-		ecdf: ecdf,
+		rg:    rg,
+		q_pmf: nq_pmf,
+		a_cdf: a_cdf,
 	}, nil
 }
 
 // SampleArg samples an argument from a distribution with n possible arguments
 func (r *EmpiricalRandomizer) SampleArg(n int64) int64 {
-	return continuous_empirical.Sample(r.rg, r.ecdf, int64(n))
+	return continuous.Sample(r.rg, r.a_cdf, int64(n))
 }
 
 // SampleQueue samples an index for a queue
 func (r *EmpiricalRandomizer) SampleQueue() int {
-	return discrete_empirical.Sample(r.pdf, r.rg.Float64()) + 1
+	return discrete.Sample(r.rg, r.q_pmf) + 1
 }

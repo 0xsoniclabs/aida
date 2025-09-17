@@ -17,7 +17,7 @@
 package arguments
 
 import (
-	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
 // Argument counting statistics counts the occurrence of arguments in StateDB operations
@@ -57,7 +57,7 @@ type ArgStatsJSON struct {
 
 // json computes the ECDF of the counting stats.
 func (s *count[T]) json() ArgStatsJSON {
-	ecdf := continuous_empirical.ToECDF(&s.freq)
+	ecdf := continuous.ToECDF(&s.freq)
 	return ArgStatsJSON{
 		N:    int64(len(s.freq)),
 		ECDF: ecdf,

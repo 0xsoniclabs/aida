@@ -22,7 +22,7 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous_empirical"
+	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
 // Package for the one-sided truncated exponential distribution with a bound of one.
@@ -57,7 +57,14 @@ func Quantile(lambda float64, p float64) float64 {
 
 // Sample samples the distribution and discretizes the result for numbers in the range between 0 and n-1.
 func Sample(rg *rand.Rand, lambda float64, n int64) int64 {
-	return int64(float64(n)*Quantile(lambda, rg.Float64()) + 0.5)
+	y := int64(float64(n) * Quantile(lambda, rg.Float64()))
+	if y < 0 {
+		return 0
+	} else if y >= n {
+		return n - 1
+	} else {
+		return y
+	}
 }
 
 // mle is the Maximum Likelihood Estimation function for finding a suitable lambda.
@@ -101,7 +108,7 @@ func dMLE(lambda float64) (float64, error) {
 // an error if the maximal number of steps for the convergence criteria
 // is exceeded.
 func ApproximateLambda(points [][2]float64) (float64, error) {
-	m := continuous_empirical.Mean(points)
+	m := continuous.Mean(points)
 	l := newtonInitLambda
 	for range newtonMaxStep {
 		mleValue, err := mle(l, m)
