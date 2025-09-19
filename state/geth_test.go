@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/stretchr/testify/require"
 )
 
 const N = 1000
@@ -105,4 +106,45 @@ func TestGethDbReloadData(t *testing.T) {
 	if err = db.Close(); err != nil {
 		t.Fatalf("Failed to close DB: %v", err)
 	}
+}
+
+func TestGethDb_CreateAccountIsProtected(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First create the account
+	db.CreateAccount(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
+	// Then recall it - it must not panic
+	db.CreateAccount(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
+}
+
+func TestGethDb_CreateContractIsProtected(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First create the account
+	db.CreateAccount(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
+	// Then recall it - it must not panic
+	db.CreateContract(addr)
+	// Account must exist in the db
+	require.True(t, db.Exist(addr))
+}
+
+func TestGethDb_CreateContractDoesNotCreateAccount(t *testing.T) {
+	dir := t.TempDir()
+	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
+	require.NoError(t, err)
+	addr := common.Address{0x22}
+	// First try to create the contract
+	db.CreateContract(addr)
+	// Account must not exist in the db
+	require.False(t, db.Exist(addr))
 }
