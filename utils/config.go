@@ -84,6 +84,8 @@ const (
 	// EthTestsChainID is a mock ChainID which is necessary for setting
 	// the chain rules to allow any block number for any fork.
 	EthTestsChainID ChainID = 1337
+	// Used for testing only
+	TestChainID ChainID = 42069
 )
 
 var RealChainIDs = ChainIDs{
@@ -104,6 +106,7 @@ var AllowedChainIDs = ChainIDs{
 	HoodiChainID:        "hoodi",
 	SepoliaChainID:      "sepolia",
 	EthTestsChainID:     "eth-tests",
+	TestChainID:         "integration-tests",
 }
 var EthereumChainIDs = ChainIDs{
 	EthereumChainID: "ethereum",
@@ -121,6 +124,8 @@ const (
 	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
 	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository-public/hoodi/aida-patches"
 	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
+
+	AidaDbRepositoryTestUrl = "https://storage.googleapis.com/aida-repository-public/sonic-dummy/aida-patches"
 )
 
 const maxLastBlock = math.MaxUint64 - 1 // we decrease the value by one because params are always +1
@@ -525,6 +530,9 @@ func (cc *configContext) setAidaDbRepositoryUrl() error {
 		AidaDbRepositoryUrl = AidaDbRepositoryHoodiUrl
 	case SepoliaChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySepoliaUrl
+	case TestChainID:
+		AidaDbRepositoryUrl = AidaDbRepositoryTestUrl
+
 	default:
 		cc.log.Warningf("%v chain-id does not have aida-db repository url set - setting to mainnet", cc.cfg)
 		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
