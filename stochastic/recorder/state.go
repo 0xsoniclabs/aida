@@ -179,6 +179,23 @@ func (r *State) JSON() StateJSON {
 		}
 	}
 
+	// compute PDF for snapshots distribution
+	total := uint64(0)
+	max_arg := 0
+	for arg, freq := range r.snapshotFreq {
+		total += freq
+		if max_arg < arg {
+			max_arg = arg
+		}
+	}
+	pdf := [][2]float64{}
+	for arg := range max_arg {
+		x := (float64(arg) + 0.5) / float64(max_arg)
+		f := float64(r.snapshotFreq[arg]) / float64(total)
+		pdf = append(pdf, [2]float64{x, f})
+	}
+
+	ecdf := continuous.PDFtoCDF(pdf)
 	return StateJSON{
 		FileId:           "state",
 		Operations:       label,
@@ -186,7 +203,7 @@ func (r *State) JSON() StateJSON {
 		Contracts:        r.contracts.JSON(),
 		Keys:             r.keys.JSON(),
 		Values:           r.values.JSON(),
-		SnapshotECDF:     continuous.ToCountECDF(&r.snapshotFreq),
+		SnapshotECDF:     ecdf,
 	}
 }
 

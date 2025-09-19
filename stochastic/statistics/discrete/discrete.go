@@ -22,11 +22,10 @@ import (
 	"math/rand"
 )
 
-// CheckPMF checks if the given probability mass function (pmf) of a
-// a discrete finite random variable is valid.  A valid pmf has all
-// probabilities in the range [0,1], and the sum of all probabilities
-// must be 1.
-func CheckPMF(f []float64) error {
+// Check if the given probability mass function (pmf) of a discrete
+// finite random variable is valid.  A valid pmf has all probabilities
+// in the range [0,1], and the sum of all probabilities must be 1.
+func Check(f []float64) error {
 	total := 0.0
 	for i := range len(f) {
 		x := f[i]
@@ -43,9 +42,8 @@ func CheckPMF(f []float64) error {
 
 // Quantile computes the quantile (inverse CDF) for a discrete finite random variable.
 // The discrete finite random variable is given by probability mass functions (pmf).
-// For a given probability u in the range [0,1], it returns the index i such that the cumulative
-// probability up to and including i is at least u. If u is 0, it returns 0. If u is 1, it returns
-// the last index with a positive probability. If all probabilities are zero, it returns 0.
+// It returns the index i such that the cumulative probability up to and including i
+// is at least u. Kahn's summation is used to reduce numerical errors in the summation.
 func Quantile(f []float64, u float64) int {
 	sum := 0.0 // Kahn's summation algorithm for probability sum
 	c := 0.0   // Compensation term of Kahn's algorithm
@@ -69,10 +67,7 @@ func Quantile(f []float64, u float64) int {
 	return 0 // default position if all probabilities are zero
 }
 
-// Sample the discrete finite random variable defined by the given probability
-// mass function (pmf). It uses the provided random number generator
-// to generate a uniform random number in the range [0,1] and then computes
-// the corresponding index using the Quantile function.
+// Sample the discrete finite random variable defined by the given pmf.
 func Sample(rg *rand.Rand, f []float64) int {
 	return Quantile(f, rg.Float64())
 }
@@ -84,7 +79,7 @@ func Shrink(f []float64) ([]float64, error) {
 	if n < 2 {
 		return nil, fmt.Errorf("PMF is too short (%d)", n)
 	}
-	if err := CheckPMF(f); err != nil {
+	if err := Check(f); err != nil {
 		return nil, err
 	}
 	factor := 1.0 - f[0]
@@ -96,7 +91,7 @@ func Shrink(f []float64) ([]float64, error) {
 		x := f[i+1] / factor
 		scaled_pmf[i] = x
 	}
-	if err := CheckPMF(scaled_pmf); err != nil {
+	if err := Check(scaled_pmf); err != nil {
 		return nil, err
 	}
 	return scaled_pmf, nil

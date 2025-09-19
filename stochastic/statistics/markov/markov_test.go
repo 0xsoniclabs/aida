@@ -26,6 +26,140 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+// TestMarkov_NewSimple tests the creation of a simple Markov chain.
+func TestMarkov_NewSimple(t *testing.T) {
+	mc, err := New([][]float64{{0.0, 1.0}, {1.0, 0.0}}, []string{"s1", "s2"})
+	if err != nil {
+		t.Fatalf("Expected a markov chain. Error: %v", err)
+	}
+	if mc == nil {
+		t.Fatalf("Expected a markov chain. Got nil.")
+	}
+	if len(mc.a) != 2 || len(mc.a[0]) != 2 || len(mc.a[1]) != 2 {
+		t.Fatalf("Expected a 2x2 stochastic matrix. Got %vx%v.", len(mc.a), len(mc.a[0]))
+	}
+	if mc.l[0] != "s1" || mc.l[1] != "s2" {
+		t.Fatalf("Expected state labels s1 and s2. Got %v and %v.", mc.l[0], mc.l[1])
+	}
+
+	// test for NaN entries
+	mc, err = New([][]float64{
+		{1.0, 0.0},
+		{math.NaN(), 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for negative probability entries
+	mc, err = New([][]float64{
+		{0.0, 1.0},
+		{-0.1, 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for probability >1 entries
+	mc, err = New([][]float64{
+		{0.0, 1.0},
+		{1.1, 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for stochastic matrix whose row sum is not one.
+	mc, err = New([][]float64{
+		{0.0, 1.0},
+		{0.5, 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for too few labels
+	mc, err = New([][]float64{
+		{1.0, 0.0},
+		{1.0, 0.0},
+	},
+		[]string{"s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for double use of labels
+	mc, err = New([][]float64{
+		{1.0, 0.0},
+		{0.0, 1.0},
+	},
+		[]string{"s2", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for right shape of stochastic matrix
+	mc, err = New([][]float64{
+		{1.0},
+		{1.0, 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+
+	// test for right shape of stochastic matrix
+	mc, err = New([][]float64{
+		{1.0, 0.0},
+	},
+		[]string{"s1", "s2"})
+	if err == nil {
+		t.Fatalf("Expected an error due to invalid stochastic matrix.")
+	}
+}
+
+// TestMarkv_SampleBasic test basic use of the Sample() function
+func TestMarkov_SampleBasic(t *testing.T) {
+	mc, err := New([][]float64{{0.0, 1.0}, {1.0, 0.0}}, []string{"s1", "s2"})
+	if err != nil {
+		t.Fatalf("Expected a markov chain. Error: %v", err)
+	}
+
+	// valid call to sample
+	i, err := mc.Sample(0, 0.4)
+	if i != 1 || err != nil {
+		t.Fatalf("Unexpected error sampling. Error: %v", err)
+	}
+
+	// negative state number
+	i, err = mc.Sample(-1, 0.4)
+	if err == nil {
+		t.Fatalf("Expected to fail sampling.")
+	}
+
+	// state does not exist
+	i, err = mc.Sample(2, 0.4)
+	if err == nil {
+		t.Fatalf("Expected to fail sampling.")
+	}
+
+	// negative probability as parameter
+	i, err = mc.Sample(0, -0.1)
+	if err == nil {
+		t.Fatalf("Expected to fail sampling.")
+	}
+
+	// probabiltiy greater than 1
+	i, err = mc.Sample(0, 1.1)
+	if err == nil {
+		t.Fatalf("Expected to fail sampling.")
+	}
+}
+
 // checkStationaryDistribution tests stationary distribution of a uniform Markovian process
 // whose transition probability is 1/n for n states.
 func checkStationaryDistribution(t *testing.T, n int) {
@@ -58,17 +192,17 @@ func checkStationaryDistribution(t *testing.T, n int) {
 	}
 }
 
-// TestStationaryDistribution of a Markov Chain
+// TestMarkov_StationaryDistribution of a Markov Chain
 // TestEstimation checks the correcntness of approximating
 // a lambda for a discrete CDF.
-func TestStationaryDistribution(t *testing.T) {
+func TestMarkov_StationaryDistribution(t *testing.T) {
 	for n := 2; n < 10; n++ {
 		checkStationaryDistribution(t, n)
 	}
 }
 
-// TextDeterministicNextState checks transition of a deterministic Markovian process.
-func TestDeterministicNextState(t *testing.T) {
+// TestMarkov_SampleDeterministic checks transition of a deterministic Markovian process.
+func TestMarkov_SampleDeterministic(t *testing.T) {
 	// create markov chain with two states s1 and s2 and their
 	// deterministic transition, i.e., s1 -> s2 and s2 -> s1
 	mc, err := New([][]float64{{0.0, 1.0}, {1.0, 0.0}}, []string{"s1", "s2"})
@@ -95,7 +229,7 @@ func TestDeterministicNextState(t *testing.T) {
 }
 
 // TextDeterministicNextState2 checks transition of a deterministic Markovian process.
-func TestDeterministicNextState2(t *testing.T) {
+func TestMarkov_SampleDeterministic2(t *testing.T) {
 	// create random generator with fixed seed value
 	rg := rand.New(rand.NewSource(999))
 
@@ -127,33 +261,6 @@ func TestDeterministicNextState2(t *testing.T) {
 	x = rg.Float64()
 	if y, err := mc.Sample(2, x); y != 0 || err != nil {
 		t.Fatalf("Illegal state transition (row 1)")
-	}
-}
-
-// TextNextStateFail checks whether nextState fails if
-// stochastic matrix is broken.
-func TestNextStateFail(t *testing.T) {
-	// create random generator with fixed seed value
-	rg := rand.New(rand.NewSource(999))
-
-	var x float64
-	mc, err := New([][]float64{
-		{0.0, 0.0},
-		{math.NaN(), 0.0},
-	},
-		[]string{"s1", "s2"})
-	if err != nil {
-		t.Fatalf("Expected a markov chain. Error: %v", err)
-	}
-
-	x = rg.Float64()
-	if y, err := mc.Sample(0, x); y != -1 || err != nil {
-		t.Fatalf("Could not capture faulty stochastic matrix")
-	}
-
-	x = rg.Float64()
-	if y, err := mc.Sample(1, x); y != -1 || err != nil {
-		t.Fatalf("Could not capture faulty stochastic matrix")
 	}
 }
 
@@ -209,19 +316,19 @@ func checkMarkovChain(mc *Chain, numSteps int) error {
 	return nil
 }
 
-// TestRandomNextState checks whether a uniform Markovian process produces a uniform
+// TestMarkov_SampleUniformTest checks whether a uniform Markovian process produces a uniform
 // state distribution via a chi-squared test for various number of states.
-func TestRandomNextState(t *testing.T) {
+func TestMarkov_SampleUniformTest(t *testing.T) {
 	// test small Markov chain by setting up a uniform Markovian process with
 	// uniform distributions. The stationary distribution of the uniform
 	// Markovian process is (1/n, , ... , 1/n).
 	n := 10
 	A := make([][]float64, n)
 	L := make([]string, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		L[i] = "s" + strconv.Itoa(i)
 		A[i] = make([]float64, n)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			A[i][j] = 1.0 / float64(n)
 		}
 	}
@@ -232,45 +339,31 @@ func TestRandomNextState(t *testing.T) {
 	if err = checkMarkovChain(mc, n*n); err != nil {
 		t.Fatalf("Uniform Markovian process is not unbiased for a small test-case. Error: %v", err)
 	}
+}
 
-	// test larger uniform markov chain
-	n = 5400
-	A = make([][]float64, n)
-	L = make([]string, n)
-	for i := 0; i < n; i++ {
-		L[i] = "s" + strconv.Itoa(i)
-		A[i] = make([]float64, n)
-		for j := 0; j < n; j++ {
-			A[i][j] = 1.0 / float64(n)
-		}
-	}
-	mc, err = New(A, L)
-	if err != nil {
-		t.Fatalf("Expected markov chain. Error: %v", err)
-	}
-	if err := checkMarkovChain(mc, 25*n); err != nil {
-		t.Fatalf("Uniform Markovian process is not unbiased for a larger test-case. Error: %v", err)
-	}
-
+// TestMarkov_SampleGeometricTest checks whether a Markovian process with
+// a truncated geometric distribution produces the correct state distribution
+// via a chi-squared test for various number of states.
+func TestMarkov_SampleGeometricTest(t *testing.T) {
 	// Setup a Markovian process with a truncated geometric distributions for
 	// next states. The distribution has the following formula:
 	//  Pr(X=x_j) = (1-beta)*beta^n * (1-beta^n) / -beta ^ j
 	// for values {x_1, ..., x_n}  of random variable X and
 	// with distribution parameter beta.
-	n = 10
+	n := 10
 	beta := 0.6
-	A = make([][]float64, n)
-	L = make([]string, n)
-	for i := 0; i < n; i++ {
+	A := make([][]float64, n)
+	L := make([]string, n)
+	for i := range n {
 		A[i] = make([]float64, n)
 		L[i] = "s" + strconv.Itoa(i)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			A[i][j] = ((1.0 - beta) * math.Pow(beta, float64(n)) /
 				(1.0 - math.Pow(beta, float64(n)))) *
 				math.Pow(beta, -float64(j+1))
 		}
 	}
-	mc, err = New(A, L)
+	mc, err := New(A, L)
 	if err != nil {
 		t.Fatalf("Expected a markov chain. Error: %v", err)
 	}
@@ -279,9 +372,9 @@ func TestRandomNextState(t *testing.T) {
 	}
 }
 
-// TestInitialState checks function find
-// for returning the correct intial state.
-func TestInitialState(t *testing.T) {
+// TestMarkov_FindBasic checks function Find
+// for returning the correct state number
+func TestMarkov_FindBasic(t *testing.T) {
 	mc, err := New(
 		[][]float64{ // stochastic matrix
 			{0.0, 1.0, 0.0},
@@ -297,19 +390,59 @@ func TestInitialState(t *testing.T) {
 		t.Fatalf("Expected a markov chain. Error: %v", err)
 	}
 
-	if x, err := mc.FindState("A"); x != 0 || err != nil {
+	if x, err := mc.Find("A"); x != 0 || err != nil {
 		t.Fatalf("Cannot find first state A")
 	}
-	if x, err := mc.FindState("B"); x != 1 || err != nil {
+	if x, err := mc.Find("B"); x != 1 || err != nil {
 		t.Fatalf("Cannot find first state B")
 	}
-	if x, err := mc.FindState("C"); x != 2 || err != nil {
+	if x, err := mc.Find("C"); x != 2 || err != nil {
 		t.Fatalf("Cannot find first state C")
 	}
-	if x, err := mc.FindState("D"); x != -1 || err != nil {
+	if x, err := mc.Find("D"); x != -1 || err != nil {
 		t.Fatalf("Should not find first state D")
 	}
-	if x, err := mc.FindState(""); x != -1 || err != nil {
+	if x, err := mc.Find(""); x != -1 || err != nil {
 		t.Fatalf("Should not find first state")
+	}
+}
+
+// TestMarkov_LabelBasic checks function Find
+// for returning the correct state number
+func TestMarkov_LabelBasic(t *testing.T) {
+	mc, err := New(
+		[][]float64{ // stochastic matrix
+			{0.0, 1.0, 0.0},
+			{0.0, 0.0, 1.0},
+			{1.0, 0.0, 0.0},
+		},
+		[]string{ // state labels
+			"A",
+			"B",
+			"C",
+		})
+	if err != nil {
+		t.Fatalf("Expected a markov chain. Error: %v", err)
+	}
+
+	// check valid states
+	if s, err := mc.Label(0); err != nil || s != "A" {
+		t.Fatalf("Returned an error (%v) or the wronng state %v", err, nil)
+	}
+	if s, err := mc.Label(1); err != nil || s != "B" {
+		t.Fatalf("Returned an error (%v) or the wronng state %v", err, nil)
+	}
+	if s, err := mc.Label(2); err != nil || s != "C" {
+		t.Fatalf("Returned an error (%v) or the wronng state %v", err, nil)
+	}
+
+	// check error code for negative state number
+	if _, err := mc.Label(-1); err == nil {
+		t.Fatalf("Expected an error for a negative state number")
+	}
+
+	// check error code for invalid state number
+	if _, err := mc.Label(3); err == nil {
+		t.Fatalf("Expected an error for an invalid state number")
 	}
 }

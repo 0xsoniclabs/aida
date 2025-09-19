@@ -30,23 +30,20 @@ const (
 
 // Chain
 type Chain struct {
-	n      int         // number of states
-	a      [][]float64 // stochastic matrix
-	labels []string    // labels of states
+	n int         // number of states
+	a [][]float64 // stochastic matrix
+	l []string    // labels of states
 }
 
-// New creates a new MarkovChain.
+// New creates a new MarkovChain from a stochastic matrix and a list of labels.
+// The matrix must be square and the number of labels must match the number of rows/columns.
+// Each row must sum to one and contain only values in the interval [0,1].
+// Each label must be unique.
 func New(a [][]float64, labels []string) (*Chain, error) {
+	// check uniqueness of labels
 	n := len(labels)
-	if len(a) != n {
-		return nil, fmt.Errorf("New: number of labels (%v) mismatches number of rows (%v)", n, len(a))
-	}
-
 	labelCount := map[string]int{}
 	for i := range n {
-		if len(a[i]) != n {
-			return nil, fmt.Errorf("New: number of columns (%v) in row (%v) is not equal to the number of labels (%v)", len(a[i]), i, n)
-		}
 		labelCount[labels[i]]++
 	}
 	for k, c := range labelCount {
@@ -54,7 +51,27 @@ func New(a [][]float64, labels []string) (*Chain, error) {
 			return nil, fmt.Errorf("New: the state (%v) occurs more than once (%v)", k, c)
 		}
 	}
-	return &Chain{a: a, labels: labels, n: n}, nil
+
+	// check markov property of matrix: (1) nxn matrix, (2) rows sum to one, (3) all values in [0,1].
+	if len(a) != n {
+		return nil, fmt.Errorf("New: number of labels (%v) mismatches number of rows (%v)", n, len(a))
+	}
+	for i := range n {
+		if len(a[i]) != n {
+			return nil, fmt.Errorf("New: number of columns (%v) in row (%v) is not equal to the number of labels (%v)", len(a[i]), i, n)
+		}
+		total := 0.0
+		for j := range n {
+			if !(a[i][j] >= 0.0 && a[i][j] <= 1.0) {
+				return nil, fmt.Errorf("New: invalid probability (%v) in row %v, column %v", a[i][j], i, j)
+			}
+			total += a[i][j]
+		}
+		if math.Abs(total-1.0) > 1e-9 {
+			return nil, fmt.Errorf("New: row %v does not sum to one (%v)", i, total)
+		}
+	}
+	return &Chain{a: a, l: labels, n: n}, nil
 }
 
 // Sample the next state in a markov chain for a given state i.
@@ -65,26 +82,7 @@ func (mc Chain) Sample(i int, x float64) (int, error) {
 	if i < 0 || i >= mc.n {
 		return 0, fmt.Errorf("Sample: state index (%v) out of range", i)
 	}
-	row := mc.a[i]
-	sum := 0.0
-	validProbability := false
-	for _, p := range row {
-		if math.IsNaN(p) || p < 0.0 || p > 1.0 {
-			return -1, nil
-		}
-		sum += p
-		if p > 0 {
-			validProbability = true
-		}
-	}
-	if !validProbability || sum == 0 {
-		return -1, nil
-	}
-	y := discrete.Quantile(row, x)
-	if y < 0 || y >= mc.n {
-		return -1, nil
-	}
-	return y, nil
+	return discrete.Quantile(mc.a[i], x), nil
 }
 
 // Stationary computes the stationary distribution of a Markov Chain.
@@ -143,13 +141,13 @@ func (mc Chain) Label(i int) (string, error) {
 	if i < 0 || i >= mc.n {
 		return "", fmt.Errorf("Label: state is out of range (%v)", i)
 	}
-	return mc.labels[i], nil
+	return mc.l[i], nil
 }
 
 // Find the state index for a given label.
-func (mc Chain) FindState(label string) (int, error) {
-	for i := range mc.labels {
-		if mc.labels[i] == label {
+func (mc Chain) Find(label string) (int, error) {
+	for i := range mc.l {
+		if mc.l[i] == label {
 			return i, nil
 		}
 	}

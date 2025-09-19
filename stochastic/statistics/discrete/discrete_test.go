@@ -24,36 +24,36 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-// TestCheckPMF_ValidPMF checks if the given probability mass function (pmf) is valid.
-func TestCheckPMF_ValidPMF(t *testing.T) {
+// TestDiscrete_CheckPMF checks if the given probability mass function (pmf) is valid.
+func TestDiscrete_CheckPMF(t *testing.T) {
 	pmf := []float64{0.2, 0.5, 0.3}
-	if err := CheckPMF(pmf); err != nil {
+	if err := Check(pmf); err != nil {
 		t.Fatalf("valid pmf: want nil, got %v", err)
 	}
 	pmf = []float64{0.0, 1.0, 0.0}
-	if err := CheckPMF(pmf); err != nil {
+	if err := Check(pmf); err != nil {
 		t.Fatalf("valid pmf with zeros: want nil, got %v", err)
 	}
 	pmf = []float64{0.0, 0.0, 0.0}
-	if err := CheckPMF(pmf); err == nil {
+	if err := Check(pmf); err == nil {
 		t.Fatalf("all zeros pmf: want error, got nil")
 	}
 	pmf = []float64{-1.0, 0.0, 0.0}
-	if err := CheckPMF(pmf); err == nil {
+	if err := Check(pmf); err == nil {
 		t.Fatalf("negative number in pmf: want error, got nil")
 	}
 	pmf = []float64{1.1, 0.0, 0.0}
-	if err := CheckPMF(pmf); err == nil {
+	if err := Check(pmf); err == nil {
 		t.Fatalf("probability greater than one: want error, got nil")
 	}
 	pmf = []float64{math.NaN(), 0.0, 0.0}
-	if err := CheckPMF(pmf); err == nil {
+	if err := Check(pmf); err == nil {
 		t.Fatalf("a probability as NaN: want error, got nil")
 	}
 }
 
-// TestQuantile_BasicCDFSteps tests the Sample function with a simple pmf.
-func TestQuantile_BasicCDFSteps(t *testing.T) {
+// TestDiscrete_QuantileBasic tests the Quantile function.
+func TestDiscrete_QuantileBasic(t *testing.T) {
 	pmf := []float64{0.2, 0.3, 0.5}
 	if got := Quantile(pmf, 0.0); got != 0 {
 		t.Fatalf("u=0.0: want 0, got %d", got)
@@ -69,8 +69,8 @@ func TestQuantile_BasicCDFSteps(t *testing.T) {
 	}
 }
 
-// TestSample_ReturnsLastPositiveWhenUSurpassesTotal tests the Sample function
-func TestSample_ReturnsLastPositiveWhenUSurpassesTotal(t *testing.T) {
+// TestDiscrete_QuantileReturnsLastPositiveWhenUSurpassesTotal tests the Sample function
+func TestDiscrete_QuantileReturnsLastPositiveWhenUSurpassesTotal(t *testing.T) {
 	pmf := []float64{0.1, 0.0, 0.2}
 	if got := Quantile(pmf, 0.999); got != 2 {
 		t.Fatalf("u>sum: want last positive index 2, got %d", got)
@@ -81,8 +81,8 @@ func TestSample_ReturnsLastPositiveWhenUSurpassesTotal(t *testing.T) {
 	}
 }
 
-// TestSample_AllZerosAndEmpty tests the Sample function with all-zero and empty pmfs.
-func TestSample_AllZerosAndEmpty(t *testing.T) {
+// TestDiscrete_QuantileAllZerosAndEmpty tests the Sample function with all-zero and empty pmfs.
+func TestDiscrete_QuantileAllZerosAndEmpty(t *testing.T) {
 	pmfZeros := []float64{0.0, 0.0, 0.0}
 	if got := Quantile(pmfZeros, 0.5); got != 0 {
 		t.Fatalf("all zeros: want 0, got %d", got)
@@ -93,8 +93,8 @@ func TestSample_AllZerosAndEmpty(t *testing.T) {
 	}
 }
 
-// TestSample_NumericalStabilityKahanPathIsExercised tests the Sample function for numerical stability.
-func TestSample_NumericalStabilityKahanPathIsExercised(t *testing.T) {
+// TestDiscrete_QuantileNumericalStabilityKahanPathIsExercised tests the Sample function for numerical stability.
+func TestDiscrete_QuantileNumericalStabilityKahanPathIsExercised(t *testing.T) {
 	pmf := []float64{
 		1e-16, 1e-16, 1e-16, 1e-16,
 		0.25, 0.25, 0.25, 0.25,
@@ -110,8 +110,8 @@ func TestSample_NumericalStabilityKahanPathIsExercised(t *testing.T) {
 	}
 }
 
-// TestShrinkPMF_Basic tests the ShrinkPMF function with a basic pmf.
-func TestShrinkPMF_Basic(t *testing.T) {
+// TestDiscrete_ShrinkPMFBasic tests the ShrinkPMF function with a basic pmf.
+func TestDiscrete_ShrinkPMFBasic(t *testing.T) {
 	pmf := []float64{0.2, 0.7}
 	shrunk, err := Shrink(pmf)
 	if err == nil {
@@ -149,7 +149,7 @@ func testSample(f []float64, t *testing.T) {
 	rg := rand.New(rand.NewSource(999))
 
 	// check that the PMF is valid
-	if err := CheckPMF(f); err != nil {
+	if err := Check(f); err != nil {
 		t.Fatalf("The ECDF is not valid. Error: %v", err)
 	}
 

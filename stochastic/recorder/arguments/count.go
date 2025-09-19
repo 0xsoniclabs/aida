@@ -17,6 +17,8 @@
 package arguments
 
 import (
+	"sort"
+
 	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
@@ -57,7 +59,24 @@ type ArgStatsJSON struct {
 
 // json computes the ECDF of the counting stats.
 func (s *count[T]) json() ArgStatsJSON {
-	ecdf := continuous.ToECDF(&s.freq)
+	// compute the PDF of the counting statistcs
+	n := len(s.freq)
+	args := make([]T, 0, n)
+	total := uint64(0)
+	for arg, freq := range s.freq {
+		args = append(args, arg)
+		total += freq
+	}
+	sort.SliceStable(args, func(i, j int) bool {
+		return s.freq[args[i]] > s.freq[args[j]]
+	})
+	pdf := [][2]float64{}
+	for i := range n {
+		f := float64(s.freq[args[i]]) / float64(total)
+		x := (float64(i) + 0.5) / float64(n)
+		pdf = append(pdf, [2]float64{x, f})
+	}
+	ecdf := continuous.PDFtoCDF(pdf)
 	return ArgStatsJSON{
 		N:    int64(len(s.freq)),
 		ECDF: ecdf,

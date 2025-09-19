@@ -19,7 +19,6 @@ package continuous
 import (
 	"fmt"
 	"math/rand"
-	"sort"
 
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/paulmach/orb"
@@ -32,8 +31,11 @@ import (
 // The piecewise linear function is given as a list of points (x_i, y_i).
 // The first point is (0,0) and the last point is (1,1). Other points must
 // be strictly increasing monotonic, i.e., for all i: x_i < x_{i+1} and
-// y_i < y_{i+1}. TODO: for large number of points, use binary search.
+// y_i < y_{i+1}.
 func CDF(f [][2]float64, x float64) float64 {
+	if x <= 0 {
+		return 0.0
+	}
 	for i := range len(f) - 1 {
 		if f[i+1][0] >= x {
 			scale := (x - f[i][0]) / (f[i+1][0] - f[i][0])
@@ -44,149 +46,58 @@ func CDF(f [][2]float64, x float64) float64 {
 }
 
 // Quantile computes the inverse Cumulative Distribution Function of parameter y
-// for a cdf given as a piecewise linear function. TODO: for large number of points,
-// use binary search.
+// for a cdf given as a piecewise linear function.
 func Quantile(f [][2]float64, y float64) float64 {
+	if y <= 0 {
+		return 0.0
+	}
 	for i := range len(f) - 1 {
 		if f[i+1][1] >= y {
 			scale := (y - f[i][1]) / (f[i+1][1] - f[i][1])
 			return f[i][0] + scale*(f[i+1][0]-f[i][0])
 		}
 	}
-	return 1.0 // x is 1.0 or greater
+	return 1.0 // y is 1.0 or greater
 }
 
-// Sample
+// Sample draws a random sample from a piecewise linear CDF using inverse transform sampling.
 func Sample(rg *rand.Rand, ecdf [][2]float64, n int64) int64 {
-	y := int64(float64(n) * Quantile(ecdf, rg.Float64()))
-	if y < 0 {
-		return 0
-	} else if y >= n {
-		return n - 1
-	} else {
-		return y
-	}
-}
-
-// Mean calculates the mean of the empirical cumulative distribution function.
-func Mean(f [][2]float64) float64 {
-	m := float64(0.0)
-	for i := 1; i < len(f); i++ {
-		x1 := f[i-1][0]
-		y1 := f[i-1][1]
-		x2 := f[i][0]
-		y2 := f[i][1]
-		m = m + (x1+x2)*(y2-y1)/2.0
-	}
-	return m
+	return int64(float64(n) * Quantile(ecdf, rg.Float64()))
 }
 
 // Check whether the piecewise linear function is valid as a CDF.
 // The function must start at (0,0) and end at (1,1).
 // The points of the function must be monotonically increasing.
-func CheckECDF(f [][2]float64) error {
+func Check(f [][2]float64) error {
 	// check start point; must be the coordinate (0,0)
 	if f[0] != [2]float64{0.0, 0.0} {
-		return fmt.Errorf("ECDF must start at (0,0), but starts at (%v,%v)", f[0][0], f[0][1])
+		return fmt.Errorf("CDF must start at (0,0), but starts at (%v,%v)", f[0][0], f[0][1])
 	}
 	// check end point; must be the coordinate (1,1)
 	last := len(f) - 1
 	if f[last] != [2]float64{1.0, 1.0} {
-		return fmt.Errorf("ECDF must end at (1,1), but ends at (%v,%v)", f[last][0], f[last][1])
+		return fmt.Errorf("CDF must end at (1,1), but ends at (%v,%v)", f[last][0], f[last][1])
 	}
 	// check monotonicity condition of points
 	for i := range len(f) - 1 {
 		if f[i][0] >= f[i+1][0] && f[i][1] >= f[i+1][1] {
-			return fmt.Errorf("ECDF points must be strictly monotonically increasing, but point %v (%v,%v) is not smaller than point %v (%v,%v)", i, f[i][0], f[i][1], i+1, f[i+1][0], f[i+1][1])
+			return fmt.Errorf("CDF points must be strictly monotonically increasing, but point %v (%v,%v) is not smaller than point %v (%v,%v)", i, f[i][0], f[i][1], i+1, f[i+1][0], f[i+1][1])
 		}
 	}
 	return nil
 }
 
-// ToECDF computes the empirical cumulative distribution function (eCDF)
-// from a counting statistics. The eCDF is represented as a piecewise linear
-// function with a fixed number of points (NumECDFPoints). The eCDF is
-// computed using the Visvalingam-Whyatt algorithm to reduce the number of
-// points in the eCDF. See:
-// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-func ToCountECDF(count *map[int]uint64) [][2]float64 {
-
-	// determine the maximum argument and total frequency
-	totalFreq := uint64(0)
-	maxArg := 0
-	for arg, freq := range *count {
-		totalFreq += freq
-		if maxArg < arg {
-			maxArg = arg
-		}
-	}
-
-	var simplified orb.LineString
-
-	// if no data-points, nothing to plot
-	if len(*count) > 0 {
-
-		// construct full eCdf as LineString
-		ls := orb.LineString{}
-
-		// print points of the empirical cumulative freq
-		sumP := float64(0.0)
-
-		// Correction term for Kahan's sum
-		cP := float64(0.0)
-
-		// add first point to line string
-		ls = append(ls, orb.Point{0.0, 0.0})
-
-		// iterate through all deltas
-		for arg := 0; arg <= maxArg; arg++ {
-			// Implement Kahan's summation to avoid errors
-			// for accumulated probabilities (they might be very small)
-			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
-			f := float64((*count)[arg]) / float64(totalFreq)
-			x := float64(arg) / float64(maxArg)
-
-			yP := f - cP
-			tP := sumP + yP
-			cP = (tP - sumP) - yP
-			sumP = tP
-
-			// add new point to Ecdf
-			ls = append(ls, orb.Point{x, sumP})
-		}
-
-		// add last point
-		ls = append(ls, orb.Point{1.0, 1.0})
-
-		// reduce full ecdf using Visvalingam-Whyatt algorithm to
-		// "numPoints" points. See:
-		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-		simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
-		simplified = simplifier.Simplify(ls).(orb.LineString)
-	}
-
-	// convert orb.LineString to [][2]float64
-	ecdf := make([][2]float64, len(simplified))
-	for i := range simplified {
-		ecdf[i] = [2]float64(simplified[i])
-	}
-	return ecdf
-}
-
-// ToECDF computes the empirical cumulative distribution function (eCDF)
-// from a counting statistics.
-func ToECDF[T comparable](count *map[T]uint64) [][2]float64 {
+// PDFtoCDF computes the empirical cumulative distribution function (ECDF) from a given
+// probability density function (PDF). The PDF is given as a list of points (x_i, p_i),
+// where x_i is the domain of the random variable (in the range [0,1]) and p_i is the
+// probability. The function returns the CDF as a list of points (x_i, p_i),
+// where p_i is the cumulative propability up to x_i. The CDF is compressed using
+// the Visvalingam-Whyatt algorithm
+// to reduce the number of points to a manageable size defined by stochastic.NumECDFPoints.
+// The function panics if the resulting ECDF is not valid.
+func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 	// sort frequency entries for arguments by frequency (highest frequency first)
-	n := len(*count)
-	args := make([]T, 0, n)
-	total := uint64(0)
-	for arg, freq := range *count {
-		args = append(args, arg)
-		total += freq
-	}
-	sort.SliceStable(args, func(i, j int) bool {
-		return (*count)[args[i]] > (*count)[args[j]]
-	})
+	n := len(pdf)
 	var compressFreqs orb.LineString
 	if n > 0 {
 		ls := orb.LineString{}
@@ -201,8 +112,8 @@ func ToECDF[T comparable](count *map[T]uint64) [][2]float64 {
 			// Implement Kahan's summation to avoid errors
 			// for accumulated probabilities (they might be very small)
 			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
-			f := float64((*count)[args[i]]) / float64(total)
-			x := (float64(i) + 0.5) / float64(n)
+			x := pdf[i][0]
+			f := pdf[i][0]
 			yP := f - cP
 			tP := sumP + yP
 			cP = (tP - sumP) - yP
@@ -221,6 +132,9 @@ func ToECDF[T comparable](count *map[T]uint64) [][2]float64 {
 	ecdf := make([][2]float64, len(compressFreqs))
 	for i := range compressFreqs {
 		ecdf[i] = [2]float64(compressFreqs[i])
+	}
+	if err := Check(ecdf); err != nil {
+		panic(fmt.Sprintf("ToECDF: cannot create valid ECDF from counting statistics; Error %v", err))
 	}
 	return ecdf
 }
