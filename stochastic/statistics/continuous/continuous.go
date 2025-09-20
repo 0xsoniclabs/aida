@@ -69,6 +69,9 @@ func Sample(rg *rand.Rand, ecdf [][2]float64, n int64) int64 {
 // The function must start at (0,0) and end at (1,1).
 // The points of the function must be monotonically increasing.
 func Check(f [][2]float64) error {
+	if len(f) < 2 {
+		return fmt.Errorf("CDF must have at least start and end point")
+	}
 	// check start point; must be the coordinate (0,0)
 	if f[0] != [2]float64{0.0, 0.0} {
 		return fmt.Errorf("CDF must start at (0,0), but starts at (%v,%v)", f[0][0], f[0][1])
@@ -98,8 +101,9 @@ func Check(f [][2]float64) error {
 func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 	// sort frequency entries for arguments by frequency (highest frequency first)
 	n := len(pdf)
-	var compressFreqs orb.LineString
+	var ecdf [][2]float64
 	if n > 0 {
+	        var compressedECDF orb.LineString
 		ls := orb.LineString{}
 		// print points of the empirical cumulative freq
 		sumP := float64(0.0)
@@ -113,7 +117,7 @@ func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 			// for accumulated probabilities (they might be very small)
 			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
 			x := pdf[i][0]
-			f := pdf[i][0]
+			f := pdf[i][1]
 			yP := f - cP
 			tP := sumP + yP
 			cP = (tP - sumP) - yP
@@ -127,14 +131,16 @@ func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 		// "numPoints" points. See:
 		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
 		simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
-		compressFreqs = simplifier.Simplify(ls).(orb.LineString)
-	}
-	ecdf := make([][2]float64, len(compressFreqs))
-	for i := range compressFreqs {
-		ecdf[i] = [2]float64(compressFreqs[i])
+		compressedECDF = simplifier.Simplify(ls).(orb.LineString)
+		ecdf = make([][2]float64, len(compressedECDF))
+		for i := range compressedECDF {
+			ecdf[i] = [2]float64(compressedECDF[i])
+		}
+	} else {
+		ecdf = [][2]float64{{0.0,0.0}, {1.0, 1.0}}
 	}
 	if err := Check(ecdf); err != nil {
-		panic(fmt.Sprintf("ToECDF: cannot create valid ECDF from counting statistics; Error %v", err))
+		panic(fmt.Sprintf("PDFtoCDF: cannot create valid CDF from counting statistics; Error %v", err))
 	}
 	return ecdf
 }
