@@ -101,43 +101,38 @@ func Check(f [][2]float64) error {
 func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 	// sort frequency entries for arguments by frequency (highest frequency first)
 	n := len(pdf)
-	var ecdf [][2]float64
-	if n > 0 {
-	        var compressedECDF orb.LineString
-		ls := orb.LineString{}
-		// print points of the empirical cumulative freq
-		sumP := float64(0.0)
-		// Correction term for Kahan's sum
-		cP := float64(0.0)
-		// add first point to line string
-		ls = append(ls, orb.Point{0.0, 0.0})
-		// iterate through all items
-		for i := range n {
-			// Implement Kahan's summation to avoid errors
-			// for accumulated probabilities (they might be very small)
-			// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
-			x := pdf[i][0]
-			f := pdf[i][1]
-			yP := f - cP
-			tP := sumP + yP
-			cP = (tP - sumP) - yP
-			sumP = tP
-			// add new point to Ecdf
-			ls = append(ls, orb.Point{x, sumP})
-		}
-		// add last point
-		ls = append(ls, orb.Point{1.0, 1.0})
-		// reduce full ecdf using Visvalingam-Whyatt algorithm to
-		// "numPoints" points. See:
-		// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
-		simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
-		compressedECDF = simplifier.Simplify(ls).(orb.LineString)
-		ecdf = make([][2]float64, len(compressedECDF))
-		for i := range compressedECDF {
-			ecdf[i] = [2]float64(compressedECDF[i])
-		}
-	} else {
-		ecdf = [][2]float64{{0.0,0.0}, {1.0, 1.0}}
+	var compressedECDF orb.LineString
+	ls := orb.LineString{}
+	// print points of the empirical cumulative freq
+	sumP := float64(0.0)
+	// Correction term for Kahan's sum
+	cP := float64(0.0)
+	// add first point to line string
+	ls = append(ls, orb.Point{0.0, 0.0})
+	// iterate through all items
+	for i := range n {
+		// Implement Kahan's summation to avoid errors
+		// for accumulated probabilities (they might be very small)
+		// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+		x := pdf[i][0]
+		f := pdf[i][1]
+		yP := f - cP
+		tP := sumP + yP
+		cP = (tP - sumP) - yP
+		sumP = tP
+		// add new point to Ecdf
+		ls = append(ls, orb.Point{x, sumP})
+	}
+	// add last point
+	ls = append(ls, orb.Point{1.0, 1.0})
+	// reduce full ecdf using Visvalingam-Whyatt algorithm to
+	// "numPoints" points. See:
+	// https://en.wikipedia.org/wiki/Visvalingam-Whyatt_algorithm
+	simplifier := simplify.VisvalingamKeep(stochastic.NumECDFPoints)
+	compressedECDF = simplifier.Simplify(ls).(orb.LineString)
+	ecdf := make([][2]float64, len(compressedECDF))
+	for i := range compressedECDF {
+		ecdf[i] = [2]float64(compressedECDF[i])
 	}
 	if err := Check(ecdf); err != nil {
 		panic(fmt.Sprintf("PDFtoCDF: cannot create valid CDF from counting statistics; Error %v", err))

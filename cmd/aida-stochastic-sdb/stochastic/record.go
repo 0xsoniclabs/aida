@@ -35,7 +35,7 @@ import (
 var StochasticRecordCommand = cli.Command{
 	Action:    stochasticRecordAction,
 	Name:      "record",
-	Usage:     "record StateDB events while processing blocks",
+	Usage:     "record Markovian state while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.CpuProfileFlag,
@@ -51,10 +51,10 @@ The stochastic record command requires two arguments:
 <blockNumFirst> <blockNumLast>
 
 <blockNumFirst> and <blockNumLast> are the first and
-last block for recording events.`,
+last block for recording state.`,
 }
 
-// stochasticRecordAction implements recording of events.
+// stochasticRecordAction implements recording of state. 
 func stochasticRecordAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
@@ -106,12 +106,14 @@ func stochasticRecordAction(ctx *cli.Context) error {
 			recState.RegisterOp(operations.BeginBlockID)
 			oldBlock = tx.Block
 		}
+		recState.RegisterOp(operations.BeginTransactionID)
 		var statedb state.StateDB
 		statedb = state.MakeInMemoryStateDB(substatecontext.NewWorldState(tx.InputSubstate), tx.Block)
 		statedb = recorder.NewStochasticProxy(statedb, &recState)
 		if _, err = processor.ProcessTransaction(statedb, int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)); err != nil {
 			return err
 		}
+		recState.RegisterOp(operations.EndTransactionID)
 
 		// report progress
 		sec = time.Since(start).Seconds()
@@ -128,7 +130,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 
 	sec = time.Since(start).Seconds()
 	fmt.Printf("stochastic record: Total elapsed time: %.3f s, processed %v blocks\n", sec, cfg.Last-cfg.First+1)
-	fmt.Printf("stochastic record: write events file ...\n")
+	fmt.Printf("stochastic record: write state file ...\n")
 	if cfg.Output == "" {
 		cfg.Output = "./state.json"
 	}

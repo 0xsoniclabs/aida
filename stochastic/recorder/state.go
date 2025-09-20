@@ -77,8 +77,10 @@ func (r *State) RegisterOp(op int) {
 	)
 }
 
-// RegisterSnapshot registers the delta between snapshot identifiers.
+// RegisterSnapshot registers the delta between snapshot identifiers 
+// and the operation RevertToSnapshot.
 func (r *State) RegisterSnapshot(delta int) {
+	r.RegisterOp(operations.RevertToSnapshotID)
 	r.snapshotFreq[delta]++
 }
 
@@ -172,7 +174,11 @@ func (r *State) JSON() StateJSON {
 			// normalize row
 			for j := 0; j < operations.NumArgOps; j++ {
 				if r.argOpFreq[j] > 0 {
-					row = append(row, float64(r.transitFreq[i][j])/float64(total))
+					probability := float64(0.0)
+					if total > 0 { 
+						probability = float64(r.transitFreq[i][j])/float64(total)
+					} 
+					row = append(row, probability)
 				}
 			}
 			A = append(A, row)
@@ -194,7 +200,6 @@ func (r *State) JSON() StateJSON {
 		f := float64(r.snapshotFreq[arg]) / float64(total)
 		pdf = append(pdf, [2]float64{x, f})
 	}
-
 	ecdf := continuous.PDFtoCDF(pdf)
 	return StateJSON{
 		FileId:           "state",
@@ -235,18 +240,18 @@ func Read(filename string) (*StateJSON, error) {
 func (r *State) Write(filename string) (err error) {
 	f, fErr := os.Create(filename)
 	if fErr != nil {
-		return fmt.Errorf("cannot open JSON file; %v", fErr)
+		return fmt.Errorf("cannot open for writing JSON file; %v", fErr)
 	}
 	defer func(f *os.File) {
 		err = errors.Join(err, f.Close())
 	}(f)
 	jOut, err := json.MarshalIndent(r.JSON(), "", "    ")
 	if err != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", err)
+		return fmt.Errorf("failed to convert JSON; %v", err)
 	}
 	_, err = fmt.Fprintln(f, string(jOut))
 	if err != nil {
-		return fmt.Errorf("failed to convert JSON file; %v", err)
+		return fmt.Errorf("failed to write file; %v", err)
 	}
 	return nil
 }

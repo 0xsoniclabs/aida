@@ -37,10 +37,11 @@ func TestVisualizer_convertCountingData(t *testing.T) {
 
 func TestVisualizer_newCountingChart(t *testing.T) {
 	title := "Test Title"
-	subtitle := "Test Subtitle"
-	ecdf := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
+	contracts := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
+	values := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
+	keys := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
 
-	chart := newCountingChart(title, subtitle, ecdf)
+	chart := newCountingChart(title, contracts, values, keys)
 
 	assert.NotNil(t, chart)
 }

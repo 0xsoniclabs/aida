@@ -23,7 +23,6 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/goccy/go-graphviz"
@@ -79,7 +78,7 @@ func convertCountingData(data [][2]float64) []opts.LineData {
 }
 
 // newCountingChart creates a line chart for a counting statistic.
-func newCountingChart(title string, subtitle string, ecdf [][2]float64) *charts.Line {
+func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, values[][2]float64) *charts.Line {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme: types.ThemeChalk,
@@ -99,26 +98,22 @@ func newCountingChart(title string, subtitle string, ecdf [][2]float64) *charts.
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
 			Title:    title,
-			Subtitle: subtitle,
 		}))
-	chart.AddSeries("ECDF", convertCountingData(ecdf))
+	chart.AddSeries("Contracts", convertCountingData(contracts)).AddSeries("Keys", convertCountingData(keys)).AddSeries("Values", convertCountingData(values))
+	      
 	return chart
 }
 
 // renderCounting renders counting statistics.
 func renderCounting(w http.ResponseWriter, r *http.Request) {
 	data := GetData()
-	contracts := newCountingChart("Counting Statistics", "for Contract-Addresses",
-		data.Contracts.A_CDF)
-	keys := newCountingChart("Counting Statistics", "for Storage-Keys",
-		data.Keys.A_CDF)
-	values := newCountingChart("Counting Statistics", "for Storage-Values",
-		data.Values.A_CDF)
-
-	// TODO: Set HTML title via GlobalOption
-	page := components.NewPage()
-	page.AddCharts(contracts, keys, values)
-	page.Render(w)
+	chart := newCountingChart(
+		"Counting Statistics", 
+		data.Contracts.A_CDF,
+		data.Keys.A_CDF,
+		data.Values.A_CDF,
+	)
+	chart.Render(w)
 }
 
 // renderSnapshotStast renders a line chart for a snapshot statistics
@@ -181,7 +176,6 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Queuing Probabilities",
-			Subtitle: "for contract-addresses, storage-keys, and storage-values",
 		}))
 	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
 	scatter.Render(w)

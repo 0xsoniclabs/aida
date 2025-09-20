@@ -27,7 +27,7 @@ import (
 var StochasticGenerateCommand = cli.Command{
 	Action:    stochasticGenerateAction,
 	Name:      "generate",
-	Usage:     "generate uniform events file",
+	Usage:     "generate uniform state file",
 	ArgsUsage: "",
 	Flags: []cli.Flag{
 		&logger.LogLevelFlag,
@@ -39,7 +39,7 @@ var StochasticGenerateCommand = cli.Command{
 		&utils.ValuesNumberFlag,
 		&utils.SnapshotDepthFlag,
 	},
-	Description: "The stochastic produces an events.json file with uniform parameters",
+	Description: "The stochastic produces an state.json file with uniform parameters",
 }
 
 // stochasticGenerateAction produces a state file with uniform parameters
@@ -50,7 +50,7 @@ func stochasticGenerateAction(ctx *cli.Context) error {
 		return err
 	}
 	log := logger.NewLogger(cfg.LogLevel, "StochasticGenerate")
-	log.Info("Produce uniform stochastic events")
+	log.Info("Produce uniform stochastic state")
 	state, err := recorder.GenerateUniformState(cfg, log)
 	if err != nil {
 		return err
