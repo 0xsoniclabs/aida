@@ -349,6 +349,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		value common.Hash
 		db    = ss.db
 		rg    = ss.rg
+		msg   string
 	)
 
 	// fetch indexes from index access argumentss only when an argument is required
@@ -405,17 +406,20 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		}
 
 		// print operation
-		ss.log.Infof("opcode:%v (%v)", operations.OpText[op], opc)
+		msg = fmt.Sprintf("opcode:%v (%v) ", operations.OpText[op], opc)
 
 		// print indexes of contract address, storage key, and storage value.
 		if addrCl != stochastic.NoArgID {
-			ss.log.Infof(" addr-idx: %v", addrIdx)
+			msg = fmt.Sprintf("%v addr-idx: %v", msg, addrIdx)
+			msg = fmt.Sprintf("%v addr: %v", msg, addr)
 		}
 		if keyCl != stochastic.NoArgID {
-			ss.log.Infof(" key-idx: %v", keyIdx)
+			msg = fmt.Sprintf("%v key-idx: %v", msg, keyIdx)
+			msg = fmt.Sprintf("%v key: %v", msg, key)
 		}
 		if valueCl != stochastic.NoArgID {
-			ss.log.Infof(" value-idx: %v", valueIdx)
+			msg = fmt.Sprintf("%v value-idx: %v", msg, valueIdx)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 	}
 
@@ -423,13 +427,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.AddBalanceID:
 		value := rg.Int63n(BalanceRange)
 		if ss.traceDebug {
-			ss.log.Infof("value: %v", value)
+			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
 		db.AddBalance(addr, uint256.NewInt(uint64(value)), 0)
 
 	case operations.BeginBlockID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.blockNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.blockNum)
 		}
 		err := db.BeginBlock(ss.blockNum)
 		if err != nil {
@@ -440,13 +444,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 
 	case operations.BeginSyncPeriodID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.syncPeriodNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.syncPeriodNum)
 		}
 		db.BeginSyncPeriod(ss.syncPeriodNum)
 
 	case operations.BeginTransactionID:
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", ss.txNum)
+			msg = fmt.Sprintf("%v id: %v", msg, ss.txNum)
 		}
 		err := db.BeginTransaction(ss.txNum)
 		if err != nil {
@@ -533,7 +537,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			}
 			snapshot := ss.activeSnapshots[snapshotIdx]
 			if ss.traceDebug {
-				ss.log.Infof(" id: %v", snapshot)
+				msg = fmt.Sprintf("%v id: %v", msg, snapshot)
 			}
 			ss.activeSnapshots = ss.activeSnapshots[:snapshotIdx+1]
 
@@ -552,7 +556,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.SetCodeID:
 		sz := rg.Intn(MaxCodeSize-1) + 1
 		if ss.traceDebug {
-			ss.log.Infof(" code-size: %v", sz)
+			msg = fmt.Sprintf("%v code-size: %v", msg, sz)
 		}
 		code := make([]byte, sz)
 		_, err := randReadBytes(rg, code)
@@ -575,7 +579,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.SnapshotID:
 		id := db.Snapshot()
 		if ss.traceDebug {
-			ss.log.Infof(" id: %v", id)
+			msg = fmt.Sprintf("%v id: %v", msg, id)
 		}
 		ss.activeSnapshots = append(ss.activeSnapshots, id)
 
@@ -587,12 +591,13 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			// in the current snapshot
 			value := uint64(rg.Int63n(int64(balance)))
 			if ss.traceDebug {
-				ss.log.Infof(" value: %v", value)
+				msg = fmt.Sprintf("%v value: %v", msg, value)
 			}
 			db.SubBalance(addr, uint256.NewInt(value), 0)
 		}
 	default:
 		return fmt.Errorf("execute: invalid operation %v; opcode %v", operations.OpText[op], op)
 	}
+	ss.log.Infof("%s", msg)
 	return nil
 }
