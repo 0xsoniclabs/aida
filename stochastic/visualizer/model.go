@@ -25,8 +25,8 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/markov"
 )
 
-// StateData contains the statistical visualisation data for the markov chain
-type StateData struct {
+// StatsData contains the statistical visualisation data for the markov chain
+type StatsData struct {
 	Contracts ArgumentData // contract-address view model
 	Keys      ArgumentData // storage-key view model
 	Values    ArgumentData // storage-value view model
@@ -58,16 +58,16 @@ type OpData struct {
 	value float64 // operation's value (either probability or frequency)
 }
 
-// state is the singleton for the viewing model.
-var state StateData
+// stats is the singleton for the viewing model.
+var stats StatsData
 
 // GetData returns the pointer to the singleton.
-func GetData() *StateData {
-	return &state
+func GetData() *StatsData {
+	return &stats
 }
 
 // PopulateData populates the model from the JSON struct
-func (e *StateData) PopulateData(d *recorder.StatsJSON) {
+func (e *StatsData) PopulateData(d *recorder.StatsJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)

@@ -58,7 +58,7 @@ func TestData_PopulateData(t *testing.T) {
 			"BS",
 		},
 	}
-	e := &StateData{}
+	e := &StatsData{}
 	e.PopulateData(d)
 	expectedStationary := []OpData{
 		{label: "BT", value: 0.3333333333333333},

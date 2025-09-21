@@ -116,7 +116,7 @@ func renderCounting(w http.ResponseWriter, r *http.Request) {
 	chart.Render(w)
 }
 
-// renderSnapshotStast renders a line chart for a snapshot statistics
+// renderSnapshotStats renders a line chart for a snapshot statistics
 func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
@@ -340,13 +340,13 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, txt)
 }
 
-// FireUpWeb produces a data model for the recorded markov state and
+// FireUpWeb produces a data model for the recorded markov stats and
 // visualizes with a local web-server.
-func FireUpWeb(stateJSON *recorder.StatsJSON, addr string) {
+func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
 	model := GetData()
-	model.PopulateData(stateJSON)
+	model.PopulateData(statsJSON)
 
 	// create web server
 	http.HandleFunc("/", renderMain)

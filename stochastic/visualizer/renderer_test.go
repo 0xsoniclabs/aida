@@ -1,7 +1,7 @@
 // Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
-// Aida is free software: you can redistribute it and/or modify
+// Aida is freessoftware: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
@@ -105,7 +105,7 @@ func TestVisualizer_convertQueuingData(t *testing.T) {
 }
 
 func TestVisualizer_renderQueuing(t *testing.T) {
-	e := &StateData{}
+	e := &StatsData{}
 	e.Contracts.Q_PMF = []float64{0.1, 0.2}
 	e.Keys.Q_PMF = []float64{0.3, 0.4}
 	e.Values.Q_PMF = []float64{0.5, 0.6}
@@ -152,7 +152,7 @@ func TestVisualizer_convertOperationLabel(t *testing.T) {
 }
 
 func TestVisualizer_renderOperationStats(t *testing.T) {
-	e := &StateData{}
+	e := &StatsData{}
 	e.Stationary = []OpData{
 		{label: "op1", value: 0.3},
 		{label: "op2", value: 0.7},
@@ -170,7 +170,7 @@ func TestVisualizer_renderOperationStats(t *testing.T) {
 }
 
 func TestVisualizer_renderTransactionalOperationStats(t *testing.T) {
-	e := &StateData{}
+	e := &StatsData{}
 	e.TxOperation = []OpData{
 		{label: "tx_op1", value: 1.5},
 		{label: "tx_op2", value: 2.5},
@@ -191,7 +191,7 @@ func TestVisualizer_renderTransactionalOperationStats(t *testing.T) {
 }
 
 func TestVisualizer_renderSimplifiedMarkovChain(t *testing.T) {
-	e := &StateData{}
+	e := &StatsData{}
 	// Initialize a simple matrix with some non-zero values
 	for i := 0; i < operations.NumOps; i++ {
 		for j := 0; j < operations.NumOps; j++ {
@@ -217,7 +217,7 @@ func TestVisualizer_renderSimplifiedMarkovChain(t *testing.T) {
 }
 
 func TestVisualizer_renderMarkovChain(t *testing.T) {
-	e := &StateData{}
+	e := &StatsData{}
 	e.OperationLabel = []string{"op1", "op2", "op3"}
 	e.StochasticMatrix = [][]float64{
 		{0.5, 0.3, 0.2},
