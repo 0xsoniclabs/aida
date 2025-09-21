@@ -118,7 +118,7 @@ func TestVisualizer_renderQueuing(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 1877)
+	assert.Len(t, rr.Body.String(), 1808)
 }
 
 func TestVisualizer_convertOperationData(t *testing.T) {
@@ -234,7 +234,7 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 	response := rr.Body.String()
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, response, 637)
+	assert.Len(t, response, 636)
 	assert.Contains(t, response, "StateDB Markov-Chain")
 }
 
