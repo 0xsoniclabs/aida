@@ -30,7 +30,7 @@ import (
 var StochasticVisualizeCommand = cli.Command{
 	Action:    stochasticVisualizeAction,
 	Name:      "visualize",
-	Usage:     "produces a graphical view of the estimated parameters for various distributions",
+	Usage:     "produces a graphical view of the stats for the Markovian process",
 	ArgsUsage: "<stats-file>",
 	Flags: []cli.Flag{
 		&utils.PortFlag,
@@ -39,7 +39,7 @@ var StochasticVisualizeCommand = cli.Command{
 The stochastic visualize command requires one argument:
 <stats.json>
 
-<stats.json> is the event file produced by the stochastic recorder.`,
+<stats.json> is the event file produced by the stochastic recorder or generator.`,
 }
 
 // stochasticVisualizeAction implements the visualize command for computing statistical parameters.

@@ -35,8 +35,8 @@ import (
 var StochasticReplayCommand = cli.Command{
 	Action:    stochasticReplayAction,
 	Name:      "replay",
-	Usage:     "Simulates StateDB operations using a random generator with realistic distributions",
-	ArgsUsage: "<simulation-length> <simulation-file>",
+	Usage:     "Simulates StateDB operations using a Markovian Process",
+	ArgsUsage: "<simulation-length> <stats-file>",
 	Flags: []cli.Flag{
 		&utils.BalanceRangeFlag,
 		&utils.CarmenSchemaFlag,
@@ -59,10 +59,10 @@ var StochasticReplayCommand = cli.Command{
 	},
 	Description: `
 The stochastic replay command requires two argument:
-<simulation-length> <simulation.json>
+<simulation-length> <stats.json>
 
 <simulation-length> determines the number of blocks
-<simulation.json> contains the simulation parameters produced by the stochastic estimator.`,
+<stats.json> contains the stats for the Markovian Process.`,
 }
 
 // stochasticReplayAction implements the replay command. The user provides simulation file and
