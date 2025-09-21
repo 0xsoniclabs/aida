@@ -1,4 +1,4 @@
-// Copyright 2025 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package stochastic
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -107,7 +108,9 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(stateDbDir)
+	defer func(path string) {
+		err = errors.Join(err, os.RemoveAll(path))
+	}(stateDbDir)
 
 	// Enable tracing if debug flag is set
 	if cfg.Trace {

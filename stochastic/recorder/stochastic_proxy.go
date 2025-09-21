@@ -119,6 +119,11 @@ func (p *StochasticProxy) GetCommittedState(address common.Address, key common.H
 	return p.db.GetCommittedState(address, key)
 }
 
+func (p *StochasticProxy) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
+	p.stats.CountKeyOp(operations.GetStateAndCommittedStateID, &address, &hash)
+	return p.db.GetStateAndCommittedState(address, hash)
+}
+
 func (p *StochasticProxy) GetState(address common.Address, key common.Hash) common.Hash {
 	p.stats.CountKeyOp(operations.GetStateID, &address, &key)
 	return p.db.GetState(address, key)

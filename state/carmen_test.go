@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -266,7 +266,16 @@ func TestCarmenState_StateOperations(t *testing.T) {
 
 			csDB.SetState(addr, key, value)
 
-			if csDB.GetState(addr, key) != value {
+			state := csDB.GetState(addr, key)
+			if state != value {
+				t.Fatal("failed to update account state")
+			}
+
+			state, committed := csDB.GetStateAndCommittedState(addr, key)
+			if state != value {
+				t.Fatal("failed to update account state")
+			}
+			if committed != (common.Hash{}) {
 				t.Fatal("failed to update account state")
 			}
 		})

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ func initStochasticApp() *cli.App {
 	return &cli.App{
 		Name:      "Aida Stochastic-Test Manager",
 		HelpName:  "stochastic",
-		Copyright: "(c) 2022-23 Fantom Foundation",
+		Copyright: "(c) 2025 Sonic Labs",
 		Flags:     []cli.Flag{},
 		Commands: []*cli.Command{
 			&stochastic.StochasticGenerateCommand,
@@ -43,9 +43,9 @@ func initStochasticApp() *cli.App {
 // main implements "stochastic" cli stochasticApplication.
 func main() {
 	app := initStochasticApp()
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run([]string{"stochastic", "generate"}); err != nil {
 		code := 1
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(code)
 	}
 }

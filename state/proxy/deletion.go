@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -128,6 +128,10 @@ func (r *DeletionProxy) GetRefund() uint64 {
 func (r *DeletionProxy) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
 	value := r.db.GetCommittedState(addr, key)
 	return value
+}
+
+func (r *DeletionProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	return r.db.GetStateAndCommittedState(addr, key)
 }
 
 // GetState retrieves a value from the StateDB.

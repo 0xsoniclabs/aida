@@ -1,30 +1,30 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
+	"errors"
+	"os"
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestUtils_createTestUpdateDB(t *testing.T) {
-	dbPath := t.TempDir() + "/testUpdateDB"
-	db, err := createTestUpdateDB(dbPath)
-	if err != nil {
-		t.Fatalf("Failed to create test update DB: %v", err)
-	}
-	defer func(db substateDb.UpdateDB) {
-		e := db.Close()
-		if e != nil {
-			t.Fatalf("Failed to close test update DB: %v", e)
-		}
-	}(db)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, db)
-}
 
 func TestUtils_getTestSubstate(t *testing.T) {
 	ss := GetTestSubstate("default")
@@ -50,7 +50,7 @@ func TestUtils_Must(t *testing.T) {
 }
 
 func TestUtils_CreateTestSubstateDb(t *testing.T) {
-	ss, path := CreateTestSubstateDb(t)
+	ss, path := CreateTestSubstateDb(t, substateDb.ProtobufEncodingSchema)
 	sdb, err := substateDb.NewDefaultSubstateDB(path)
 	require.NoError(t, err)
 	gotSs, err := sdb.GetSubstate(ss.Block, ss.Transaction)
@@ -79,4 +79,13 @@ func TestArgsBuilder_NewArgs(t *testing.T) {
 	assert.Equal(t, "0", args[8])
 	assert.Equal(t, "--f4", args[9])
 	assert.Equal(t, 10, len(args))
+}
+
+func TestUtils_DownloadTestDataset(t *testing.T) {
+	outputDir := t.TempDir()
+	err := DownloadTestDataset(outputDir)
+	assert.NoError(t, err)
+	stat, err := os.Stat(outputDir)
+	assert.NoError(t, err)
+	assert.NotZero(t, stat.Size())
 }

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -142,7 +142,12 @@ func (s *gethStateDB) SetNonce(addr common.Address, value uint64, reason tracing
 }
 
 func (s *gethStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
-	return s.db.GetCommittedState(addr, key)
+	_, commitedState := s.db.GetStateAndCommittedState(addr, key)
+	return commitedState
+}
+
+func (s *gethStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	return s.db.GetStateAndCommittedState(addr, key)
 }
 
 func (s *gethStateDB) GetState(addr common.Address, key common.Hash) common.Hash {

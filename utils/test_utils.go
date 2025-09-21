@@ -1,43 +1,42 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package utils
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	substateDb "github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/updateset"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 )
-
-var testUpdateSet = &updateset.UpdateSet{
-	WorldState: substate.WorldState{
-		types.Address{1}: &substate.Account{
-			Nonce:   1,
-			Balance: new(uint256.Int).SetUint64(1),
-		},
-		types.Address{2}: &substate.Account{
-			Nonce:   2,
-			Balance: new(uint256.Int).SetUint64(2),
-		},
-	},
-	Block: 1,
-}
-
-var testDeletedAccounts = []types.Address{{3}, {4}}
-
-func createTestUpdateDB(dbPath string) (substateDb.UpdateDB, error) {
-	db, err := substateDb.NewUpdateDB(dbPath, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
 
 func GetTestSubstate(encoding string) *substate.Substate {
 	txType := int32(substate.SetCodeTxType)
@@ -104,13 +103,13 @@ func Must[T any](value T, err error) T {
 }
 
 // CreateTestSubstateDb creates a test substate database with a predefined substate.
-func CreateTestSubstateDb(t *testing.T) (*substate.Substate, string) {
+func CreateTestSubstateDb(t *testing.T, encoding substateDb.SubstateEncodingSchema) (*substate.Substate, string) {
 	path := t.TempDir()
 	db, err := substateDb.NewSubstateDB(path, nil, nil, nil)
 	require.NoError(t, err)
-	require.NoError(t, db.SetSubstateEncoding(substateDb.ProtobufEncodingSchema))
+	require.NoError(t, db.SetSubstateEncoding(encoding))
 
-	ss := GetTestSubstate("protobuf")
+	ss := GetTestSubstate(string(encoding))
 	err = db.PutSubstate(ss)
 	require.NoError(t, err)
 
@@ -171,4 +170,149 @@ func (b *ArgsBuilder) Arg(value interface{}) *ArgsBuilder {
 
 func (b *ArgsBuilder) Build() []string {
 	return b.args
+}
+
+func DownloadTestDataset(outputDir string) (err error) {
+	prefix := "https://github.com/0xsoniclabs/aida/releases/download/testdata/"
+	err = downloadFile(prefix+"events.json", filepath.Join(outputDir, "events.json"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"replay.json", filepath.Join(outputDir, "replay.json"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"trace.bin", filepath.Join(outputDir, "trace.bin"))
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"sample-pb-db.tar.gz", filepath.Join(outputDir, "sample-pb-db.tar.gz"))
+	if err != nil {
+		return err
+	}
+	err = extractTarGz(filepath.Join(outputDir, "sample-pb-db.tar.gz"), outputDir)
+	if err != nil {
+		return err
+	}
+	err = downloadFile(prefix+"sample-rlp-db.tar.gz", filepath.Join(outputDir, "sample-rlp-db.tar.gz"))
+	if err != nil {
+		return err
+	}
+	err = extractTarGz(filepath.Join(outputDir, "sample-rlp-db.tar.gz"), outputDir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func downloadFile(inputUrl, output string) (err error) {
+	resp, err := http.Get(inputUrl)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, resp.Body.Close())
+	}()
+
+	outFile, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, outFile.Close())
+	}()
+
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err = outFile.Sync(); err != nil {
+		return err
+	}
+	return nil
+}
+func extractTarGz(tarGzFile, outputFolder string) error {
+	// Open the tar.gz file
+	file, err := os.Open(tarGzFile)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, file.Close())
+	}()
+
+	// Create the gzip readerÏ
+	gr, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, gr.Close())
+	}()
+
+	// Create the tar reader
+	tr := tar.NewReader(gr)
+
+	// Extract the files from the tar reader
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			// Reached the end of the tar archive
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		// Determine the output file path
+		targetPath, err := filepath.Abs(filepath.Join(outputFolder, header.Name))
+		if err != nil {
+			return err
+		}
+
+		// Make sure that path does not contain ".."
+		if strings.Contains(targetPath, "..") {
+			return fmt.Errorf("tarfile is attempting to use path containing ..: %s", targetPath)
+		}
+
+		// Make sure that output file does not overwrite existing files
+		_, err = os.Stat(targetPath)
+		if err == nil || os.IsExist(err) {
+			return fmt.Errorf("tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
+		}
+
+		// Check if it's a directory
+		if header.FileInfo().IsDir() {
+			// Create the directory
+			err = os.MkdirAll(targetPath, 0755)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Create the parent directory of the file
+			err = os.MkdirAll(filepath.Dir(targetPath), 0755)
+			if err != nil {
+				return err
+			}
+
+			// Create the output file
+			file, err := os.Create(targetPath)
+			if err != nil {
+				return err
+			}
+
+			// Copy the file content from the tar reader to the output file
+			_, err = io.Copy(file, tr)
+			if err != nil {
+				return err
+			}
+
+			err = file.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

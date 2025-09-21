@@ -1,4 +1,4 @@
-// Copyright 2025 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package stochastic
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -73,18 +74,16 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 	iter := sdb.NewSubstateIterator(int(cfg.First), cfg.Workers)
 	defer iter.Release()
 	oldBlock := uint64(math.MaxUint64) // set to an infeasible block
-	var (
-		start   time.Time
-		sec     float64
-		lastSec float64
-	)
-	start = time.Now()
+	var sec float64
+	start := time.Now()
 	sec = time.Since(start).Seconds()
-	lastSec = time.Since(start).Seconds()
+	lastSec := time.Since(start).Seconds()
 	stats := recorder.NewStats()
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
 	stats.CountOp(operations.BeginSyncPeriodID)

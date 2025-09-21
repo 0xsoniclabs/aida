@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -130,7 +130,11 @@ type registerProgress struct {
 // 2. if database could not be created -> fatal, throw error
 // 3. if metadata table could not be created -> fatal, throw error
 func (rp *registerProgress) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", rp.GetId()))
+	id, err := rp.id.GetId()
+	if err != nil {
+		return err
+	}
+	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", id))
 	rp.log.Noticef("Registering to: %s", connection)
 
 	// 1. if directory does not exists -> fatal, throw error
@@ -267,7 +271,7 @@ func (rp *registerProgress) Reset() {
 }
 
 // GetId returns a unique id based on the run metadata.
-func (rp *registerProgress) GetId() string {
+func (rp *registerProgress) GetId() (string, error) {
 	return rp.id.GetId()
 }
 

@@ -367,6 +367,21 @@ func (mr *MockVmStateDBMockRecorder) GetState(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockVmStateDB)(nil).GetState), arg0, arg1)
 }
 
+// GetStateAndCommittedState mocks base method.
+func (m *MockVmStateDB) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStateAndCommittedState", address, hash)
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(common.Hash)
+	return ret0, ret1
+}
+
+// GetStateAndCommittedState indicates an expected call of GetStateAndCommittedState.
+func (mr *MockVmStateDBMockRecorder) GetStateAndCommittedState(address, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateAndCommittedState", reflect.TypeOf((*MockVmStateDB)(nil).GetStateAndCommittedState), address, hash)
+}
+
 // GetStorageRoot mocks base method.
 func (m *MockVmStateDB) GetStorageRoot(arg0 common.Address) common.Hash {
 	m.ctrl.T.Helper()
@@ -979,6 +994,21 @@ func (m *MockNonCommittableStateDB) GetState(arg0 common.Address, arg1 common.Ha
 func (mr *MockNonCommittableStateDBMockRecorder) GetState(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockNonCommittableStateDB)(nil).GetState), arg0, arg1)
+}
+
+// GetStateAndCommittedState mocks base method.
+func (m *MockNonCommittableStateDB) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStateAndCommittedState", address, hash)
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(common.Hash)
+	return ret0, ret1
+}
+
+// GetStateAndCommittedState indicates an expected call of GetStateAndCommittedState.
+func (mr *MockNonCommittableStateDBMockRecorder) GetStateAndCommittedState(address, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateAndCommittedState", reflect.TypeOf((*MockNonCommittableStateDB)(nil).GetStateAndCommittedState), address, hash)
 }
 
 // GetStorageRoot mocks base method.
@@ -1761,6 +1791,21 @@ func (m *MockStateDB) GetState(arg0 common.Address, arg1 common.Hash) common.Has
 func (mr *MockStateDBMockRecorder) GetState(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStateDB)(nil).GetState), arg0, arg1)
+}
+
+// GetStateAndCommittedState mocks base method.
+func (m *MockStateDB) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStateAndCommittedState", address, hash)
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(common.Hash)
+	return ret0, ret1
+}
+
+// GetStateAndCommittedState indicates an expected call of GetStateAndCommittedState.
+func (mr *MockStateDBMockRecorder) GetStateAndCommittedState(address, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStateAndCommittedState", reflect.TypeOf((*MockStateDB)(nil).GetStateAndCommittedState), address, hash)
 }
 
 // GetStorageRoot mocks base method.

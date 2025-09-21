@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -36,6 +36,8 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -440,4 +442,19 @@ func TestRegisterProgress_ChecksDefaultReportInterval(t *testing.T) {
 			t.Errorf("Printing Interval incorrect. Expected = %d, Actual: %d", expectedFreq, rp.interval.End()-rp.interval.Start()+1)
 		}
 	}
+}
+
+func TestRegisterProgress_GetId(t *testing.T) {
+	cfg := &utils.Config{}
+	cfg.RegisterRun = "enabled"
+	cfg.First = 5
+	cfg.Last = 25
+	interval := 10
+
+	ext := MakeRegisterProgress(cfg, interval, OnPreBlock)
+	rp, ok := ext.(*registerProgress)
+	require.True(t, ok)
+	id, err := rp.GetId()
+	assert.NoError(t, err)
+	assert.Len(t, id, 38)
 }

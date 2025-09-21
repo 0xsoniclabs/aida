@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
@@ -806,9 +807,9 @@ func TestValidateStateDb_ValidationDoesNotFail(t *testing.T) {
 			log := logger.NewLogger("INFO", "TestStateDb")
 
 			// Create new prime context
-			pc := utils.NewPrimeContext(cfg, sDB, 0, log)
+			pc := prime.NewContext(cfg, sDB, log)
 			// Priming state DB with given world state
-			if err = pc.PrimeStateDB(ws, sDB); err != nil {
+			if err = pc.PrimeStateDB(ws); err != nil {
 				t.Fatal(err)
 			}
 
@@ -857,9 +858,9 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 			log := logger.NewLogger("INFO", "TestStateDb")
 
 			// Create new prime context
-			pc := utils.NewPrimeContext(cfg, sDB, 0, log)
+			pc := prime.NewContext(cfg, sDB, log)
 			// Priming state DB with given world state
-			pc.PrimeStateDB(ws, sDB)
+			pc.PrimeStateDB(ws)
 
 			// create new random address
 			addr := common.BytesToAddress(utils.MakeRandomByteSlice(t, 40))

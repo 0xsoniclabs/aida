@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -42,6 +43,6 @@ type ethStateTestDbPrimer struct {
 }
 
 func (e ethStateTestDbPrimer) PreBlock(st executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	primeCtx := utils.NewPrimeContext(e.cfg, ctx.State, 0, e.log)
-	return primeCtx.PrimeStateDB(st.Data.GetInputState(), ctx.State)
+	primeCtx := prime.NewContext(e.cfg, ctx.State, e.log)
+	return primeCtx.PrimeStateDB(st.Data.GetInputState())
 }

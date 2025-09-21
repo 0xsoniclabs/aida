@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -30,25 +30,23 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func Test_EthStateTestDbPrimer_PreBlockPriming(t *testing.T) {
+func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithoutPreExistedStateDb(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := ethStateTestDbPrimer{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrimer")}
 
 	testData := ethtest.CreateTestTransaction(t)
 	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1, Data: testData}
-	ctx := &executor.Context{}
 
 	mockCtrl := gomock.NewController(t)
 	mockState := state.NewMockStateDB(mockCtrl)
 	mockLoad := state.NewMockBulkLoad(mockCtrl)
 
-	mockState.EXPECT().BeginBlock(uint64(0))
-	mockState.EXPECT().BeginTransaction(uint32(0))
-	mockState.EXPECT().EndTransaction()
-	mockState.EXPECT().EndBlock()
-	mockState.EXPECT().StartBulkLoad(uint64(1)).Return(mockLoad, nil)
+	ctx := &executor.Context{
+		State: mockState,
+	}
+
+	mockState.EXPECT().StartBulkLoad(uint64(0)).Return(mockLoad, nil)
 	testData.GetInputState().ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-		mockState.EXPECT().Exist(addr).Return(false)
 		mockLoad.EXPECT().CreateAccount(addr)
 		mockLoad.EXPECT().SetBalance(addr, acc.GetBalance())
 		mockLoad.EXPECT().SetNonce(addr, acc.GetNonce())
@@ -56,16 +54,16 @@ func Test_EthStateTestDbPrimer_PreBlockPriming(t *testing.T) {
 	})
 	mockLoad.EXPECT().Close()
 
-	ctx.State = mockState
-
 	err := ext.PreBlock(st, ctx)
 	if err != nil {
 		t.Fatalf("unexpected err; %v", err)
 	}
 }
 
-func Test_EthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *testing.T) {
-	cfg := &utils.Config{}
+func TestEthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *testing.T) {
+	cfg := &utils.Config{
+		IsExistingStateDb: true,
+	}
 	ext := ethStateTestDbPrimer{cfg: cfg, log: logger.NewLogger(cfg.LogLevel, "EthStatePrimer")}
 
 	testData := ethtest.CreateTestTransaction(t)
@@ -99,7 +97,7 @@ func Test_EthStateTestDbPrimer_PreBlockPrimingWorksWithPreExistedStateDb(t *test
 	}
 }
 
-func TestMakeEthStateTestDbPrimer(t *testing.T) {
+func TestEthStateTestDbPrimer_MakeEthStateTestDbPrimer(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeEthStateTestDbPrimer(cfg)
 

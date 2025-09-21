@@ -1,3 +1,19 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package primer
 
 import (
@@ -6,6 +22,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
@@ -35,22 +52,26 @@ func TestTxPrimer_PreRun(t *testing.T) {
 func TestTxPrimer_PreTransaction(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	cfg := &utils.Config{}
 	mockDb := state.NewMockStateDB(ctrl)
+	mockTxContext := txcontext.NewMockTxContext(ctrl)
+
+	cfg := &utils.Config{}
 	log := logger.NewLogger(cfg.LogLevel, "test")
 	ext := &txPrimer{
-		primeCtx: utils.NewPrimeContext(cfg, mockDb, 0, log),
+		primeCtx: prime.NewContext(cfg, mockDb, log),
 		cfg:      cfg,
 		log:      log,
 	}
-	mockTxContext := txcontext.NewMockTxContext(ctrl)
 	alloc, _ := utils.MakeWorldState(t)
 	ws := txcontext.NewWorldState(alloc)
 	st := executor.State[txcontext.TxContext]{Block: 1, Transaction: 1, Data: mockTxContext}
 	ctx := &executor.Context{}
-	mockTxContext.EXPECT().GetInputState().Return(ws)
 	mockErr := errors.New("mock error")
-	mockDb.EXPECT().BeginBlock(gomock.Any()).Return(mockErr).Times(1)
+
+	mockTxContext.EXPECT().GetInputState().Return(ws)
+	mockDb.EXPECT().StartBulkLoad(gomock.Any()).Return(nil, mockErr)
+
 	err := ext.PreTransaction(st, ctx)
 	assert.Error(t, err)
+	assert.ErrorContains(t, err, "mock error")
 }

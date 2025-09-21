@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -24,10 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
-	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -53,141 +51,6 @@ func TestStatedb_InitCloseStateDB(t *testing.T) {
 			err = sDB.Close()
 			if err != nil {
 				t.Fatalf("failed to close state DB: %v", err)
-			}
-		})
-	}
-}
-
-// TestStatedb_DeleteDestroyedAccountsFromWorldState tests removal of destroyed accounts from given world state
-func TestStatedb_DeleteDestroyedAccountsFromWorldState(t *testing.T) {
-	for _, tc := range GetStateDbTestCases() {
-		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
-			cfg := MakeTestConfig(tc)
-			// Generating randomized world state
-			ws, addrList := MakeWorldState(t)
-			// Init directory for destroyed accounts DB
-			deletionDb := t.TempDir()
-			// Pick two account which will represent destroyed ones
-			destroyedAccounts := []substatetypes.Address{
-				substatetypes.Address(addrList[0]),
-				substatetypes.Address(addrList[50]),
-			}
-
-			// Update config to enable removal of destroyed accounts
-			cfg.DeletionDb = deletionDb
-
-			// Initializing backend DB for storing destroyed accounts
-			daBackend, err := db.NewDefaultBaseDB(deletionDb)
-			if err != nil {
-				t.Fatalf("failed to create backend DB: %s; %v", deletionDb, err)
-			}
-
-			// Creating new destroyed accounts DB
-			daDB := db.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
-
-			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
-			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
-			if err != nil {
-				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
-			}
-
-			// Closing destroyed accounts DB
-			err = daDB.Close()
-			if err != nil {
-				t.Fatalf("failed to close destroyed accounts DB: %v", err)
-			}
-
-			// Call for removal of destroyed accounts from given world state
-			err = DeleteDestroyedAccountsFromWorldState(ws, cfg, 5)
-			if err != nil {
-				t.Fatalf("failed to delete accounts from the world state: %v", err)
-			}
-
-			// check if accounts are not present anymore
-			if ws.Get(common.Address(destroyedAccounts[0])) != nil || ws.Get(common.Address(destroyedAccounts[1])) != nil {
-				t.Fatalf("failed to delete accounts from the world state")
-			}
-		})
-	}
-}
-
-// TestStatedb_DeleteDestroyedAccountsFromWorldState tests removal of deleted accounts from given state DB
-func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
-	for _, tc := range GetStateDbTestCases() {
-		t.Run(fmt.Sprintf("DB variant: %s; shadowImpl: %s; archive variant: %s", tc.Variant, tc.ShadowImpl, tc.ArchiveVariant), func(t *testing.T) {
-			cfg := MakeTestConfig(tc)
-			// Generating randomized world state
-			ws, addrList := MakeWorldState(t)
-			// Init directory for destroyed accounts DB
-			deletedAccountsDir := t.TempDir()
-			// Pick two account which will represent destroyed ones
-			destroyedAccounts := []substatetypes.Address{
-				substatetypes.Address(addrList[0]),
-				substatetypes.Address(addrList[50]),
-			}
-
-			// Update config to enable removal of destroyed accounts
-			cfg.DeletionDb = deletedAccountsDir
-
-			// Initializing backend DB for storing destroyed accounts
-			base, err := db.NewDefaultBaseDB(deletedAccountsDir)
-			if err != nil {
-				t.Fatalf("failed to create backend DB: %s; %v", deletedAccountsDir, err)
-			}
-
-			// Creating new destroyed accounts DB
-			daDB := db.MakeDefaultDestroyedAccountDBFromBaseDB(base)
-
-			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
-			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []substatetypes.Address{})
-			if err != nil {
-				t.Fatalf("failed to set destroyed accounts into DB: %v", err)
-			}
-
-			defer func(daDB *db.DestroyedAccountDB) {
-				e := daDB.Close()
-				if e != nil {
-					t.Fatalf("failed to close destroyed accounts DB: %v", e)
-				}
-			}(daDB)
-
-			// Initialization of state DB
-			sDB, _, err := PrepareStateDB(cfg)
-			if err != nil {
-				t.Fatalf("failed to create state DB: %v", err)
-			}
-
-			log := logger.NewLogger("INFO", "TestStateDb")
-
-			// Create new prime context
-			pc := NewPrimeContext(cfg, sDB, 0, log)
-			// Priming state DB with given world state
-			err = pc.PrimeStateDB(ws, sDB)
-			if err != nil {
-				t.Fatalf("cannot prime statedb; %v", err)
-			}
-
-			// Call for removal of destroyed accounts from state DB
-			err = DeleteDestroyedAccountsFromStateDB(sDB, cfg, 5, base)
-			if err != nil {
-				t.Fatalf("failed to delete accounts from the state DB: %v", err)
-			}
-
-			err = state.BeginCarmenDbTestContext(sDB)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// check if accounts are not present anymore
-			for _, da := range destroyedAccounts {
-				if sDB.Exist(common.Address(da)) {
-					t.Fatalf("failed to delete destroyed accounts from the state DB")
-				}
-			}
-
-			err = state.CloseCarmenDbTestContext(sDB)
-			if err != nil {
-				t.Fatal(err)
 			}
 		})
 	}

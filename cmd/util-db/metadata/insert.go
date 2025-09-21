@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package db
+package metadata
 
 import (
 	"encoding/hex"
@@ -22,83 +22,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/urfave/cli/v2"
 )
 
-var MetadataCommand = cli.Command{
-	Name:  "metadata",
-	Usage: "Does action with AidaDb metadata",
-	Subcommands: []*cli.Command{
-		&cmdPrintMetadata,
-		&cmdGenerateMetadata,
-		&InsertMetadataCommand,
-		&RemoveMetadataCommand,
-	},
-}
-
-var cmdPrintMetadata = cli.Command{
-	Action: printMetadata,
-	Name:   "print",
-	Usage:  "Prints metadata",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-	},
-}
-
-func printMetadata(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
-	if argErr != nil {
-		return argErr
-	}
-
-	return utildb.PrintMetadata(cfg.AidaDb)
-}
-
-var cmdGenerateMetadata = cli.Command{
-	Action: generateMetadata,
-	Name:   "generate",
-	Usage:  "Generates new metadata for given chain-id",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-		&utils.ChainIDFlag,
-	},
-}
-
-func generateMetadata(ctx *cli.Context) error {
-	cfg, argErr := utils.NewConfig(ctx, utils.NoArgs)
-	if argErr != nil {
-		return argErr
-	}
-
-	base, err := db.NewDefaultBaseDB(cfg.AidaDb)
-	if err != nil {
-		return err
-	}
-
-	defer base.Close()
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
-	fb, lb, ok := utils.FindBlockRangeInSubstate(sdb)
-	if !ok {
-		return errors.New("cannot find block range in substate")
-	}
-
-	md := utils.NewAidaDbMetadata(base, "INFO")
-	md.FirstBlock = fb
-	md.LastBlock = lb
-	if err = md.SetFreshMetadata(cfg.ChainID); err != nil {
-		return err
-	}
-
-	return utildb.PrintMetadata(cfg.AidaDb)
-
-}
-
-// InsertMetadataCommand is a generic command for inserting any metadata key/value pair into AidaDb
-var InsertMetadataCommand = cli.Command{
-	Action: insertMetadata,
+// insertCommand is a generic command for inserting any metadata key/value pair into AidaDb
+var insertCommand = cli.Command{
+	Action: insertAction,
 	Name:   "insert",
 	Usage:  "inserts key/value metadata pair into AidaDb",
 	Flags: []cli.Flag{
@@ -111,8 +42,8 @@ If given key is not metadata-key, operation fails.
 `,
 }
 
-// insertMetadata key/value pair into AidaDb
-func insertMetadata(ctx *cli.Context) error {
+// insertAction key/value pair into AidaDb
+func insertAction(ctx *cli.Context) (finalErr error) {
 	var (
 		err error
 		val uint64
@@ -133,7 +64,9 @@ func insertMetadata(ctx *cli.Context) error {
 		return err
 	}
 
-	defer base.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, base.Close())
+	}()
 
 	md := utils.NewAidaDbMetadata(base, "INFO")
 
@@ -217,37 +150,6 @@ func insertMetadata(ctx *cli.Context) error {
 	default:
 		return fmt.Errorf("incorrect keyArg: %v", keyArg)
 	}
-
-	return nil
-}
-
-// RemoveMetadataCommand is a command used for creating testing environment without metadata
-var RemoveMetadataCommand = cli.Command{
-	Action: removeMetadata,
-	Name:   "remove",
-	Usage:  "remove metadata from aidaDb",
-	Flags: []cli.Flag{
-		&utils.AidaDbFlag,
-	},
-	Description: `
-Removes block and epoch range and ChainID from metadata for given AidaDb.
-`,
-}
-
-// removeMetadata command is used for testing scenario where AidaDb does not have metadata and a patch
-// is applied onto it
-func removeMetadata(ctx *cli.Context) error {
-	aidaDbPath := ctx.String(utils.AidaDbFlag.Name)
-
-	// open db
-	base, err := db.NewDefaultBaseDB(aidaDbPath)
-	if err != nil {
-		return err
-	}
-
-	defer base.Close()
-	md := utils.NewAidaDbMetadata(base, "DEBUG")
-	md.DeleteMetadata()
 
 	return nil
 }

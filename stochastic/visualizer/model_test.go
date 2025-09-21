@@ -1,4 +1,4 @@
-// Copyright 2025 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -19,6 +19,7 @@ package visualizer
 import (
 	"testing"
 
+	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/stretchr/testify/assert"
@@ -75,8 +76,9 @@ func TestData_PopulateData(t *testing.T) {
 	assert.InDelta(t, float64(1), e.BlocksPerSyncPeriod, 1e-12)
 	assert.Equal(t, d.Operations, e.OperationLabel)
 	assert.Equal(t, d.StochasticMatrix, e.StochasticMatrix)
-	assert.Equal(t, 24, len(e.TxOperation))
-	assert.Equal(t, 30, len(e.SimplifiedMatrix))
+	// SyncPeriod, Block and Tx operations are excluded
+	assert.Equal(t, operations.NumOps-6, len(e.TxOperation))
+	assert.Equal(t, operations.NumOps, len(e.SimplifiedMatrix))
 }
 
 func TestAccessData_PopulateAccess(t *testing.T) {

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
@@ -62,8 +63,10 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 0, Data: data})
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: data})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 0, Data: data})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: data})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -103,7 +106,7 @@ func TestVmSdb_Eth_AllDbEventsAreIssuedInOrder(t *testing.T) {
 
 	err = runEth(cfg, provider, db, processor, nil)
 	if err != nil {
-		errors.Unwrap(err)
+		require.NoError(t, errors.Unwrap(err))
 		if strings.Contains(err.Error(), "intrinsic gas too low") {
 			return
 		}
@@ -126,13 +129,17 @@ func TestVmSdb_Eth_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
 			// Tx 1
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			assert.NoError(t, err)
 			// Tx 2
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 2, Data: data})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 2, Data: data})
+			assert.NoError(t, err)
 			// Tx 3
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 3, Data: data})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 3, Data: data})
+			assert.NoError(t, err)
 			// Tx 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: utils.PseudoTx, Data: data})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 5, Transaction: utils.PseudoTx, Data: data})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -202,7 +209,8 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -244,7 +252,7 @@ func TestVmSdb_Eth_ValidationDoesNotFailOnValidTransaction(t *testing.T) {
 
 	err = runEth(cfg, provider, db, processor, nil)
 	if err != nil {
-		errors.Unwrap(err)
+		require.NoError(t, errors.Unwrap(err))
 		if strings.Contains(err.Error(), "intrinsic gas too low") {
 			return
 		}
@@ -263,7 +271,8 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: data})
+			assert.NoError(t, err)
 			return nil
 		})
 
@@ -297,7 +306,7 @@ func TestVmSdb_Eth_ValidationDoesFailOnInvalidTransaction(t *testing.T) {
 		t.Fatal("run must fail")
 	}
 
-	errors.Unwrap(err)
+	require.NoError(t, errors.Unwrap(err))
 	if !strings.Contains(err.Error(), "pre alloc validation failed") {
 		t.Fatalf("unexpected error\ngot: %v\n want: %v", err, "pre alloc validation failed")
 	}

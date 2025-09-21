@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -185,6 +185,12 @@ func (s *carmenStateDB) SetNonce(addr common.Address, value uint64, reason traci
 
 func (s *carmenStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
 	return common.Hash(s.txCtx.GetCommittedState(carmen.Address(addr), carmen.Key(key)))
+}
+
+func (s *carmenStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	state := s.GetState(addr, key)
+	commitedState := s.GetCommittedState(addr, key)
+	return state, commitedState
 }
 
 func (s *carmenStateDB) GetState(addr common.Address, key common.Hash) common.Hash {

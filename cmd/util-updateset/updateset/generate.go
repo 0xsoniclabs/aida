@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/prime"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/0xsoniclabs/substate/substate"
@@ -38,10 +39,8 @@ var GenUpdateSetCommand = cli.Command{
 	ArgsUsage: "<blockNumLast> <interval>",
 	Flags: []cli.Flag{
 		&utils.ChainIDFlag,
-		&utils.DeletionDbFlag,
 		&utils.AidaDbFlag,
 		&utils.WorkersFlag,
-		&utils.UpdateDbFlag,
 		&utils.UpdateBufferSizeFlag,
 		&utils.ValidateFlag,
 		&logger.LogLevelFlag,
@@ -107,26 +106,34 @@ func generateUpdateSet(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer udb.Close()
+	defer func(udb db.UpdateDB) {
+		err = errors.Join(err, udb.Close())
+	}(udb)
 
+	// TODO if we pass actual aida-db, other db path will be overwritten
+	// TODO if we use aida-db only, we cannot open for write and for read at the same time
 	// iterate through subsets in sequence
 	sdb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 
 	ddb, err := db.NewReadOnlyDestroyedAccountDB(cfg.DeletionDb)
 	if err != nil {
 		return err
 	}
-	defer ddb.Close()
+	defer func() {
+		err = errors.Join(err, ddb.Close())
+	}()
 
 	return GenUpdateSet(cfg, sdb, udb, ddb, cfg.First, cfg.Last, interval)
 }
 
 // GenUpdateSet generates a series of update sets from substate db
-func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db.DestroyedAccountDB, first, last uint64, interval uint64) error {
+func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb db.DestroyedAccountDB, first, last uint64, interval uint64) error {
 	var (
 		err               error
 		destroyedAccounts []substatetypes.Address
@@ -179,7 +186,7 @@ func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db
 						return fmt.Errorf("cannot get update set; %w", err)
 					}
 					if !us.WorldState.Equal(update) {
-						return fmt.Errorf("validation failed\n")
+						return fmt.Errorf("validation failed")
 					}
 				}
 
@@ -203,11 +210,11 @@ func GenUpdateSet(cfg *utils.Config, sdb db.SubstateDB, udb db.UpdateDB, ddb *db
 		// clear storage of destroyed and resurrected accounts in
 		// the current transaction before merging its substate
 		destroyed, resurrected, err := ddb.GetDestroyedAccounts(curBlock, tx.Transaction)
-		if !(err == nil || errors.Is(err, leveldb.ErrNotFound)) {
+		if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 			return err
 		}
-		utils.ClearAccountStorage(update, destroyed)
-		utils.ClearAccountStorage(update, resurrected)
+		prime.ClearAccountStorage(update, destroyed)
+		prime.ClearAccountStorage(update, resurrected)
 		destroyedAccounts = append(destroyedAccounts, destroyed...)
 		destroyedAccounts = append(destroyedAccounts, resurrected...)
 

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -168,6 +168,14 @@ func (p *ProfilerProxy) GetCommittedState(addr common.Address, key common.Hash) 
 		res = p.db.GetCommittedState(addr, key)
 	})
 	return res
+}
+
+func (p *ProfilerProxy) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	var val, origin common.Hash
+	p.do(operation.GetStateAndCommittedStateID, func() {
+		val, origin = p.db.GetStateAndCommittedState(addr, key)
+	})
+	return val, origin
 }
 
 // GetState retrieves a value from the StateDB.

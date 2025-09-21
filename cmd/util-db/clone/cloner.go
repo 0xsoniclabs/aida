@@ -1,3 +1,19 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package clone
 
 import (
@@ -6,11 +22,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/0xsoniclabs/substate/types/hash"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utildb/dbcomponent"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/types"
 	"github.com/Fantom-foundation/lachesis-base/kvdb"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -19,15 +38,15 @@ import (
 const cloneWriteChanSize = 1
 
 type cloner struct {
-	cfg             *utils.Config
-	log             logger.Logger
-	aidaDb, cloneDb db.BaseDB
-	cloneComponent  dbcomponent.DbComponent
-	count           uint64
-	typ             utils.AidaDbType
-	writeCh         chan rawEntry
-	errCh           chan error
-	stopCh          chan any
+	cfg               *utils.Config
+	log               logger.Logger
+	sourceDb, cloneDb db.SubstateDB
+	cloneComponent    dbcomponent.DbComponent
+	count             uint64
+	typ               utils.AidaDbType
+	writeCh           chan rawEntry
+	errCh             chan error
+	stopCh            chan any
 }
 
 // rawEntry representation of database entry
@@ -37,7 +56,7 @@ type rawEntry struct {
 }
 
 // clone creates aida-db copy or subset - either clone(standalone - containing all necessary data for given range) or patch(containing data only for given range)
-func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbType) error {
+func clone(cfg *utils.Config, aidaDb, cloneDb db.SubstateDB, cloneType utils.AidaDbType) error {
 	var err error
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb clone")
 
@@ -54,7 +73,7 @@ func clone(cfg *utils.Config, aidaDb, cloneDb db.BaseDB, cloneType utils.AidaDbT
 	c := cloner{
 		cfg:            cfg,
 		cloneDb:        cloneDb,
-		aidaDb:         aidaDb,
+		sourceDb:       aidaDb,
 		log:            log,
 		typ:            cloneType,
 		cloneComponent: dbComponent,
@@ -94,7 +113,7 @@ func (c *cloner) clone() error {
 	}
 
 	if c.typ != utils.CustomType {
-		sourceMD := utils.NewAidaDbMetadata(c.aidaDb, c.cfg.LogLevel)
+		sourceMD := utils.NewAidaDbMetadata(c.sourceDb, c.cfg.LogLevel)
 		chainID := sourceMD.GetChainID()
 
 		if err = utils.ProcessCloneLikeMetadata(c.cloneDb, c.typ, c.cfg.LogLevel, c.cfg.First, c.cfg.Last, chainID); err != nil {
@@ -123,8 +142,10 @@ func (c *cloner) readData() error {
 		return c.readDataCustom()
 	}
 
-	c.read([]byte(db.CodeDBPrefix), 0, nil)
-
+	err := c.cloneCodes()
+	if err != nil {
+		return fmt.Errorf("cannot clone code; %w", err)
+	}
 	firstDeletionBlock := c.cfg.First
 
 	// update c.cfg.First block before loading deletions and substates, because for utils.CloneType those are necessary to be from last updateset onward
@@ -146,7 +167,7 @@ func (c *cloner) readData() error {
 
 	c.readSubstate()
 
-	err := c.readStateHashes()
+	err = c.readStateHashes()
 	if err != nil {
 		return fmt.Errorf("cannot read state hashes; %v", err)
 	}
@@ -216,7 +237,7 @@ func (c *cloner) write() {
 func (c *cloner) read(prefix []byte, start uint64, condition func(key []byte) (bool, error)) {
 	c.log.Noticef("Copying data with prefix %v", string(prefix))
 
-	iter := c.aidaDb.NewIterator(prefix, db.BlockToBytes(start))
+	iter := c.sourceDb.NewIterator(prefix, db.BlockToBytes(start))
 	defer iter.Release()
 
 	for iter.Next() {
@@ -297,7 +318,7 @@ func (c *cloner) readStateHashes() error {
 
 	for i := c.cfg.First; i <= c.cfg.Last; i++ {
 		key := []byte(utils.StateRootHashPrefix + hexutil.EncodeUint64(i))
-		value, err := c.aidaDb.Get(key)
+		value, err := c.sourceDb.Get(key)
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				errCounter++
@@ -402,7 +423,7 @@ func (c *cloner) validateDbSize() error {
 func (c *cloner) closeDbs() {
 	var err error
 
-	if err = c.aidaDb.Close(); err != nil {
+	if err = c.sourceDb.Close(); err != nil {
 		c.log.Errorf("cannot close aida-db")
 	}
 
@@ -425,7 +446,10 @@ func (c *cloner) stop() {
 // readDataCustom retrieves data from source AidaDb based on given dbComponent
 func (c *cloner) readDataCustom() error {
 	if c.cloneComponent == dbcomponent.Substate || c.cloneComponent == dbcomponent.All {
-		c.read([]byte(db.CodeDBPrefix), 0, nil)
+		err := c.cloneCodes()
+		if err != nil {
+			return fmt.Errorf("cannot clone codes; %w", err)
+		}
 		c.readSubstate()
 	}
 
@@ -460,7 +484,7 @@ func (c *cloner) readDataCustom() error {
 }
 
 // openCloningDbs prepares aida and target databases
-func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, error) {
+func openCloningDbs(aidaDbPath, targetDbPath string, substateEncoding db.SubstateEncodingSchema) (db.SubstateDB, db.SubstateDB, error) {
 	var err error
 
 	// if source db doesn't exist raise error
@@ -475,19 +499,87 @@ func openCloningDbs(aidaDbPath, targetDbPath string) (db.BaseDB, db.BaseDB, erro
 		return nil, nil, fmt.Errorf("specified target-db %v already exists", targetDbPath)
 	}
 
-	var aidaDb, cloneDb db.BaseDB
+	var aidaDb, cloneDb db.SubstateDB
 
 	// open db
-	aidaDb, err = db.NewReadOnlyBaseDB(aidaDbPath)
+	aidaDb, err = db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("aidaDb %v; %v", aidaDbPath, err)
+		return nil, nil, fmt.Errorf("sourceDb %v; %v", aidaDbPath, err)
 	}
 
-	// open cloneDbAction
-	cloneDb, err = db.NewDefaultBaseDB(targetDbPath)
+	cloneDb, err = db.NewDefaultSubstateDB(targetDbPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("targetDb %v; %v", targetDbPath, err)
 	}
 
+	err = cloneDb.SetSubstateEncoding(substateEncoding)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot set substate encoding; %v", err)
+	}
+
 	return aidaDb, cloneDb, nil
+}
+
+// cloneCodes clones only codes touched by substates within the given block range
+func (c *cloner) cloneCodes() error {
+	c.log.Noticef("Copying data with prefix %v", db.CodeDBPrefix)
+
+	iter := c.sourceDb.NewSubstateIterator(int(c.cfg.First), c.cfg.Workers)
+	defer iter.Release()
+
+	savedCodes := make(map[types.Hash]struct{})
+	for iter.Next() {
+		ss := iter.Value()
+		if ss.Block > c.cfg.Last {
+			return nil
+		}
+
+		// If the transaction is a contract creation,
+		// we need to save the hash of the data as code,
+		// otherwise it is not saved at all
+		if ss.Message.To == nil {
+			dataHash := hash.Keccak256Hash(ss.Message.Data)
+			if _, ok := savedCodes[dataHash]; !ok {
+				savedCodes[dataHash] = struct{}{}
+				if err := c.putCode(ss.Message.Data); err != nil {
+					return fmt.Errorf("failed to put data as code blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+			}
+		}
+
+		for _, acc := range ss.InputSubstate {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[acc.CodeHash()] = struct{}{}
+			}
+		}
+
+		for _, acc := range ss.OutputSubstate {
+			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+				if err := c.putCode(acc.Code); err != nil {
+					return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
+				}
+				savedCodes[acc.CodeHash()] = struct{}{}
+			}
+		}
+
+	}
+	c.log.Noticef("Prefix %v done", db.CodeDBPrefix)
+	return iter.Error()
+}
+
+// putCode puts code into the cloneDb and increments the count
+func (c *cloner) putCode(code []byte) error {
+	// skip empty codes
+	if len(code) == 0 {
+		return nil
+	}
+	c.count++
+	err := c.cloneDb.PutCode(code)
+	if err != nil {
+		return err
+	}
+	return nil
 }
