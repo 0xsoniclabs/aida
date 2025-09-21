@@ -234,6 +234,22 @@ func TestStochasticProxy_GetCommittedState(t *testing.T) {
 	assert.Equal(t, key, out)
 }
 
+// TestStochasticProxy_GetStateAndCommittedState tests the GetStateAndCommittedState method of StochasticProxy.
+func TestStochasticProxy_GetStateAndCommittedState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	base := state.NewMockStateDB(ctrl)
+	reg := NewStats()
+	proxy := NewStochasticProxy(base, &reg)
+	addr := common.HexToAddress("0x1234")
+	key := common.HexToHash("0x5678")
+	base.EXPECT().GetStateAndCommittedState(addr, key).Return(key,key)
+	out1, out2 := proxy.GetStateAndCommittedState(addr, key)
+	assert.Equal(t, key, out1)
+	assert.Equal(t, key, out2)
+}
+
+
 // TestStochasticProxy_GetState tests the GetState method of StochasticProxy.
 func TestStochasticProxy_GetState(t *testing.T) {
 	ctrl := gomock.NewController(t)
