@@ -517,6 +517,9 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.GetStateID:
 		db.GetState(addr, key)
 
+	case operations.GetStateAndCommittedStateID:
+		db.GetStateAndCommittedState(addr, key)
+
 	case operations.GetStorageRootID:
 		db.GetStorageRoot(addr)
 
