@@ -308,13 +308,13 @@ func TestStats_JSON(t *testing.T) {
 	r.transitFreq[argop1][argop2] = 1
 	r.transitFreq[argop2][argop1] = 2
 
-	r.CountSnapshot(0)
+	r.CountSnapshot(0)  // implicit RevertToSnapshot op
 	r.CountSnapshot(1)
 
 	stats := r.JSON()
-	assert.Equal(t, "state", stats.FileId)
-	assert.Len(t, stats.Operations, 2)
-	assert.Len(t, stats.StochasticMatrix, 2)
+	assert.Equal(t, "stats", stats.FileId)
+	assert.Len(t, stats.Operations, 3)
+	assert.Len(t, stats.StochasticMatrix, 3)
 
 	labelIndex := map[string]int{}
 	for i, lab := range stats.Operations {
@@ -322,16 +322,22 @@ func TestStats_JSON(t *testing.T) {
 	}
 	exp1, _ := operations.EncodeOpcode(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	exp2, _ := operations.EncodeOpcode(operations.SetStateID, stochastic.NewArgID, stochastic.NewArgID, stochastic.NewArgID)
+	exp3, _ := operations.EncodeOpcode(operations.RevertToSnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	i1, ok1 := labelIndex[exp1]
 	i2, ok2 := labelIndex[exp2]
-	if !(ok1 && ok2) {
-		t.Fatalf("expected labels %v and %v in %v", exp1, exp2, stats.Operations)
+	i3, ok3 := labelIndex[exp3]
+	if !(ok1 && ok2 && ok3) {
+		t.Fatalf("expected labels %v, %v and %v in %v", exp1, exp2, exp3, stats.Operations)
 	}
 
 	assert.InDelta(t, 0.0, stats.StochasticMatrix[i1][i1], 1e-9)
 	assert.InDelta(t, 1.0, stats.StochasticMatrix[i1][i2], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i1][i3], 1e-9)
 	assert.InDelta(t, 1.0, stats.StochasticMatrix[i2][i1], 1e-9)
 	assert.InDelta(t, 0.0, stats.StochasticMatrix[i2][i2], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i2][i3], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i3][i1], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i3][i2], 1e-9)
 
 	if len(stats.SnapshotECDF) > 0 {
 		last := stats.SnapshotECDF[len(stats.SnapshotECDF)-1]
