@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -29,9 +29,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestStateUpdateFreq checks some operation labels with their argument classes.
-func TestStateUpdateFreq(t *testing.T) {
-	r := NewState()
+// TestStatsUpdateFreq checks some operation labels with their argument classes.
+func TestStatsUpdateFreq(t *testing.T) {
+	r := NewStats()
 
 	// check that frequencies of argument-encoded operations and
 	// transit frequencies are zero.
@@ -97,7 +97,7 @@ func TestStateUpdateFreq(t *testing.T) {
 }
 
 // checkFrequencies checks whether the operation and transit frequencies match the expected ones.
-func checkFrequencies(r *State, opFreq [operations.NumArgOps]uint64, transitFreq [operations.NumArgOps][operations.NumArgOps]uint64) bool {
+func checkFrequencies(r *Stats, opFreq [operations.NumArgOps]uint64, transitFreq [operations.NumArgOps][operations.NumArgOps]uint64) bool {
 	for i := 0; i < operations.NumArgOps; i++ {
 		if r.argOpFreq[i] != opFreq[i] {
 			return false
@@ -111,15 +111,15 @@ func checkFrequencies(r *State, opFreq [operations.NumArgOps]uint64, transitFreq
 	return true
 }
 
-// TestStateOperation checks operation registrations and their argument classes.
-func TestStateOperation(t *testing.T) {
+// TestStatsOperation checks operation registrations and their argument classes.
+func TestStatsOperation(t *testing.T) {
 	// operation/transit frequencies
 	var (
 		opFreq      [operations.NumArgOps]uint64
 		transitFreq [operations.NumArgOps][operations.NumArgOps]uint64
 	)
 
-	r := NewState()
+	r := NewStats()
 
 	// check that frequencies are zero.
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -128,7 +128,7 @@ func TestStateOperation(t *testing.T) {
 
 	// inject first operation and check frequencies.
 	addr := common.HexToAddress("0x000000010")
-	r.RegisterAddressOp(operations.CreateAccountID, &addr)
+	r.CountAddressOp(operations.CreateAccountID, &addr)
 	argop1, _ := operations.EncodeArgOp(operations.CreateAccountID, stochastic.NewArgID, stochastic.NoArgID, stochastic.NoArgID)
 	opFreq[argop1]++
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -137,7 +137,7 @@ func TestStateOperation(t *testing.T) {
 
 	// inject second operation and check frequencies.
 	key := common.HexToHash("0x000000200")
-	r.RegisterKeyOp(operations.GetStateID, &addr, &key)
+	r.CountKeyOp(operations.GetStateID, &addr, &key)
 	argop2, _ := operations.EncodeArgOp(operations.GetStateID, stochastic.PrevArgID, stochastic.NewArgID, stochastic.NoArgID)
 	opFreq[argop2]++
 	transitFreq[argop1][argop2]++
@@ -147,7 +147,7 @@ func TestStateOperation(t *testing.T) {
 
 	// inject third operation and check frequencies.
 	value := common.Hash{}
-	r.RegisterValueOp(operations.SetStateID, &addr, &key, &value)
+	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
 	argop3, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.PrevArgID, stochastic.PrevArgID, stochastic.ZeroArgID)
 	opFreq[argop3]++
 	transitFreq[argop2][argop3]++
@@ -156,7 +156,7 @@ func TestStateOperation(t *testing.T) {
 	}
 
 	// inject forth operation and check frequencies.
-	r.RegisterOp(operations.SnapshotID)
+	r.CountOp(operations.SnapshotID)
 	argop4, _ := operations.EncodeArgOp(operations.SnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	opFreq[argop4]++
 	transitFreq[argop3][argop4]++
@@ -165,15 +165,15 @@ func TestStateOperation(t *testing.T) {
 	}
 }
 
-// TestStateZeroOperation checks zero value, new and previous argument classes.
-func TestStateZeroOperation(t *testing.T) {
+// TestStatsZeroOperation checks zero value, new and previous argument classes.
+func TestStatsZeroOperation(t *testing.T) {
 	// operation/transit frequencies
 	var (
 		opFreq      [operations.NumArgOps]uint64
 		transitFreq [operations.NumArgOps][operations.NumArgOps]uint64
 	)
 
-	r := NewState()
+	r := NewStats()
 
 	// check that frequencies are zero.
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -184,7 +184,7 @@ func TestStateZeroOperation(t *testing.T) {
 	addr := common.Address{}
 	key := common.Hash{}
 	value := common.Hash{}
-	r.RegisterValueOp(operations.SetStateID, &addr, &key, &value)
+	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
 	argop1, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	opFreq[argop1]++
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -195,7 +195,7 @@ func TestStateZeroOperation(t *testing.T) {
 	addr = common.HexToAddress("0x12312121212")
 	key = common.HexToHash("0x232313123123213")
 	value = common.HexToHash("0x2301238021830912830")
-	r.RegisterValueOp(operations.SetStateID, &addr, &key, &value)
+	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
 	argop2, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.NewArgID, stochastic.NewArgID, stochastic.NewArgID)
 	opFreq[argop2]++
 	transitFreq[argop1][argop2]++
@@ -204,7 +204,7 @@ func TestStateZeroOperation(t *testing.T) {
 	}
 
 	// inject third operation and check frequencies.
-	r.RegisterValueOp(operations.SetStateID, &addr, &key, &value)
+	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
 	argop3, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.PrevArgID, stochastic.PrevArgID, stochastic.PrevArgID)
 	opFreq[argop3]++
 	transitFreq[argop2][argop3]++
@@ -213,78 +213,78 @@ func TestStateZeroOperation(t *testing.T) {
 	}
 }
 
-// TestStochastic_ReadState tests reading state from a JSON file.
-func TestStochastic_ReadState(t *testing.T) {
+// TestStochastic_ReadStats tests reading stats from a JSON file.
+func TestStochastic_ReadStats(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("success", func(t *testing.T) {
-		input := &StateJSON{
-			FileId: "state",
+		input := &StatsJSON{
+			FileId: "stats",
 		}
 		marshal, err := json.Marshal(input)
 		if err != nil {
-			t.Fatalf("cannot marshal StateJSON; %v", err)
+			t.Fatalf("cannot marshal StatsJSON; %v", err)
 		}
-		err = os.WriteFile(tempDir+"/state.json", marshal, 0644)
+		err = os.WriteFile(tempDir+"/stats.json", marshal, 0644)
 		if err != nil {
-			t.Fatalf("cannot write StateJSON to file; %v", err)
+			t.Fatalf("cannot write StatsJSON to file; %v", err)
 		}
 
-		state, err := Read(tempDir + "/state.json")
+		stats, err := Read(tempDir + "/stats.json")
 		assert.NoError(t, err)
-		assert.NotNil(t, state)
+		assert.NotNil(t, stats)
 	})
 
-	t.Run("no state file", func(t *testing.T) {
-		input := &StateJSON{}
+	t.Run("no stats file", func(t *testing.T) {
+		input := &StatsJSON{}
 		marshal, err := json.Marshal(input)
 		if err != nil {
-			t.Fatalf("cannot marshal StateJSON; %v", err)
+			t.Fatalf("cannot marshal StatsJSON; %v", err)
 		}
-		err = os.WriteFile(tempDir+"/state.json", marshal, 0644)
+		err = os.WriteFile(tempDir+"/stats.json", marshal, 0644)
 		if err != nil {
-			t.Fatalf("cannot write StateJSON to file; %v", err)
+			t.Fatalf("cannot write StatsJSON to file; %v", err)
 		}
 
-		state, err := Read(tempDir + "/state.json")
+		stats, err := Read(tempDir + "/stats.json")
 		assert.Error(t, err)
-		assert.Nil(t, state)
+		assert.Nil(t, stats)
 	})
 
 	t.Run("no json", func(t *testing.T) {
-		err := os.WriteFile(tempDir+"/state.json", []byte{}, 0644)
+		err := os.WriteFile(tempDir+"/stats.json", []byte{}, 0644)
 		if err != nil {
-			t.Fatalf("cannot write StateJSON to file; %v", err)
+			t.Fatalf("cannot write StatsJSON to file; %v", err)
 		}
-		state, err := Read(tempDir + "/state.json")
+		stats, err := Read(tempDir + "/stats.json")
 		assert.Error(t, err)
-		assert.Nil(t, state)
+		assert.Nil(t, stats)
 	})
 
 	t.Run("no exist", func(t *testing.T) {
-		state, err := Read(tempDir + "/1234.json")
+		stats, err := Read(tempDir + "/1234.json")
 		assert.Error(t, err)
-		assert.Nil(t, state)
+		assert.Nil(t, stats)
 	})
 }
 
-// TestState_RegisterSnapshotDelta checks snapshot registrations.
-func TestState_RegisterSnapshotDelta(t *testing.T) {
-	r := NewState()
-	r.RegisterSnapshot(3)
-	r.RegisterSnapshot(5)
+// TestStats_CountSnapshotDelta checks snapshot registrations.
+func TestStats_CountSnapshotDelta(t *testing.T) {
+	r := NewStats()
+	r.CountSnapshot(3)
+	r.CountSnapshot(5)
 	assert.Equal(t, uint64(1), r.snapshotFreq[3])
 	assert.Equal(t, uint64(1), r.snapshotFreq[5])
 }
 
-// TestState_WriteJSON_SuccessAndError tests writing state to a JSON file.
-func TestState_WriteJSON_SuccessAndError(t *testing.T) {
-	r := NewState()
-	r.RegisterSnapshot(1)
-	r.RegisterSnapshot(1)
+// TestStats_WriteJSON_SuccessAndError tests writing stats to a JSON file.
+func TestStats_WriteJSON_SuccessAndError(t *testing.T) {
+	r := NewStats()
+	r.CountSnapshot(1)
+	r.CountSnapshot(1)
 
 	tmp := t.TempDir()
-	file := tmp + "/state.json"
+	file := tmp + "/stats.json"
 	err := r.Write(file)
 	assert.NoError(t, err)
 	_, err = os.Stat(file)
@@ -295,9 +295,9 @@ func TestState_WriteJSON_SuccessAndError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// TestState_JSON checks JSON output of state.
-func TestState_JSON(t *testing.T) {
-	r := NewState()
+// TestStats_JSON checks JSON output of stats.
+func TestStats_JSON(t *testing.T) {
+	r := NewStats()
 
 	argop1, _ := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	argop2, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.NewArgID, stochastic.NewArgID, stochastic.NewArgID)
@@ -308,16 +308,16 @@ func TestState_JSON(t *testing.T) {
 	r.transitFreq[argop1][argop2] = 1
 	r.transitFreq[argop2][argop1] = 2
 
-	r.RegisterSnapshot(0)
-	r.RegisterSnapshot(1)
+	r.CountSnapshot(0)
+	r.CountSnapshot(1)
 
-	state := r.JSON()
-	assert.Equal(t, "state", state.FileId)
-	assert.Len(t, state.Operations, 2)
-	assert.Len(t, state.StochasticMatrix, 2)
+	stats := r.JSON()
+	assert.Equal(t, "state", stats.FileId)
+	assert.Len(t, stats.Operations, 2)
+	assert.Len(t, stats.StochasticMatrix, 2)
 
 	labelIndex := map[string]int{}
-	for i, lab := range state.Operations {
+	for i, lab := range stats.Operations {
 		labelIndex[lab] = i
 	}
 	exp1, _ := operations.EncodeOpcode(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
@@ -325,110 +325,112 @@ func TestState_JSON(t *testing.T) {
 	i1, ok1 := labelIndex[exp1]
 	i2, ok2 := labelIndex[exp2]
 	if !(ok1 && ok2) {
-		t.Fatalf("expected labels %v and %v in %v", exp1, exp2, state.Operations)
+		t.Fatalf("expected labels %v and %v in %v", exp1, exp2, stats.Operations)
 	}
 
-	assert.InDelta(t, 0.0, state.StochasticMatrix[i1][i1], 1e-9)
-	assert.InDelta(t, 1.0, state.StochasticMatrix[i1][i2], 1e-9)
-	assert.InDelta(t, 1.0, state.StochasticMatrix[i2][i1], 1e-9)
-	assert.InDelta(t, 0.0, state.StochasticMatrix[i2][i2], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i1][i1], 1e-9)
+	assert.InDelta(t, 1.0, stats.StochasticMatrix[i1][i2], 1e-9)
+	assert.InDelta(t, 1.0, stats.StochasticMatrix[i2][i1], 1e-9)
+	assert.InDelta(t, 0.0, stats.StochasticMatrix[i2][i2], 1e-9)
 
-	if len(state.SnapshotECDF) > 0 {
-		last := state.SnapshotECDF[len(state.SnapshotECDF)-1]
+	if len(stats.SnapshotECDF) > 0 {
+		last := stats.SnapshotECDF[len(stats.SnapshotECDF)-1]
 		assert.InDelta(t, 1.0, last[0], 1e-9)
 		assert.InDelta(t, 1.0, last[1], 1e-9)
 	}
 }
 
-// TestReadState_ReadErrorOnDirectory tests reading state from a directory instead of a file.
-func TestReadState_ReadErrorOnDirectory(t *testing.T) {
+// TestReadStats_ReadErrorOnDirectory tests reading stats from a directory instead of a file.
+func TestReadStats_ReadErrorOnDirectory(t *testing.T) {
 	dir := t.TempDir()
-	state, err := Read(dir)
+	stats, err := Read(dir)
 	assert.Error(t, err)
-	assert.Nil(t, state)
+	assert.Nil(t, stats)
 }
 
-// TestState_WriteJSON_MarshalError tests error handling during JSON marshalling.
-func TestState_WriteJSON_MarshalError(t *testing.T) {
-	r := NewState()
-	r.RegisterSnapshot(0)
+// TestStats_WriteJSON_MarshalError tests error handling during JSON marshalling.
+func TestStats_WriteJSON_MarshalError(t *testing.T) {
+	r := NewStats()
+	r.CountSnapshot(0)
 
 	tmp := t.TempDir()
-	err := r.Write(tmp + "/state.json")
+	err := r.Write(tmp + "/stats.json")
 	assert.Nil(t, err)
 }
 
-// TestState_WriteJSON_WriteError tests error handling during file writing.
-func TestState_WriteJSON_WriteError(t *testing.T) {
+// TestStats_WriteJSON_WriteError tests error handling during file writing.
+func TestStats_WriteJSON_WriteError(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("/dev/full is Linux-specific")
 	}
-	r := NewState()
+	r := NewStats()
 	// Avoid NaN in ecdf by using delta 1
-	r.RegisterSnapshot(1)
+	r.CountSnapshot(1)
 	err := r.Write("/dev/full")
 	assert.Error(t, err)
 }
 
 // The following tests check that invalid operation registrations cause a fatal error.
-func TestState_RegisterOp_FatalIfInvalid(t *testing.T) {
-	if os.Getenv("WANT_FATAL_REGISTER_OP") == "1" {
-		r := NewState()
-		r.RegisterOp(-1)
+func TestStats_CountOp_FatalIfInvalid(t *testing.T) {
+	if os.Getenv("WANT_FATAL_COUNT_OP") == "1" {
+		r := NewStats()
+		r.CountOp(-1)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterOp_FatalIfInvalid")
-	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_OP=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountOp_FatalIfInvalid")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_COUNT_OP=1")
 	err := cmd.Run()
 	if err == nil {
-		t.Fatalf("expected process to exit due to log.Fatalf in RegisterOp")
+		t.Fatalf("expected process to exit due to log.Fatalf in CountOp")
 	}
 }
 
-func TestState_RegisterAddressOp_FatalIfInvalid(t *testing.T) {
-	if os.Getenv("WANT_FATAL_REGISTER_ADDR") == "1" {
-		r := NewState()
+// TestStats_CountAddressOp_FatalIfInvalid checks that CountAddressOp with an invalid operation ID causes a fatal error.
+func TestStats_CountAddressOp_FatalIfInvalid(t *testing.T) {
+	if os.Getenv("WANT_FATAL_COUNT_ADDR") == "1" {
+		r := NewStats()
 		addr := common.Address{}
-		r.RegisterAddressOp(-1, &addr)
+		r.CountAddressOp(-1, &addr)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterAddressOp_FatalIfInvalid")
-	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_ADDR=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountAddressOp_FatalIfInvalid")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_COUNT_ADDR=1")
 	err := cmd.Run()
 	if err == nil {
-		t.Fatalf("expected process to exit due to log.Fatalf in RegisterAddressOp")
+		t.Fatalf("expected process to exit due to log.Fatalf in CountAddressOp")
 	}
 }
 
-func TestState_RegisterKeyOp_FatalIfInvalid(t *testing.T) {
-	if os.Getenv("WANT_FATAL_REGISTER_KEY") == "1" {
-		r := NewState()
+// TestStats_CountKeyOp_FatalIfInvalid checks that CountKeyOp with an invalid operation ID causes a fatal error.
+func TestStats_CountKeyOp_FatalIfInvalid(t *testing.T) {
+	if os.Getenv("WANT_FATAL_COUNT_KEY") == "1" {
+		r := NewStats()
 		addr := common.Address{}
 		key := common.Hash{}
-		r.RegisterKeyOp(-1, &addr, &key)
+		r.CountKeyOp(-1, &addr, &key)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterKeyOp_FatalIfInvalid")
-	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_KEY=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountKeyOp_FatalIfInvalid")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_COUNT_KEY=1")
 	err := cmd.Run()
 	if err == nil {
-		t.Fatalf("expected process to exit due to log.Fatalf in RegisterKeyOp")
+		t.Fatalf("expected process to exit due to log.Fatalf in CountKeyOp")
 	}
 }
 
-func TestState_RegisterValueOp_FatalIfInvalid(t *testing.T) {
-	if os.Getenv("WANT_FATAL_REGISTER_VALUE") == "1" {
-		r := NewState()
+func TestStats_CountValueOp_FatalIfInvalid(t *testing.T) {
+	if os.Getenv("WANT_FATAL_COUNT_VALUE") == "1" {
+		r := NewStats()
 		addr := common.Address{}
 		key := common.Hash{}
 		val := common.Hash{}
-		r.RegisterValueOp(-1, &addr, &key, &val)
+		r.CountValueOp(-1, &addr, &key, &val)
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestState_RegisterValueOp_FatalIfInvalid")
-	cmd.Env = append(os.Environ(), "WANT_FATAL_REGISTER_VALUE=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountValueOp_FatalIfInvalid")
+	cmd.Env = append(os.Environ(), "WANT_FATAL_COUNT_VALUE=1")
 	err := cmd.Run()
 	if err == nil {
-		t.Fatalf("expected process to exit due to log.Fatalf in RegisterValueOp")
+		t.Fatalf("expected process to exit due to log.Fatalf in CountValueOp")
 	}
 }

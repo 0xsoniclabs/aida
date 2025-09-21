@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -23,9 +23,9 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 )
 
-// GenerateUniformState produces a uniformly distributed state file.
-func GenerateUniformState(cfg *utils.Config, log logger.Logger) (*State, error) {
-	s := NewState()
+// GenerateUniformStats produces a uniformly distributed state file.
+func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) {
+	s := NewStats()
 	log.Infof("Number of contract addresses for priming: %v", cfg.ContractNumber)
 	for i := int64(0); i < cfg.ContractNumber; i++ {
 		for j := i - stochastic.QueueLen - 1; j <= i; j++ {

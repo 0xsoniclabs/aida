@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -289,7 +289,7 @@ func TestGetStochasticMatrix_Success(t *testing.T) {
 		Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}},
 		Queuing:  recArgs.QueueStatsJSON{Distribution: qpdf},
 	}
-	e := &recorder.StateJSON{
+	e := &recorder.StatsJSON{
 		Operations:       labels,
 		StochasticMatrix: A,
 		Contracts:        cls,
@@ -340,7 +340,7 @@ func TestRunStochasticReplay_Success(t *testing.T) {
 		qpdf[i] = 0.7 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{
+	e := &recorder.StatsJSON{
 		Operations:       labels,
 		StochasticMatrix: A,
 		Contracts:        cls,
@@ -390,7 +390,7 @@ func TestRunStochasticReplay_ErrorBreaks(t *testing.T) {
 		qpdf[i] = 0.75 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{
+	e := &recorder.StatsJSON{
 		Operations:       labels,
 		StochasticMatrix: A,
 		Contracts:        cls,
@@ -433,7 +433,7 @@ func TestRunStochasticReplay_ErrorContinue(t *testing.T) {
 		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{BalanceRange: 10, NonceRange: 10, RandomSeed: 2, ContinueOnFailure: true}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
 		t.Fatalf("expected aggregated error even when continuing on failure")
@@ -454,7 +454,7 @@ func TestEnableDebug(t *testing.T) {
 
 // TestGetStochasticMatrix_BadShape ensures error from MC creation bubbles up.
 func TestGetStochasticMatrix_BadShape(t *testing.T) {
-	e := &recorder.StateJSON{
+	e := &recorder.StatsJSON{
 		Operations:       []string{"BB", "EB"},
 		StochasticMatrix: [][]float64{{1.0, 0.0}}, // bad: rows != len(labels)
 		Contracts:        recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: make([]float64, stochastic.QueueLen)}},
@@ -495,7 +495,7 @@ func TestRunStochasticReplay_InvalidInitialState(t *testing.T) {
 		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
 		t.Fatalf("expected error due to invalid initial state")
 	}
@@ -527,7 +527,7 @@ func TestRunStochasticReplay_CannotDecodeOpcode(t *testing.T) {
 		qpdf[i] = 0.6 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
 		t.Fatalf("expected decode opcode error during run")
@@ -703,7 +703,7 @@ func TestPopulateReplayContext_PrimeError(t *testing.T) {
 		qpdf[i] = 0.8 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: []string{operations.OpMnemo(operations.BeginSyncPeriodID)}, StochasticMatrix: [][]float64{{1.0}}, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: []string{operations.OpMnemo(operations.BeginSyncPeriodID)}, StochasticMatrix: [][]float64{{1.0}}, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 
 	// Cause prime to fail at BeginBlock
 	db.EXPECT().BeginSyncPeriod(uint64(0))
@@ -746,7 +746,7 @@ func TestRunStochasticReplay_ProgressLogBranch(t *testing.T) {
 		qpdf[i] = 0.7 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -782,7 +782,7 @@ func TestRunStochasticReplay_LabelError(t *testing.T) {
 		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
 		t.Fatalf("expected label retrieval error")
@@ -817,7 +817,7 @@ func TestRunStochasticReplay_SampleError(t *testing.T) {
 		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10}
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err == nil {
 		t.Fatalf("expected sample error")
@@ -851,7 +851,7 @@ func TestRunStochasticReplay_EnableDebugInLoop(t *testing.T) {
 		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StateJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10, Debug: true, DebugFrom: 2}
 	if err := RunStochasticReplay(db, e, 2, cfg, logger.NewLogger("INFO", "test")); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -892,8 +892,8 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 	}
 
 	ecdf := [][2]float64{{0, 0}, {1, 1}}
-	badE := func() *recorder.StateJSON {
-		return &recorder.StateJSON{
+	badE := func() *recorder.StatsJSON {
+		return &recorder.StatsJSON{
 			Contracts:    recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: badDist}},
 			Keys:         recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
 			Values:       recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
@@ -904,8 +904,8 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 		t.Fatalf("expected error for bad contracts distribution")
 	}
 
-	badE2 := func() *recorder.StateJSON {
-		return &recorder.StateJSON{
+	badE2 := func() *recorder.StatsJSON {
+		return &recorder.StatsJSON{
 			Contracts:    recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
 			Keys:         recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: badDist}},
 			Values:       recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
@@ -916,8 +916,8 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 		t.Fatalf("expected error for bad keys distribution")
 	}
 
-	badE3 := func() *recorder.StateJSON {
-		return &recorder.StateJSON{
+	badE3 := func() *recorder.StatsJSON {
+		return &recorder.StatsJSON{
 			Contracts:    recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
 			Keys:         recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: goodDist}},
 			Values:       recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: ecdf}, Queuing: recArgs.QueueStatsJSON{Distribution: badDist}},

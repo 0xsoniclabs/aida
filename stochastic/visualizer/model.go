@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -67,7 +67,7 @@ func GetData() *StateData {
 }
 
 // PopulateData populates the model from the JSON struct
-func (e *StateData) PopulateData(d *recorder.StateJSON) {
+func (e *StateData) PopulateData(d *recorder.StatsJSON) {
 
 	// populate access stats for contract addresses
 	e.Contracts.PopulateAccess(&d.Contracts)
@@ -189,7 +189,7 @@ func (a *ArgumentData) PopulateAccess(d *arguments.ClassifierJSON) {
 }
 
 // PopulateSnapStats populates snapshot stats model
-func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StateJSON) {
+func (s *SnapshotData) PopulateSnapshotStats(d *recorder.StatsJSON) {
 	s.ECdf = make([][2]float64, len(d.SnapshotECDF))
 	copy(s.ECdf, d.SnapshotECDF)
 }

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ import (
 var StochasticRecordCommand = cli.Command{
 	Action:    stochasticRecordAction,
 	Name:      "record",
-	Usage:     "record Markovian state while processing blocks",
+	Usage:     "record Markovian stats while processing blocks",
 	ArgsUsage: "<blockNumFirst> <blockNumLast>",
 	Flags: []cli.Flag{
 		&utils.CpuProfileFlag,
@@ -51,10 +51,10 @@ The stochastic record command requires two arguments:
 <blockNumFirst> <blockNumLast>
 
 <blockNumFirst> and <blockNumLast> are the first and
-last block for recording state.`,
+last block for recording stats.`,
 }
 
-// stochasticRecordAction implements recording of state. 
+// stochasticRecordAction implements recording of stats.
 func stochasticRecordAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
@@ -85,9 +85,9 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	start = time.Now()
 	sec = time.Since(start).Seconds()
 	lastSec = time.Since(start).Seconds()
-	recState := recorder.NewState()
+	stats := recorder.NewStats()
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
-	recState.RegisterOp(operations.BeginSyncPeriodID)
+	stats.CountOp(operations.BeginSyncPeriodID)
 	for iter.Next() {
 		tx := iter.Value()
 		if oldBlock != tx.Block {
@@ -95,25 +95,25 @@ func stochasticRecordAction(ctx *cli.Context) error {
 				break
 			}
 			if oldBlock != math.MaxUint64 {
-				recState.RegisterOp(operations.EndBlockID)
+				stats.CountOp(operations.EndBlockID)
 				newSyncPeriod := tx.Block / cfg.SyncPeriodLength
 				for curSyncPeriod < newSyncPeriod {
-					recState.RegisterOp(operations.EndSyncPeriodID)
+					stats.CountOp(operations.EndSyncPeriodID)
 					curSyncPeriod++
-					recState.RegisterOp(operations.BeginSyncPeriodID)
+					stats.CountOp(operations.BeginSyncPeriodID)
 				}
 			}
-			recState.RegisterOp(operations.BeginBlockID)
+			stats.CountOp(operations.BeginBlockID)
 			oldBlock = tx.Block
 		}
-		recState.RegisterOp(operations.BeginTransactionID)
+		stats.CountOp(operations.BeginTransactionID)
 		var statedb state.StateDB
 		statedb = state.MakeInMemoryStateDB(substatecontext.NewWorldState(tx.InputSubstate), tx.Block)
-		statedb = recorder.NewStochasticProxy(statedb, &recState)
+		statedb = recorder.NewStochasticProxy(statedb, &stats)
 		if _, err = processor.ProcessTransaction(statedb, int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)); err != nil {
 			return err
 		}
-		recState.RegisterOp(operations.EndTransactionID)
+		stats.CountOp(operations.EndTransactionID)
 
 		// report progress
 		sec = time.Since(start).Seconds()
@@ -124,17 +124,17 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	}
 	// end last block
 	if oldBlock != math.MaxUint64 {
-		recState.RegisterOp(operations.EndBlockID)
+		stats.CountOp(operations.EndBlockID)
 	}
-	recState.RegisterOp(operations.EndSyncPeriodID)
+	stats.CountOp(operations.EndSyncPeriodID)
 
 	sec = time.Since(start).Seconds()
 	fmt.Printf("stochastic record: Total elapsed time: %.3f s, processed %v blocks\n", sec, cfg.Last-cfg.First+1)
-	fmt.Printf("stochastic record: write state file ...\n")
+	fmt.Printf("stochastic record: write stats file ...\n")
 	if cfg.Output == "" {
-		cfg.Output = "./state.json"
+		cfg.Output = "./stats.json"
 	}
-	if err = recState.Write(cfg.Output); err != nil {
+	if err = stats.Write(cfg.Output); err != nil {
 		return err
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -27,7 +27,7 @@ import (
 var StochasticGenerateCommand = cli.Command{
 	Action:    stochasticGenerateAction,
 	Name:      "generate",
-	Usage:     "generate uniform state file",
+	Usage:     "generate uniform stats file",
 	ArgsUsage: "",
 	Flags: []cli.Flag{
 		&logger.LogLevelFlag,
@@ -39,10 +39,10 @@ var StochasticGenerateCommand = cli.Command{
 		&utils.ValuesNumberFlag,
 		&utils.SnapshotDepthFlag,
 	},
-	Description: "The stochastic produces an state.json file with uniform parameters",
+	Description: "The stochastic produces an stats.json file with uniform parameters",
 }
 
-// stochasticGenerateAction produces a state file with uniform parameters
+// stochasticGenerateAction produces a stats file with uniform parameters
 // for stochastic testing.
 func stochasticGenerateAction(ctx *cli.Context) error {
 	cfg, err := utils.NewConfig(ctx, utils.NoArgs)
@@ -50,16 +50,16 @@ func stochasticGenerateAction(ctx *cli.Context) error {
 		return err
 	}
 	log := logger.NewLogger(cfg.LogLevel, "StochasticGenerate")
-	log.Info("Produce uniform stochastic state")
-	state, err := recorder.GenerateUniformState(cfg, log)
+	log.Info("Produce uniform stochastic stats")
+	stats, err := recorder.GenerateUniformStats(cfg, log)
 	if err != nil {
 		return err
 	}
 	if cfg.Output == "" {
-		cfg.Output = "./state.json"
+		cfg.Output = "./stats.json"
 	}
-	log.Noticef("Write state file %v", cfg.Output)
-	if err := state.Write(cfg.Output); err != nil {
+	log.Noticef("Write stats file %v", cfg.Output)
+	if err := stats.Write(cfg.Output); err != nil {
 		return err
 	}
 	return nil

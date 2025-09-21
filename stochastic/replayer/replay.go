@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -100,7 +100,7 @@ func newReplayContext(
 // populateReplayContext creates a stochastic state and primes the StateDB
 func populateReplayContext(
 	cfg *utils.Config,
-	e *recorder.StateJSON,
+	e *recorder.StatsJSON,
 	db state.StateDB,
 	rg *rand.Rand,
 	log logger.Logger,
@@ -151,7 +151,7 @@ func populateReplayContext(
 }
 
 // getStochasticMatrix returns the stochastic matrix with its operations and the initial state
-func getStochasticMatrix(e *recorder.StateJSON) (*markov.Chain, int, error) {
+func getStochasticMatrix(e *recorder.StatsJSON) (*markov.Chain, int, error) {
 	ops := e.Operations
 	A := e.StochasticMatrix
 	mc, err := markov.New(A, ops)
@@ -171,7 +171,7 @@ func getStochasticMatrix(e *recorder.StateJSON) (*markov.Chain, int, error) {
 // It requires the simulation model and simulation length. The trace-debug flag
 // enables/disables the printing of StateDB operations and their arguments on
 // the screen.
-func RunStochasticReplay(db state.StateDB, e *recorder.StateJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
+func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, cfg *utils.Config, log logger.Logger) error {
 	var (
 		opFrequency [operations.NumOps]uint64 // operation frequency
 		numOps      uint64                    // total number of operations

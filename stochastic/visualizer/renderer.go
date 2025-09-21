@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Fantom Foundation
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -78,7 +78,7 @@ func convertCountingData(data [][2]float64) []opts.LineData {
 }
 
 // newCountingChart creates a line chart for a counting statistic.
-func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, values[][2]float64) *charts.Line {
+func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, values [][2]float64) *charts.Line {
 	chart := charts.NewLine()
 	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme: types.ThemeChalk,
@@ -97,10 +97,10 @@ func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, v
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
-			Title:    title,
+			Title: title,
 		}))
 	chart.AddSeries("Contracts", convertCountingData(contracts)).AddSeries("Keys", convertCountingData(keys)).AddSeries("Values", convertCountingData(values))
-	      
+
 	return chart
 }
 
@@ -108,7 +108,7 @@ func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, v
 func renderCounting(w http.ResponseWriter, r *http.Request) {
 	data := GetData()
 	chart := newCountingChart(
-		"Counting Statistics", 
+		"Counting Statistics",
 		data.Contracts.A_CDF,
 		data.Keys.A_CDF,
 		data.Values.A_CDF,
@@ -175,7 +175,7 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: true}),
 		charts.WithTitleOpts(opts.Title{
-			Title:    "Queuing Probabilities",
+			Title: "Queuing Probabilities",
 		}))
 	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
 	scatter.Render(w)
@@ -342,7 +342,7 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // FireUpWeb produces a data model for the recorded markov state and
 // visualizes with a local web-server.
-func FireUpWeb(stateJSON *recorder.StateJSON, addr string) {
+func FireUpWeb(stateJSON *recorder.StatsJSON, addr string) {
 
 	// create data model (as a singleton) for visualization
 	model := GetData()
