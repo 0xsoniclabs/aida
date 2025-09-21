@@ -542,7 +542,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			if ss.traceDebug {
 				msg = fmt.Sprintf("%v id: %v", msg, snapshot)
 			}
-			ss.activeSnapshots = ss.activeSnapshots[:snapshotIdx+1]
+			ss.activeSnapshots = ss.activeSnapshots[:snapshotIdx]
 
 			// update active snapshots and perform a rollback in balance log
 			db.RevertToSnapshot(snapshot)

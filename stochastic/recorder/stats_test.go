@@ -308,7 +308,7 @@ func TestStats_JSON(t *testing.T) {
 	r.transitFreq[argop1][argop2] = 1
 	r.transitFreq[argop2][argop1] = 2
 
-	r.CountSnapshot(0)  // implicit RevertToSnapshot op
+	r.CountSnapshot(0) // implicit RevertToSnapshot op
 	r.CountSnapshot(1)
 
 	stats := r.JSON()

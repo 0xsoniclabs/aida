@@ -243,12 +243,11 @@ func TestStochasticProxy_GetStateAndCommittedState(t *testing.T) {
 	proxy := NewStochasticProxy(base, &reg)
 	addr := common.HexToAddress("0x1234")
 	key := common.HexToHash("0x5678")
-	base.EXPECT().GetStateAndCommittedState(addr, key).Return(key,key)
+	base.EXPECT().GetStateAndCommittedState(addr, key).Return(key, key)
 	out1, out2 := proxy.GetStateAndCommittedState(addr, key)
 	assert.Equal(t, key, out1)
 	assert.Equal(t, key, out2)
 }
-
 
 // TestStochasticProxy_GetState tests the GetState method of StochasticProxy.
 func TestStochasticProxy_GetState(t *testing.T) {
