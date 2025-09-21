@@ -28,6 +28,7 @@ import (
 type MockVmStateDB struct {
 	ctrl     *gomock.Controller
 	recorder *MockVmStateDBMockRecorder
+	isgomock struct{}
 }
 
 // MockVmStateDBMockRecorder is the mock recorder for MockVmStateDB.
@@ -642,6 +643,7 @@ func (mr *MockVmStateDBMockRecorder) Witness() *gomock.Call {
 type MockNonCommittableStateDB struct {
 	ctrl     *gomock.Controller
 	recorder *MockNonCommittableStateDBMockRecorder
+	isgomock struct{}
 }
 
 // MockNonCommittableStateDBMockRecorder is the mock recorder for MockNonCommittableStateDB.
@@ -1285,6 +1287,7 @@ func (mr *MockNonCommittableStateDBMockRecorder) Witness() *gomock.Call {
 type MockStateDB struct {
 	ctrl     *gomock.Controller
 	recorder *MockStateDBMockRecorder
+	isgomock struct{}
 }
 
 // MockStateDBMockRecorder is the mock recorder for MockStateDB.
@@ -2109,6 +2112,7 @@ func (mr *MockStateDBMockRecorder) Witness() *gomock.Call {
 type MockBulkLoad struct {
 	ctrl     *gomock.Controller
 	recorder *MockBulkLoadMockRecorder
+	isgomock struct{}
 }
 
 // MockBulkLoadMockRecorder is the mock recorder for MockBulkLoad.
