@@ -204,9 +204,10 @@ func (s *shadowVmStateDb) RevertToSnapshot(id int) {
 	if id < 0 || len(s.snapshots) <= id {
 		panic(fmt.Sprintf("invalid snapshot id: %v, max: %v", id, len(s.snapshots)))
 	}
+	s.verifyStateHash("RevertToSnapshot.Before")
 	s.prime.RevertToSnapshot(s.snapshots[id].prime)
 	s.shadow.RevertToSnapshot(s.snapshots[id].shadow)
-	s.verifyStateHash("RevertToSnapshot")
+	s.verifyStateHash("RevertToSnapshot.After")
 }
 
 func (s *shadowVmStateDb) BeginTransaction(tx uint32) error {
