@@ -601,6 +601,8 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	default:
 		return fmt.Errorf("execute: invalid operation %v; opcode %v", operations.OpText[op], op)
 	}
-	ss.log.Infof("%s", msg)
+	if ss.traceDebug && msg != "" {
+		ss.log.Infof("%s", msg)
+	}
 	return nil
 }
