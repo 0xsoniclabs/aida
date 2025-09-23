@@ -23,7 +23,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/carmen/go/carmen"
-	_ "github.com/0xsoniclabs/carmen/go/state/cppstate"
+	_ "github.com/0xsoniclabs/carmen/go/state/externalstate"
 	_ "github.com/0xsoniclabs/carmen/go/state/gostate"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
