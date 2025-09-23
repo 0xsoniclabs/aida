@@ -474,7 +474,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 			ss.log.Fatal(err)
 		}
 		ss.blockNum++
-		for addrIdx, _ := range ss.selfDestructed {
+		for addrIdx := range ss.selfDestructed {
 			if err := ss.contracts.Remove(addrIdx); err != nil {
 				return fmt.Errorf("deleteAccounts: failed deleting index (%v).", addrIdx)
 			}
