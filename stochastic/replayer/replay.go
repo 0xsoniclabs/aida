@@ -17,6 +17,7 @@
 package replayer
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -42,15 +43,9 @@ var (
 )
 
 // Parameterisable simulation constants
-var (
-	BalanceRange int64 = 100000  // balance range for generating randomized values
-	NonceRange   int   = 1000000 // nonce range for generating randomized nonces
-)
-
 // Simulation constants
 const (
-	MaxCodeSize  = 24576 // fixed upper limit by EIP-170
-	FinaliseFlag = true  // flag for Finalise() StateDB operation
+	MaxCodeSize = 24576 // fixed upper limit by EIP-170
 )
 
 // replayContext data structure as a context for simulating StateDB operations
@@ -69,6 +64,8 @@ type replayContext struct {
 	txNum           uint32                // current transaction number
 	blockNum        uint64                // current block number
 	syncPeriodNum   uint64                // current sync-period number
+	balanceRange    int64                 // balance range for randomized values
+	nonceRange      int                   // nonce range for randomized nonces
 }
 
 // newReplayContext creates a new replay context for execution StateDB operations stochastically.
@@ -80,6 +77,8 @@ func newReplayContext(
 	values arguments.Set,
 	snapshots arguments.SnapshotSet,
 	log logger.Logger,
+	balanceRange int64,
+	nonceRange int,
 ) replayContext {
 	// return stochastic state
 	return replayContext{
@@ -94,52 +93,55 @@ func newReplayContext(
 		syncPeriodNum:  1,
 		rg:             rg,
 		log:            log,
+		balanceRange:   balanceRange,
+		nonceRange:     nonceRange,
 	}
 }
 
 // populateReplayContext creates a stochastic state and primes the StateDB
 func populateReplayContext(
-	cfg *utils.Config,
 	e *recorder.StatsJSON,
 	db state.StateDB,
 	rg *rand.Rand,
 	log logger.Logger,
+	balanceRange int64,
+	nonceRange int,
 ) (*replayContext, error) {
 	// produce random variables for contract addresses,
 	// storage-keys, storage addresses, and snapshot ids.
-	contract_randomizer, err := arguments.NewRandomizer(
+	contractRandomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Contracts.Queuing.Distribution,
 		e.Contracts.Counting.ECDF)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("populateReplayContext: construct contract randomizer: %w", err)
 	}
 	contracts := arguments.NewSingleUse(
-		arguments.NewReusable(e.Contracts.Counting.N, contract_randomizer),
+		arguments.NewReusable(e.Contracts.Counting.N, contractRandomizer),
 	)
 
-	key_randomizer, err := arguments.NewRandomizer(
+	keyRandomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Keys.Queuing.Distribution,
 		e.Keys.Counting.ECDF)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("populateReplayContext: construct key randomizer: %w", err)
 	}
-	keys := arguments.NewReusable(e.Keys.Counting.N, key_randomizer)
+	keys := arguments.NewReusable(e.Keys.Counting.N, keyRandomizer)
 
-	value_randomizer, err := arguments.NewRandomizer(
+	valueRandomizer, err := arguments.NewRandomizer(
 		rg,
 		e.Values.Queuing.Distribution,
 		e.Values.Counting.ECDF)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("populateReplayContext: construct value randomizer: %w", err)
 	}
-	values := arguments.NewReusable(e.Values.Counting.N, value_randomizer)
+	values := arguments.NewReusable(e.Values.Counting.N, valueRandomizer)
 
 	snapshots := arguments.NewEmpiricalSnapshotRandomizer(rg, e.SnapshotECDF)
 
 	// setup state
-	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
+	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log, balanceRange, nonceRange)
 
 	// create accounts in StateDB before starting the simulation
 	err = ss.prime()
@@ -156,7 +158,7 @@ func getStochasticMatrix(e *recorder.StatsJSON) (*markov.Chain, int, error) {
 	A := e.StochasticMatrix
 	mc, err := markov.New(A, ops)
 	if err != nil {
-		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model. Error: %v", err)
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model: %w", err)
 	}
 	state, _ := mc.Find(operations.OpMnemo(operations.BeginSyncPeriodID))
 	if state < 0 {
@@ -175,45 +177,47 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	var (
 		opFrequency [operations.NumOps]uint64 // operation frequency
 		numOps      uint64                    // total number of operations
+		errCount    int
+		errList     []error
 	)
 
 	if db.GetShadowDB() == nil {
 		log.Notice("No validation with a shadow DB.")
 	}
-	log.Noticef("balance range %d", cfg.BalanceRange)
-	BalanceRange = cfg.BalanceRange
+	balanceRange := cfg.BalanceRange
+	if balanceRange <= 0 {
+		log.Warning("balance range <= 0, defaulting to 1")
+		balanceRange = 1
+	}
+	log.Noticef("balance range %d", balanceRange)
 
-	log.Noticef("nonce range %d", cfg.NonceRange)
-	NonceRange = cfg.NonceRange
+	nonceRange := cfg.NonceRange
+	if nonceRange <= 0 {
+		log.Warning("nonce range <= 0, defaulting to 1")
+		nonceRange = 1
+	}
+	log.Noticef("nonce range %d", nonceRange)
 
 	// random arguments
 	rg := rand.New(rand.NewSource(cfg.RandomSeed))
 	log.Noticef("using random seed %d", cfg.RandomSeed)
 
 	// create a stochastic state
-	ss, err := populateReplayContext(cfg, e, db, rg, log)
+	ss, err := populateReplayContext(e, db, rg, log, balanceRange, nonceRange)
 	if err != nil {
 		return err
 	}
 
 	// get stochastic matrix
-	mc, state, mc_err := getStochasticMatrix(e)
-	if mc_err != nil {
-		return fmt.Errorf("RunStochasticReplay: expected a markov chain. Error: %v", mc_err)
+	mc, state, mcErr := getStochasticMatrix(e)
+	if mcErr != nil {
+		return fmt.Errorf("RunStochasticReplay: expected a markov chain: %w", mcErr)
 	}
 
 	// progress message setup
-	var (
-		start    time.Time
-		sec      float64
-		lastSec  float64
-		runErr   error
-		errCount int
-	)
-
-	start = time.Now()
-	sec = time.Since(start).Seconds()
-	lastSec = time.Since(start).Seconds()
+	start := time.Now()
+	lastLog := start
+	interval := time.Duration(progressLogIntervalSec) * time.Second
 	// if block after priming is greater or equal to debug block, enable debug.
 	if cfg.Debug && ss.blockNum >= cfg.DebugFrom {
 		ss.enableDebug()
@@ -225,13 +229,13 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	for {
 		label, err := mcLabel(mc, state)
 		if err != nil {
-			return fmt.Errorf("RunStochasticReplay: cannot retrieve state label. Error: %v", err)
+			return fmt.Errorf("RunStochasticReplay: cannot retrieve state label: %w", err)
 		}
 
 		// decode opcode
 		op, addrCl, keyCl, valueCl, err := operations.DecodeOpcode(label)
 		if err != nil {
-			return fmt.Errorf("RunStochasticReplay: cannot decode opcode. Error: %v", err)
+			return fmt.Errorf("RunStochasticReplay: cannot decode opcode: %w", err)
 		}
 
 		// keep track of stats
@@ -239,7 +243,9 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 		opFrequency[op]++
 
 		// execute operation with its argument classes
-		ss.execute(op, addrCl, keyCl, valueCl)
+		if err := ss.execute(op, addrCl, keyCl, valueCl); err != nil {
+			return fmt.Errorf("RunStochasticReplay: %w", err)
+		}
 
 		// check for end of simulation
 		if op == operations.EndBlockID {
@@ -254,20 +260,16 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 		}
 
 		// report progress
-		sec = time.Since(start).Seconds()
-		if sec-lastSec >= float64(progressLogIntervalSec) {
-			log.Debugf("Elapsed time: %.0f s, at block %v", sec, block)
-			lastSec = sec
+		elapsed := time.Since(start)
+		if interval <= 0 || time.Since(lastLog) >= interval {
+			log.Debugf("Elapsed time: %.0f s, at block %v", elapsed.Seconds(), block)
+			lastLog = time.Now()
 		}
 
 		// check for errors
 		if err := ss.db.Error(); err != nil {
 			errCount++
-			if runErr == nil {
-				runErr = fmt.Errorf("error: stochastic replay failed")
-			}
-
-			runErr = fmt.Errorf("%v\n\tBlock %v Tx %v: %v", runErr, ss.blockNum, ss.txNum, err)
+			errList = append(errList, fmt.Errorf("block %v tx %v: %w", ss.blockNum, ss.txNum, err))
 			if !cfg.ContinueOnFailure {
 				break
 			}
@@ -277,12 +279,13 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 		u := rg.Float64()
 		state, err = mcSample(mc, state, u)
 		if err != nil {
-			return fmt.Errorf("RunStochasticReplay: Failed sampling the next state. Error: %v", err)
+			return fmt.Errorf("RunStochasticReplay: failed sampling the next state: %w", err)
 		}
 	}
 
 	// print progress summary
-	log.Noticef("Total elapsed time: %.3f s, processed %v blocks", sec, block)
+	elapsed := time.Since(start)
+	log.Noticef("Total elapsed time: %.3f s, processed %v blocks", elapsed.Seconds(), block)
 	if errCount > 0 {
 		log.Warningf("%v errors were found", errCount)
 	}
@@ -296,7 +299,11 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	for op := range operations.NumOps {
 		log.Noticef("\t%v: %v", operations.OpText[op], opFrequency[op])
 	}
-	return runErr
+	if len(errList) == 0 {
+		return nil
+	}
+	joined := errors.Join(errList...)
+	return fmt.Errorf("stochastic replay failed: %w", joined)
 }
 
 // prime creates initial accounts in the StateDB before starting the simulation.
@@ -321,7 +328,7 @@ func (ss *replayContext) prime() error {
 			return err
 		}
 		db.CreateAccount(addr)
-		db.AddBalance(addr, uint256.NewInt(uint64(ss.rg.Int63n(BalanceRange))), 0)
+		db.AddBalance(addr, uint256.NewInt(uint64(ss.rg.Int63n(ss.balanceRange))), 0)
 		pt.PrintProgress()
 	}
 	ss.log.Notice("Finalizing...")
@@ -425,7 +432,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 
 	switch op {
 	case operations.AddBalanceID:
-		value := rg.Int63n(BalanceRange)
+		value := rg.Int63n(ss.balanceRange)
 		if ss.traceDebug {
 			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
@@ -437,7 +444,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		}
 		err := db.BeginBlock(ss.blockNum)
 		if err != nil {
-			ss.log.Fatal(err)
+			return fmt.Errorf("execute: BeginBlock failed: %w", err)
 		}
 		ss.txNum = 0
 		ss.selfDestructed = map[int64]struct{}{} // reset selfDestructed accounts set
@@ -454,7 +461,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		}
 		err := db.BeginTransaction(ss.txNum)
 		if err != nil {
-			ss.log.Fatal(err)
+			return fmt.Errorf("execute: BeginTransaction failed: %w", err)
 		}
 		ss.activeSnapshots = []int{}
 		ss.selfDestructed = map[int64]struct{}{}
@@ -471,12 +478,12 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.EndBlockID:
 		err := db.EndBlock()
 		if err != nil {
-			ss.log.Fatal(err)
+			return fmt.Errorf("execute: EndBlock failed: %w", err)
 		}
 		ss.blockNum++
 		for addrIdx := range ss.selfDestructed {
 			if err := ss.contracts.Remove(addrIdx); err != nil {
-				return fmt.Errorf("deleteAccounts: failed deleting index (%v).", addrIdx)
+				return fmt.Errorf("deleteAccounts: failed deleting index (%v)", addrIdx)
 			}
 		}
 		ss.selfDestructed = map[int64]struct{}{}
@@ -488,7 +495,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 	case operations.EndTransactionID:
 		err := db.EndTransaction()
 		if err != nil {
-			ss.log.Fatal(err)
+			return fmt.Errorf("execute: EndTransaction failed: %w", err)
 		}
 		ss.txNum++
 		ss.totalTx++
@@ -564,13 +571,12 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		code := make([]byte, sz)
 		_, err := randReadBytes(rg, code)
 		if err != nil {
-			ss.log.Fatalf("execute: error producing a random byte slice for code. Error: %v", err)
-			return nil
+			return fmt.Errorf("execute: error producing a random byte slice for code: %w", err)
 		}
 		db.SetCode(addr, code)
 
 	case operations.SetNonceID:
-		value := uint64(rg.Intn(NonceRange))
+		value := uint64(rg.Intn(ss.nonceRange))
 		db.SetNonce(addr, value, tracing.NonceChangeUnspecified)
 
 	case operations.SetStateID:

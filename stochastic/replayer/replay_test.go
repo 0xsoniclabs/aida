@@ -17,11 +17,11 @@
 package replayer
 
 import (
+	"errors"
 	"math/rand"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
-	logmock "github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
@@ -41,6 +41,11 @@ type stubSnapshots struct{ ret int }
 
 func (s *stubSnapshots) SampleSnapshot(n int) int { return s.ret }
 
+const (
+	testBalanceRange int64 = 100
+	testNonceRange   int   = 10
+)
+
 func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -56,7 +61,7 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 
 	rg := rand.New(rand.NewSource(999))
 	log := logger.NewLogger("INFO", "test")
-	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
+	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log, testBalanceRange, testNonceRange)
 	ss.activeSnapshots = []int{1, 2, 3, 4, 5}
 	snapshotSize := len(ss.activeSnapshots)
 
@@ -120,7 +125,7 @@ func TestExecute_AllOps(t *testing.T) {
 
 	rg := rand.New(rand.NewSource(123))
 	log := logger.NewLogger("INFO", "test")
-	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log)
+	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log, testBalanceRange, testNonceRange)
 	ss.enableDebug() // cover debug branches
 
 	// Ensure we have snapshots for RevertToSnapshot path
@@ -183,7 +188,7 @@ func TestExecute_InvalidOperation(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	db := state.NewMockStateDB(ctrl)
-	ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(99999, 0, 0, 0); err == nil {
 		t.Fatalf("expected error for invalid op")
 	}
@@ -208,7 +213,7 @@ func TestPrime_Success(t *testing.T) {
 	db.EXPECT().EndBlock().Return(nil)
 	db.EXPECT().EndSyncPeriod()
 
-	ss := newReplayContext(rand.New(rand.NewSource(7)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rand.New(rand.NewSource(7)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.prime(); err != nil {
 		t.Fatalf("unexpected error priming: %v", err)
 	}
@@ -224,7 +229,7 @@ func TestPrime_Errors(t *testing.T) {
 		db := state.NewMockStateDB(ctrl)
 		db.EXPECT().BeginSyncPeriod(uint64(0))
 		db.EXPECT().BeginBlock(uint64(0)).Return(assert.AnError)
-		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 		if err := ss.prime(); err == nil {
 			t.Fatalf("expected error from BeginBlock")
 		}
@@ -235,7 +240,7 @@ func TestPrime_Errors(t *testing.T) {
 		db.EXPECT().BeginSyncPeriod(uint64(0))
 		db.EXPECT().BeginBlock(uint64(0)).Return(nil)
 		db.EXPECT().BeginTransaction(uint32(0)).Return(assert.AnError)
-		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 		if err := ss.prime(); err == nil {
 			t.Fatalf("expected error from BeginTransaction")
 		}
@@ -249,7 +254,7 @@ func TestPrime_Errors(t *testing.T) {
 		db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
 		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
 		db.EXPECT().EndTransaction().Return(assert.AnError)
-		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 		if err := ss.prime(); err == nil {
 			t.Fatalf("expected error from EndTransaction")
 		}
@@ -264,7 +269,7 @@ func TestPrime_Errors(t *testing.T) {
 		db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
 		db.EXPECT().EndTransaction().Return(nil)
 		db.EXPECT().EndBlock().Return(assert.AnError)
-		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+		ss := newReplayContext(rand.New(rand.NewSource(1)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 		if err := ss.prime(); err == nil {
 			t.Fatalf("expected error from EndBlock")
 		}
@@ -444,7 +449,7 @@ func TestRunStochasticReplay_ErrorContinue(t *testing.T) {
 
 // TestEnableDebug covers the trivial enableDebug method.
 func TestEnableDebug(t *testing.T) {
-	ss := newReplayContext(rand.New(rand.NewSource(1)), nil, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rand.New(rand.NewSource(1)), nil, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if ss.traceDebug {
 		t.Fatalf("debug should be disabled by default")
 	}
@@ -550,7 +555,7 @@ func TestExecute_ChooseErrors(t *testing.T) {
 	// cause failures on selection
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(0), assert.AnError)
 	rg := rand.New(rand.NewSource(9))
-	ss := newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.GetBalanceID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID); err == nil {
 		t.Fatalf("expected error for contract Choose failure")
 	}
@@ -561,7 +566,7 @@ func TestExecute_ChooseErrors(t *testing.T) {
 	values = repArgs.NewMockSet(ctrl)
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	keys.EXPECT().Choose(gomock.Any()).Return(int64(0), assert.AnError)
-	ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.GetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.NoArgID); err == nil {
 		t.Fatalf("expected error for key Choose failure")
 	}
@@ -573,7 +578,7 @@ func TestExecute_ChooseErrors(t *testing.T) {
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	keys.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	values.EXPECT().Choose(gomock.Any()).Return(int64(0), assert.AnError)
-	ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss = newReplayContext(rg, db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.SetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.RandArgID); err == nil {
 		t.Fatalf("expected error for value Choose failure")
 	}
@@ -588,7 +593,7 @@ func TestExecute_RevertToSnapshot_Clamp(t *testing.T) {
 	db.EXPECT().RevertToSnapshot(gomock.Any()).Times(2)
 	rg := rand.New(rand.NewSource(1))
 	// Stub that returns too large value (forces snapshotIdx<0)
-	ss := newReplayContext(rg, db, nil, nil, nil, &stubSnapshots{ret: 100}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rg, db, nil, nil, nil, &stubSnapshots{ret: 100}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	ss.activeSnapshots = []int{10, 20, 30}
 	_ = ss.execute(operations.RevertToSnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	// Stub that returns negative value (forces snapshotIdx>=snapshotNum)
@@ -609,7 +614,7 @@ func TestExecute_EndBlock_RemoveError(t *testing.T) {
 	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0))
 	db.EXPECT().EndBlock().Return(nil)
 	rg := rand.New(rand.NewSource(2))
-	ss := newReplayContext(rg, db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rg, db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	// mark self-destructed, then attempt EndBlock
 	_ = ss.execute(operations.SelfDestructID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID)
 	if err := ss.execute(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID); err == nil {
@@ -626,7 +631,7 @@ func TestExecute_ConvertIndexErrors(t *testing.T) {
 	// Address conversion error
 	contracts := repArgs.NewMockSet(ctrl)
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(-1), nil)
-	ss := newReplayContext(rand.New(rand.NewSource(3)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rand.New(rand.NewSource(3)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.GetBalanceID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID); err == nil {
 		t.Fatalf("expected address conversion error")
 	}
@@ -636,7 +641,7 @@ func TestExecute_ConvertIndexErrors(t *testing.T) {
 	keys := repArgs.NewMockSet(ctrl)
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	keys.EXPECT().Choose(gomock.Any()).Return(int64(-1), nil)
-	ss = newReplayContext(rand.New(rand.NewSource(4)), db, contracts, keys, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss = newReplayContext(rand.New(rand.NewSource(4)), db, contracts, keys, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.GetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.NoArgID); err == nil {
 		t.Fatalf("expected key conversion error")
 	}
@@ -648,47 +653,65 @@ func TestExecute_ConvertIndexErrors(t *testing.T) {
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	keys.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	values.EXPECT().Choose(gomock.Any()).Return(int64(-1), nil)
-	ss = newReplayContext(rand.New(rand.NewSource(5)), db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss = newReplayContext(rand.New(rand.NewSource(5)), db, contracts, keys, values, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	if err := ss.execute(operations.SetStateID, stochastic.RandArgID, stochastic.RandArgID, stochastic.RandArgID); err == nil {
 		t.Fatalf("expected value conversion error")
 	}
 }
 
-// TestExecute_FatalBranches covers logger.Fatal branches without exiting the process using a mock logger.
-func TestExecute_FatalBranches(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	db := state.NewMockStateDB(ctrl)
-	lg := logmock.NewMockLogger(ctrl)
-	// BeginBlock error path
-	db.EXPECT().BeginBlock(gomock.Any()).Return(assert.AnError)
-	lg.EXPECT().Fatal(gomock.Any()).Times(1)
-	ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
-	_ = ss.execute(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+// TestExecute_DBOperationErrors ensures database failures are propagated as errors.
+func TestExecute_DBOperationErrors(t *testing.T) {
+	testCases := []struct {
+		name string
+		op   int
+		set  func(*state.MockStateDB)
+	}{
+		{
+			name: "BeginBlock",
+			op:   operations.BeginBlockID,
+			set: func(db *state.MockStateDB) {
+				db.EXPECT().BeginBlock(gomock.Any()).Return(assert.AnError)
+			},
+		},
+		{
+			name: "BeginTransaction",
+			op:   operations.BeginTransactionID,
+			set: func(db *state.MockStateDB) {
+				db.EXPECT().BeginTransaction(gomock.Any()).Return(assert.AnError)
+			},
+		},
+		{
+			name: "EndTransaction",
+			op:   operations.EndTransactionID,
+			set: func(db *state.MockStateDB) {
+				db.EXPECT().EndTransaction().Return(assert.AnError)
+			},
+		},
+		{
+			name: "EndBlock",
+			op:   operations.EndBlockID,
+			set: func(db *state.MockStateDB) {
+				db.EXPECT().EndBlock().Return(assert.AnError)
+			},
+		},
+	}
 
-	// BeginTransaction error path
-	//	db = state.NewMockStateDB(ctrl)
-	//	lg = logmock.NewMockLogger(ctrl)
-	//	db.EXPECT().BeginTransaction(gomock.Any()).Return(assert.AnError)
-	//	lg.EXPECT().Fatal(gomock.Any()).Times(1)
-	//	ss = newReplayContext(rand.New(rand.NewSource(2)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
-	//	_ = ss.execute(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-	//
-	//	// EndTransaction error path
-	//	db = state.NewMockStateDB(ctrl)
-	//	lg = logmock.NewMockLogger(ctrl)
-	//	db.EXPECT().EndTransaction().Return(assert.AnError)
-	//	lg.EXPECT().Fatal(gomock.Any()).Times(1)
-	//	ss = newReplayContext(rand.New(rand.NewSource(3)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
-	//	_ = ss.execute(operations.EndTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-	//
-	//	// EndBlock error path
-	//	db = state.NewMockStateDB(ctrl)
-	//	lg = logmock.NewMockLogger(ctrl)
-	//	db.EXPECT().EndBlock().Return(assert.AnError)
-	//	lg.EXPECT().Fatal(gomock.Any()).Times(1)
-	//	ss = newReplayContext(rand.New(rand.NewSource(4)), db, nil, nil, nil, &stubSnapshots{ret: 0}, lg)
-	//	_ = ss.execute(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			db := state.NewMockStateDB(ctrl)
+			tc.set(db)
+			ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
+			err := ss.execute(tc.op, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err == nil {
+				t.Fatalf("expected error for %s", tc.name)
+			}
+			if !errors.Is(err, assert.AnError) {
+				t.Fatalf("expected wrapped assert.AnError, got %v", err)
+			}
+		})
+	}
 }
 
 // TestPopulateReplayContext_PrimeError ensures errors from prime() propagate.
@@ -698,7 +721,6 @@ func TestPopulateReplayContext_PrimeError(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	rg := rand.New(rand.NewSource(7))
 	lg := logger.NewLogger("INFO", "test")
-	cfg := &utils.Config{BalanceRange: 10, NonceRange: 10}
 	qpdf := make([]float64, stochastic.QueueLen)
 	qpdf[0] = 0.2
 	for i := 1; i < len(qpdf); i++ {
@@ -710,7 +732,7 @@ func TestPopulateReplayContext_PrimeError(t *testing.T) {
 	// Cause prime to fail at BeginBlock
 	db.EXPECT().BeginSyncPeriod(uint64(0))
 	db.EXPECT().BeginBlock(uint64(0)).Return(assert.AnError)
-	if _, err := populateReplayContext(cfg, e, db, rg, lg); err == nil {
+	if _, err := populateReplayContext(e, db, rg, lg, testBalanceRange, testNonceRange); err == nil {
 		t.Fatalf("expected prime error to propagate from populateReplayContext")
 	}
 }
@@ -860,7 +882,7 @@ func TestRunStochasticReplay_EnableDebugInLoop(t *testing.T) {
 	}
 }
 
-// TestExecute_SetCodeRandomReadError forces randReadBytes error and expects Fatalf.
+// TestExecute_SetCodeRandomReadError forces randReadBytes error and propagates it.
 func TestExecute_SetCodeRandomReadError(t *testing.T) {
 	old := randReadBytes
 	randReadBytes = func(_ *rand.Rand, _ []byte) (int, error) { return 0, assert.AnError }
@@ -869,14 +891,15 @@ func TestExecute_SetCodeRandomReadError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	db := state.NewMockStateDB(ctrl)
-	lg := logmock.NewMockLogger(ctrl)
 	// contracts choose to supply addr
 	contracts := repArgs.NewMockSet(ctrl)
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
-	lg.EXPECT().Fatalf(gomock.Any(), gomock.Any()).Times(1)
-	ss := newReplayContext(rand.New(rand.NewSource(10)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, lg)
-	// Expect no SetCode call since we error before it
-	_ = ss.execute(operations.SetCodeID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID)
+	ss := newReplayContext(rand.New(rand.NewSource(10)), db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
+	if err := ss.execute(operations.SetCodeID, stochastic.RandArgID, stochastic.NoArgID, stochastic.NoArgID); err == nil {
+		t.Fatalf("expected error for randReadBytes failure")
+	} else if !errors.Is(err, assert.AnError) {
+		t.Fatalf("expected wrapped randReadBytes error, got %v", err)
+	}
 }
 
 // TestPopulateReplayContext_Errors covers randomizer ctor error branches.
@@ -884,7 +907,6 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 	rg := rand.New(rand.NewSource(123))
 	log := logger.NewLogger("INFO", "test")
 	db := state.NewMockStateDB(gomock.NewController(t))
-	cfg := &utils.Config{}
 
 	badDist := make([]float64, stochastic.QueueLen-1) // invalid length causes error
 	goodDist := make([]float64, stochastic.QueueLen)
@@ -902,7 +924,7 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 			SnapshotECDF: ecdf,
 		}
 	}
-	if _, err := populateReplayContext(cfg, badE(), db, rg, log); err == nil {
+	if _, err := populateReplayContext(badE(), db, rg, log, testBalanceRange, testNonceRange); err == nil {
 		t.Fatalf("expected error for bad contracts distribution")
 	}
 
@@ -914,7 +936,7 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 			SnapshotECDF: ecdf,
 		}
 	}
-	if _, err := populateReplayContext(cfg, badE2(), db, rg, log); err == nil {
+	if _, err := populateReplayContext(badE2(), db, rg, log, testBalanceRange, testNonceRange); err == nil {
 		t.Fatalf("expected error for bad keys distribution")
 	}
 
@@ -926,7 +948,7 @@ func TestPopulateReplayContext_Errors(t *testing.T) {
 			SnapshotECDF: ecdf,
 		}
 	}
-	if _, err := populateReplayContext(cfg, badE3(), db, rg, log); err == nil {
+	if _, err := populateReplayContext(badE3(), db, rg, log, testBalanceRange, testNonceRange); err == nil {
 		t.Fatalf("expected error for bad values distribution")
 	}
 }
@@ -936,7 +958,7 @@ func TestExecute_DebugEncodeOpcodeError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	db := state.NewMockStateDB(ctrl)
-	ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"))
+	ss := newReplayContext(rand.New(rand.NewSource(1)), db, nil, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
 	ss.enableDebug()
 	// Use a two-arg op with no args to make EncodeOpcode fail without triggering Choose
 	if err := ss.execute(operations.GetStateID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID); err == nil {
