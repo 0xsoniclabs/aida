@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
@@ -62,6 +63,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 		return err
 	}
 	cfg.ValidateTxState = true
+	log := logger.NewLogger(cfg.LogLevel, "StochasticRecord")
 	if err := utils.StartCPUProfile(cfg); err != nil {
 		return err
 	}
@@ -117,7 +119,7 @@ func stochasticRecordAction(ctx *cli.Context) error {
 		// report progress
 		sec = time.Since(start).Seconds()
 		if sec-lastSec >= 15 {
-			fmt.Printf("stochastic record: Elapsed time: %.0f s, at block %v\n", sec, oldBlock)
+			log.Infof("Elapsed time: %.0f s, at block %v", sec, oldBlock)
 			lastSec = sec
 		}
 	}
@@ -128,8 +130,8 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	stats.CountOp(operations.EndSyncPeriodID)
 
 	sec = time.Since(start).Seconds()
-	fmt.Printf("stochastic record: Total elapsed time: %.3f s, processed %v blocks\n", sec, cfg.Last-cfg.First+1)
-	fmt.Printf("stochastic record: write stats file ...\n")
+	log.Noticef("Total elapsed time: %.3f s, processed %v blocks", sec, cfg.Last-cfg.First+1)
+	log.Notice("Write stats file ...")
 	if cfg.Output == "" {
 		cfg.Output = "./stats.json"
 	}
