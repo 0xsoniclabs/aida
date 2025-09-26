@@ -16,18 +16,31 @@
 
 package state
 
-import (
-	"testing"
+import "github.com/0xsoniclabs/carmen/go/carmen"
 
-	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/stretchr/testify/require"
-)
+//go:generate mockgen -source carmen_test_helper.go -destination carmen_mock.go -package state
 
-func TestOffTheChainStateDb_CloseDoesNotPanicIfBackendIsNil(t *testing.T) {
-	conduit := NewChainConduit(true, params.AllEthashProtocolChanges)
-	db, err := MakeOffTheChainStateDB(txcontext.AidaWorldState{}, 0, conduit)
-	require.NoError(t, err)
-	err = db.Close()
-	require.NoError(t, err)
+// nolint: unused
+type proxyDatabase interface {
+	carmen.Database
+}
+
+// nolint: unused
+type proxyTransactionContext interface {
+	carmen.TransactionContext
+}
+
+// nolint: unused
+type proxyHistoricBlockContext interface {
+	carmen.HistoricBlockContext
+}
+
+// nolint: unused
+type proxyQueryContext interface {
+	carmen.QueryContext
+}
+
+// nolint: unused
+type proxyMemoryFootprint interface {
+	carmen.MemoryFootprint
 }
