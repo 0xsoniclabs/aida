@@ -147,9 +147,9 @@ func TestQueuingJSON(t *testing.T) {
 		if pos != 0 {
 			t.Fatalf("first element must be found")
 		}
-		pos = queue.findPos(i - 1)
-		pos = queue.findPos(i - 2)
-		pos = queue.findPos(i - 3)
+		queue.findPos(i - 1)
+		queue.findPos(i - 2)
+		queue.findPos(i - 3)
 	}
 
 	// check populated queue JSON output
