@@ -17,6 +17,7 @@
 package visualizer
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/0xsoniclabs/aida/stochastic/operations"
@@ -83,9 +84,9 @@ func (e *StatsData) PopulateData(d *recorder.StatsJSON) {
 
 	// Sort entries of the stationary distribution and populate
 	n := len(d.Operations)
-	mc, mc_err := markov.New(d.StochasticMatrix, d.Operations)
-	if mc_err != nil {
-		panic("PopulateData: Expected a new markov chain. Error: %v")
+	mc, mcErr := markov.New(d.StochasticMatrix, d.Operations)
+	if mcErr != nil {
+		panic(fmt.Sprintf("PopulateData: expected a new markov chain: %v", mcErr))
 	}
 	stationary, _ := mc.Stationary()
 	data := []OpData{}

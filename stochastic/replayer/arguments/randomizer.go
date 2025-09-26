@@ -32,30 +32,30 @@ type Randomizer interface {
 
 // RandomizerData struct
 type RandomizerData struct {
-	rg    *rand.Rand
-	q_pmf []float64    // probability mass function of queue indexes from [1, QueueLen-1]
-	a_cdf [][2]float64 // cumulative distribution function for arguments
+	rg       *rand.Rand
+	queuePMF []float64    // probability mass function of queue indexes from [1, QueueLen-1]
+	argCDF   [][2]float64 // cumulative distribution function for arguments
 }
 
 // NewRandomizer creates a new randomizer instance
-func NewRandomizer(rg *rand.Rand, q_pmf []float64, a_cdf [][2]float64) (*RandomizerData, error) {
-	nq_pmf, err := discrete.Shrink(q_pmf)
+func NewRandomizer(rg *rand.Rand, queuePMF []float64, argCDF [][2]float64) (*RandomizerData, error) {
+	nqPMF, err := discrete.Shrink(queuePMF)
 	if err != nil {
-		return nil, fmt.Errorf("NewEmpiricalRandomizer: cannot shrink pdf by one. Error: %v", err)
+		return nil, fmt.Errorf("NewRandomizer: cannot shrink pdf by one. Error: %v", err)
 	}
 	return &RandomizerData{
-		rg:    rg,
-		q_pmf: nq_pmf,
-		a_cdf: a_cdf,
+		rg:       rg,
+		queuePMF: nqPMF,
+		argCDF:   argCDF,
 	}, nil
 }
 
 // SampleArg samples an argument from a distribution with n possible arguments
 func (r *RandomizerData) SampleArg(n int64) int64 {
-	return continuous.Sample(r.rg, r.a_cdf, int64(n))
+	return continuous.Sample(r.rg, r.argCDF, int64(n))
 }
 
 // SampleQueue samples an index for a queue
 func (r *RandomizerData) SampleQueue() int {
-	return discrete.Sample(r.rg, r.q_pmf) + 1
+	return discrete.Sample(r.rg, r.queuePMF) + 1
 }

@@ -86,13 +86,13 @@ func Shrink(f []float64) ([]float64, error) {
 	if math.Abs(factor) < 1e-9 || math.IsNaN(factor) {
 		return nil, fmt.Errorf("Invalid scaling factor (%v)", factor)
 	}
-	scaled_pmf := make([]float64, n-1)
+	scaledPMF := make([]float64, n-1)
 	for i := range n - 1 {
 		x := f[i+1] / factor
-		scaled_pmf[i] = x
+		scaledPMF[i] = x
 	}
-	if err := Check(scaled_pmf); err != nil {
+	if err := Check(scaledPMF); err != nil {
 		return nil, err
 	}
-	return scaled_pmf, nil
+	return scaledPMF, nil
 }

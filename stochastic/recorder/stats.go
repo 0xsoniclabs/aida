@@ -187,16 +187,16 @@ func (r *Stats) JSON() StatsJSON {
 
 	// compute PDF for snapshots distribution
 	total := uint64(0)
-	max_arg := 0
+	maxArg := 0
 	for arg, freq := range r.snapshotFreq {
 		total += freq
-		if max_arg < arg {
-			max_arg = arg
+		if maxArg < arg {
+			maxArg = arg
 		}
 	}
 	pdf := [][2]float64{}
-	for arg := range max_arg {
-		x := (float64(arg) + 0.5) / float64(max_arg)
+	for arg := range maxArg {
+		x := (float64(arg) + 0.5) / float64(maxArg)
 		f := float64(r.snapshotFreq[arg]) / float64(total)
 		pdf = append(pdf, [2]float64{x, f})
 	}
