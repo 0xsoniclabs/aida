@@ -67,65 +67,73 @@ func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) 
 		s.snapshotFreq[i] = 1
 	}
 	for i := 0; i < operations.NumArgOps; i++ {
-		if operations.IsValidArgOp(i) {
-			s.argOpFreq[i] = 1 // set frequency to greater than zero to emit operation
-			opI, _, _, _, _ := operations.DecodeArgOp(i)
-			switch opI {
-			case operations.BeginSyncPeriodID:
-				j, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+		if !operations.IsValidArgOp(i) {
+			continue
+		}
+		opI, _, _, _, err := operations.DecodeArgOp(i)
+		if err != nil {
+			return nil, err
+		}
+		s.argOpFreq[i] = 1 // set frequency to greater than zero to emit operation
+		switch opI {
+		case operations.BeginSyncPeriodID:
+			j, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			s.transitFreq[i][j] = 1
+		case operations.BeginBlockID:
+			j, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			s.transitFreq[i][j] = 1
+		case operations.EndTransactionID:
+			j1, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			j2, err := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			s.transitFreq[i][j1] = cfg.BlockLength - 1
+			s.transitFreq[i][j2] = 1
+		case operations.EndBlockID:
+			j1, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			j2, err := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			s.transitFreq[i][j1] = cfg.SyncPeriodLength - 1
+			s.transitFreq[i][j2] = 1
+		case operations.EndSyncPeriodID:
+			j, err := operations.EncodeArgOp(operations.BeginSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+			if err != nil {
+				return nil, err
+			}
+			s.transitFreq[i][j] = 1
+		default:
+			for j := 0; j < operations.NumArgOps; j++ {
+				if !operations.IsValidArgOp(j) {
+					continue
+				}
+				opJ, _, _, _, err := operations.DecodeArgOp(j)
 				if err != nil {
 					return nil, err
 				}
-				s.transitFreq[i][j] = 1
-			case operations.BeginBlockID:
-				j, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				s.transitFreq[i][j] = 1
-			case operations.EndTransactionID:
-				j1, err := operations.EncodeArgOp(operations.BeginTransactionID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				j2, err := operations.EncodeArgOp(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				s.transitFreq[i][j1] = cfg.BlockLength - 1
-				s.transitFreq[i][j2] = 1
-			case operations.EndBlockID:
-				j1, err := operations.EncodeArgOp(operations.BeginBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				j2, err := operations.EncodeArgOp(operations.EndSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				s.transitFreq[i][j1] = cfg.SyncPeriodLength - 1
-				s.transitFreq[i][j2] = 1
-			case operations.EndSyncPeriodID:
-				j, err := operations.EncodeArgOp(operations.BeginSyncPeriodID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
-				if err != nil {
-					return nil, err
-				}
-				s.transitFreq[i][j] = 1
-			default:
-				for j := 0; j < operations.NumArgOps; j++ {
-					if operations.IsValidArgOp(j) {
-						opJ, _, _, _, _ := operations.DecodeArgOp(j)
-						if opJ != operations.BeginSyncPeriodID &&
-							opJ != operations.BeginBlockID &&
-							opJ != operations.BeginTransactionID &&
-							opJ != operations.EndTransactionID &&
-							opJ != operations.EndBlockID &&
-							opJ != operations.EndSyncPeriodID {
-							s.transitFreq[i][j] = cfg.TransactionLength - 1
-						} else if opJ == operations.EndTransactionID {
-							s.transitFreq[i][j] = 1
-						}
-					}
+				if opJ != operations.BeginSyncPeriodID &&
+					opJ != operations.BeginBlockID &&
+					opJ != operations.BeginTransactionID &&
+					opJ != operations.EndTransactionID &&
+					opJ != operations.EndBlockID &&
+					opJ != operations.EndSyncPeriodID {
+					s.transitFreq[i][j] = cfg.TransactionLength - 1
+				} else if opJ == operations.EndTransactionID {
+					s.transitFreq[i][j] = 1
 				}
 			}
 		}
