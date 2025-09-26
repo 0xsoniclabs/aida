@@ -69,12 +69,14 @@ func NewStats() Stats {
 
 // CountOp counts an operation with no arguments
 func (r *Stats) CountOp(op int) {
-	r.updateFreq(
+	if err := r.updateFreq(
 		op,
 		stochastic.NoArgID,
 		stochastic.NoArgID,
 		stochastic.NoArgID,
-	)
+	); err != nil {
+		panic(fmt.Errorf("CountOp: %w", err))
+	}
 }
 
 // CountSnapshot counts the delta between snapshot identifiers
@@ -86,40 +88,46 @@ func (r *Stats) CountSnapshot(delta int) {
 
 // CountAddressOp counts an operation with a contract-address argument
 func (r *Stats) CountAddressOp(op int, address *common.Address) {
-	r.updateFreq(
+	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		stochastic.NoArgID,
 		stochastic.NoArgID,
-	)
+	); err != nil {
+		panic(fmt.Errorf("CountAddressOp: %w", err))
+	}
 }
 
 // CountKeyOp counts an operation with a contract-address and a storage-key arguments.
 func (r *Stats) CountKeyOp(op int, address *common.Address, key *common.Hash) {
-	r.updateFreq(
+	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		r.keys.Classify(*key),
 		stochastic.NoArgID,
-	)
+	); err != nil {
+		panic(fmt.Errorf("CountKeyOp: %w", err))
+	}
 }
 
 // CountValueOp counts an operation with a contract-address, a storage-key and storage-value arguments.
 func (r *Stats) CountValueOp(op int, address *common.Address, key *common.Hash, value *common.Hash) {
-	r.updateFreq(
+	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		r.keys.Classify(*key),
 		r.values.Classify(*value),
-	)
+	); err != nil {
+		panic(fmt.Errorf("CountValueOp: %w", err))
+	}
 }
 
 // updateFreq updates operation and transition frequency.
-func (r *Stats) updateFreq(op int, addr int, key int, value int) {
+func (r *Stats) updateFreq(op int, addr int, key int, value int) error {
 	// encode argument classes to compute specialized operation using a Horner's scheme
 	argOp, err := operations.EncodeArgOp(op, addr, key, value)
 	if err != nil {
-		panic(fmt.Sprintf("updateFreq: cannot encode operation %v with arguments %v %v %v; Error %v", op, addr, key, value, err))
+		return fmt.Errorf("updateFreq: cannot encode operation %v with arguments %v %v %v: %w", op, addr, key, value, err)
 	}
 
 	// increment operation's frequency depending on argument class
@@ -132,6 +140,7 @@ func (r *Stats) updateFreq(op int, addr int, key int, value int) {
 
 	// remember current operation as previous operation
 	r.prevArgOp = argOp
+	return nil
 }
 
 // StatsJSON is the JSON struct for a recorded markov process
@@ -147,6 +156,34 @@ type StatsJSON struct {
 
 	// snapshot delta distribution
 	SnapshotECDF [][2]float64 `json:"snapshotEcdf"`
+}
+
+const statsFileID = "stats"
+
+// MarshalJSON ensures the FileId is populated before serialising.
+func (s StatsJSON) MarshalJSON() ([]byte, error) {
+	if s.FileId == "" {
+		s.FileId = statsFileID
+	}
+	type alias StatsJSON
+	return json.Marshal(alias(s))
+}
+
+// UnmarshalJSON validates the FileId while deserialising.
+func (s *StatsJSON) UnmarshalJSON(data []byte) error {
+	type alias StatsJSON
+	var tmp alias
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	if tmp.FileId == "" {
+		return fmt.Errorf("StatsJSON: missing FileId")
+	}
+	if tmp.FileId != statsFileID {
+		return fmt.Errorf("StatsJSON: unexpected FileId %q", tmp.FileId)
+	}
+	*s = StatsJSON(tmp)
+	return nil
 }
 
 // JSON produces the JSON struct for a recorded markov process

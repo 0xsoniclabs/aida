@@ -213,6 +213,36 @@ func TestStatsZeroOperation(t *testing.T) {
 	}
 }
 
+func TestStatsUpdateFreqError(t *testing.T) {
+	r := NewStats()
+	if err := r.updateFreq(-1, 0, 0, 0); err == nil {
+		t.Fatalf("expected error for invalid opcode")
+	}
+}
+
+func TestStatsJSONMarshalSetsFileID(t *testing.T) {
+	statsJSON := StatsJSON{}
+	bytes, err := json.Marshal(statsJSON)
+	if err != nil {
+		t.Fatalf("unexpected marshal error: %v", err)
+	}
+	var decoded StatsJSON
+	if err := json.Unmarshal(bytes, &decoded); err != nil {
+		t.Fatalf("unexpected unmarshal error: %v", err)
+	}
+	if decoded.FileId != statsFileID {
+		t.Fatalf("expected FileId %q, got %q", statsFileID, decoded.FileId)
+	}
+}
+
+func TestStatsJSONUnmarshalRejectsInvalidFileID(t *testing.T) {
+	data := []byte(`{"FileId":"invalid"}`)
+	var statsJSON StatsJSON
+	if err := json.Unmarshal(data, &statsJSON); err == nil {
+		t.Fatalf("expected error for invalid FileId")
+	}
+}
+
 // TestStochastic_ReadStats tests reading stats from a JSON file.
 func TestStochastic_ReadStats(t *testing.T) {
 	tempDir := t.TempDir()
@@ -236,12 +266,7 @@ func TestStochastic_ReadStats(t *testing.T) {
 	})
 
 	t.Run("no stats file", func(t *testing.T) {
-		input := &StatsJSON{}
-		marshal, err := json.Marshal(input)
-		if err != nil {
-			t.Fatalf("cannot marshal StatsJSON; %v", err)
-		}
-		err = os.WriteFile(tempDir+"/stats.json", marshal, 0644)
+		err := os.WriteFile(tempDir+"/stats.json", []byte(`{"operations":[]}`), 0644)
 		if err != nil {
 			t.Fatalf("cannot write StatsJSON to file; %v", err)
 		}
