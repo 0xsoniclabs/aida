@@ -17,6 +17,7 @@
 package arguments
 
 import (
+	"encoding/json"
 	"sort"
 
 	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
@@ -81,4 +82,8 @@ func (s *count[T]) json() ArgStatsJSON {
 		N:    int64(len(s.freq)),
 		ECDF: ecdf,
 	}
+}
+
+func (s *count[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.json())
 }

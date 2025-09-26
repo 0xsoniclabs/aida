@@ -16,7 +16,11 @@
 
 package arguments
 
-import "github.com/0xsoniclabs/aida/stochastic"
+import (
+	"encoding/json"
+
+	"github.com/0xsoniclabs/aida/stochastic"
+)
 
 // queue data structure for a generic FIFO queue.
 type queue[T comparable] struct {
@@ -104,4 +108,8 @@ func (q *queue[T]) json() QueueStatsJSON {
 	return QueueStatsJSON{
 		Distribution: dist,
 	}
+}
+
+func (q *queue[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(q.json())
 }

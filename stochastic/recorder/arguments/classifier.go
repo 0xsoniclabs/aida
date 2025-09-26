@@ -16,7 +16,11 @@
 
 package arguments
 
-import "github.com/0xsoniclabs/aida/stochastic"
+import (
+	"encoding/json"
+
+	"github.com/0xsoniclabs/aida/stochastic"
+)
 
 // Classifier struct for account addresses, storage keys, and storage values.
 type Classifier[T comparable] struct {
@@ -36,7 +40,7 @@ func (a *Classifier[T]) Classify(data T) int {
 	return kind
 }
 
-// place() places the argument into the counting and queuing statistics.
+// Place the argument into the counting and queuing statistics.
 func (a *Classifier[T]) place(data T) {
 	var zeroValue T
 	if data == zeroValue {
@@ -86,4 +90,8 @@ type ClassifierJSON struct {
 // JSON produces output for the classifier statistics.
 func (a *Classifier[T]) JSON() ClassifierJSON {
 	return ClassifierJSON{a.cstats.json(), a.qstats.json()}
+}
+
+func (a *Classifier[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.JSON())
 }
