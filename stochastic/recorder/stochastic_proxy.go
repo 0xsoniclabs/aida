@@ -141,7 +141,7 @@ func (p *StochasticProxy) SetState(address common.Address, key common.Hash, valu
 
 func (p *StochasticProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
 	p.stats.CountKeyOp(operations.GetTransientStateID, &addr, &key)
-	return p.db.GetState(addr, key)
+	return p.db.GetTransientState(addr, key)
 }
 
 func (p *StochasticProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {

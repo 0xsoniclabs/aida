@@ -316,7 +316,7 @@ func TestStochasticProxy_GetTransientState(t *testing.T) {
 	addr := common.HexToAddress("0x1234")
 	key := common.HexToHash("0x5678")
 	expectedValue := common.HexToHash("0x9abc")
-	base.EXPECT().GetState(addr, key).Return(expectedValue)
+	base.EXPECT().GetTransientState(addr, key).Return(expectedValue)
 	value := proxy.GetTransientState(addr, key)
 	assert.Equal(t, expectedValue, value)
 }
