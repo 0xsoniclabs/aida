@@ -40,7 +40,7 @@ func (a *Classifier[T]) Classify(data T) int {
 	return kind
 }
 
-// Place the argument into the counting and queuing statistics.
+// place the argument into the counting and queuing statistics.
 func (a *Classifier[T]) place(data T) {
 	var zeroValue T
 	if data == zeroValue {
