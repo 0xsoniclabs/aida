@@ -37,7 +37,7 @@ type Reusable struct {
 // NewReusable creates a random set of arguments for StateDB operations
 func NewReusable(n int64, rand Randomizer) *Reusable {
 	if n < minCardinality {
-		return nil
+		n = minCardinality
 	}
 	queue := []int64{}
 	for range stochastic.QueueLen {

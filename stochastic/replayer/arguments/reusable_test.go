@@ -36,9 +36,10 @@ func TestReusableNew(t *testing.T) {
 		t.Errorf("Expected an argument set, but got nil")
 	}
 	n = int64(minCardinality - 1)
+	mockRandomizer.EXPECT().SampleArg(n).Return(int64(0)).Times(stochastic.QueueLen)
 	as = NewReusable(n, mockRandomizer)
-	if as != nil {
-		t.Errorf("Expected an error, but got an argument set")
+	if as.n != minCardinality {
+		t.Errorf("Expected an cardinality of %v, but got %v", minCardinality, as.n)
 	}
 }
 
