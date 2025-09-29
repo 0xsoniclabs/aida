@@ -79,3 +79,88 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		assert.Equal(t, uint64(1), r.transitFreq[gb][et])
 	}
 }
+
+func TestGenerateUniformStats_ValidationErrors(t *testing.T) {
+	baseCfg := utils.Config{
+		ContractNumber:    1,
+		KeysNumber:        1,
+		ValuesNumber:      1,
+		SnapshotDepth:     1,
+		BlockLength:       1,
+		SyncPeriodLength:  1,
+		TransactionLength: 1,
+	}
+
+	testCases := []struct {
+		name   string
+		mutate func(cfg *utils.Config)
+		errMsg string
+	}{
+		{
+			name: "ZeroBlockLength",
+			mutate: func(cfg *utils.Config) {
+				cfg.BlockLength = 0
+			},
+			errMsg: "block-length",
+		},
+		{
+			name: "ZeroSyncPeriod",
+			mutate: func(cfg *utils.Config) {
+				cfg.SyncPeriodLength = 0
+			},
+			errMsg: "sync-period",
+		},
+		{
+			name: "ZeroTransactionLength",
+			mutate: func(cfg *utils.Config) {
+				cfg.TransactionLength = 0
+			},
+			errMsg: "transaction-length",
+		},
+		{
+			name: "ZeroContracts",
+			mutate: func(cfg *utils.Config) {
+				cfg.ContractNumber = 0
+			},
+			errMsg: "num-contracts",
+		},
+		{
+			name: "ZeroKeys",
+			mutate: func(cfg *utils.Config) {
+				cfg.KeysNumber = 0
+			},
+			errMsg: "num-keys",
+		},
+		{
+			name: "ZeroValues",
+			mutate: func(cfg *utils.Config) {
+				cfg.ValuesNumber = 0
+			},
+			errMsg: "num-values",
+		},
+		{
+			name: "ZeroSnapshotDepth",
+			mutate: func(cfg *utils.Config) {
+				cfg.SnapshotDepth = 0
+			},
+			errMsg: "snapshot-depth",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			cfg := baseCfg
+			tc.mutate(&cfg)
+
+			mockLogger := logger.NewMockLogger(ctrl)
+			mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).Times(0)
+
+			_, err := GenerateUniformStats(&cfg, mockLogger)
+			assert.Error(t, err)
+			assert.ErrorContains(t, err, tc.errMsg)
+		})
+	}
+}

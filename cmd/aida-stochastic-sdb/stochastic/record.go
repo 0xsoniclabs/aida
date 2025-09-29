@@ -62,6 +62,9 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if cfg.SyncPeriodLength == 0 {
+		return fmt.Errorf("sync-period must be greater than zero")
+	}
 	cfg.ValidateTxState = true
 	log := logger.NewLogger(cfg.LogLevel, "StochasticRecord")
 	if err := utils.StartCPUProfile(cfg); err != nil {

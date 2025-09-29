@@ -78,6 +78,9 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	if perr != nil {
 		return fmt.Errorf("simulation length is not an integer; %v", perr)
 	}
+	if simLength <= 0 {
+		return fmt.Errorf("simulation length must be greater than zero")
+	}
 
 	// process configuration
 	cfg, err := utils.NewConfig(ctx, utils.LastBlockArg)

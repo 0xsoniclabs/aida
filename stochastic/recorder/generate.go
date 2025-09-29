@@ -17,6 +17,8 @@
 package recorder
 
 import (
+	"fmt"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
@@ -25,6 +27,9 @@ import (
 
 // GenerateUniformStats produces a uniformly distributed state file.
 func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) {
+	if err := validateUniformConfig(cfg); err != nil {
+		return nil, err
+	}
 	s := NewStats()
 	log.Infof("Number of contract addresses for priming: %v", cfg.ContractNumber)
 	for i := int64(0); i < cfg.ContractNumber; i++ {
@@ -62,7 +67,7 @@ func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) 
 			}
 		}
 	}
-	log.Infof("Snapshot depth: %v", cfg.KeysNumber)
+	log.Infof("Snapshot depth: %v", cfg.SnapshotDepth)
 	for i := 0; i < cfg.SnapshotDepth; i++ {
 		s.snapshotFreq[i] = 1
 	}
@@ -139,4 +144,29 @@ func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) 
 		}
 	}
 	return &s, nil
+}
+
+func validateUniformConfig(cfg *utils.Config) error {
+	if cfg.BlockLength == 0 {
+		return fmt.Errorf("block-length must be greater than zero")
+	}
+	if cfg.SyncPeriodLength == 0 {
+		return fmt.Errorf("sync-period must be greater than zero")
+	}
+	if cfg.TransactionLength == 0 {
+		return fmt.Errorf("transaction-length must be greater than zero")
+	}
+	if cfg.ContractNumber <= 0 {
+		return fmt.Errorf("num-contracts must be greater than zero")
+	}
+	if cfg.KeysNumber <= 0 {
+		return fmt.Errorf("num-keys must be greater than zero")
+	}
+	if cfg.ValuesNumber <= 0 {
+		return fmt.Errorf("num-values must be greater than zero")
+	}
+	if cfg.SnapshotDepth <= 0 {
+		return fmt.Errorf("snapshot-depth must be greater than zero")
+	}
+	return nil
 }
