@@ -100,11 +100,42 @@ pipeline {
                     }
                 }
 
-                stage('aida-fuzzing') {
+                stage('aida-stochastic') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-stochastic-sdb replay ${STATEDB} ${TMPDB} --db-shadow-impl geth 20 stochastic/data/simulation_uniform.json"
+                            sh "./build/aida-stochastic-sdb generate -output ./stats.json"
+                            sh """./build/aida-stochastic-sdb replay \
+                                ${STATEDB} --db-shadow-impl geth \
+                                ${TMPDB}  \
+                                --balance-range 1000000 \
+                                --memory-breakdown \
+                                --nonce-range 100000 \
+                                --random-seed 4711 \
+                                --log info 10 \
+                                ./stats.json"""
+                            sh "./build/aida-stochastic-sdb record ${AIDADB} 1 10000 --output ./stats.json"
+                            sh """ ./build/aida-stochastic-sdb replay \
+                                ${STATEDB} --db-shadow-impl geth \
+                                --memory-breakdown \
+                                --random-seed 4711 \
+                                ${TMPDB} \
+                                --log info 100 \
+                                ./stats.json"""
                         }
+                        sh "rm -rf *.dat"
+                    }
+                }
+
+                stage('aida-fuzzing') {
+                    steps {
+                        sh "mkdir -p /mnt/tmp-disk/stats"
+                        sh "rm -rf /mnt/tmp-disk/stats/*"
+                        sh "curl -L -o /mnt/tmp-disk/stats/stats.tar.gz https://github.com/0xsoniclabs/aida/releases/download/testdata/stats.tar.gz"
+                        sh "tar -xzf /mnt/tmp-disk/stats/stats.tar.gz -C /mnt/tmp-disk/stats"
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
+                            sh "build/aida-stochastic-sdb replay ${STATEDB} ${TMPDB} --db-shadow-impl geth 20 /mnt/tmp-disk/stats/stats.json"
+                        }
+                        sh "rm -rf /mnt/tmp-disk/stats"
                     }
                 }
 

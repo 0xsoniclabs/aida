@@ -46,7 +46,7 @@ func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 		Flag(utils.StateDbImplementationFlag.Name, "carmen").
 		Flag(utils.StateDbVariantFlag.Name, "go-file").
 		Arg(10).
-		Arg(path.Join(testDataDir, "replay.json")).
+		Arg(path.Join(testDataDir, "stats.json")).
 		Build()
 
 	// when
