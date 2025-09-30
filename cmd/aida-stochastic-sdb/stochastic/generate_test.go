@@ -30,7 +30,7 @@ import (
 func TestCmd_RunStochasticGenerateCommand(t *testing.T) {
 	// given
 	tmpDir := t.TempDir()
-	outputFile := filepath.Join(tmpDir, "test_events.json")
+	outputFile := filepath.Join(tmpDir, "stats.json")
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&StochasticGenerateCommand}
 	args := utils.NewArgs("test").

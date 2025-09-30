@@ -37,7 +37,7 @@ func TestCmd_RunStochasticVisualizeCommand(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(StochasticVisualizeCommand.Name).
 		Flag(utils.PortFlag.Name, port).
-		Arg(path.Join(testDataDir, "events.json")).
+		Arg(path.Join(testDataDir, "stats.json")).
 		Build()
 
 	// create a context with timeout to prevent the test from hanging

@@ -49,7 +49,7 @@ func TestVisualizer_renderDotGraph(t *testing.T) {
             const graphviz = await Graphviz.load();
             const svg = graphviz.layout(dot, "svg", "dot");
 	    document.getElementById("graph").innerHTML = svg;
-        } 
+        }
     </script>
 </body>
 </html>

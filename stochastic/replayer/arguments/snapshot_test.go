@@ -14,34 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package arguments
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/0xsoniclabs/aida/cmd/aida-stochastic-sdb/stochastic"
-	"github.com/urfave/cli/v2"
+	"math/rand"
+	"testing"
 )
 
-// StochasticApp initializes a aida-stochastic-sdb app.
-var stochasticApp = &cli.App{
-	Name:      "Aida Stochastic-Test Manager",
-	HelpName:  "stochastic",
-	Copyright: "(c) 2025 Sonic Labs",
-	Flags:     []cli.Flag{},
-	Commands: []*cli.Command{
-		&stochastic.StochasticGenerateCommand,
-		&stochastic.StochasticRecordCommand,
-		&stochastic.StochasticReplayCommand,
-		&stochastic.StochasticVisualizeCommand,
-	},
-}
+// TestSnapshotSet_Simple tests the NewEmpiricalSnapshotRandomizer and SampleSnapshot functions.
+func TestSnapshotSet_Simple(t *testing.T) {
+	rg := rand.New(rand.NewSource(1))
+	ecdf := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	r := NewEmpiricalSnapshotRandomizer(rg, ecdf)
+	if r == nil {
+		t.Fatalf("unexpected non-nil EmpiricalSnapshotRandomizer")
+	}
 
-// main implements "stochastic" cli stochasticApplication.
-func main() {
-	if err := stochasticApp.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	for range 10000 {
+		v := r.SampleSnapshot(1024)
+		if v < 0 || v >= 1024 {
+			t.Fatalf("sampled snapshot argument value out of range: %d", v)
+		}
 	}
 }
