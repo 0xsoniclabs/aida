@@ -100,6 +100,32 @@ pipeline {
                     }
                 }
 
+                stage('aida-stochastic') {
+                    steps {
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
+                            sh "./build/aida-stochastic-sdb generate -output ./stats.json"
+                            sh """./build/aida-stochastic-sdb replay \
+                                ${STATEDB} --db-shadow-impl geth \
+                                ${TMPDB}  \
+                                --balance-range 1000000 \
+                                --memory-breakdown \
+                                --nonce-range 100000 \
+                                --random-seed 4711 \
+                                --log info 10 \
+                                ./stats.json"""
+                            sh "./build/aida-stochastic-sdb record ${AIDADB} 1 10000 --output ./stats.json"
+                            sh """ ./build/aida-stochastic-sdb replay \
+                                ${STATEDB} --db-shadow-impl geth \
+                                --memory-breakdown \
+                                --random-seed 4711 \
+                                ${TMPDB} \
+                                --log info 100 \
+                                ./stats.json"""
+                        }
+                        sh "rm -rf *.dat"
+                    }
+                }
+
                 stage('aida-fuzzing') {
                     steps {
                         sh "mkdir -p /mnt/tmp-disk/stats"
