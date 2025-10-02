@@ -265,11 +265,6 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 
 		// if database had no metadata we will look for blocks in substate
 		if hasNoBlockRangeInMetadata {
-			// we need to close database before opening substate
-			if err = database.Close(); err != nil {
-				return nil, fmt.Errorf("cannot close database; %v", err)
-			}
-
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
 			md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
