@@ -53,6 +53,16 @@ func NewShadowProxy(prime, shadow state.StateDB, compareStateHash bool) state.St
 	}
 }
 
+// sameVmStateDBInstance reports whether both handles point to the exact same state implementation.
+func sameVmStateDBInstance(prime, shadow state.VmStateDB) (same bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			same = false
+		}
+	}()
+	return prime == shadow
+}
+
 type shadowVmStateDb struct {
 	prime            state.VmStateDB
 	shadow           state.VmStateDB
@@ -254,7 +264,7 @@ func (s *shadowStateDb) EndBlock() error {
 }
 
 func (s *shadowVmStateDb) verifyStateHash(opName string) {
-	if !s.compareStateHash {
+	if !s.compareStateHash || sameVmStateDBInstance(s.prime, s.shadow) {
 		return
 	}
 	_, err := s.getStateHash(opName+".GetHash", func(db state.VmStateDB) (common.Hash, error) {
