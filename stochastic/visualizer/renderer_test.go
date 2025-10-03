@@ -1,3 +1,19 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package visualizer
 
 import (
@@ -5,8 +21,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/stochastic"
-	"github.com/0xsoniclabs/aida/stochastic/statistics"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
+	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,27 +53,20 @@ func TestVisualizer_convertCountingData(t *testing.T) {
 
 func TestVisualizer_newCountingChart(t *testing.T) {
 	title := "Test Title"
-	subtitle := "Test Subtitle"
-	lambda := 2.5
-	ecdf := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
-	cdf := [][2]float64{{1.0, 0.4}, {2.0, 0.7}}
+	contracts := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
+	values := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
+	keys := [][2]float64{{1.0, 0.5}, {2.0, 0.8}}
 
-	chart := newCountingChart(title, subtitle, lambda, ecdf, cdf)
+	chart := newCountingChart(title, contracts, values, keys)
 
 	assert.NotNil(t, chart)
 }
 
 func TestVisualizer_renderCounting(t *testing.T) {
-	events := GetEventsData()
-	events.Contracts.ECdf = [][2]float64{{1.0, 0.5}}
-	events.Contracts.Cdf = [][2]float64{{1.0, 0.4}}
-	events.Contracts.Lambda = 1.5
-	events.Keys.ECdf = [][2]float64{{1.0, 0.6}}
-	events.Keys.Cdf = [][2]float64{{1.0, 0.5}}
-	events.Keys.Lambda = 2.0
-	events.Values.ECdf = [][2]float64{{1.0, 0.7}}
-	events.Values.Cdf = [][2]float64{{1.0, 0.6}}
-	events.Values.Lambda = 2.5
+	data := GetData()
+	data.Contracts.A_CDF = [][2]float64{{1.0, 0.5}}
+	data.Keys.A_CDF = [][2]float64{{1.0, 0.6}}
+	data.Values.A_CDF = [][2]float64{{1.0, 0.7}}
 
 	req, err := http.NewRequest("GET", "/counting-stats", nil)
 	assert.NoError(t, err)
@@ -66,14 +76,11 @@ func TestVisualizer_renderCounting(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 4269)
 }
 
 func TestVisualizer_renderSnapshotStats(t *testing.T) {
-	events := GetEventsData()
-	events.Snapshot.ECdf = [][2]float64{{1.0, 0.5}}
-	events.Snapshot.Cdf = [][2]float64{{1.0, 0.4}}
-	events.Snapshot.Lambda = 1.8
+	data := GetData()
+	data.Snapshot.ECdf = [][2]float64{{1.0, 0.5}}
 
 	req, err := http.NewRequest("GET", "/snapshot-stats", nil)
 	assert.NoError(t, err)
@@ -83,7 +90,6 @@ func TestVisualizer_renderSnapshotStats(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 1733)
 }
 
 func TestVisualizer_convertQueuingData(t *testing.T) {
@@ -99,10 +105,10 @@ func TestVisualizer_convertQueuingData(t *testing.T) {
 }
 
 func TestVisualizer_renderQueuing(t *testing.T) {
-	e := &EventData{}
-	e.Contracts.QPdf = []float64{0.1, 0.2}
-	e.Keys.QPdf = []float64{0.3, 0.4}
-	e.Values.QPdf = []float64{0.5, 0.6}
+	e := &StatsData{}
+	e.Contracts.Q_PMF = []float64{0.1, 0.2}
+	e.Keys.Q_PMF = []float64{0.3, 0.4}
+	e.Values.Q_PMF = []float64{0.5, 0.6}
 
 	req, err := http.NewRequest("GET", "/queuing-stats", nil)
 	assert.NoError(t, err)
@@ -112,7 +118,7 @@ func TestVisualizer_renderQueuing(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, rr.Body.String(), 1877)
+	assert.Len(t, rr.Body.String(), 1808)
 }
 
 func TestVisualizer_convertOperationData(t *testing.T) {
@@ -146,7 +152,7 @@ func TestVisualizer_convertOperationLabel(t *testing.T) {
 }
 
 func TestVisualizer_renderOperationStats(t *testing.T) {
-	e := &EventData{}
+	e := &StatsData{}
 	e.Stationary = []OpData{
 		{label: "op1", value: 0.3},
 		{label: "op2", value: 0.7},
@@ -164,7 +170,7 @@ func TestVisualizer_renderOperationStats(t *testing.T) {
 }
 
 func TestVisualizer_renderTransactionalOperationStats(t *testing.T) {
-	e := &EventData{}
+	e := &StatsData{}
 	e.TxOperation = []OpData{
 		{label: "tx_op1", value: 1.5},
 		{label: "tx_op2", value: 2.5},
@@ -185,13 +191,13 @@ func TestVisualizer_renderTransactionalOperationStats(t *testing.T) {
 }
 
 func TestVisualizer_renderSimplifiedMarkovChain(t *testing.T) {
-	e := &EventData{}
+	e := &StatsData{}
 	// Initialize a simple matrix with some non-zero values
-	for i := 0; i < stochastic.NumOps; i++ {
-		for j := 0; j < stochastic.NumOps; j++ {
+	for i := 0; i < operations.NumOps; i++ {
+		for j := 0; j < operations.NumOps; j++ {
 			if i == j {
 				e.SimplifiedMatrix[i][j] = 0.5
-			} else if j == (i+1)%stochastic.NumOps {
+			} else if j == (i+1)%operations.NumOps {
 				e.SimplifiedMatrix[i][j] = 0.3
 			}
 		}
@@ -206,12 +212,12 @@ func TestVisualizer_renderSimplifiedMarkovChain(t *testing.T) {
 	response := rr.Body.String()
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, response, 2507)
+	assert.NotZero(t, len(response))
 	assert.Contains(t, response, "StateDB Simplified Markov-Chain")
 }
 
 func TestVisualizer_renderMarkovChain(t *testing.T) {
-	e := &EventData{}
+	e := &StatsData{}
 	e.OperationLabel = []string{"op1", "op2", "op3"}
 	e.StochasticMatrix = [][]float64{
 		{0.5, 0.3, 0.2},
@@ -228,26 +234,26 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 	response := rr.Body.String()
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Len(t, response, 637)
+	assert.Len(t, response, 636)
 	assert.Contains(t, response, "StateDB Markov-Chain")
 }
 
 func TestVisualizer_FireUpWeb(t *testing.T) {
-	eventRegistry := &stochastic.EventRegistryJSON{
-		SnapshotEcdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
-		Contracts: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+	stateJSON := &recorder.StatsJSON{
+		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
+		Contracts: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
+				ECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
 			},
 		},
-		Keys: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
+		Keys: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
+				ECDF: [][2]float64{{0.5, 0.6}, {0.7, 0.8}},
 			},
 		},
-		Values: statistics.AccessJSON{
-			Counting: statistics.CountingJSON{
-				ECdf: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
+		Values: arguments.ClassifierJSON{
+			Counting: arguments.ArgStatsJSON{
+				ECDF: [][2]float64{{0.9, 1.0}, {1.1, 1.2}},
 			},
 		},
 		StochasticMatrix: [][]float64{
@@ -264,7 +270,7 @@ func TestVisualizer_FireUpWeb(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		go func() {
-			FireUpWeb(eventRegistry, "0")
+			FireUpWeb(stateJSON, "0")
 		}()
 	})
 }

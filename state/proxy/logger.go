@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -237,6 +237,12 @@ func (s *loggingVmStateDb) GetCommittedState(addr common.Address, key common.Has
 	res := s.db.GetCommittedState(addr, key)
 	s.writeLog("GetCommittedState, %v, %v, %v", addr, key, res)
 	return res
+}
+
+func (s *loggingVmStateDb) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	val, origin := s.db.GetStateAndCommittedState(addr, key)
+	s.writeLog("GetStateAndCommittedState, %s, %s, %s, %s", addr, key, val, origin)
+	return val, origin
 }
 
 func (s *loggingVmStateDb) GetState(addr common.Address, key common.Hash) common.Hash {

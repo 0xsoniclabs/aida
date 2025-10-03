@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -1158,17 +1158,35 @@ func TestHasStateHashPatch(t *testing.T) {
 
 }
 
-func TestProcessMergeMetadata(t *testing.T) {
+func TestProcessMergeMetadata_MergingBlockAndEpochRangeCorrectly(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
 	cfg := &Config{}
 	mockAidaDb := db.NewMockBaseDB(ctrl)
+	mockAidaDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(bigendian.Uint64ToBytes(0), nil)
+	mockAidaDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(bigendian.Uint64ToBytes(209), nil)
+	mockAidaDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(bigendian.Uint64ToBytes(1), nil)
+	mockAidaDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(bigendian.Uint64ToBytes(3), nil)
+	mockAidaDb.EXPECT().Get([]byte(TypePrefix)).Return([]byte{byte(GenType)}, nil)
+	mockAidaDb.EXPECT().Get([]byte(TimestampPrefix)).Return(bigendian.Uint64ToBytes(0), nil)
+	mockAidaDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(146), nil)
+
 	mockSourceDb := db.NewMockBaseDB(ctrl)
-	mockSourceDb.EXPECT().Get(gomock.Any()).Return([]byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}, nil).AnyTimes()
+	mockSourceDb.EXPECT().Get([]byte(FirstBlockPrefix)).Return(bigendian.Uint64ToBytes(210), nil)
+	mockSourceDb.EXPECT().Get([]byte(LastBlockPrefix)).Return(bigendian.Uint64ToBytes(399), nil)
+	mockSourceDb.EXPECT().Get([]byte(FirstEpochPrefix)).Return(bigendian.Uint64ToBytes(4), nil)
+	mockSourceDb.EXPECT().Get([]byte(LastEpochPrefix)).Return(bigendian.Uint64ToBytes(4), nil)
+	mockSourceDb.EXPECT().Get([]byte(TypePrefix)).Return([]byte{byte(PatchType)}, nil)
+	mockSourceDb.EXPECT().Get([]byte(TimestampPrefix)).Return(bigendian.Uint64ToBytes(0), nil)
+	mockSourceDb.EXPECT().Get([]byte(ChainIDPrefix)).Return(bigendian.Uint64ToBytes(146), nil)
 	out, err := ProcessMergeMetadata(cfg, mockAidaDb, []db.BaseDB{mockSourceDb}, []string{})
-	assert.Error(t, err)
-	assert.Nil(t, out)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(0), out.FirstBlock)
+	assert.Equal(t, uint64(399), out.LastBlock)
+	assert.Equal(t, uint64(1), out.FirstEpoch)
+	assert.Equal(t, uint64(4), out.LastEpoch)
+	assert.Equal(t, GenType, out.DbType)
+	assert.Equal(t, ChainID(146), out.ChainId)
 }
 
 func Test_FindEpochNumber_IsSkippedForEthereumChainIDs(t *testing.T) {

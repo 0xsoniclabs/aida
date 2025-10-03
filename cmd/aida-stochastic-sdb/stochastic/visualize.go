@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/visualizer"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
@@ -30,16 +30,16 @@ import (
 var StochasticVisualizeCommand = cli.Command{
 	Action:    stochasticVisualizeAction,
 	Name:      "visualize",
-	Usage:     "produces a graphical view of the estimated parameters for various distributions",
-	ArgsUsage: "<event-file>",
+	Usage:     "produces a graphical view of the stats for the Markovian process",
+	ArgsUsage: "<stats-file>",
 	Flags: []cli.Flag{
 		&utils.PortFlag,
 	},
 	Description: `
 The stochastic visualize command requires one argument:
-<events.json>
+<stats.json>
 
-<events.json> is the event file produced by the stochastic recorder.`,
+<stats.json> is the event file produced by the stochastic recorder or generator.`,
 }
 
 // stochasticVisualizeAction implements the visualize command for computing statistical parameters.
@@ -54,7 +54,7 @@ func stochasticVisualizeAction(ctx *cli.Context) error {
 
 	// read events file
 	log.Infof("Read event file %v", inputFileName)
-	eventRegistry, err := stochastic.ReadEvents(inputFileName)
+	eventRegistry, err := recorder.Read(inputFileName)
 	if err != nil {
 		return err
 	}

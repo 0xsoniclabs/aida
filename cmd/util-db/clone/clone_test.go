@@ -1,19 +1,43 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
 package clone
 
 import (
 	"fmt"
+
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/hash"
+	"github.com/holiman/uint256"
+
+	"math/big"
 	"os"
 	"strconv"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v2"
-
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestClone(t *testing.T) {
@@ -40,7 +64,7 @@ func TestClone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			aidaDb := utildb.GenerateTestAidaDb(t)
-			err := testClone(t, aidaDb, tt.cloningType, tt.name, tt.dbc)
+			err := testClone(t, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), tt.cloningType, tt.name, tt.dbc)
 			if tt.wantErr != "" {
 				assert.Error(t, err, "Expected error but got none")
 				assert.Contains(t, err.Error(), tt.wantErr, "Error message does not match")
@@ -51,15 +75,16 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func testClone(t *testing.T, aidaDb db.BaseDB, cloningType utils.AidaDbType, name string, dbc string) error {
+func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType, name string, dbc string) error {
 	cfg := &utils.Config{
 		First:       0,
 		Last:        100,
+		Workers:     1,
 		Validate:    true, // TODO add substates with code to testDb then validate would produce error as count wouldn't match
 		DbComponent: dbc,
 		CompactDb:   true,
 	}
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb_" + name)
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb_" + name)
 	assert.NoError(t, err)
 
 	err = clone(cfg, aidaDb, cloneDb, cloningType)
@@ -150,7 +175,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			name:        "SubstateInvalidDbKey",
 			keyPrefix:   db.SubstateDBPrefix,
 			dbComponent: "substate",
-			expectedErr: "clone failed for SubstateInvalidDbKey: condition emit error; invalid length of substate db key: 5",
+			expectedErr: "clone failed for SubstateInvalidDbKey: cannot clone codes; invalid substate key: [49 115 105 110 118]; invalid length of substate db key: 5",
 		},
 		{
 			name:        "UpdateSetsInvalidDbKey",
@@ -181,14 +206,14 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir() + "/testAidaDb"
-			aidaDb, err := db.NewDefaultBaseDB(tmpDir)
+			aidaDb, err := db.NewDefaultSubstateDB(tmpDir)
 			if err != nil {
 				t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 			}
 			defer func() {
 				err = aidaDb.Close()
 				if err != nil {
-					t.Fatalf("error closing aidaDb %s: %v", tmpDir, err)
+					t.Fatalf("error closing sourceDb %s: %v", tmpDir, err)
 				}
 			}()
 
@@ -216,10 +241,10 @@ func TestClone_BlockHashes(t *testing.T) {
 	}
 	aidaDb := utildb.GenerateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, aidaDb, cloneDb, utils.CustomType)
+	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CustomType)
 
 	assert.NoError(t, err)
 
@@ -242,10 +267,10 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	}
 	aidaDb := utildb.GenerateTestAidaDb(t)
 
-	cloneDb, err := db.NewDefaultBaseDB(t.TempDir() + "/clonedb")
+	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, aidaDb, cloneDb, utils.CloneType)
+	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CloneType)
 
 	assert.NoError(t, err)
 
@@ -260,18 +285,18 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 }
 
 func TestClone_OpenCloningDbs_SourceDbNotExist(t *testing.T) {
-	_, _, err := openCloningDbs("/not/exist/source", "/tmp/target")
+	_, _, err := openCloningDbs("/not/exist/source", "/tmp/target", db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
 func TestClose_OpenCloningDbs_SourceDbInvalid(t *testing.T) {
-	_, _, err := openCloningDbs(t.TempDir(), t.TempDir())
+	_, _, err := openCloningDbs(t.TempDir(), t.TempDir(), db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
 func TestClone_OpenCloningDbs_TargetExists(t *testing.T) {
 	tmpFile := t.TempDir()
-	_, _, err := openCloningDbs(tmpFile, tmpFile)
+	_, _, err := openCloningDbs(tmpFile, tmpFile, db.ProtobufEncodingSchema)
 	assert.Error(t, err)
 }
 
@@ -287,7 +312,7 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Open cloning databases
-	openedSourceDb, openedTargetDb, err := openCloningDbs(sourceDir, targetDir)
+	openedSourceDb, openedTargetDb, err := openCloningDbs(sourceDir, targetDir, db.ProtobufEncodingSchema)
 	assert.NoError(t, err)
 
 	err = openedSourceDb.Close()
@@ -297,18 +322,16 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 }
 
 func TestClone_Commands(t *testing.T) {
-	ss, srcDbPath := utils.CreateTestSubstateDb(t)
+	ss, srcDbPath := utils.CreateTestSubstateDb(t, db.ProtobufEncodingSchema)
 	tests := []struct {
-		cmdName  string
+		cmd      *cli.Command
 		testName string
-		action   cli.ActionFunc
 		wantErr  string
 		args     []string
 	}{
 		{
-			cmdName:  cloneCustomCommand.Name,
+			cmd:      &cloneCustomCommand,
 			testName: cloneCustomCommand.Name + "_Success",
-			action:   cloneCustomAction,
 			args: []string{
 				"--aida-db",
 				srcDbPath,
@@ -325,16 +348,15 @@ func TestClone_Commands(t *testing.T) {
 			},
 		},
 		{
-			cmdName:  cloneDbCommand.Name,
+			cmd:      &cloneDbCommand,
 			testName: cloneDbCommand.Name + "_Success",
-			action:   cloneDbAction,
 			args: []string{
+				"--substate-encoding",
+				"pb",
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				strconv.FormatUint(ss.Block-1, 10),
@@ -344,16 +366,15 @@ func TestClone_Commands(t *testing.T) {
 			},
 		},
 		{
-			cmdName:  clonePatchCommand.Name,
+			cmd:      &clonePatchCommand,
 			testName: clonePatchCommand.Name + "_Success",
-			action:   clonePatchAction,
 			args: []string{
+				"--substate-encoding",
+				"pb",
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				strconv.FormatUint(ss.Block-1, 10),
@@ -363,16 +384,13 @@ func TestClone_Commands(t *testing.T) {
 			},
 		},
 		{
-			cmdName:  clonePatchCommand.Name,
+			cmd:      &clonePatchCommand,
 			testName: clonePatchCommand.Name + "_Incorrect_Block_Range",
-			action:   clonePatchAction,
 			args: []string{
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				"11",
@@ -383,16 +401,13 @@ func TestClone_Commands(t *testing.T) {
 			wantErr: "first block 11 has larger number than last block 10",
 		},
 		{
-			cmdName:  clonePatchCommand.Name,
+			cmd:      &clonePatchCommand,
 			testName: clonePatchCommand.Name + "_Incorrect_Epoch_Range",
-			action:   clonePatchAction,
 			args: []string{
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				strconv.FormatUint(ss.Block-1, 10),
@@ -403,9 +418,8 @@ func TestClone_Commands(t *testing.T) {
 			wantErr: "first block 11 has larger number than last block 10",
 		},
 		{
-			cmdName:  cloneCustomCommand.Name,
+			cmd:      &cloneCustomCommand,
 			testName: cloneCustomCommand.Name + "_Invalid_NumberOfArgs",
-			action:   cloneCustomAction,
 			wantErr:  "command requires 2 arguments",
 			args: []string{
 				"--aida-db",
@@ -419,41 +433,34 @@ func TestClone_Commands(t *testing.T) {
 			},
 		},
 		{
-			cmdName:  cloneDbCommand.Name,
+			cmd:      &cloneDbCommand,
 			testName: cloneDbCommand.Name + "_Invalid_NumberOfArgs",
-			action:   cloneDbAction,
 			wantErr:  "command requires 2 arguments",
 			args: []string{
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 			},
 		},
 		{
-			cmdName:  clonePatchCommand.Name,
+			cmd:      &clonePatchCommand,
 			testName: clonePatchCommand.Name + "_Invalid_NumberOfArgs",
-			action:   clonePatchAction,
 			wantErr:  "clone patch command requires exactly 4 arguments",
 			args: []string{
 				"--aida-db",
 				srcDbPath,
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 			},
 		},
 		{
-			cmdName:  cloneCustomCommand.Name,
+			cmd:      &cloneCustomCommand,
 			testName: cloneCustomCommand.Name + "_SrcDoesNotExist",
-			action:   cloneCustomAction,
 			args: []string{
 				"--aida-db",
 				"/some/wrong/src/path",
@@ -471,16 +478,13 @@ func TestClone_Commands(t *testing.T) {
 			wantErr: "specified aida-db /some/wrong/src/path is empty",
 		},
 		{
-			cmdName:  cloneDbCommand.Name,
+			cmd:      &cloneDbCommand,
 			testName: cloneDbCommand.Name + "_SrcDoesNotExist",
-			action:   cloneDbAction,
 			args: []string{
 				"--aida-db",
 				"/some/wrong/src/path",
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				strconv.FormatUint(ss.Block-1, 10),
@@ -491,16 +495,13 @@ func TestClone_Commands(t *testing.T) {
 			wantErr: "specified aida-db /some/wrong/src/path is empty",
 		},
 		{
-			cmdName:  clonePatchCommand.Name,
+			cmd:      &clonePatchCommand,
 			testName: clonePatchCommand.Name + "_SrcDoesNotExist",
-			action:   clonePatchAction,
 			args: []string{
 				"--aida-db",
 				"/some/wrong/src/path",
 				"--target-db",
 				t.TempDir() + "/target.db",
-				"--db-component",
-				"all",
 				"-l",
 				"CRITICAL",
 				strconv.FormatUint(ss.Block-1, 10),
@@ -514,16 +515,11 @@ func TestClone_Commands(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			app := cli.NewApp()
-			app.Action = test.action
-			app.Flags = []cli.Flag{
-				&utils.AidaDbFlag,
-				&utils.TargetDbFlag,
-				&logger.LogLevelFlag,
-				&utils.DbComponentFlag,
-			}
+			app.Action = test.cmd.Action
+			app.Flags = test.cmd.Flags
 			targetDbPath := test.args[3]
 
-			err := app.Run(append([]string{test.cmdName}, test.args...))
+			err := app.Run(append([]string{test.cmd.Name}, test.args...))
 			if test.wantErr == "" {
 				require.NoError(t, err)
 				require.Condition(t, func() bool {
@@ -537,4 +533,247 @@ func TestClone_Commands(t *testing.T) {
 
 		})
 	}
+}
+
+func TestCloner_CloneCodes_ClonesCodesFromInputAndOutputSubstate(t *testing.T) {
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{2})
+	err = srcDb.PutSubstate(ss)
+	require.NoError(t, err, "failed to put substate")
+
+	dstPath := t.TempDir()
+	dstDb, err := db.NewDefaultSubstateDB(dstPath)
+	require.NoError(t, err, "failed to create destination db")
+	err = dstDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	clnr := cloner{
+		cfg: &utils.Config{
+			First:            1,
+			Last:             10,
+			Workers:          1,
+			SubstateEncoding: "protobuf",
+		},
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
+	}
+
+	err = clnr.cloneCodes()
+	require.NoError(t, err, "failed to clone codes")
+
+	codeDb := db.MakeDefaultCodeDBFromBaseDB(dstDb)
+	ok, err := codeDb.HasCode(hash.Keccak256Hash([]byte{1}))
+	require.NoError(t, err, "failed to check if code exists")
+	require.True(t, ok, "code does not exist")
+	ok, err = codeDb.HasCode(hash.Keccak256Hash([]byte{2}))
+	require.NoError(t, err, "failed to check if code exists")
+	require.True(t, ok, "code does not exist")
+}
+
+func TestCloner_PutCode_DoesNotPutNilCode(t *testing.T) {
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	// Create one substate with nil code and one with empty code
+	ss1 := createTestSubstate(t, 1, nil, []byte{123})
+	err = srcDb.PutSubstate(ss1)
+	require.NoError(t, err, "failed to put substate")
+
+	// PutCode must be called only once for each code
+	ctrl := gomock.NewController(t)
+	dstDb := db.NewMockSubstateDB(ctrl)
+	// only one code should be put
+	dstDb.EXPECT().PutCode([]byte{123}).Times(1)
+
+	clnr := cloner{
+		cfg: &utils.Config{
+			First:            1,
+			Last:             10,
+			Workers:          1,
+			SubstateEncoding: "protobuf",
+		},
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
+	}
+
+	err = clnr.cloneCodes()
+	require.NoError(t, err, "failed to clone codes")
+}
+
+func TestCloner_CloneCodes_DoesNotCloneDuplicates(t *testing.T) {
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	// Create two identical substates with different tx numbers
+	ss1 := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss1)
+	require.NoError(t, err, "failed to put substate")
+
+	// PutCode must be called only once for each code
+	ctrl := gomock.NewController(t)
+	dstDb := db.NewMockSubstateDB(ctrl)
+	dstDb.EXPECT().PutCode([]byte{1}).Times(1)
+
+	clnr := cloner{
+		cfg: &utils.Config{
+			First:            1,
+			Last:             10,
+			Workers:          1,
+			SubstateEncoding: "protobuf",
+		},
+		sourceDb: srcDb,
+		cloneDb:  dstDb,
+		log:      logger.NewLogger("warn", "CloneCodesTest"),
+	}
+
+	err = clnr.cloneCodes()
+	require.NoError(t, err, "failed to clone codes")
+}
+
+func TestOpenCloningDbs_OpensDbsCorrectly(t *testing.T) {
+	tmp := t.TempDir()
+	srcPath := tmp + "/src"
+	dstPath := tmp + "/dst"
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+
+	ss1 := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss1)
+	require.NoError(t, err, "failed to put substate")
+
+	// Close the db to test opening
+	require.NoError(t, srcDb.Close())
+
+	srcDb, dstDb, err := openCloningDbs(srcPath, dstPath, db.ProtobufEncodingSchema)
+	require.NoError(t, err, "failed to open cloning dbs")
+
+	// check correct opening of source db
+	srcDbSs, err := srcDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+	require.NoError(t, srcDbSs.Equal(ss1))
+	// Make sure destination db is empty
+	iter := dstDb.NewSubstateIterator(0, 1)
+	require.False(t, iter.Next())
+}
+
+func createTestSubstate(t *testing.T, tx int, codeA, codeB []byte) *substate.Substate {
+	t.Helper()
+	random := types.Hash{1}
+	to := types.Address{1}
+	return &substate.Substate{
+		InputSubstate: substate.WorldState{
+			types.Address{1}: &substate.Account{
+				Code:    codeA,
+				Balance: uint256.NewInt(10),
+				Storage: make(map[types.Hash]types.Hash),
+			},
+		},
+		OutputSubstate: substate.WorldState{
+			types.Address{2}: &substate.Account{
+				Code:    codeB,
+				Balance: uint256.NewInt(10),
+				Storage: make(map[types.Hash]types.Hash),
+			},
+		},
+		Env: &substate.Env{
+			Difficulty:  big.NewInt(10),
+			BaseFee:     big.NewInt(10),
+			BlobBaseFee: big.NewInt(10),
+			BlockHashes: make(map[uint64]types.Hash),
+			Random:      &random,
+		},
+		Message: &substate.Message{
+			CheckNonce:            true,
+			GasPrice:              big.NewInt(10),
+			To:                    &to,
+			Value:                 big.NewInt(10),
+			AccessList:            make(types.AccessList, 0),
+			GasFeeCap:             big.NewInt(10),
+			GasTipCap:             big.NewInt(10),
+			BlobHashes:            make([]types.Hash, 0),
+			SetCodeAuthorizations: make([]types.SetCodeAuthorization, 0),
+			Data:                  []byte{0x1, 0x2, 0x3, 0x4, 0x5},
+		},
+		Result:      &substate.Result{},
+		Block:       uint64(1),
+		Transaction: tx,
+	}
+}
+
+func TestClone_CorrectlyClonesData(t *testing.T) {
+	// prepare the source db
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	md := utils.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(utils.MainnetChainID)
+	require.NoError(t, err, "failed to set chain id")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	err = srcDb.PutSubstate(ss)
+	require.NoError(t, err)
+
+	targetPath := t.TempDir()
+	targetDb, err := db.NewDefaultSubstateDB(targetPath)
+	require.NoError(t, err, "failed to create target db")
+
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
+	require.NoError(t, err, "failed to clone codes")
+
+	gotSs, err := targetDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+
+	err = ss.Equal(gotSs)
+	require.NoError(t, err)
+}
+
+func TestCloneCodes_PutsDataHashAsCode(t *testing.T) {
+	// prepare the source db
+	srcPath := t.TempDir()
+	srcDb, err := db.NewDefaultSubstateDB(srcPath)
+	require.NoError(t, err, "failed to create source db")
+	md := utils.NewAidaDbMetadata(srcDb, "INFO")
+	err = md.SetChainID(utils.MainnetChainID)
+	require.NoError(t, err, "failed to set chain id")
+	err = srcDb.SetSubstateEncoding("protobuf")
+	require.NoError(t, err, "failed to set substate encoding")
+	ss := createTestSubstate(t, 1, []byte{1}, []byte{1})
+	// Simulate contract creation
+	ss.Message.To = nil
+	// Contract address must correspond to the data hash
+	ss.Result.ContractAddress = types.HexToAddress("0xbd770416a3345f91e4b34576cb804a576fa48eb1")
+
+	err = srcDb.PutSubstate(ss)
+	require.NoError(t, err)
+
+	targetPath := t.TempDir()
+	targetDb, err := db.NewDefaultSubstateDB(targetPath)
+	require.NoError(t, err, "failed to create target db")
+
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
+	require.NoError(t, err, "failed to clone codes")
+
+	gotSs, err := targetDb.GetSubstate(1, 1)
+	require.NoError(t, err, "failed to get substate")
+
+	err = ss.Equal(gotSs)
+	require.NoError(t, err)
 }

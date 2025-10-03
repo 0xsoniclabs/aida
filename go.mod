@@ -7,11 +7,12 @@ toolchain go1.24.1
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20250708101910-3666ec34654c
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
-	github.com/0xsoniclabs/substate v0.0.0-20250822061647-ed560155fc5a
-	github.com/0xsoniclabs/tosca v0.0.0-20250708111444-f020a558b11e
+	github.com/0xsoniclabs/substate v0.0.0-20250919051851-347868eb579c
+	github.com/0xsoniclabs/tosca v0.0.0-20250905102158-3abb733cc467
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
+	github.com/cockroachdb/errors v1.11.3
 	github.com/dsnet/compress v0.0.1
 	github.com/ethereum/go-ethereum v1.15.0
 	github.com/go-echarts/go-echarts/v2 v2.2.5
@@ -47,7 +48,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240816210425-c5d0cb0b6fc0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v1.1.5 // indirect
@@ -61,10 +61,11 @@ require (
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.0 // indirect
 	github.com/ethereum/evmc/v11 v11.0.0 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
-	github.com/ferranbt/fastssz v0.1.2 // indirect
+	github.com/ferranbt/fastssz v0.1.4 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
@@ -140,7 +141,7 @@ replace github.com/0xsoniclabs/tosca => ./tosca
 
 replace github.com/ethereum/evmc/v11 => ./tosca/third_party/evmc
 
-replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20250627083633-bbe492095a30
+replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20250827114033-a49cee8740d2
 
 replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundation/lachesis-base-sonic v0.0.0-20250701061954-44075d09185c
 

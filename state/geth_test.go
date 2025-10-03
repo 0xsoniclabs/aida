@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,13 +17,21 @@
 package state
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/prque"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/stretchr/testify/require"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb/leveldb"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/triedb"
+	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const N = 1000
@@ -65,22 +73,14 @@ func fillDb(t *testing.T, directory string) (common.Hash, error) {
 }
 
 func TestGethDbFilling(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test_db_*")
-	defer os.RemoveAll(dir)
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", dir)
-	}
+	dir := t.TempDir()
 	if _, err := fillDb(t, dir); err != nil {
 		t.Errorf("Unable to fill DB: %v", err)
 	}
 }
 
 func TestGethDbReloadData(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test_db_*")
-	defer os.RemoveAll(dir)
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", dir)
-	}
+	dir := t.TempDir()
 	hash, err := fillDb(t, dir)
 	if err != nil {
 		t.Errorf("Unable to fill DB: %v", err)

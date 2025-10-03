@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -123,7 +123,11 @@ type rpcProcessInfo struct {
 }
 
 func (rp *registerRequestProgress) PreRun(executor.State[*rpc.RequestAndResults], *executor.Context) error {
-	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", rp.id.GetId()))
+	id, err := rp.id.GetId()
+	if err != nil {
+		return err
+	}
+	connection := filepath.Join(rp.cfg.RegisterRun, fmt.Sprintf("%s.db", id))
 	rp.log.Noticef("Registering to: %s", connection)
 
 	// 1. if directory does not exists -> fatal, throw error
