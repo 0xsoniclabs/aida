@@ -244,6 +244,7 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 	)
 
 	targetMD := NewAidaDbMetadata(aidaDb, cfg.LogLevel)
+	targetMD.GetMetadata()
 
 	for i, database := range sourceDbs {
 		md := NewAidaDbMetadata(database, cfg.LogLevel)
@@ -778,7 +779,6 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) er
 	)
 
 	patchMD := NewAidaDbMetadata(patchDb, cfg.LogLevel)
-
 	patchMD.GetMetadata()
 
 	// if we are updating existing AidaDb and this Db does not have metadata, we go through substate to find
