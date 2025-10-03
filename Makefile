@@ -119,8 +119,19 @@ install-dev-tools:
 	@go install go.uber.org/mock/mockgen@latest
 
 format:
-	@goimports -w ./..
-	@gofmt -s -d -w $(go list ./... | grep -v /vendor/ | grep -v /sonic/ | grep -v /tosca/ | grep -v /carmen/)
+	@find . -type f -name '*.go' \
+		  -not -path './vendor/*' \
+		  -not -path './sonic/*' \
+		  -not -path './tosca/*' \
+		  -not -path './carmen/*' \
+		  -print0 | xargs -0 goimports -w
+
+	@find . -type f -name '*.go' \
+		  -not -path './vendor/*' \
+		  -not -path './sonic/*' \
+		  -not -path './tosca/*' \
+		  -not -path './carmen/*' \
+		  -print0 | xargs -0 gofmt -s -d -w
 
 check:
 	@golangci-lint run -c .golangci.yml ./...
