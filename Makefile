@@ -119,8 +119,8 @@ install-dev-tools:
 	@go install go.uber.org/mock/mockgen@latest
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
+		@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db ./logger ./register ./state
+		@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db ./logger ./register ./state
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
+		@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db ./logger ./register ./state
