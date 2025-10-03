@@ -311,7 +311,7 @@ func getDisks() (string, error) {
 
 	// check if output contains `hwinfo: not found`
 	if strings.Contains(string(output), "hwinfo: not found") {
-		return "", fmt.Errorf(string(output))
+		return "", fmt.Errorf("%s", string(output))
 	}
 
 	return strings.TrimSpace(string(output)), nil
