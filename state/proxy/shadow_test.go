@@ -2467,3 +2467,287 @@ func TestShadowVmStateDb_getHashPair_ReportsError(t *testing.T) {
 		assert.ErrorContains(t, shadow.err, "(second hash) diverged from shadow DB")
 	})
 }
+
+func TestSameVmStateDBInstance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock := state.NewMockStateDB(ctrl)
+	assert.True(t, sameVmStateDBInstance(mock, mock))
+
+	other := state.NewMockStateDB(ctrl)
+	assert.False(t, sameVmStateDBInstance(mock, other))
+}
+
+func TestShadowVmStateDb_ErrorClearsState(t *testing.T) {
+	vm := &shadowVmStateDb{err: errors.New("boom")}
+
+	first := vm.Error()
+	assert.EqualError(t, first, "boom")
+	assert.NoError(t, vm.Error())
+}
+
+func TestShadowNonCommittableStateDb_GetHash_NoComparison(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockNonCommittableStateDB(ctrl)
+	shadow := state.NewMockNonCommittableStateDB(ctrl)
+	log := logger.NewLogger("info", "test")
+
+	db := &shadowNonCommittableStateDb{
+		shadowVmStateDb: shadowVmStateDb{
+			prime:            prime,
+			shadow:           shadow,
+			snapshots:        nil,
+			err:              nil,
+			log:              log,
+			compareStateHash: false,
+		},
+		prime:  prime,
+		shadow: shadow,
+	}
+
+	expected := common.Hash{0xAA}
+	prime.EXPECT().GetHash().Return(expected, nil)
+
+	result, err := db.GetHash()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
+
+func TestShadowStateDb_CommitShadowError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	prime := state.NewMockStateDB(ctrl)
+	shadow := state.NewMockStateDB(ctrl)
+	log := logger.NewLogger("info", "test")
+
+	db := &shadowStateDb{
+		shadowVmStateDb: shadowVmStateDb{
+			prime:            prime,
+			shadow:           shadow,
+			snapshots:        nil,
+			err:              nil,
+			log:              log,
+			compareStateHash: false,
+		},
+		prime:  prime,
+		shadow: shadow,
+	}
+
+	commitErr := errors.New("shadow commit failed")
+	shadow.EXPECT().Commit(uint64(99), true).Return(common.Hash{}, commitErr)
+
+	result, err := db.Commit(99, true)
+	assert.Equal(t, common.Hash{}, result)
+	assert.ErrorIs(t, err, commitErr)
+}
+
+func TestShadowStateDb_StartBulkLoadErrors(t *testing.T) {
+	t.Run("prime failure", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		primeErr := errors.New("prime bulkload")
+		prime.EXPECT().StartBulkLoad(uint64(7)).Return(nil, primeErr)
+
+		bl, err := db.StartBulkLoad(7)
+		assert.Nil(t, bl)
+		assert.ErrorIs(t, err, primeErr)
+	})
+
+	t.Run("shadow failure", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+		primeBulk := state.NewMockBulkLoad(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		shadowErr := errors.New("shadow bulkload")
+		prime.EXPECT().StartBulkLoad(uint64(11)).Return(primeBulk, nil)
+		shadow.EXPECT().StartBulkLoad(uint64(11)).Return(nil, shadowErr)
+
+		bl, err := db.StartBulkLoad(11)
+		assert.Nil(t, bl)
+		assert.ErrorIs(t, err, shadowErr)
+	})
+}
+
+func TestShadowStateDb_GetArchiveStateErrors(t *testing.T) {
+	t.Run("prime failure", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		primeErr := errors.New("prime archive")
+		prime.EXPECT().GetArchiveState(uint64(3)).Return(nil, primeErr)
+
+		archive, err := db.GetArchiveState(3)
+		assert.Nil(t, archive)
+		assert.ErrorIs(t, err, primeErr)
+	})
+
+	t.Run("shadow failure", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+		primeArchive := state.NewMockNonCommittableStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		shadowErr := errors.New("shadow archive")
+		prime.EXPECT().GetArchiveState(uint64(5)).Return(primeArchive, nil)
+		shadow.EXPECT().GetArchiveState(uint64(5)).Return(nil, shadowErr)
+
+		archive, err := db.GetArchiveState(5)
+		assert.Nil(t, archive)
+		assert.ErrorIs(t, err, shadowErr)
+	})
+}
+
+func TestShadowStateDb_GetArchiveBlockHeightVariants(t *testing.T) {
+	t.Run("prime error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		primeErr := errors.New("prime height")
+		prime.EXPECT().GetArchiveBlockHeight().Return(uint64(0), false, primeErr)
+		shadow.EXPECT().GetArchiveBlockHeight().Return(uint64(0), false, nil)
+
+		_, _, err := db.GetArchiveBlockHeight()
+		assert.ErrorIs(t, err, primeErr)
+	})
+
+	t.Run("shadow error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		shadowErr := errors.New("shadow height")
+		prime.EXPECT().GetArchiveBlockHeight().Return(uint64(10), false, nil)
+		shadow.EXPECT().GetArchiveBlockHeight().Return(uint64(0), false, shadowErr)
+
+		_, _, err := db.GetArchiveBlockHeight()
+		assert.ErrorIs(t, err, shadowErr)
+	})
+
+	t.Run("takes minimum when non empty", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		prime := state.NewMockStateDB(ctrl)
+		shadow := state.NewMockStateDB(ctrl)
+
+		db := &shadowStateDb{
+			shadowVmStateDb: shadowVmStateDb{
+				prime:            prime,
+				shadow:           shadow,
+				snapshots:        nil,
+				err:              nil,
+				log:              logger.NewLogger("info", "test"),
+				compareStateHash: false,
+			},
+			prime:  prime,
+			shadow: shadow,
+		}
+
+		prime.EXPECT().GetArchiveBlockHeight().Return(uint64(42), false, nil)
+		shadow.EXPECT().GetArchiveBlockHeight().Return(uint64(7), false, nil)
+
+		height, empty, err := db.GetArchiveBlockHeight()
+		assert.NoError(t, err)
+		assert.False(t, empty)
+		assert.Equal(t, uint64(7), height)
+	})
+}
