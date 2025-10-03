@@ -29,9 +29,9 @@ import (
 )
 
 func initSubBalance(t *testing.T) (*context.Replay, *SubBalance, common.Address, *uint256.Int, tracing.BalanceChangeReason) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
-	value := uint256.NewInt(uint64(rand.Int63n(100000)))
+	value := uint256.NewInt(uint64(r.Int63n(100000)))
 	reason := tracing.BalanceChangeUnspecified
 	// create context context
 	ctx := context.NewReplay()

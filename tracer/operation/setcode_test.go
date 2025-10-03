@@ -27,10 +27,10 @@ import (
 )
 
 func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byte) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
 	code := make([]byte, 100)
-	rand.Read(code)
+	r.Read(code)
 
 	// create context context
 	ctx := context.NewReplay()
@@ -59,7 +59,7 @@ func TestSetCodeReadWrite(t *testing.T) {
 // TestSetCodeDebug creates a new SetCode object and checks its Debug message.
 func TestSetCodeDebug(t *testing.T) {
 	ctx, op, addr, value := initSetCode(t)
-	testOperationDebug(t, ctx, op, fmt.Sprint(addr, value))
+	testOperationDebug(t, ctx, op, fmt.Sprintf("%v%v", addr, value))
 }
 
 // TestSetCodeExecute

@@ -26,8 +26,8 @@ import (
 )
 
 func initBeginTransaction(t *testing.T) (*context.Replay, *BeginTransaction) {
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Uint32()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := r.Uint32()
 
 	// create context context
 	ctx := context.NewReplay()

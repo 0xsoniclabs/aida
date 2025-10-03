@@ -142,7 +142,7 @@ func (v *stateDbValidator) runPreTxValidation(tool string, db state.VmStateDB, s
 		return nil
 	}
 
-	err = fmt.Errorf("%v err:\nblock %v tx %v\n world-state input is not contained in the state-db\n %v\n", tool, state.Block, state.Transaction, err)
+	err = fmt.Errorf("%v err:\nblock %v tx %v\n world-state input is not contained in the state-db\n %v", tool, state.Block, state.Transaction, err)
 
 	if v.isErrFatal(err, errOutput) {
 		return err
@@ -220,7 +220,7 @@ func (v *stateDbValidator) validateReceipt(got, want txcontext.Receipt) error {
 				"\tbloom: %v\n"+
 				"\tlogs: %v\n"+
 				"\tcontract address: %v\n"+
-				"\tgas used: %v\n",
+				"\tgas used: %v",
 			got.GetStatus(),
 			got.GetBloom().Big().Uint64(),
 			got.GetLogs(),

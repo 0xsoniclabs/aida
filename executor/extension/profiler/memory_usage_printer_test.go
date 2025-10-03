@@ -52,8 +52,14 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenBreakdownIsNil(t *tes
 		log.EXPECT().Noticef(gomock.Any(), gomock.Any(), gomock.Any()),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 }
 
@@ -70,8 +76,14 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenDatabaseIsNil(t *test
 		log.EXPECT().Notice(gomock.Any()).Times(0),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: nil})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: nil}, nil)
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: nil})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: nil}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 }
 
@@ -100,8 +112,14 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsPrintedWhenEnabled(t *testing.T) {
 		log.EXPECT().Noticef(gomock.Any(), uint64(1), gomock.Any()),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 }
 

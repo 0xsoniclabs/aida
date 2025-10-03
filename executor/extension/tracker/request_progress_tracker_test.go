@@ -69,47 +69,73 @@ func TestRpcProgressTrackerExtension_LoggingHappens(t *testing.T) {
 		),
 	)
 
-	ext.PreRun(executor.State[*rpc.RequestAndResults]{}, ctx)
+	if err := ext.PreRun(executor.State[*rpc.RequestAndResults]{}, ctx); err != nil {
+		t.Fatalf("PreRun failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 }
 
@@ -125,16 +151,20 @@ func TestRpcProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 
 	ctx := &executor.Context{State: db}
 
-	ext.PreRun(executor.State[*rpc.RequestAndResults]{
+	if err := ext.PreRun(executor.State[*rpc.RequestAndResults]{
 		Block:       4,
 		Transaction: 0,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PreRun failed: %v", err)
+	}
 
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{
+	if err := ext.PostTransaction(executor.State[*rpc.RequestAndResults]{
 		Block:       4,
 		Transaction: 0,
 		Data:        validReq,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
 
 }
 

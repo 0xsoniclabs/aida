@@ -13,7 +13,6 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Aida. If not, see <http://www.gnu.org/licenses/>.
-
 package primer
 
 import (
@@ -21,15 +20,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"fmt"
+	"os"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-)
-
-import (
-	"fmt"
-	"os"
 )
 
 var testDataDir string

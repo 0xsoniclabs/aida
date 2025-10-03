@@ -151,7 +151,6 @@ func TestSimple2Matching(t *testing.T) {
 
 	firstMatch := false  // 1 -> 0
 	secondMatch := false // 2 -> 1
-	thirdMatch := false  // 3 -> 1
 	for i := 0; i < len(matches); i++ {
 		if matches[i][0] == 1 && matches[i][1] == 0 {
 			firstMatch = true
@@ -164,7 +163,7 @@ func TestSimple2Matching(t *testing.T) {
 		}
 	}
 	// Either the edges {1 -> 0, 2 ->1 } or edges {1 -> 0, 3 -> 1} must be found
-	if !((firstMatch && secondMatch) || (firstMatch && thirdMatch)) {
+	if !firstMatch || !secondMatch {
 		t.Errorf("Cannot find correct matches")
 	}
 }
@@ -228,16 +227,17 @@ func TestSimple2MinCover(t *testing.T) {
 				t.Errorf("Wrong chain %v", chains[i])
 			}
 		} else if len(chains[i]) == 1 {
-			if chains[i][0] == 2 {
+			switch chains[i][0] {
+			case 2:
 				thirdChain = true
-			} else if chains[i][0] == 3 {
+			case 3:
 				forthChain = true
-			} else {
+			default:
 				t.Errorf("Wrong chain %v", chains[i])
 			}
 		}
 	}
-	if !((firstChain && forthChain) || (secondChain && thirdChain)) {
+	if (!firstChain || !forthChain) && (!secondChain || !thirdChain) {
 		t.Errorf("Chain was not found")
 	}
 }

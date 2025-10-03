@@ -103,7 +103,9 @@ func getTargetDbBlockRange(cfg *utils.Config) (uint64, uint64, error) {
 		if err != nil {
 			return 0, 0, err
 		}
-		defer sdb.Close()
+		defer func(sdb db.SubstateDB) {
+			err = errors.Join(err, sdb.Close())
+		}(sdb)
 		firstAidaDbBlock, lastAidaDbBlock, ok := utils.FindBlockRangeInSubstate(sdb)
 		if !ok {
 			return 0, 0, fmt.Errorf("cannot find blocks in substate; is substate present in given db? %v", cfg.AidaDb)
@@ -434,11 +436,12 @@ func (a ByToBlock) Less(i, j int) bool {
 func appendFirstPatch(cfg *utils.Config, availablePatches []utils.PatchJson, patchesToDownload []utils.PatchJson) ([]utils.PatchJson, error) {
 	var expectedFileName string
 
-	if cfg.ChainID == utils.MainnetChainID {
+	switch cfg.ChainID {
+	case utils.MainnetChainID:
 		expectedFileName = firstMainnetPatchFileName
-	} else if cfg.ChainID == utils.TestnetChainID {
+	case utils.TestnetChainID:
 		expectedFileName = firstTestnetPatchFileName
-	} else {
+	default:
 		return nil, errors.New("please choose chain-id with --chainid")
 	}
 
@@ -495,7 +498,9 @@ func downloadFile(filePath string, parentPath string, url string) error {
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err = errors.Join(err, file.Close())
+	}(file)
 
 	// Get the current file size
 	fileInfo, err := file.Stat()
@@ -561,7 +566,9 @@ func downloadFileContents(url string, startSize int64, out *bufio.Writer) (int64
 	if err != nil {
 		return 0, fmt.Errorf("error making request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err = errors.Join(err, Body.Close())
+	}(resp.Body)
 
 	// Check server response again
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusRequestedRangeNotSatisfiable {
@@ -579,14 +586,18 @@ func extractTarGz(tarGzFile, outputFolder string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err = errors.Join(err, file.Close())
+	}(file)
 
 	// Create the gzip readerÏ
 	gr, err := gzip.NewReader(file)
 	if err != nil {
 		return err
 	}
-	defer gr.Close()
+	defer func(gr *gzip.Reader) {
+		err = errors.Join(err, gr.Close())
+	}(gr)
 
 	// Create the tar reader
 	tr := tar.NewReader(gr)
@@ -610,13 +621,13 @@ func extractTarGz(tarGzFile, outputFolder string) error {
 
 		// Make sure that path does not contain ".."
 		if strings.Contains(targetPath, "..") {
-			return fmt.Errorf("Tarfile is attempting to use path containing ..: %s", targetPath)
+			return fmt.Errorf("tarfile is attempting to use path containing ..: %s", targetPath)
 		}
 
 		// Make sure that output file does not overwrite existing files
 		_, err = os.Stat(targetPath)
 		if err == nil || os.IsExist(err) {
-			return fmt.Errorf("Tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
+			return fmt.Errorf("tarfile is attempting to overwrite existing file. This may have happened due to previous failed attempt to extract the file - consider removing the folder %s", targetPath)
 		}
 
 		// Check if it's a directory

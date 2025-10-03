@@ -26,8 +26,8 @@ import (
 )
 
 func initBeginSyncPeriod(t *testing.T) (*context.Replay, *BeginSyncPeriod) {
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Uint64()
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := rng.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()

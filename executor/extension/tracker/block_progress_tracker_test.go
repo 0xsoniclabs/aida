@@ -96,30 +96,48 @@ func TestSubstateProgressTrackerExtension_LoggingHappens(t *testing.T) {
 		),
 	)
 
-	ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	if err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx); err != nil {
+		t.Fatalf("PreRun failed: %v", err)
+	}
 
 	// first processed block
-	ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
-	ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
-	ext.PostBlock(executor.State[txcontext.TxContext]{
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 5,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PostBlock failed: %v", err)
+	}
 
 	time.Sleep(500 * time.Millisecond)
 
 	// second processed block
-	ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
-	ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
-	ext.PostBlock(executor.State[txcontext.TxContext]{
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 6,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PostBlock failed: %v", err)
+	}
 
 	time.Sleep(500 * time.Millisecond)
 
-	ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
-	ext.PostBlock(executor.State[txcontext.TxContext]{
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 8,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PostBlock failed: %v", err)
+	}
 }
 
 func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
@@ -143,27 +161,35 @@ func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 		},
 	})
 
-	ext.PreRun(executor.State[txcontext.TxContext]{
+	if err := ext.PreRun(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 0,
 		Data:        s,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PreRun failed: %v", err)
+	}
 
-	ext.PostTransaction(executor.State[txcontext.TxContext]{
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 0,
 		Data:        s,
-	}, ctx)
-	ext.PostTransaction(executor.State[txcontext.TxContext]{
+	}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 1,
 		Data:        s,
-	}, ctx)
-	ext.PostBlock(executor.State[txcontext.TxContext]{
+	}, ctx); err != nil {
+		t.Fatalf("PostTransaction failed: %v", err)
+	}
+	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block:       5,
 		Transaction: 0,
 		Data:        s,
-	}, ctx)
+	}, ctx); err != nil {
+		t.Fatalf("PostBlock failed: %v", err)
+	}
 }
 
 func Test_LoggingFormatMatchesRubyScript(t *testing.T) {

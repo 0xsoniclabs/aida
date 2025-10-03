@@ -27,7 +27,7 @@ import (
 )
 
 func initGetTransientStateLccs(t *testing.T) (*context.Replay, *GetTransientStateLccs, common.Address, common.Hash, common.Hash) {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	pos := 0
 
 	// create context context

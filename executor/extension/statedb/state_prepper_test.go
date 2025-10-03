@@ -43,15 +43,22 @@ func TestStatePrepper_PreparesStateBeforeEachTransaction(t *testing.T) {
 
 	prepper := MakeStateDbPrepper()
 
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{
+	// Check and handle error return value for PreTransaction
+	err := prepper.PreTransaction(executor.State[txcontext.TxContext]{
 		Block: 5,
 		Data:  allocA,
 	}, ctx)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{
 		Block: 7,
 		Data:  allocB,
 	}, ctx)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
@@ -60,7 +67,17 @@ func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
 	ctx := &executor.Context{State: db}
 
 	prepper := MakeStateDbPrepper()
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, nil)                                                           // misses both
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, ctx)                                                           // misses the data
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5, Data: substatecontext.NewTxContext(&substate.Substate{})}, nil) // misses the state
+	// Check error return values (if any) for PreTransaction
+	err := prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, nil) // misses both
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, ctx) // misses the data
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5, Data: substatecontext.NewTxContext(&substate.Substate{})}, nil) // misses the state
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 }

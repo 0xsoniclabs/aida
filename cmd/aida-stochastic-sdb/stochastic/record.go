@@ -87,7 +87,6 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	oldBlock := uint64(math.MaxUint64) // set to an infeasible block
 	var sec float64
 	start := time.Now()
-	sec = time.Since(start).Seconds()
 	lastSec := time.Since(start).Seconds()
 	stats := recorder.NewStats()
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength

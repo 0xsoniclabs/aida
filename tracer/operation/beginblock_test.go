@@ -26,8 +26,8 @@ import (
 )
 
 func initBeginBlock(t *testing.T) (*context.Replay, *BeginBlock, uint64) {
-	rand.Seed(time.Now().UnixNano())
-	blId := rand.Uint64()
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	blId := rng.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()

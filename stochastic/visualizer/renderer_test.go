@@ -411,22 +411,20 @@ func TestVisualizer_FireUpWeb(t *testing.T) {
 		},
 	}
 
-	assert.NotPanics(t, func() {
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
-			FireUpWeb(stateJSON, "-1")
+			done <- FireUpWeb(stateJSON, "-1")
 		}()
 		select {
-		case <-done:
+		case err := <-done:
+			assert.NoError(t, err)
 		case <-time.After(time.Second):
 			t.Fatal("FireUpWeb did not return in time")
 		}
-	})
 }
 
 func TestVisualizer_FireUpWebPanicsOnNilStats(t *testing.T) {
-	assert.Panics(t, func() {
-		FireUpWeb(nil, "0")
-	})
+		err := FireUpWeb(nil, "0")
+		assert.Error(t, err)
 }
