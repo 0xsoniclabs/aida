@@ -42,12 +42,16 @@ func TestDbLoggerExtension_CorrectClose(t *testing.T) {
 	ext := MakeDbLogger[any](cfg)
 
 	// start the report thread
-	ext.PreRun(executor.State[any]{}, nil)
+	if err := ext.PreRun(executor.State[any]{}, nil); err != nil {
+		t.Fatalf("PreRun failed: %v", err)
+	}
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)
 	go func() {
-		ext.PostRun(executor.State[any]{}, nil, nil)
+		if err := ext.PostRun(executor.State[any]{}, nil, nil); err != nil {
+			t.Errorf("PostRun failed: %v", err)
+		}
 		close(done)
 	}()
 
@@ -96,8 +100,8 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 	beginBlock := fmt.Sprintf("BeginBlock, %v", 1)
 	beginTransaction := fmt.Sprintf("BeginTransaction, %v", 0)
 	getBalance := fmt.Sprintf("GetBalance, %v, %v", testAddr, balance)
-	endTransaction := fmt.Sprintf("EndTransaction")
-	endBlock := fmt.Sprintf("EndBlock")
+	endTransaction := "EndTransaction"
+	endBlock := "EndBlock"
 
 	gomock.InOrder(
 		log.EXPECT().Debug(beginBlock),
@@ -112,11 +116,19 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 		db.EXPECT().EndBlock(),
 	)
 
-	ctx.State.BeginBlock(1)
-	ctx.State.BeginTransaction(0)
+	if err := ctx.State.BeginBlock(1); err != nil {
+		t.Fatalf("BeginBlock failed: %v", err)
+	}
+	if err := ctx.State.BeginTransaction(0); err != nil {
+		t.Fatalf("BeginTransaction failed: %v", err)
+	}
 	ctx.State.GetBalance(testAddr)
-	ctx.State.EndTransaction()
-	ctx.State.EndBlock()
+	if err := ctx.State.EndTransaction(); err != nil {
+		t.Fatalf("EndTransaction failed: %v", err)
+	}
+	if err := ctx.State.EndBlock(); err != nil {
+		t.Fatalf("EndBlock failed: %v", err)
+	}
 
 	err = ext.PostRun(executor.State[any]{}, ctx, nil)
 	if err != nil {
@@ -131,7 +143,11 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot open testing; %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Errorf("Failed to close file: %v", err)
+		}
+	}()
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
@@ -283,7 +299,11 @@ func TestDbLoggerExtension_StateDbCloseIsWrittenInTheFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot open testing; %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Errorf("Failed to close file: %v", err)
+		}
+	}()
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {

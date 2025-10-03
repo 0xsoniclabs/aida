@@ -17,6 +17,7 @@
 package utildb
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -48,7 +49,12 @@ func TestTableHash_Empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -91,7 +97,12 @@ func TestTableHash_Filled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -132,7 +143,12 @@ func TestTableHash_JustSubstate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -163,7 +179,12 @@ func TestTableHash_JustDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -194,7 +215,12 @@ func TestTableHash_JustUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -225,7 +251,12 @@ func TestTableHash_JustStateHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -256,7 +287,12 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -287,7 +323,12 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -357,7 +398,12 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer database.Close()
+			defer func(database db.BaseDB) {
+				err = database.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}(database)
 
 			tc.setup(t, database)
 
@@ -390,7 +436,12 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -415,7 +466,12 @@ func TestTableHash_JustException(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -621,6 +677,7 @@ func TestTableHash_GetExceptionDbHash_Ticker(t *testing.T) {
 	kv := &testutil.KeyValue{}
 
 	data, err := protobuf.EncodeExceptionBlock(&excData)
+	assert.NoError(t, err)
 	kv.PutU(db.ExceptionDBBlockPrefix(0), data)
 	kv.PutU(db.ExceptionDBBlockPrefix(1), data)
 	iter := iterator.NewArrayIterator(kv)
@@ -661,6 +718,7 @@ func TestTableHash_GetExceptionDbHash_OnlyGivenRange(t *testing.T) {
 	kv := &testutil.KeyValue{}
 
 	data, err := protobuf.EncodeExceptionBlock(&excData)
+	assert.NoError(t, err)
 	kv.PutU(db.ExceptionDBBlockPrefix(0), data)
 	kv.PutU(db.ExceptionDBBlockPrefix(1), data)
 	// block 2 is outside of range, therefore this should not be counted

@@ -81,7 +81,9 @@ func calculateMD5Sum(filePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable open file %s; %v", filePath, err.Error())
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err = errors.Join(err, file.Close())
+	}(file)
 
 	// Create a new MD5 hash instance
 	hash := md5.New()

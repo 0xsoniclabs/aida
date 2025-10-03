@@ -77,7 +77,7 @@ func (q *KeyCache) Place(item common.Hash) int {
 // Get a key for a cache position.
 func (q *KeyCache) Get(pos int) (common.Hash, error) {
 	if pos < 0 || pos >= KeyCacheLength {
-		return common.Hash{}, fmt.Errorf("Position %v out of bound", pos)
+		return common.Hash{}, fmt.Errorf("position %v out of bound", pos)
 	}
 	// calculate position in key cache
 	j := (q.top - pos) % KeyCacheLength

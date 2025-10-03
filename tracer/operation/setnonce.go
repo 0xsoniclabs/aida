@@ -60,11 +60,11 @@ func (op *SetNonce) Write(f io.Writer) error {
 }
 
 // Execute the set-nonce operation.
-func (op *SetNonce) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *SetNonce) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.SetNonce(contract, op.Nonce, op.Reason)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the set-nonce operation.

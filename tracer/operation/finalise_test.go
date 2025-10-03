@@ -26,8 +26,8 @@ import (
 )
 
 func initFinalise(t *testing.T) (*context.Replay, *Finalise, bool) {
-	rand.Seed(time.Now().UnixNano())
-	deleteEmpty := rand.Intn(2) == 1
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	deleteEmpty := rng.Intn(2) == 1
 	// create context context
 	ctx := context.NewReplay()
 
@@ -63,7 +63,13 @@ func TestFinaliseExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("expected execution to be > 0; got %v", execute)
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{FinaliseID, []any{deleteEmpty}}}

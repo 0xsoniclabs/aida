@@ -61,12 +61,12 @@ func (op *SetStateLcls) Write(f io.Writer) error {
 }
 
 // Execute the set-state-lcls operation.
-func (op *SetStateLcls) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *SetStateLcls) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.PrevContract()
 	storage := ctx.DecodeKeyCache(0)
 	start := time.Now()
 	db.SetState(contract, storage, op.Value)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the set-state-lcls operation.

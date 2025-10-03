@@ -17,7 +17,7 @@
 package context
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"

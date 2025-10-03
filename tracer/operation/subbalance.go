@@ -66,14 +66,14 @@ func (op *SubBalance) Write(f io.Writer) error {
 }
 
 // Execute the sub-balance operation.
-func (op *SubBalance) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *SubBalance) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	// construct bit.Int from a byte array
 	amount := new(uint256.Int).SetBytes(op.Amount[:])
 	start := time.Now()
 	// Ignore reason
 	db.SubBalance(contract, amount, op.Reason)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the sub-balance operation.

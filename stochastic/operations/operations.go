@@ -250,27 +250,27 @@ func checkArgOp(op int, contract int, key int, value int) error {
 	}
 	switch OpNumArgs[op] {
 	case 0:
-		if !(contract == stochastic.NoArgID &&
-			key == stochastic.NoArgID &&
-			value == stochastic.NoArgID) {
+		if contract != stochastic.NoArgID ||
+			key != stochastic.NoArgID ||
+			value != stochastic.NoArgID {
 			return fmt.Errorf("checkArgOp: op %v takes no arguments", op)
 		}
 	case 1:
-		if !(contract != stochastic.NoArgID &&
-			key == stochastic.NoArgID &&
-			value == stochastic.NoArgID) {
+		if contract == stochastic.NoArgID ||
+			key != stochastic.NoArgID ||
+			value != stochastic.NoArgID {
 			return fmt.Errorf("checkArgOp: op %v takes one contract argument", op)
 		}
 	case 2:
-		if !(contract != stochastic.NoArgID &&
-			key != stochastic.NoArgID &&
-			value == stochastic.NoArgID) {
+		if contract == stochastic.NoArgID ||
+			key == stochastic.NoArgID ||
+			value != stochastic.NoArgID {
 			return fmt.Errorf("checkArgOp: op %v takes contract and key arguments", op)
 		}
 	case 3:
-		if !(contract != stochastic.NoArgID &&
-			key != stochastic.NoArgID &&
-			value != stochastic.NoArgID) {
+		if contract == stochastic.NoArgID ||
+			key == stochastic.NoArgID ||
+			value == stochastic.NoArgID {
 			return fmt.Errorf("checkArgOp: op %v takes contract, key and value arguments", op)
 		}
 	default:
@@ -343,7 +343,7 @@ func DecodeOpcode(opc string) (int, int, int, int, error) {
 	mnemo := opc[:2]
 	op, ok := opId[mnemo]
 	if !ok {
-		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: lookup failed for %v.", mnemo)
+		return 0, 0, 0, 0, fmt.Errorf("decodeOpcode: lookup failed for %v", mnemo)
 	}
 	if len(opc) != 2+OpNumArgs[op] {
 		return 0, 0, 0, 0, fmt.Errorf("DecodeOpcode: wrong opcode length for %v", opc)

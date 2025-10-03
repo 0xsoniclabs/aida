@@ -171,7 +171,7 @@ func doSubsetValidation(alloc txcontext.WorldState, db state.VmStateDB) error {
 				"    want %v\n",
 				addr.Hex(), nonce, acc.GetNonce())
 		}
-		if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
+		if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
 			err += fmt.Sprintf("  Failed to validate code for account %v\n"+
 				"    have len %v\n"+
 				"    want len %v\n",
@@ -221,7 +221,7 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 			if nonce := db.GetNonce(addr); nonce != acc.GetNonce() {
 				db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 			}
-			if code := db.GetCode(addr); bytes.Compare(code, acc.GetCode()) != 0 {
+			if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
 				db.SetCode(addr, acc.GetCode())
 			}
 		}

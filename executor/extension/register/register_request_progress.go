@@ -68,7 +68,7 @@ func MakeRegisterRequestProgress(cfg *utils.Config, reportFrequency int, when wh
 		return extension.NilExtension[*rpc.RequestAndResults]{}
 	}
 
-	var freq int = defaultRequestReportFrequency
+	var freq = defaultRequestReportFrequency
 	if reportFrequency != 0 {
 		freq = reportFrequency
 	}
@@ -153,7 +153,10 @@ func (rp *registerRequestProgress) PreRun(executor.State[*rpc.RequestAndResults]
 		rp.log.Errorf("Metadata warning: %s.", err)
 	}
 	rp.meta = rm
-	rp.meta.Print()
+	err = rp.meta.Print()
+	if err != nil {
+		return err
+	}
 
 	now := time.Now()
 	rp.startOfRun = now
@@ -195,7 +198,10 @@ func (rp *registerRequestProgress) PostTransaction(state executor.State[*rpc.Req
 	rp.overallReqRate = float64(overallCount) / sinceStartOfRun.Seconds()
 	rp.overallGasRate = float64(overallGas) / sinceStartOfRun.Seconds()
 
-	rp.ps.Print()
+	err := rp.ps.Print()
+	if err != nil {
+		return err
+	}
 
 	rp.lastIntervalInfo = overallInfo
 	rp.lastReportedRequestCount = boundary
@@ -205,20 +211,32 @@ func (rp *registerRequestProgress) PostTransaction(state executor.State[*rpc.Req
 }
 
 // PostRun prints the remaining statistics and terminates any printer resources.
-func (rp *registerRequestProgress) PostRun(_ executor.State[*rpc.RequestAndResults], ctx *executor.Context, err error) error {
-	rp.ps.Print()
-	rp.ps.Close()
+func (rp *registerRequestProgress) PostRun(_ executor.State[*rpc.RequestAndResults], ctx *executor.Context, inputErr error) error {
+	err := rp.ps.Print()
+	if err != nil {
+		return err
+	}
+	err = rp.ps.Close()
+	if err != nil {
+		return err
+	}
 
 	rp.meta.Meta["Runtime"] = strconv.Itoa(int(time.Since(rp.startOfRun).Seconds()))
-	if err != nil {
+	if inputErr != nil {
 		rp.meta.Meta["RunSucceed"] = strconv.FormatBool(false)
-		rp.meta.Meta["RunError"] = fmt.Sprintf("%v", err)
+		rp.meta.Meta["RunError"] = fmt.Sprintf("%v", inputErr)
 	} else {
 		rp.meta.Meta["RunSucceed"] = strconv.FormatBool(true)
 	}
 
-	rp.meta.Print()
-	rp.meta.Close()
+	err = rp.meta.Print()
+	if err != nil {
+		return err
+	}
+	err = rp.meta.Close()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

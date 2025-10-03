@@ -17,6 +17,7 @@
 package visualizer
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -65,7 +66,7 @@ const MainHtml = `
 
 // renderMain renders the main menu.
 func renderMain(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, MainHtml)
+	_, _ = fmt.Fprint(w, MainHtml)
 }
 
 // convertCountingData converts CDF points to chart points.
@@ -113,7 +114,7 @@ func renderCounting(w http.ResponseWriter, r *http.Request) {
 		data.Keys.A_CDF,
 		data.Values.A_CDF,
 	)
-	chart.Render(w)
+	_ = chart.Render(w)
 }
 
 // renderSnapshotStats renders a line chart for a snapshot statistics
@@ -141,7 +142,7 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 		}))
 	data := GetData()
 	chart.AddSeries("eCDF", convertCountingData(data.Snapshot.ECdf))
-	chart.Render(w)
+	_ = chart.Render(w)
 }
 
 // convertQueuingData rendering plot data for the queuing statistics.
@@ -178,7 +179,7 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 			Title: "Queuing Probabilities",
 		}))
 	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
-	scatter.Render(w)
+	_ = scatter.Render(w)
 }
 
 // convertOperationData produces the data series for the sationary distribution.
@@ -226,7 +227,7 @@ func renderOperationStats(w http.ResponseWriter, r *http.Request) {
 		}))
 	bar.SetXAxis(convertOperationLabel(data.Stationary)).AddSeries("Stationary Distribution", convertOperationData(data.Stationary))
 	bar.XYReversal()
-	bar.Render(w)
+	_ = bar.Render(w)
 }
 
 // renderTransactionalOperationStats renders the average number of operations per transaction.
@@ -256,17 +257,24 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 			Title: title,
 		}))
 	bar.SetXAxis(convertOperationLabel(data.TxOperation)).AddSeries("Ops/Tx", convertOperationData(data.TxOperation))
-	bar.Render(w)
+	_ = bar.Render(w)
 }
 
 // renderSimplifiedMarkovChain renders a reduced markov chain whose nodes have no argument classes.
 func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 	data := GetData()
 	g := graphviz.New()
-	graph, _ := g.Graph()
+	graph, err := g.Graph()
+	if err != nil {
+		_, _ = fmt.Fprint(w, "Could not create graph")
+		return
+	}
 	defer func() {
-		graph.Close()
-		g.Close()
+		err = errors.Join(err, graph.Close())
+		err = errors.Join(err, g.Close())
+		if err != nil {
+			_, _ = fmt.Fprint(w, "Could not close graph")
+		}
 	}()
 	nodes := make([]*cgraph.Node, operations.NumOps)
 	for op := 0; op < operations.NumOps; op++ {
@@ -296,17 +304,24 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	txt, _ := renderDotGraph("StateDB Simplified Markov-Chain", g, graph)
-	fmt.Fprint(w, txt)
+	_, _ = fmt.Fprint(w, txt)
 }
 
 // renderMarkovChain renders a markov chain.
 func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 	data := GetData()
 	g := graphviz.New()
-	graph, _ := g.Graph()
+	graph, err := g.Graph()
+	if err != nil {
+		_, _ = fmt.Fprint(w, "Could not create graph")
+		return
+	}
 	defer func() {
-		graph.Close()
-		g.Close()
+		err = errors.Join(err, graph.Close())
+		err = errors.Join(err, g.Close())
+		if err != nil {
+			_, _ = fmt.Fprint(w, "Could not close graph")
+		}
 	}()
 	n := len(data.OperationLabel)
 	nodes := make([]*cgraph.Node, n)
@@ -337,12 +352,12 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	txt, _ := renderDotGraph("StateDB Markov-Chain", g, graph)
-	fmt.Fprint(w, txt)
+	_, _ = fmt.Fprint(w, txt)
 }
 
 // FireUpWeb produces a data model for the recorded markov stats and
 // visualizes with a local web-server.
-func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
+func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) error {
 
 	// create data model (as a singleton) for visualization
 	model := GetData()
@@ -357,5 +372,5 @@ func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
 	http.HandleFunc("/"+txoperationRef, renderTransactionalOperationStats)
 	http.HandleFunc("/"+simplifiedMarkovRef, renderSimplifiedMarkovChain)
 	http.HandleFunc("/"+markovRef, renderMarkovChain)
-	http.ListenAndServe(":"+addr, nil)
+	return http.ListenAndServe(":"+addr, nil)
 }

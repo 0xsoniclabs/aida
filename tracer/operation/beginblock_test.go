@@ -26,8 +26,8 @@ import (
 )
 
 func initBeginBlock(t *testing.T) (*context.Replay, *BeginBlock, uint64) {
-	rand.Seed(time.Now().UnixNano())
-	blId := rand.Uint64()
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	blId := rng.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()
@@ -64,7 +64,13 @@ func TestBeginBlockExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("execution time is not positive")
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{BeginBlockID, []any{op.BlockNumber}}}

@@ -27,10 +27,10 @@ import (
 )
 
 func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byte) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
 	code := make([]byte, 100)
-	rand.Read(code)
+	r.Read(code)
 
 	// create context context
 	ctx := context.NewReplay()
@@ -59,7 +59,7 @@ func TestSetCodeReadWrite(t *testing.T) {
 // TestSetCodeDebug creates a new SetCode object and checks its Debug message.
 func TestSetCodeDebug(t *testing.T) {
 	ctx, op, addr, value := initSetCode(t)
-	testOperationDebug(t, ctx, op, fmt.Sprint(addr, value))
+	testOperationDebug(t, ctx, op, fmt.Sprintf("%v%v", addr, value))
 }
 
 // TestSetCodeExecute
@@ -68,7 +68,13 @@ func TestSetCodeExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("expected execution to be > 0; got %v", execute)
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{SetCodeID, []any{addr, code}}}

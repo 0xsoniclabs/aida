@@ -77,7 +77,7 @@ func (l *txGeneratorBlockEventEmitter[T]) PostTransaction(_ executor.State[T], c
 func (l *txGeneratorBlockEventEmitter[T]) PostRun(state executor.State[T], ctx *executor.Context, _ error) error {
 	// end the last block
 	if l.lastBlock != nil {
-		ctx.State.EndBlock()
+		return ctx.State.EndBlock()
 	}
 	return nil
 }

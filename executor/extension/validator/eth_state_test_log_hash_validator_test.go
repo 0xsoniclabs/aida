@@ -80,7 +80,7 @@ func TestMakeEthStateTestLogHashValidator(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestLogHashValidator(cfg)
-	if _, ok := ext.(executor.Extension[txcontext.TxContext]); !ok {
+	if ext == nil {
 		t.Fatal("unexpected extension initialization")
 	}
 

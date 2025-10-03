@@ -51,10 +51,13 @@ func (op *EndBlock) Write(f io.Writer) error {
 }
 
 // Execute the end-block operation.
-func (op *EndBlock) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *EndBlock) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
-	db.EndBlock()
-	return time.Since(start)
+	err := db.EndBlock()
+	if err != nil {
+		return 0, err
+	}
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the end-block operation.

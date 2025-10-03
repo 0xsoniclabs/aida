@@ -17,7 +17,6 @@
 package analytics
 
 import (
-	"encoding/json"
 	"math"
 
 	xmath "github.com/0xsoniclabs/aida/utils/math"
@@ -176,6 +175,5 @@ func (s *IncrementalStats) GetMax() float64 {
 }
 
 func (s *IncrementalStats) String() string {
-	str, _ := json.Marshal(s)
-	return string(str)
+	return ""
 }
