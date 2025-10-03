@@ -109,7 +109,11 @@ type profileDB struct {
 
 // NewProfileDB constructs a new profiling database.
 // For unknown chain or testing, chainID may be 0.
-func NewProfileDB(dbFile string, chainID utils.ChainID) (*ProfileDB, error) {
+func NewProfileDB(dbFile string, chainID utils.ChainID) (ProfileDB, error) {
+	return newProfileDB(dbFile, chainID)
+}
+
+func newProfileDB(dbFile string, chainID utils.ChainID) (*profileDB, error) {
 	// open SQLITE3 DB
 	sqlDB, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
