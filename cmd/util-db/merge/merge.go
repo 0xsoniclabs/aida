@@ -78,12 +78,6 @@ func mergeAction(ctx *cli.Context) error {
 			return err
 		}
 
-		// todo this should not be necessary - do not close aida-db in metadata
-		targetDb, err = db.NewDefaultBaseDB(cfg.AidaDb)
-		if err != nil {
-			return fmt.Errorf("cannot re-open db: %w", err)
-		}
-
 		for _, database := range dbs {
 			utildb.MustCloseDB(database)
 		}

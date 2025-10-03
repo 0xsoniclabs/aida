@@ -75,6 +75,8 @@ func TestMerge_Command(t *testing.T) {
 	s1.Transaction = 2
 	err = sdb1.PutSubstate(s1)
 	require.NoError(t, err)
+	err = sdb1.Put([]byte(utils.TypePrefix), []byte{byte(utils.PatchType)})
+	require.NoError(t, err)
 	err = sdb1.Close()
 	require.NoError(t, err)
 
@@ -85,6 +87,8 @@ func TestMerge_Command(t *testing.T) {
 	s2.Block = 20
 	s2.Transaction = 3
 	err = sdb2.PutSubstate(s2)
+	require.NoError(t, err)
+	err = sdb2.Put([]byte(utils.TypePrefix), []byte{byte(utils.PatchType)})
 	require.NoError(t, err)
 	err = sdb2.Close()
 	require.NoError(t, err)
