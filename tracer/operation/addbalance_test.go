@@ -69,7 +69,13 @@ func TestAddBalanceExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("Execute returned non-positive duration")
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{AddBalanceID, []any{addr, value, reason}}}

@@ -77,11 +77,11 @@ func (op *SetCode) Write(f io.Writer) error {
 }
 
 // Execute the set-code operation.
-func (op *SetCode) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *SetCode) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.SetCode(contract, op.Bytecode)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the set-code operation.
