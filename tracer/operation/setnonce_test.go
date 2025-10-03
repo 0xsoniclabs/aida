@@ -28,9 +28,9 @@ import (
 )
 
 func initSetNonce(t *testing.T) (*context.Replay, *SetNonce, common.Address, uint64) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
-	nonce := rand.Uint64()
+	nonce := r.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()

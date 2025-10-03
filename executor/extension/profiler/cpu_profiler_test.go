@@ -36,7 +36,10 @@ func TestCpuExtension_CollectsProfileDataIfEnabled(t *testing.T) {
 	if err := ext.PreRun(executor.State[any]{}, nil); err != nil {
 		t.Fatalf("failed to to run pre-run: %v", err)
 	}
-	ext.PostRun(executor.State[any]{}, nil, nil)
+	err := ext.PostRun(executor.State[any]{}, nil, nil)
+	if err != nil {
+		t.Fatalf("failed to to post post-run: %v", err)
+	}
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		t.Errorf("no profile was collected")
@@ -60,7 +63,10 @@ func TestCpuExtension_CollectsIntervalProfileDataIfEnabled(t *testing.T) {
 		}
 	}
 
-	ext.PostRun(executor.State[any]{}, nil, nil)
+	err := ext.PostRun(executor.State[any]{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, interval := range []int{0, 1, 2} {
 		file := fmt.Sprintf("%s_%05d", path, interval)

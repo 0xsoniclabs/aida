@@ -57,8 +57,8 @@ const postGraphHtml = "`" + `;
 
 // renderDotGraph renders a dotgraph as a HTML document.
 func renderDotGraph(title string, g *graphviz.Graphviz, graph *cgraph.Graph) (string, error) {
-	preamble := strings.Replace(preGraphHtml, "TITLE", title, -1)
-	postamble := strings.Replace(postGraphHtml, "TITLE", title, -1)
+	preamble := strings.ReplaceAll(preGraphHtml, "TITLE", title)
+	postamble := strings.ReplaceAll(postGraphHtml, "TITLE", title)
 	var buf bytes.Buffer
 	if err := g.Render(graph, "dot", &buf); err != nil {
 		return "", err

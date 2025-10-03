@@ -19,6 +19,7 @@ package tracer
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -91,10 +92,7 @@ func keepRelevantTraceFiles(first, last uint64, sortedList []uint64, blockFile m
 			continue
 		}
 		if fileFirstBlock > highestFirstBlock && fileFirstBlock <= first {
-			// delete a file with a range lower than the first block
-			if _, found := blockFile[highestFirstBlock]; found {
-				delete(blockFile, highestFirstBlock)
-			}
+			delete(blockFile, highestFirstBlock)
 			highestFirstBlock = fileFirstBlock
 		}
 	}
@@ -122,7 +120,9 @@ func GetTraceFiles(cfg *utils.Config) ([]string, error) {
 		if err != nil {
 			return traceFiles, err
 		}
-		defer dir.Close()
+		defer func(dir *os.File) {
+			err = errors.Join(err, dir.Close())
+		}(dir)
 		fileList, err := dir.Readdirnames(0)
 		if err != nil {
 			return traceFiles, err
@@ -159,7 +159,7 @@ func GetTraceFiles(cfg *utils.Config) ([]string, error) {
 			traceFiles = append(traceFiles, cfg.TraceFile)
 		}
 	} else {
-		return traceFiles, fmt.Errorf("trace file is not found.")
+		return traceFiles, fmt.Errorf("trace file is not found")
 	}
 	if len(traceFiles) == 0 {
 		return traceFiles,

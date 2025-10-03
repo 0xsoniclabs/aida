@@ -29,9 +29,9 @@ import (
 )
 
 func initAddBalance(t *testing.T) (*context.Replay, *AddBalance, common.Address, *uint256.Int, tracing.BalanceChangeReason) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
-	value := uint256.NewInt(uint64(rand.Int63n(100000)))
+	value := uint256.NewInt(uint64(r.Int63n(100000)))
 	// create context
 	ctx := context.NewReplay()
 	contract := ctx.EncodeContract(addr)

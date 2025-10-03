@@ -26,8 +26,8 @@ import (
 )
 
 func initFinalise(t *testing.T) (*context.Replay, *Finalise, bool) {
-	rand.Seed(time.Now().UnixNano())
-	deleteEmpty := rand.Intn(2) == 1
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	deleteEmpty := rng.Intn(2) == 1
 	// create context context
 	ctx := context.NewReplay()
 

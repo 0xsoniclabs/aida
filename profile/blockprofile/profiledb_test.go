@@ -36,7 +36,7 @@ import (
 func tempFile(require *require.Assertions) string {
 	file, err := os.CreateTemp("", "*.db")
 	require.NoError(err)
-	file.Close()
+	require.NoError(file.Close())
 	return file.Name()
 }
 
@@ -47,8 +47,12 @@ func TestAdd(t *testing.T) {
 	t.Logf("db file: %s", dbFile)
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
-	defer os.Remove(dbFile)
+	defer func() {
+		require.NoError(db.Close())
+	}()
+	defer func() {
+		require.NoError(os.Remove(dbFile))
+	}()
 
 	ProfileData := ProfileData{
 		curBlock:        5637800,
@@ -79,7 +83,12 @@ func TestFlush(t *testing.T) {
 	require := require.New(t)
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	defer os.Remove(dbFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(dbFile)
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
 	err = db.Add(ProfileData{})
@@ -87,7 +96,10 @@ func TestFlush(t *testing.T) {
 
 	err = db.Flush()
 	require.NoError(err)
-	db.Close()
+	err = db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// db has 2 records
 	db, err = NewProfileDB(dbFile)
@@ -135,12 +147,20 @@ func TestFlush(t *testing.T) {
 	err = db.Flush()
 	require.NoError(err)
 	require.Len(db.buffer, 0)
-	db.Close()
+	err = db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// trigger Flush method inside Add
 	db, err = NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
+	defer func(db *profileDB) {
+		err = errors.Join(err, db.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(db)
 
 	for i := 1; i < bufferSize; i++ {
 		profileData := ProfileData{
@@ -186,7 +206,12 @@ func TestDeleteBlockRangeOverlapOneTx(t *testing.T) {
 
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	defer os.Remove(dbFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(dbFile)
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
 
@@ -215,11 +240,19 @@ func TestDeleteBlockRangeOverlapOneTx(t *testing.T) {
 	if numDeletedRows != int64(2*blockRange) {
 		t.Errorf("unexpected number of rows affected by deletion, expected: %d, got: %d", 2*blockRange, numDeletedRows)
 	}
-	db.Close()
+	err = db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err = NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	for i := startBlock; i <= endBlock; i++ {
 		profileData := ProfileData{
 			curBlock:        uint64(i),
@@ -251,7 +284,12 @@ func TestDeleteBlockRangeOverlapMultipleTx(t *testing.T) {
 
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	defer os.Remove(dbFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(dbFile)
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
 
@@ -282,11 +320,19 @@ func TestDeleteBlockRangeOverlapMultipleTx(t *testing.T) {
 	if numDeletedRows != int64(expNumRows) {
 		t.Errorf("unexpected number of rows affected by deletion, expected: %d, got: %d", expNumRows, numDeletedRows)
 	}
-	db.Close()
+	err = db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err = NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	for i := startBlock; i <= endBlock; i++ {
 		profileData := ProfileData{
 			curBlock:        uint64(i),
@@ -321,8 +367,8 @@ func TestDeleteBlockRangeNoOverlap(t *testing.T) {
 	t.Logf("db file: %s", dbFile)
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
-	defer os.Remove(dbFile)
+	defer func() { assert.NoError(t, db.Close()) }()
+	defer func() { assert.NoError(t, os.Remove(dbFile)) }()
 
 	startBlock, endBlock := uint64(500), uint64(2500)
 	for i := startBlock; i <= endBlock; i++ {
@@ -355,7 +401,9 @@ func BenchmarkAdd(b *testing.B) {
 	require := require.New(b)
 	dbFile := tempFile(require)
 	b.Logf("db file: %s", dbFile)
-	defer os.Remove(dbFile)
+	defer func() {
+		assert.NoError(b, os.Remove(dbFile))
+	}()
 
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
@@ -384,7 +432,12 @@ func ExampleDB() {
 		fmt.Println("ERROR: create -", err)
 		return
 	}
-	defer db.Close()
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			fmt.Println("ERROR: close", err)
+		}
+	}()
 
 	const count = 10_000
 	for i := 0; i < count; i++ {
@@ -419,8 +472,18 @@ func TestFlushProfileData(t *testing.T) {
 
 	db, err := NewProfileDB(dbFile)
 	require.NoError(err)
-	defer db.Close()
-	defer os.Remove(dbFile)
+	defer func(db *profileDB) {
+		err := db.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(db)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(dbFile)
 
 	ProfileData := ProfileData{
 		curBlock:        5637800,

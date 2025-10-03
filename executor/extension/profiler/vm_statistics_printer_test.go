@@ -22,19 +22,22 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/tosca/go/tosca"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestVirtualMachineStatisticsPrinter_WorksWithDefaultSetup(t *testing.T) {
 	cfg := utils.Config{}
 	ext := MakeVirtualMachineStatisticsPrinter[any](&cfg)
-	ext.PostRun(executor.State[any]{}, nil, nil)
+	err := ext.PostRun(executor.State[any]{}, nil, nil)
+	assert.NoError(t, err)
 }
 
 func TestVirtualMachineStatisticsPrinter_TriggersStatPrintingAtEndOfRun(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	interpreter := tosca.NewMockProfilingInterpreter(ctrl)
-	tosca.RegisterInterpreter("test-vm", interpreter)
+	err := tosca.RegisterInterpreterFactory("test-vm", func(config any) (tosca.Interpreter, error) { return interpreter, nil })
+	assert.NoError(t, err)
 
 	interpreter.EXPECT().DumpProfile()
 
@@ -42,5 +45,6 @@ func TestVirtualMachineStatisticsPrinter_TriggersStatPrintingAtEndOfRun(t *testi
 	cfg.VmImpl = "test-vm"
 	ext := MakeVirtualMachineStatisticsPrinter[any](&cfg)
 
-	ext.PostRun(executor.State[any]{}, nil, nil)
+	err = ext.PostRun(executor.State[any]{}, nil, nil)
+	assert.NoError(t, err)
 }

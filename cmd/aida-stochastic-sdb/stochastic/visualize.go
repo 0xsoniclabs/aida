@@ -66,7 +66,5 @@ func stochasticVisualizeAction(ctx *cli.Context) error {
 	}
 	log.Noticef("Open web browser with http://localhost:" + port)
 	log.Notice("Cancel visualize with ^C")
-	visualizer.FireUpWeb(eventRegistry, port)
-
-	return nil
+	return visualizer.FireUpWeb(eventRegistry, port)
 }

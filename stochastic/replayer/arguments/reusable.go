@@ -105,18 +105,18 @@ func (a *Reusable) Choose(kind int) (int64, error) {
 		}
 
 	default:
-		return 0, fmt.Errorf("Unknown argument kind")
+		return 0, fmt.Errorf("unknown argument kind")
 	}
 }
 
 // Remove an argument from set and shrink argument set by one
 func (a *Reusable) Remove(v int64) error {
 	if v <= 0 || v >= a.n {
-		return fmt.Errorf("Remove: argument (%v) out of range", v)
+		return fmt.Errorf("remove: argument (%v) out of range", v)
 	}
 	a.n--
 	if a.n < minCardinality {
-		return fmt.Errorf("Remove: cardinality (%v) of argument set too low", a.n)
+		return fmt.Errorf("remove: cardinality (%v) of argument set too low", a.n)
 	}
 	// replace deleted last element by new element in queue
 	// (to ensure that queue elements are always in range [0,n-1])

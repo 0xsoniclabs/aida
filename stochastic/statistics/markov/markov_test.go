@@ -43,7 +43,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for NaN entries
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{1.0, 0.0},
 		{math.NaN(), 0.0},
 	},
@@ -53,7 +53,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for negative probability entries
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{0.0, 1.0},
 		{-0.1, 0.0},
 	},
@@ -63,7 +63,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for probability >1 entries
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{0.0, 1.0},
 		{1.1, 0.0},
 	},
@@ -73,7 +73,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for stochastic matrix whose row sum is not one.
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{0.0, 1.0},
 		{0.5, 0.0},
 	},
@@ -83,7 +83,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for too few labels
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{1.0, 0.0},
 		{1.0, 0.0},
 	},
@@ -93,7 +93,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for double use of labels
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{1.0, 0.0},
 		{0.0, 1.0},
 	},
@@ -103,7 +103,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for right shape of stochastic matrix
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{1.0},
 		{1.0, 0.0},
 	},
@@ -113,7 +113,7 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 
 	// test for right shape of stochastic matrix
-	mc, err = New([][]float64{
+	_, err = New([][]float64{
 		{1.0, 0.0},
 	},
 		[]string{"s1", "s2"})
@@ -136,25 +136,25 @@ func TestMarkov_SampleBasic(t *testing.T) {
 	}
 
 	// negative state number
-	i, err = mc.Sample(-1, 0.4)
+	_, err = mc.Sample(-1, 0.4)
 	if err == nil {
 		t.Fatalf("Expected to fail sampling.")
 	}
 
 	// state does not exist
-	i, err = mc.Sample(2, 0.4)
+	_, err = mc.Sample(2, 0.4)
 	if err == nil {
 		t.Fatalf("Expected to fail sampling.")
 	}
 
 	// negative probability as parameter
-	i, err = mc.Sample(0, -0.1)
+	_, err = mc.Sample(0, -0.1)
 	if err == nil {
 		t.Fatalf("Expected to fail sampling.")
 	}
 
 	// probabiltiy greater than 1
-	i, err = mc.Sample(0, 1.1)
+	_, err = mc.Sample(0, 1.1)
 	if err == nil {
 		t.Fatalf("Expected to fail sampling.")
 	}

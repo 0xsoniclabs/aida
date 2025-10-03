@@ -162,9 +162,12 @@ func (v *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 		// NOTE: ContinueOnFailure does not make sense here, if hash does not
 		// match every block after this block would have different hash
 		got, err := archive.GetHash()
-		archive.Release()
 		if err != nil {
 			return fmt.Errorf("cannot GetHash; %w", err)
+		}
+		err = archive.Release()
+		if err != nil {
+			return fmt.Errorf("cannot Release archive; %w", err)
 		}
 		if want != got {
 			unexpectedHashErr := fmt.Errorf("unexpected hash for archive block %d\nwanted %v\n   got %v", cur, want, got)

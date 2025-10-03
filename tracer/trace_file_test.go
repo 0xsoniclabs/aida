@@ -18,6 +18,7 @@ package tracer
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -126,7 +127,12 @@ func TestTraceFile_NewAndRelease(t *testing.T) {
 	if err := prepareTraceFile(cfg.TraceFile); err != nil {
 		t.Fatalf("Fail to create a trace file %v; %v", cfg.TraceFile, err)
 	}
-	defer os.Remove(cfg.TraceFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(cfg.TraceFile)
 	// open an existing trace file -- expecting no errors
 	tf, err := NewTraceFile(cfg.TraceFile)
 	if err != nil {
@@ -144,7 +150,12 @@ func TestTraceFile_NewAndRelease(t *testing.T) {
 	if err = prepareTraceFileWithoutHeader(fname); err != nil {
 		t.Fatalf("Fail to create a trace file %v; %v", cfg.TraceFile, err)
 	}
-	defer os.Remove(fname)
+	defer func(name string) {
+		err = errors.Join(err, os.Remove(name))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(fname)
 	if _, err := NewTraceFile(fname); err == nil {
 		t.Fatalf("Expect an error reading trace's first block")
 	}
@@ -192,7 +203,12 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 	if err := prepareTraceFile(cfg.TraceFile); err != nil {
 		t.Fatalf("Fail to create a trace file %v; %v", cfg.TraceFile, err)
 	}
-	defer os.Remove(cfg.TraceFile)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatalf("Fail to remove a trace file %v; %v", name, err)
+		}
+	}(cfg.TraceFile)
 	list, err := GetTraceFiles(cfg)
 	if err != nil {
 		t.Fatalf("Fail to retrieve a trace file %v; %v", cfg.TraceFile, err)
@@ -211,7 +227,12 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 	if err := prepareTraceDirectory(cfg.TraceDirectory, numFiles); err != nil {
 		t.Fatalf("Fail to prepare a trace directory %v; %v", cfg.TraceDirectory, err)
 	}
-	defer os.RemoveAll(cfg.TraceDirectory)
+	defer func(path string) {
+		err = os.RemoveAll(path)
+		if err != nil {
+			t.Fatalf("Fail to remove a trace directory %v; %v", path, err)
+		}
+	}(cfg.TraceDirectory)
 	list, err = GetTraceFiles(cfg)
 	if err != nil {
 		t.Fatalf("Fail to retrieve a list of trace files from %v; %v", cfg.TraceDirectory, err)
@@ -229,6 +250,9 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 	list, err = GetTraceFiles(cfg)
 	if err == nil {
 		t.Fatalf("Trace are not given; expect an error")
+	}
+	if len(list) != 0 {
+		t.Fatalf("No trace files should be found")
 	}
 
 }

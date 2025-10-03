@@ -40,13 +40,6 @@ import (
 )
 
 // general helper functions for testing
-
-func assertExactlyEqual[T comparable](t *testing.T, a T, b T) {
-	if a != b {
-		t.Errorf("%v != %v", a, b)
-	}
-}
-
 func getTotalOpCount(a *analytics.IncrementalAnalytics) int {
 	var count uint64 = 0
 	for _, stat := range a.Iterate() {
@@ -94,9 +87,18 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 		mockPrinter.EXPECT().Close().AnyTimes()
 
 		// PRE BLOCK
-		ext.PreRun(executor.State[any]{}, &mockCtx)
-		ext.PreBlock(executor.State[any]{Block: int(cfg.First)}, nil)
-		ext.PreTransaction(executor.State[any]{Transaction: int(0)}, nil)
+		err := ext.PreRun(executor.State[any]{}, &mockCtx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ext.PreBlock(executor.State[any]{Block: int(cfg.First)}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ext.PreTransaction(executor.State[any]{Transaction: int(0)}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// call each function once as a single tx in a single block
 		funcs := getStateDbFuncs(mockCtx.State)
@@ -147,9 +149,18 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 		}
 
 		// POST BLOCK
-		ext.PostTransaction(executor.State[any]{Transaction: int(0)}, nil)
-		ext.PostBlock(executor.State[any]{Block: int(cfg.First)}, nil)
-		ext.PostRun(executor.State[any]{}, nil, nil)
+		err = ext.PostTransaction(executor.State[any]{Transaction: int(0)}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ext.PostBlock(executor.State[any]{Block: int(cfg.First)}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ext.PostRun(executor.State[any]{}, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 	})
 }
@@ -169,10 +180,8 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 		last           int
 		interval       int
 	}
-	type result struct{}
 	type testcase struct {
 		args argument
-		want result
 	}
 
 	tests := []testcase{
@@ -222,17 +231,22 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 			intervalStart := test.args.first - (test.args.first % test.args.interval)
 			intervalEnd := intervalStart + test.args.interval - 1
 
-			ext.PreRun(executor.State[any]{}, &mockCtx)
+			err := ext.PreRun(executor.State[any]{}, &mockCtx)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for b := test.args.first; b <= test.args.last; b += 1 + r.Intn(3) {
 
 				if b > intervalEnd {
-					intervalStart = intervalEnd + 1
 					intervalEnd += test.args.interval
 					totalSeenOpCount += getTotalOpCount(ext.anlts[0])
 					intervalGeneratedOpCount = 0
 				}
 
-				ext.PreBlock(executor.State[any]{Block: int(b)}, nil)
+				err := ext.PreBlock(executor.State[any]{Block: int(b)}, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 				if b > intervalEnd {
 					// make sure that the stats is reset
 					if getTotalOpCount(ext.anlts[0]) != 0 {
@@ -254,7 +268,10 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 					intervalGeneratedOpCount++
 				}
 
-				ext.PostBlock(executor.State[any]{Block: int(b)}, nil)
+				err = ext.PostBlock(executor.State[any]{Block: int(b)}, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 
 				// check that amount of ops seen eqals to amount of ops generated within this interval
 				if getTotalOpCount(ext.anlts[0]) != intervalGeneratedOpCount {
@@ -268,7 +285,10 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 				t.Errorf("[Total] Seen %d ops, but generated %d ops", totalSeenOpCount, totalGeneratedOpCount)
 			}
 
-			ext.PostRun(executor.State[any]{}, nil, nil)
+			err = ext.PostRun(executor.State[any]{}, nil, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }
@@ -349,7 +369,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 				mockAddress,
 				&mockAddress,
 				[]common.Address{},
-				[]types.AccessTuple{{mockAddress, []common.Hash{mockHash}}},
+				[]types.AccessTuple{{Address: mockAddress, StorageKeys: []common.Hash{mockHash}}},
 			)
 		},
 		func() { db.AddAddressToAccessList(mockAddress) },
@@ -358,10 +378,10 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.AddSlotToAccessList(mockAddress, mockHash) },
 		func() { db.Snapshot() },
 		func() { db.RevertToSnapshot(0) },
-		func() { db.BeginTransaction(0) },
-		func() { db.EndTransaction() },
-		func() { db.BeginBlock(0) },
-		func() { db.EndBlock() },
+		func() { _ = db.BeginTransaction(0) },
+		func() { _ = db.EndTransaction() },
+		func() { _ = db.BeginBlock(0) },
+		func() { _ = db.EndBlock() },
 		func() { db.BeginSyncPeriod(0) },
 		func() { db.EndSyncPeriod() },
 		func() { db.AddLog(nil) },
@@ -372,8 +392,8 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.SetTxContext(mockHash, 0) },
 		func() { db.Finalise(false) },
 		func() { db.IntermediateRoot(false) },
-		func() { db.Commit(uint64(0), false) },
-		func() { db.Close() },
+		func() { _, _ = db.Commit(uint64(0), false) },
+		func() { _ = db.Close() },
 	}
 }
 
@@ -528,7 +548,7 @@ func TestOperationProfiler_sqlite3(t *testing.T) {
 	assert.NotNil(t, values)
 
 	// Test for BlockLevel
-	conn, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", BlockLevel)
+	_, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", BlockLevel)
 
 	// Verify create statement
 	assert.Equal(t, sqlite3_Block_CreateTableIfNotExist, createStmt, "Create table statement should match for BlockLevel")
@@ -541,7 +561,7 @@ func TestOperationProfiler_sqlite3(t *testing.T) {
 	assert.NotNil(t, values)
 
 	// Test for TransactionLevel
-	conn, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", TransactionLevel)
+	_, createStmt, insertStmt, valueFunc = o.sqlite3("test.db", TransactionLevel)
 
 	// Verify create statement
 	assert.Equal(t, sqlite3_Transaction_CreateTableIfNotExist, createStmt, "Create table statement should match for TransactionLevel")

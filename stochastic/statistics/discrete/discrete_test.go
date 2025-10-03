@@ -113,22 +113,22 @@ func TestDiscrete_QuantileNumericalStabilityKahanPathIsExercised(t *testing.T) {
 // TestDiscrete_ShrinkPMFBasic tests the ShrinkPMF function with a basic pmf.
 func TestDiscrete_ShrinkPMFBasic(t *testing.T) {
 	pmf := []float64{0.2, 0.7}
-	shrunk, err := Shrink(pmf)
+	_, err := Shrink(pmf)
 	if err == nil {
 		t.Fatalf("invalid pmf (sum<1): want error, got nil")
 	}
 	pmf = []float64{1.0, 0.0, 0.0}
-	shrunk, err = Shrink(pmf)
+	_, err = Shrink(pmf)
 	if err == nil {
 		t.Fatalf("invalid scaling factor: want error, got nil")
 	}
 	pmf = []float64{1.0}
-	shrunk, err = Shrink(pmf)
+	_, err = Shrink(pmf)
 	if err == nil {
 		t.Fatalf("too short pmf: want error, got nil")
 	}
 	pmf = []float64{0.1, 0.2, 0.7}
-	shrunk, err = Shrink(pmf)
+	shrunk, err := Shrink(pmf)
 	if err != nil {
 		t.Fatalf("valid pmf: want nil error, got %v", err)
 	}
