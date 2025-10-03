@@ -287,7 +287,12 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -318,7 +323,12 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -388,7 +398,12 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer database.Close()
+			defer func(database db.BaseDB) {
+				err = database.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}(database)
 
 			tc.setup(t, database)
 
@@ -421,7 +436,12 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
@@ -446,7 +466,12 @@ func TestTableHash_JustException(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = database.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(database)
 
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
