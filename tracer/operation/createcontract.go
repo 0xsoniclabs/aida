@@ -57,11 +57,11 @@ func (op *CreateContract) Write(f io.Writer) error {
 }
 
 // Execute the create-contract operation.
-func (op *CreateContract) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *CreateContract) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.CreateContract(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the create-contract operation.

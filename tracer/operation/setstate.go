@@ -59,13 +59,13 @@ func (op *SetState) Write(f io.Writer) error {
 }
 
 // Execute the set-state operation.
-func (op *SetState) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *SetState) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	storage := ctx.DecodeKey(op.Key)
 	value := op.Value
 	start := time.Now()
 	db.SetState(contract, storage, value)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the set-state operation.

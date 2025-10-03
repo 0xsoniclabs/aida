@@ -55,10 +55,10 @@ func (op *BeginSyncPeriod) Write(f io.Writer) error {
 }
 
 // Execute the begin-sync-period operation.
-func (op *BeginSyncPeriod) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *BeginSyncPeriod) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
 	db.BeginSyncPeriod(op.SyncPeriodNumber)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the begin-sync-period operation.
