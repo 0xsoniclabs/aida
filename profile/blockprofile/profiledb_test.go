@@ -45,7 +45,7 @@ func TestAdd(t *testing.T) {
 
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
-	db, err := NewProfileDB(dbFile, 0)
+	db, err := newProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	defer os.Remove(dbFile)
@@ -80,7 +80,7 @@ func TestFlush(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 	defer os.Remove(dbFile)
-	db, err := NewProfileDB(dbFile, 0)
+	db, err := newProfileDB(dbFile, 0)
 	require.NoError(err)
 	err = db.Add(ProfileData{})
 	require.NoError(err)
@@ -90,7 +90,7 @@ func TestFlush(t *testing.T) {
 	db.Close()
 
 	// db has 2 records
-	db, err = NewProfileDB(dbFile, 0)
+	db, err = newProfileDB(dbFile, 0)
 	require.NoError(err)
 
 	pd := ProfileData{
@@ -138,7 +138,7 @@ func TestFlush(t *testing.T) {
 	db.Close()
 
 	// trigger Flush method inside Add
-	db, err = NewProfileDB(dbFile, 0)
+	db, err = newProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 
@@ -417,7 +417,7 @@ func TestFlushProfileData(t *testing.T) {
 	dbFile := tempFile(require)
 	t.Logf("db file: %s", dbFile)
 
-	db, err := NewProfileDB(dbFile, 0)
+	db, err := newProfileDB(dbFile, 0)
 	require.NoError(err)
 	defer db.Close()
 	defer os.Remove(dbFile)
