@@ -28,6 +28,8 @@ import (
 
 const N = 1000
 
+// fillDb creates a new DB in the given directory, fills it with some data and returns the root hash.
+// If any error occurs, the test fails. The caller is responsible for removing the directory after use.
 func fillDb(t *testing.T, directory string) (common.Hash, error) {
 	db, err := MakeGethStateDB(directory, "", common.Hash{}, false, nil)
 	if err != nil {
@@ -64,6 +66,8 @@ func fillDb(t *testing.T, directory string) (common.Hash, error) {
 	return hash, nil
 }
 
+// TestGethDbFilling creates a new DB in a temporary directory and fills it with some data.
+// The temporary directory is removed at the end of the test. If any error occurs, the test fails.
 func TestGethDbFilling(t *testing.T) {
 	dir, err := ioutil.TempDir("", "test_db_*")
 	defer os.RemoveAll(dir)
@@ -75,6 +79,9 @@ func TestGethDbFilling(t *testing.T) {
 	}
 }
 
+// TestGethDbReloadData creates a new DB in a temporary directory, fills it with some data,
+// closes it, re-opens it and checks that the data is still there. The temporary directory is removed
+// at the end of the test. If any error occurs, the test fails.
 func TestGethDbReloadData(t *testing.T) {
 	dir, err := ioutil.TempDir("", "test_db_*")
 	defer os.RemoveAll(dir)
@@ -108,6 +115,8 @@ func TestGethDbReloadData(t *testing.T) {
 	}
 }
 
+// TestGethDb_CreateAccountIsProtected checks that calling CreateAccount multiple times for the same address does not panic.
+// The geth wrapper checks the existence of the account before creating it, so that the geth implementation does not panic.
 func TestGethDb_CreateAccountIsProtected(t *testing.T) {
 	dir := t.TempDir()
 	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
@@ -123,6 +132,8 @@ func TestGethDb_CreateAccountIsProtected(t *testing.T) {
 	require.True(t, db.Exist(addr))
 }
 
+// TestGethDb_CreateAccountIsProtected checks that calling CreateAccount multiple times for the same address does not panic.
+// The geth wrapper checks the non-existence of the account before creating it, so that the geth implementation does not panic.
 func TestGethDb_CreateContractIsProtected(t *testing.T) {
 	dir := t.TempDir()
 	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
@@ -138,6 +149,8 @@ func TestGethDb_CreateContractIsProtected(t *testing.T) {
 	require.True(t, db.Exist(addr))
 }
 
+// TestGethDb_CreateContractDoesNotCreateAccount checks that calling CreateContract for an address that does not exist does not create the account.
+// The geth wrapper checks the existence of the account before creating it, so that the geth implementation does not create it.
 func TestGethDb_CreateContractDoesNotCreateAccount(t *testing.T) {
 	dir := t.TempDir()
 	db, err := MakeGethStateDB(dir, "", common.Hash{}, false, nil)
