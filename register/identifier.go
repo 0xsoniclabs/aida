@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -37,17 +37,17 @@ func MakeRunIdentity(t int64, cfg *utils.Config) *RunIdentity {
 	}
 }
 
-func (id *RunIdentity) GetId() string {
+func (id *RunIdentity) GetId() (string, error) {
 	if id.Cfg.OverwriteRunId != "" {
-		return id.Cfg.OverwriteRunId
+		return id.Cfg.OverwriteRunId, nil
 	}
 	return id.hash()
 }
 
-func (id *RunIdentity) hash() string {
+func (id *RunIdentity) hash() (string, error) {
 	var b bytes.Buffer
 
-	gob.NewEncoder(&b).Encode([]string{
+	err := gob.NewEncoder(&b).Encode([]string{
 		fmt.Sprintf("%d", id.Timestamp),
 		id.Cfg.DbImpl,
 		id.Cfg.DbVariant,
@@ -56,11 +56,18 @@ func (id *RunIdentity) hash() string {
 		fmt.Sprintf("%d", id.Cfg.First),
 		fmt.Sprintf("%d", id.Cfg.Last),
 	})
+	if err != nil {
+		return "", err
+	}
 
-	return b.String()
+	return b.String(), nil
 }
 
 func (id *RunIdentity) fetchConfigInfo() (map[string]string, error) {
+	idStr, err := id.GetId()
+	if err != nil {
+		return nil, err
+	}
 	info := map[string]string{
 		"AppName":        id.Cfg.AppName,
 		"CommandName":    id.Cfg.CommandName,
@@ -82,7 +89,7 @@ func (id *RunIdentity) fetchConfigInfo() (map[string]string, error) {
 		"First": strconv.Itoa(int(id.Cfg.First)),
 		"Last":  strconv.Itoa(int(id.Cfg.Last)),
 
-		"RunId":     id.GetId(),
+		"RunId":     idStr,
 		"Timestamp": strconv.Itoa(int(id.Timestamp)),
 	}
 

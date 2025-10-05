@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -50,6 +50,8 @@ const (
 	GetCodeSizeID
 	GetCommittedStateID
 	GetCommittedStateLclsID
+	GetStateAndCommittedStateID
+	GetStateAndCommittedStateLclsID
 	GetNonceID
 	GetStateID
 	GetStateLccsID
@@ -109,42 +111,44 @@ type OperationDictionary struct {
 
 // opDict relates an operation's id with its label and read-function.
 var opDict = map[byte]OperationDictionary{
-	AddBalanceID:            {label: "AddBalance", readfunc: ReadAddBalance},
-	BeginBlockID:            {label: "BeginBlock", readfunc: ReadBeginBlock},
-	BeginSyncPeriodID:       {label: "BeginSyncPeriod", readfunc: ReadBeginSyncPeriod},
-	BeginTransactionID:      {label: "BeginTransaction", readfunc: ReadBeginTransaction},
-	CommitID:                {label: "Commit", readfunc: ReadPanic},
-	CreateAccountID:         {label: "CreateAccount", readfunc: ReadCreateAccount},
-	EmptyID:                 {label: "Empty", readfunc: ReadEmpty},
-	EndBlockID:              {label: "EndBlock", readfunc: ReadEndBlock},
-	EndSyncPeriodID:         {label: "EndSyncPeriod", readfunc: ReadEndSyncPeriod},
-	EndTransactionID:        {label: "EndTransaction", readfunc: ReadEndTransaction},
-	ExistID:                 {label: "Exist", readfunc: ReadExist},
-	FinaliseID:              {label: "Finalise", readfunc: ReadFinalise},
-	GetBalanceID:            {label: "GetBalance", readfunc: ReadGetBalance},
-	GetCodeHashID:           {label: "GetCodeHash", readfunc: ReadGetCodeHash},
-	GetCodeHashLcID:         {label: "GetCodeLcHash", readfunc: ReadGetCodeHashLc},
-	GetCodeID:               {label: "GetCode", readfunc: ReadGetCode},
-	GetCodeSizeID:           {label: "GetCodeSize", readfunc: ReadGetCodeSize},
-	GetCommittedStateID:     {label: "GetCommittedState", readfunc: ReadGetCommittedState},
-	GetCommittedStateLclsID: {label: "GetCommittedStateLcls", readfunc: ReadGetCommittedStateLcls},
-	GetNonceID:              {label: "GetNonce", readfunc: ReadGetNonce},
-	GetStateID:              {label: "GetState", readfunc: ReadGetState},
-	GetStateLcID:            {label: "GetStateLc", readfunc: ReadGetStateLc},
-	GetStateLccsID:          {label: "GetStateLccs", readfunc: ReadGetStateLccs},
-	GetStateLclsID:          {label: "GetStateLcls", readfunc: ReadGetStateLcls},
-	HasSelfDestructedID:     {label: "HasSelfDestructed", readfunc: ReadHasSelfDestructed},
-	RevertToSnapshotID:      {label: "RevertToSnapshot", readfunc: ReadRevertToSnapshot},
-	SetCodeID:               {label: "SetCode", readfunc: ReadSetCode},
-	SetNonceID:              {label: "SetNonce", readfunc: ReadSetNonce},
-	SetStateID:              {label: "SetState", readfunc: ReadSetState},
-	SetStateLclsID:          {label: "SetStateLcls", readfunc: ReadSetStateLcls},
-	SnapshotID:              {label: "Snapshot", readfunc: ReadSnapshot},
-	SubBalanceID:            {label: "SubBalance", readfunc: ReadSubBalance},
-	SelfDestructID:          {label: "SelfDestruct", readfunc: ReadSelfDestruct},
-	SelfDestruct6780ID:      {label: "SelfDestruct", readfunc: ReadSelfDestruct6780},
-	CreateContractID:        {label: "CreateContract", readfunc: ReadCreateContract},
-	GetStorageRootID:        {label: "GetStorageRoot", readfunc: ReadGetStorageRoot},
+	AddBalanceID:                    {label: "AddBalance", readfunc: ReadAddBalance},
+	BeginBlockID:                    {label: "BeginBlock", readfunc: ReadBeginBlock},
+	BeginSyncPeriodID:               {label: "BeginSyncPeriod", readfunc: ReadBeginSyncPeriod},
+	BeginTransactionID:              {label: "BeginTransaction", readfunc: ReadBeginTransaction},
+	CommitID:                        {label: "Commit", readfunc: ReadPanic},
+	CreateAccountID:                 {label: "CreateAccount", readfunc: ReadCreateAccount},
+	EmptyID:                         {label: "Empty", readfunc: ReadEmpty},
+	EndBlockID:                      {label: "EndBlock", readfunc: ReadEndBlock},
+	EndSyncPeriodID:                 {label: "EndSyncPeriod", readfunc: ReadEndSyncPeriod},
+	EndTransactionID:                {label: "EndTransaction", readfunc: ReadEndTransaction},
+	ExistID:                         {label: "Exist", readfunc: ReadExist},
+	FinaliseID:                      {label: "Finalise", readfunc: ReadFinalise},
+	GetBalanceID:                    {label: "GetBalance", readfunc: ReadGetBalance},
+	GetCodeHashID:                   {label: "GetCodeHash", readfunc: ReadGetCodeHash},
+	GetCodeHashLcID:                 {label: "GetCodeLcHash", readfunc: ReadGetCodeHashLc},
+	GetCodeID:                       {label: "GetCode", readfunc: ReadGetCode},
+	GetCodeSizeID:                   {label: "GetCodeSize", readfunc: ReadGetCodeSize},
+	GetCommittedStateID:             {label: "GetCommittedState", readfunc: ReadGetCommittedState},
+	GetCommittedStateLclsID:         {label: "GetCommittedStateLcls", readfunc: ReadGetCommittedStateLcls},
+	GetStateAndCommittedStateID:     {label: "GetStateAndCommittedState", readfunc: ReadGetStateAndCommittedState},
+	GetStateAndCommittedStateLclsID: {label: "GetStateAndCommittedStateLcls", readfunc: ReadGetStateAndCommittedStateLcls},
+	GetNonceID:                      {label: "GetNonce", readfunc: ReadGetNonce},
+	GetStateID:                      {label: "GetState", readfunc: ReadGetState},
+	GetStateLcID:                    {label: "GetStateLc", readfunc: ReadGetStateLc},
+	GetStateLccsID:                  {label: "GetStateLccs", readfunc: ReadGetStateLccs},
+	GetStateLclsID:                  {label: "GetStateLcls", readfunc: ReadGetStateLcls},
+	HasSelfDestructedID:             {label: "HasSelfDestructed", readfunc: ReadHasSelfDestructed},
+	RevertToSnapshotID:              {label: "RevertToSnapshot", readfunc: ReadRevertToSnapshot},
+	SetCodeID:                       {label: "SetCode", readfunc: ReadSetCode},
+	SetNonceID:                      {label: "SetNonce", readfunc: ReadSetNonce},
+	SetStateID:                      {label: "SetState", readfunc: ReadSetState},
+	SetStateLclsID:                  {label: "SetStateLcls", readfunc: ReadSetStateLcls},
+	SnapshotID:                      {label: "Snapshot", readfunc: ReadSnapshot},
+	SubBalanceID:                    {label: "SubBalance", readfunc: ReadSubBalance},
+	SelfDestructID:                  {label: "SelfDestruct", readfunc: ReadSelfDestruct},
+	SelfDestruct6780ID:              {label: "SelfDestruct", readfunc: ReadSelfDestruct6780},
+	CreateContractID:                {label: "CreateContract", readfunc: ReadCreateContract},
+	GetStorageRootID:                {label: "GetStorageRoot", readfunc: ReadGetStorageRoot},
 
 	// for testing
 	AddAddressToAccessListID: {label: "AddAddressToAccessList", readfunc: ReadPanic},

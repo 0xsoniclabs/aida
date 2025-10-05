@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -104,12 +104,12 @@ func makeRunMetadata(connection string, fetchCfg FetchInfo, fetchEnv FetchInfo) 
 	return rm, warnings
 }
 
-func (rm *RunMetadata) Print() {
-	rm.Ps.Print()
+func (rm *RunMetadata) Print() error {
+	return rm.Ps.Print()
 }
 
-func (rm *RunMetadata) Close() {
-	rm.Ps.Close()
+func (rm *RunMetadata) Close() error {
+	return rm.Ps.Close()
 }
 
 // fetchEnvInfo fetches environment info by executing a number of linux commands.
@@ -133,7 +133,7 @@ func FetchUnixInfo() (map[string]string, error) {
 	for tag, f := range cmds {
 		out, err := f()
 		if err != nil {
-			errs = errors.Join(errs, errors.New(fmt.Sprintf("bash cmd failed to get %s; %v.", tag, err)))
+			errs = errors.Join(errs, fmt.Errorf("bash cmd failed to get %s; %v", tag, err))
 		}
 		envs[tag] = out
 	}

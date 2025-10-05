@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -31,23 +31,31 @@ import (
 //go:generate mockgen -source print.go -destination print_mock.go -package utils
 type Printer interface {
 	Print() error
-	Close()
+	Close() error
 }
 
 type Printers struct {
 	printers []Printer
 }
 
-func (ps *Printers) Print() {
+func (ps *Printers) Print() error {
 	for _, p := range ps.printers {
-		_ = p.Print()
+		err := p.Print()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (ps *Printers) Close() {
+func (ps *Printers) Close() error {
 	for _, p := range ps.printers {
-		p.Close()
+		err := p.Close()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func NewPrinters() *Printers {
@@ -78,8 +86,8 @@ func (p *PrinterToWriter) Print() error {
 	return nil
 }
 
-func (p *PrinterToWriter) Close() {
-
+func (p *PrinterToWriter) Close() error {
+	return nil
 }
 
 func NewPrinterToWriter(w io.Writer, f func() string) *PrinterToWriter {
@@ -124,8 +132,8 @@ func (p *PrinterToFile) Print() (err error) {
 	return nil
 }
 
-func (p *PrinterToFile) Close() {
-
+func (p *PrinterToFile) Close() error {
+	return nil
 }
 
 func NewPrinterToFile(filepath string, f func() string) *PrinterToFile {
@@ -173,8 +181,8 @@ func (p *PrinterToDb) Print() error {
 	return tx.Commit()
 }
 
-func (p *PrinterToDb) Close() {
-	_ = p.db.Close()
+func (p *PrinterToDb) Close() error {
+	return p.db.Close()
 }
 
 func NewPrinterToSqlite3(conn string, create string, insert string, f func() [][]any) (*PrinterToDb, error) {
@@ -237,7 +245,8 @@ func (p *PrinterToBuffer) Print() error {
 	return nil
 }
 
-func (p *PrinterToBuffer) Close() {
+func (p *PrinterToBuffer) Close() error {
+	return nil
 }
 
 func (p *PrinterToBuffer) Reset() {
@@ -250,7 +259,7 @@ func (p *PrinterToBuffer) Length() int {
 
 type IFlusher interface {
 	Print() error
-	Close()
+	Close() error
 }
 
 type Flusher struct {
@@ -265,7 +274,14 @@ func (p *Flusher) Print() error {
 	return p.og.Print()
 }
 
-func (p *Flusher) Close() {
-	p.og.Close()
-	p.bf.Close()
+func (p *Flusher) Close() error {
+	err := p.og.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close original printer: %v", err)
+	}
+	err = p.bf.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close buffer printer: %v", err)
+	}
+	return nil
 }

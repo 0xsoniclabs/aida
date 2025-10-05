@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -109,6 +109,12 @@ func (s *MockStateDB) GetNonce(addr common.Address) uint64 {
 
 func (s *MockStateDB) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
 	s.recording = append(s.recording, Record{SetNonceID, []any{addr, value, reason}})
+}
+
+func (s *MockStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	state := s.GetState(addr, key)
+	committed := s.GetCommittedState(addr, key)
+	return state, committed
 }
 
 func (s *MockStateDB) GetCommittedState(addr common.Address, key common.Hash) common.Hash {

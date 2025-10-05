@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package profile
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -139,7 +140,9 @@ func getStorageUpdateSizeAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer sdb.Close()
+	defer func(sdb db.SubstateDB) {
+		err = errors.Join(err, sdb.Close())
+	}(sdb)
 
 	taskPool := sdb.NewSubstateTaskPool("aida-vm storage", getStorageUpdateSizeTask, cfg.First, cfg.Last, ctx)
 	err = taskPool.Execute()

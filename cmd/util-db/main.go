@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -23,10 +23,12 @@ import (
 	"github.com/0xsoniclabs/aida/cmd/util-db/clone"
 	"github.com/0xsoniclabs/aida/cmd/util-db/compact"
 	"github.com/0xsoniclabs/aida/cmd/util-db/db"
+	"github.com/0xsoniclabs/aida/cmd/util-db/generate"
 	"github.com/0xsoniclabs/aida/cmd/util-db/info"
 	"github.com/0xsoniclabs/aida/cmd/util-db/merge"
 	"github.com/0xsoniclabs/aida/cmd/util-db/metadata"
 	"github.com/0xsoniclabs/aida/cmd/util-db/primer"
+	"github.com/0xsoniclabs/aida/cmd/util-db/scrape"
 	"github.com/0xsoniclabs/aida/cmd/util-db/validate"
 	"github.com/urfave/cli/v2"
 )
@@ -36,7 +38,7 @@ var UtilDbApp = cli.App{
 	Name:      "Aida Database",
 	HelpName:  "util-db",
 	Usage:     "merge source data into profiling database",
-	Copyright: "(c) 2022 Fantom Foundation",
+	Copyright: "(c) 2025 Sonic Labs",
 	Commands: []*cli.Command{
 		&clone.Command,
 		&compact.Command,
@@ -44,10 +46,9 @@ var UtilDbApp = cli.App{
 		&info.Command,
 		&validate.Command,
 		&metadata.Command,
-		&db.ExtractEthereumGenesisCommand,
+		&generate.Command,
 		&db.UpdateCommand,
-		&db.GenDeletedAccountsCommand,
-		&db.ScrapeCommand,
+		&scrape.Command,
 
 		//Priming only
 		&primer.RunPrimerCmd,

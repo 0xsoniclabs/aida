@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ func runTransactions(
 	extra []executor.Extension[txcontext.TxContext],
 ) error {
 
-	var progressReportFrequency int = txGeneratorDefaultProgressReportFrequency
+	var progressReportFrequency = txGeneratorDefaultProgressReportFrequency
 	if cfg.BlockLength > 0 {
 		progressReportFrequency = int(math.Ceil(float64(50_000) / float64(cfg.BlockLength)))
 	}

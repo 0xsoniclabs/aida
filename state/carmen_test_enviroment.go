@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package state
 
 import (
+	cryptorand "crypto/rand"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -82,7 +83,7 @@ func MakeRandomByteSlice(t *testing.T, bufferLength int) []byte {
 	buffer := make([]byte, bufferLength)
 
 	// fill the slice with random data
-	_, err := rand.Read(buffer)
+	_, err := cryptorand.Read(buffer)
 	if err != nil {
 		t.Fatalf("failed test data; can not generate random byte slice; %s", err.Error())
 	}
@@ -99,7 +100,7 @@ func GetRandom(t *testing.T, lower int, upper int) uint64 {
 		t.Fatalf("expected positive integer. (%v, %v)", lower, upper)
 	}
 	// seed the PRNG
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// get randomized balance
 	return uint64(lower + rand.Intn(upper-lower))

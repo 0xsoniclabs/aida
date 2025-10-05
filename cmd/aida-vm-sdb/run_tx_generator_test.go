@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
@@ -58,12 +59,16 @@ func TestVmSdb_TxGenerator_AllTransactionsAreProcessedInOrder(t *testing.T) {
 		Run(2, 4, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
 			// Block 2
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: newTestTxCtx(t, 2)})
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: newTestTxCtx(t, 2)})
+			err := consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 1, Data: newTestTxCtx(t, 2)})
+			assert.NoError(t, err)
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 2, Transaction: 2, Data: newTestTxCtx(t, 2)})
+			assert.NoError(t, err)
 			// Block 3
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: newTestTxCtx(t, 3)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 3, Transaction: 1, Data: newTestTxCtx(t, 3)})
+			assert.NoError(t, err)
 			// Block 4
-			consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 1, Data: newTestTxCtx(t, 4)})
+			err = consumer(executor.TransactionInfo[txcontext.TxContext]{Block: 4, Transaction: 1, Data: newTestTxCtx(t, 4)})
+			assert.NoError(t, err)
 			return nil
 		})
 
