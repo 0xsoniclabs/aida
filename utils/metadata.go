@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -244,6 +244,7 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 	)
 
 	targetMD := NewAidaDbMetadata(aidaDb, cfg.LogLevel)
+	targetMD.GetMetadata()
 
 	for i, database := range sourceDbs {
 		md := NewAidaDbMetadata(database, cfg.LogLevel)
@@ -265,11 +266,6 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 
 		// if database had no metadata we will look for blocks in substate
 		if hasNoBlockRangeInMetadata {
-			// we need to close database before opening substate
-			if err = database.Close(); err != nil {
-				return nil, fmt.Errorf("cannot close database; %v", err)
-			}
-
 			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
 			md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
@@ -783,7 +779,6 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) er
 	)
 
 	patchMD := NewAidaDbMetadata(patchDb, cfg.LogLevel)
-
 	patchMD.GetMetadata()
 
 	// if we are updating existing AidaDb and this Db does not have metadata, we go through substate to find

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -24,29 +24,24 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// initStochasticApp initializes a aida-stochastic-sdb app.
-func initStochasticApp() *cli.App {
-	return &cli.App{
-		Name:      "Aida Stochastic-Test Manager",
-		HelpName:  "stochastic",
-		Copyright: "(c) 2022-23 Fantom Foundation",
-		Flags:     []cli.Flag{},
-		Commands: []*cli.Command{
-			&stochastic.StochasticEstimateCommand,
-			&stochastic.StochasticGenerateCommand,
-			&stochastic.StochasticRecordCommand,
-			&stochastic.StochasticReplayCommand,
-			&stochastic.StochasticVisualizeCommand,
-		},
-	}
+// StochasticApp initializes a aida-stochastic-sdb app.
+var stochasticApp = &cli.App{
+	Name:      "Aida Stochastic-Test Manager",
+	HelpName:  "stochastic",
+	Copyright: "(c) 2025 Sonic Labs",
+	Flags:     []cli.Flag{},
+	Commands: []*cli.Command{
+		&stochastic.StochasticGenerateCommand,
+		&stochastic.StochasticRecordCommand,
+		&stochastic.StochasticReplayCommand,
+		&stochastic.StochasticVisualizeCommand,
+	},
 }
 
 // main implements "stochastic" cli stochasticApplication.
 func main() {
-	app := initStochasticApp()
-	if err := app.Run(os.Args); err != nil {
-		code := 1
+	if err := stochasticApp.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(code)
+		os.Exit(1)
 	}
 }

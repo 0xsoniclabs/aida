@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 package updateset
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -50,7 +51,9 @@ func reportUpdateSetStats(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer udb.Close()
+	defer func(udb db.UpdateDB) {
+		err = errors.Join(err, udb.Close())
+	}(udb)
 
 	iter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
 	defer iter.Release()

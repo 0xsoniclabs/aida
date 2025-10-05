@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -17,8 +17,11 @@
 package register
 
 import (
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -35,15 +38,24 @@ func TestIdentity_SameIdIfSameRun(t *testing.T) {
 	info := &RunIdentity{timestamp, cfg}
 
 	//Same info = same id
-	i := info.GetId()
-	j := info.GetId()
+	i, err := info.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
+	j, err := info.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
 	if i != j {
 		t.Errorf("Same Info but ID doesn't matched: %s vs %s", i, j)
 	}
 
 	//Same timestamp, cfg = same id
 	info2 := &RunIdentity{timestamp, cfg}
-	k := info2.GetId()
+	k, err := info2.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
 	if i != k {
 		t.Errorf("Same timestamp, cfg but ID doesn't matched: %s vs %s", i, k)
 	}
@@ -69,19 +81,32 @@ func TestIdentity_DiffIdIfDiffRun(t *testing.T) {
 	info2 := &RunIdentity{timestamp2, cfg}
 	info3 := &RunIdentity{timestamp, cfg2}
 
+	infoId1, err := info.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
+	infoId2, err := info2.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
+	infoId3, err := info3.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
+
 	//Different timestamp = Different Id
-	if info.GetId() == info2.GetId() {
-		t.Errorf("Different timestamp but ID still matched: %s vs %s", info.GetId(), info2.GetId())
+	if infoId1 == infoId2 {
+		t.Errorf("Different timestamp but ID still matched: %s vs %s", infoId1, infoId2)
 	}
 
 	//Different cfg = Different Id
-	if info.GetId() == info3.GetId() {
-		t.Errorf("Different cfg but ID still matched: %s vs %s", info.GetId(), info3.GetId())
+	if infoId1 == infoId3 {
+		t.Errorf("Different cfg but ID still matched: %s vs %s", infoId1, infoId3)
 	}
 
 	//Different everything = different Id
-	if info2.GetId() == info3.GetId() {
-		t.Errorf("Different info but ID still matched: %s vs %s", info2.GetId(), info3.GetId())
+	if infoId2 == infoId3 {
+		t.Errorf("Different info but ID still matched: %s vs %s", infoId2, infoId3)
 	}
 }
 
@@ -97,8 +122,72 @@ func TestIdentity_OverwriteRunIdWorks(t *testing.T) {
 
 	info := &RunIdentity{timestamp, cfg}
 
-	s := info.GetId()
+	s, err := info.GetId()
+	if err != nil {
+		t.Fatalf("Failed to get ID: %v", err)
+	}
 	if s != cfg.OverwriteRunId {
 		t.Errorf("RunId should be overwritten as %s but is %s", s, cfg.OverwriteRunId)
 	}
+}
+
+func TestRegister_MakeRunIdentity(t *testing.T) {
+	cfg := &utils.Config{
+		DbImpl:         "carmen",
+		DbVariant:      "go-file",
+		CarmenSchema:   5,
+		VmImpl:         "lfvm",
+		OverwriteRunId: "TestRunId",
+	}
+
+	timestamp := time.Now().Unix()
+	runIdentity := MakeRunIdentity(timestamp, cfg)
+
+	assert.Equal(t, timestamp, runIdentity.Timestamp)
+	assert.Equal(t, cfg, runIdentity.Cfg)
+}
+
+func TestRunIdentity_fetchConfigInfo(t *testing.T) {
+	cfg := &utils.Config{
+		AppName:          "TestApp",
+		CommandName:      "TestCommand",
+		RegisterRun:      "TestRegisterRun",
+		OverwriteRunId:   "TestRunId",
+		DbImpl:           "carmen",
+		DbVariant:        "go-file",
+		CarmenSchema:     5,
+		VmImpl:           "lfvm",
+		ArchiveMode:      true,
+		ArchiveQueryRate: 10,
+		ArchiveVariant:   "test-variant",
+		ChainID:          1,
+		StateDbSrc:       "test-db-src",
+		RpcRecordingPath: "test-rpc-path",
+		First:            1000,
+		Last:             2000,
+	}
+
+	timestamp := time.Now().Unix()
+	runIdentity := MakeRunIdentity(timestamp, cfg)
+
+	info, err := runIdentity.fetchConfigInfo()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cfg.AppName, info["AppName"])
+	assert.Equal(t, cfg.CommandName, info["CommandName"])
+	assert.Equal(t, cfg.RegisterRun, info["RegisterRun"])
+	assert.Equal(t, cfg.OverwriteRunId, info["OverwriteRunId"])
+	assert.Equal(t, cfg.DbImpl, info["DbImpl"])
+	assert.Equal(t, cfg.DbVariant, info["DbVariant"])
+	assert.Equal(t, strconv.Itoa(cfg.CarmenSchema), info["CarmenSchema"])
+	assert.Equal(t, cfg.VmImpl, info["VmImpl"])
+	assert.Equal(t, strconv.FormatBool(cfg.ArchiveMode), info["ArchiveMode"])
+	assert.Equal(t, strconv.Itoa(cfg.ArchiveQueryRate), info["ArchiveQueryRate"])
+	assert.Equal(t, cfg.ArchiveVariant, info["ArchiveVariant"])
+	assert.Equal(t, strconv.Itoa(int(cfg.ChainID)), info["ChainId"])
+	assert.Equal(t, cfg.StateDbSrc, info["DbSrc"])
+	assert.Equal(t, cfg.RpcRecordingPath, info["RpcRecordings"])
+	assert.Equal(t, strconv.Itoa(int(cfg.First)), info["First"])
+	assert.Equal(t, strconv.Itoa(int(cfg.Last)), info["Last"])
+	assert.Equal(t, strconv.Itoa(int(runIdentity.Timestamp)), info["Timestamp"])
 }

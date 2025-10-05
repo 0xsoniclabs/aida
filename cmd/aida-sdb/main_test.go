@@ -1,0 +1,138 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
+package main
+
+import (
+	"archive/tar"
+	"compress/gzip"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/0xsoniclabs/aida/utils"
+)
+
+var (
+	testTraceFile = "trace-test/trace.dat"
+	testTraceDir  = "trace-test"
+	testDataDir   = "testdata"
+)
+
+// TestMain runs global setup, test cases then global teardown
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	teardown()
+	os.Exit(code)
+}
+
+// setup prepares
+// substateDB and creates trace directory
+func setup() {
+	// download and extract substate.test
+	err := setupTestSubstateDB()
+	if err != nil {
+		fmt.Errorf("unable to load substatedb. %v", err)
+	}
+
+	// create trace directory
+	err = os.Mkdir(testTraceDir, 0700)
+	if err != nil {
+		fmt.Errorf("unable to create direcotry. %v", err)
+	}
+
+	// setup
+	tempDir, err := os.MkdirTemp("", "profile_test_*")
+	if err != nil {
+		fmt.Printf("Failed to create temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	testDataDir = tempDir
+	err = utils.DownloadTestDataset(testDataDir)
+	fmt.Printf("Downloaded test data: %s\n", testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to download test dataset: %v\n", err)
+		_ = os.RemoveAll(testDataDir)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Setup completed\n")
+}
+
+// teardown removes temp directories
+func teardown() {
+	// Do something here.
+	os.RemoveAll(testTraceDir)
+	os.RemoveAll("substate.test")
+	err := os.RemoveAll(testDataDir)
+	if err != nil {
+		fmt.Printf("Failed to remove temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Teardown completed\n")
+}
+
+// setupTestSubstateDB downloads compressed substates and extract in local directory
+func setupTestSubstateDB() error {
+	// download substate.test from url
+	// set timeout to 1 minutes
+	client := http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Get("https://github.com/0xsoniclabs/substate-cli/releases/download/substate-test/substate.test.tar.gz")
+	if err != nil {
+		return err
+	}
+
+	// channel downloaded content to gzip stream
+	gzipStream, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return err
+	}
+	defer gzipStream.Close()
+
+	tarReader := tar.NewReader(gzipStream)
+
+	// decompress and store each file in archive
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		// if head is a directory, create a new directory
+		if header.Typeflag == tar.TypeDir {
+			if err = os.MkdirAll(header.Name, 0700); err != nil {
+				return err
+			}
+			// if not a directory, copy to out file
+		} else {
+			outFile, err := os.OpenFile(header.Name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+			if _, err = io.Copy(outFile, tarReader); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}

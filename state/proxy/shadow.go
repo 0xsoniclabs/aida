@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -53,6 +53,16 @@ func NewShadowProxy(prime, shadow state.StateDB, compareStateHash bool) state.St
 	}
 }
 
+// sameVmStateDBInstance reports whether both handles point to the exact same state implementation.
+func sameVmStateDBInstance(prime, shadow state.VmStateDB) (same bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			same = false
+		}
+	}()
+	return prime == shadow
+}
+
 type shadowVmStateDb struct {
 	prime            state.VmStateDB
 	shadow           state.VmStateDB
@@ -76,6 +86,10 @@ type shadowStateDb struct {
 
 type snapshotPair struct {
 	prime, shadow int
+}
+
+type vmStateHasher interface {
+	GetHash() (common.Hash, error)
 }
 
 func (s *shadowVmStateDb) CreateAccount(addr common.Address) {
@@ -141,6 +155,12 @@ func (s *shadowVmStateDb) GetCommittedState(addr common.Address, key common.Hash
 	return s.getHash("GetCommittedState", func(s state.VmStateDB) common.Hash { return s.GetCommittedState(addr, key) }, addr, key)
 }
 
+func (s *shadowVmStateDb) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	return s.getHashPair("GetCommittedState", func(s state.VmStateDB) (common.Hash, common.Hash) {
+		return s.GetStateAndCommittedState(addr, key)
+	}, addr, key)
+}
+
 func (s *shadowVmStateDb) GetState(addr common.Address, key common.Hash) common.Hash {
 	return s.getHash("GetState", func(s state.VmStateDB) common.Hash { return s.GetState(addr, key) }, addr, key)
 }
@@ -185,6 +205,7 @@ func (s *shadowVmStateDb) Snapshot() int {
 		s.prime.Snapshot(),
 		s.shadow.Snapshot(),
 	}
+	s.verifyStateHash("Snapshot")
 	s.snapshots = append(s.snapshots, pair)
 	return len(s.snapshots) - 1
 }
@@ -193,17 +214,27 @@ func (s *shadowVmStateDb) RevertToSnapshot(id int) {
 	if id < 0 || len(s.snapshots) <= id {
 		panic(fmt.Sprintf("invalid snapshot id: %v, max: %v", id, len(s.snapshots)))
 	}
+	s.verifyStateHash("RevertToSnapshot.Before")
 	s.prime.RevertToSnapshot(s.snapshots[id].prime)
 	s.shadow.RevertToSnapshot(s.snapshots[id].shadow)
+	s.verifyStateHash("RevertToSnapshot.After")
 }
 
 func (s *shadowVmStateDb) BeginTransaction(tx uint32) error {
 	s.snapshots = s.snapshots[0:0]
-	return s.run("BeginTransaction", func(s state.VmStateDB) error { return s.BeginTransaction(tx) })
+	if err := s.run("BeginTransaction", func(s state.VmStateDB) error { return s.BeginTransaction(tx) }); err != nil {
+		return err
+	}
+	s.verifyStateHash("BeginTransaction")
+	return nil
 }
 
 func (s *shadowVmStateDb) EndTransaction() error {
-	return s.run("EndTransaction", func(s state.VmStateDB) error { return s.EndTransaction() })
+	if err := s.run("EndTransaction", func(s state.VmStateDB) error { return s.EndTransaction() }); err != nil {
+		return err
+	}
+	s.verifyStateHash("EndTransaction")
+	return nil
 }
 
 func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
@@ -217,11 +248,37 @@ func (s *shadowVmStateDb) Finalise(deleteEmptyObjects bool) {
 }
 
 func (s *shadowStateDb) BeginBlock(blk uint64) error {
-	return s.run("BeginBlock", func(s state.StateDB) error { return s.BeginBlock(blk) })
+	if err := s.run("BeginBlock", func(s state.StateDB) error { return s.BeginBlock(blk) }); err != nil {
+		return err
+	}
+	s.verifyStateHash("BeginBlock")
+	return nil
 }
 
 func (s *shadowStateDb) EndBlock() error {
-	return s.run("EndBlock", func(s state.StateDB) error { return s.EndBlock() })
+	if err := s.run("EndBlock", func(s state.StateDB) error { return s.EndBlock() }); err != nil {
+		return err
+	}
+	s.verifyStateHash("EndBlock")
+	return nil
+}
+
+func (s *shadowVmStateDb) verifyStateHash(opName string) {
+	if !s.compareStateHash || sameVmStateDBInstance(s.prime, s.shadow) {
+		return
+	}
+	_, err := s.getStateHash(opName+".GetHash", func(db state.VmStateDB) (common.Hash, error) {
+		hasher, ok := db.(vmStateHasher)
+		if !ok {
+			return common.Hash{}, fmt.Errorf("%T does not implement GetHash", db)
+		}
+		return hasher.GetHash()
+	})
+	if err != nil {
+		wrapped := fmt.Errorf("%s hash verification failed: %w", opName, err)
+		s.err = errors.Join(s.err, wrapped)
+		s.log.Errorf("failed to verify state hash after %s: %v", opName, err)
+	}
 }
 
 func (s *shadowStateDb) BeginSyncPeriod(number uint64) {
@@ -730,6 +787,20 @@ func (s *shadowVmStateDb) getHash(opName string, op func(s state.VmStateDB) comm
 		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
 	}
 	return resP
+}
+
+func (s *shadowVmStateDb) getHashPair(opName string, op func(s state.VmStateDB) (common.Hash, common.Hash), args ...any) (common.Hash, common.Hash) {
+	res1P, res2P := op(s.prime)
+	res1S, res2S := op(s.shadow)
+	if res1P != res1S {
+		s.logIssue(opName, res1P, res1S, args)
+		s.err = fmt.Errorf("%v (first hash) diverged from shadow DB", getOpcodeString(opName, args))
+	}
+	if res2P != res2S {
+		s.logIssue(opName, res2P, res2S, args)
+		s.err = fmt.Errorf("%v (second hash) diverged from shadow DB", getOpcodeString(opName, args))
+	}
+	return res1P, res2P
 }
 
 func (s *shadowVmStateDb) getUint256Ptr(opName string, op func(s state.VmStateDB) *uint256.Int, args ...any) *uint256.Int {

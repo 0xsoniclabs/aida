@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -113,6 +113,7 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 		for _, a := range []byte{
 			operation.GetCodeHashLcID,
 			operation.GetCommittedStateLclsID,
+			operation.GetStateAndCommittedStateLclsID,
 			operation.GetStateLccsID,
 			operation.GetStateLcID,
 			operation.GetStateLclsID,
@@ -331,6 +332,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.GetRefund() },
 		func() { db.GetCommittedState(mockAddress, mockHash) },
 		func() { db.GetState(mockAddress, mockHash) },
+		func() { db.GetStateAndCommittedState(mockAddress, mockHash) },
 		func() { db.GetStorageRoot(mockAddress) },
 		func() { db.GetTransientState(mockAddress, mockHash) },
 		func() { db.SetState(mockAddress, mockHash, mockHash) },
@@ -394,6 +396,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().GetRefund().AnyTimes()
 	m.EXPECT().GetCommittedState(gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetState(gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetStorageRoot(gomock.Any()).AnyTimes()
 	m.EXPECT().GetTransientState(gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
@@ -447,6 +450,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().GetRefund()
 	m.EXPECT().GetCommittedState(gomock.Any(), gomock.Any())
 	m.EXPECT().GetState(gomock.Any(), gomock.Any())
+	m.EXPECT().GetStateAndCommittedState(gomock.Any(), gomock.Any())
 	m.EXPECT().GetStorageRoot(gomock.Any())
 	m.EXPECT().GetTransientState(gomock.Any(), gomock.Any())
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any())

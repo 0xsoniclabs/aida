@@ -1,5 +1,5 @@
-# Copyright 2024 Fantom Foundation
-# This file is part of Aida Testing Infrastructure for Sonic.
+# Copyright 2025 Sonic Labs
+# This file is part of Aida Testing Infrastructure for Sonic
 #
 # Aida is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -116,10 +116,11 @@ help: Makefile
 install-dev-tools:
 	@go install golang.org/x/tools/cmd/goimports@v0.30.0
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+	@go install go.uber.org/mock/mockgen@latest
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
+	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
+	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate
+	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state

@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ func main() {
 		Name:      "Aida Storage Profile Manager",
 		HelpName:  "profile",
 		Usage:     "profile on the world-state",
-		Copyright: "(c) 2023 Fantom Foundation",
+		Copyright: "(c) 2025 Sonic Labs",
 		Commands: []*cli.Command{
 			&profile.GetCodeSizeCommand,
 			&profile.GetStorageUpdateSizeCommand,
@@ -41,7 +41,7 @@ func main() {
 	}
 	if err := app.Run(os.Args); err != nil {
 		code := 1
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(code)
 	}
 }

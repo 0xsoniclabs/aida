@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -41,15 +41,17 @@ func assertExactlyEqual(t *testing.T, a interface{}, b interface{}) {
 const float64AlmostEqualThreshold = 1e-3
 
 func assertAlmostEqual(t *testing.T, a float64, b float64) {
-	if a == 0 {
-		if b > float64AlmostEqualThreshold {
+	delta := math.Abs(a - b)
+	base := math.Abs(a)
+	if base < float64AlmostEqualThreshold {
+		if delta > float64AlmostEqualThreshold {
 			t.Errorf("%f !~ %f", a, b)
 		}
-	} else {
-		if math.Abs(a-b)/a > float64AlmostEqualThreshold {
-			t.Log(a, b, math.Abs(a-b)/a, math.Abs(a-b)/a > float64AlmostEqualThreshold)
-			t.Errorf("%f !~ %f", a, b)
-		}
+		return
+	}
+	if delta/base > float64AlmostEqualThreshold {
+		t.Log(a, b, delta/base, delta/base > float64AlmostEqualThreshold)
+		t.Errorf("%f !~ %f", a, b)
 	}
 }
 

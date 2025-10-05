@@ -1,4 +1,4 @@
-// Copyright 2024 Fantom Foundation
+// Copyright 2025 Sonic Labs
 // This file is part of Aida Testing Infrastructure for Sonic
 //
 // Aida is free software: you can redistribute it and/or modify
@@ -231,6 +231,12 @@ func (db *inMemoryStateDB) GetCommittedState(addr common.Address, key common.Has
 		return common.Hash{}
 	}
 	return db.ws.Get(addr).GetStorageAt(key)
+}
+
+func (db *inMemoryStateDB) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
+	committed := db.GetCommittedState(addr, key)
+	state := db.GetState(addr, key)
+	return state, committed
 }
 
 func (db *inMemoryStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
