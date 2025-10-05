@@ -106,12 +106,17 @@ func newCountingChart(title string, contracts [][2]float64, keys [][2]float64, v
 
 // renderCounting renders counting statistics.
 func renderCounting(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	stats := view.stats
 	chart := newCountingChart(
 		"Counting Statistics",
-		data.Contracts.A_CDF,
-		data.Keys.A_CDF,
-		data.Values.A_CDF,
+		stats.Contracts.Counting.ECDF,
+		stats.Keys.Counting.ECDF,
+		stats.Values.Counting.ECDF,
 	)
 	chart.Render(w)
 }
@@ -139,8 +144,12 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 			Title:    "Snapshot Statistics",
 			Subtitle: "Delta Distribution",
 		}))
-	data := GetData()
-	chart.AddSeries("eCDF", convertCountingData(data.Snapshot.ECdf))
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	chart.AddSeries("eCDF", convertCountingData(view.stats.SnapshotECDF))
 	chart.Render(w)
 }
 
@@ -154,8 +163,14 @@ func convertQueuingData(data []float64) []opts.ScatterData {
 }
 
 // renderQueuing renders a queuing statistics.
+
 func renderQueuing(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	stats := view.stats
 	scatter := charts.NewScatter()
 	scatter.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -177,12 +192,14 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: "Queuing Probabilities",
 		}))
-	scatter.AddSeries("Contract", convertQueuingData(data.Contracts.Q_PMF)).AddSeries("Keys", convertQueuingData(data.Keys.Q_PMF)).AddSeries("Values", convertQueuingData(data.Values.Q_PMF))
+	scatter.AddSeries("Contract", convertQueuingData(stats.Contracts.Queuing.Distribution)).
+		AddSeries("Keys", convertQueuingData(stats.Keys.Queuing.Distribution)).
+		AddSeries("Values", convertQueuingData(stats.Values.Queuing.Distribution))
 	scatter.Render(w)
 }
 
 // convertOperationData produces the data series for the sationary distribution.
-func convertOperationData(data []OpData) []opts.BarData {
+func convertOperationData(data []opDatum) []opts.BarData {
 	items := []opts.BarData{}
 	for i := 0; i < len(data); i++ {
 		items = append(items, opts.BarData{Value: data[i].value})
@@ -191,7 +208,7 @@ func convertOperationData(data []OpData) []opts.BarData {
 }
 
 // convertOperationLabel produces operations' labels.
-func convertOperationLabel(data []OpData) []string {
+func convertOperationLabel(data []opDatum) []string {
 	items := []string{}
 	for i := 0; i < len(data); i++ {
 		items = append(items, data[i].label)
@@ -201,7 +218,11 @@ func convertOperationLabel(data []OpData) []string {
 
 // renderOperationStats renders the stationary distribution.
 func renderOperationStats(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -224,15 +245,19 @@ func renderOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: "StateDB Operations",
 		}))
-	bar.SetXAxis(convertOperationLabel(data.Stationary)).AddSeries("Stationary Distribution", convertOperationData(data.Stationary))
+	bar.SetXAxis(convertOperationLabel(view.stationary)).AddSeries("Stationary Distribution", convertOperationData(view.stationary))
 	bar.XYReversal()
 	bar.Render(w)
 }
 
 // renderTransactionalOperationStats renders the average number of operations per transaction.
 func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
-	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", data.TxPerBlock, data.BlocksPerSyncPeriod)
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	title := fmt.Sprintf("Average %.1f Tx/Bl; %.1f Bl/Ep", view.txPerBlock, view.blocksPerSyncPeriod)
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
 		Theme:     types.ThemeChalk,
@@ -255,13 +280,17 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title: title,
 		}))
-	bar.SetXAxis(convertOperationLabel(data.TxOperation)).AddSeries("Ops/Tx", convertOperationData(data.TxOperation))
+	bar.SetXAxis(convertOperationLabel(view.txOperation)).AddSeries("Ops/Tx", convertOperationData(view.txOperation))
 	bar.Render(w)
 }
 
 // renderSimplifiedMarkovChain renders a reduced markov chain whose nodes have no argument classes.
 func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
@@ -275,7 +304,7 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := 0; i < operations.NumOps; i++ {
 		for j := 0; j < operations.NumOps; j++ {
-			p := data.SimplifiedMatrix[i][j]
+			p := view.simplifiedMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -301,22 +330,27 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 
 // renderMarkovChain renders a markov chain.
 func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
-	data := GetData()
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
 		graph.Close()
 		g.Close()
 	}()
-	n := len(data.OperationLabel)
+	n := len(view.stats.Operations)
 	nodes := make([]*cgraph.Node, n)
 	for i := 0; i < n; i++ {
-		nodes[i], _ = graph.CreateNode(data.OperationLabel[i])
-		nodes[i].SetLabel(data.OperationLabel[i])
+		label := view.stats.Operations[i]
+		nodes[i], _ = graph.CreateNode(label)
+		nodes[i].SetLabel(label)
 	}
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
-			p := data.StochasticMatrix[i][j]
+			p := view.stats.StochasticMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -343,10 +377,9 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 // FireUpWeb produces a data model for the recorded markov stats and
 // visualizes with a local web-server.
 func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
-
-	// create data model (as a singleton) for visualization
-	model := GetData()
-	model.PopulateData(statsJSON)
+	if err := setViewState(statsJSON); err != nil {
+		panic(err)
+	}
 
 	// create web server
 	http.HandleFunc("/", renderMain)
