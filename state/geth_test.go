@@ -171,7 +171,8 @@ func TestGethStateDB_CreateAccount(t *testing.T) {
 		db: mockDb,
 	}
 	addr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().Exist(addr).EXPECT().CreateAccount(addr)
+	gomock.InOrder(mockDb.EXPECT().Exist(addr),
+		mockDb.EXPECT().CreateAccount(addr))
 	g.CreateAccount(addr)
 }
 
@@ -184,7 +185,7 @@ func TestGethStateDB_CreateContract(t *testing.T) {
 		db: mockDb,
 	}
 	addr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().Exist(addr).EXPECT().CreateContract(addr)
+	gomock.InOrder(mockDb.EXPECT().Exist(addr))
 	g.CreateContract(addr)
 }
 
@@ -994,7 +995,8 @@ func TestGethBulkLoad_CreateAccount(t *testing.T) {
 		},
 	}
 	addr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().CreateAccount(addr)
+	gomock.InOrder(mockDb.EXPECT().Exist(addr),
+		mockDb.EXPECT().CreateAccount(addr))
 	g.CreateAccount(addr)
 }
 
