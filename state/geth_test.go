@@ -24,13 +24,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/stretchr/testify/require"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -160,7 +160,7 @@ func TestGethDb_CreateContractDoesNotCreateAccount(t *testing.T) {
 	db.CreateContract(addr)
 	// Account must not exist in the db
 	require.False(t, db.Exist(addr))
-}  
+}
 
 func TestGethStateDB_CreateAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
