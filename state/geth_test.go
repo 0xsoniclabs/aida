@@ -171,7 +171,7 @@ func TestGethStateDB_CreateAccount(t *testing.T) {
 		db: mockDb,
 	}
 	addr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().CreateAccount(addr)
+	mockDb.EXPECT().Exist(addr).EXPECT().CreateAccount(addr)
 	g.CreateAccount(addr)
 }
 
@@ -184,7 +184,7 @@ func TestGethStateDB_CreateContract(t *testing.T) {
 		db: mockDb,
 	}
 	addr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().CreateContract(addr)
+	mockDb.EXPECT().Exist(addr).EXPECT().CreateContract(addr)
 	g.CreateContract(addr)
 }
 
