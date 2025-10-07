@@ -132,12 +132,7 @@ func newProfileDB(dbFile string, chainID utils.ChainID) (*profileDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare a SQL statement for tx profile; %v", err)
 	}
-
-	err = insertMetadata(sqlDB, chainID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert metadata; %v", err)
-	}
-
+	// update metadata
 	err = insertMetadata(sqlDB, chainID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert metadata; %v", err)
