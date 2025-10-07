@@ -41,7 +41,6 @@ func TestTracerProxy_PrepareSubstate(t *testing.T) {
 
 	proxy.PrepareSubstate(ws, blk)
 }
-
 func TestTracerProxy_Prepare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	base := state.NewMockStateDB(ctrl)

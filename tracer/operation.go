@@ -28,6 +28,7 @@ type Operation struct {
 	Addr  common.Address
 	Key   common.Hash
 	Value common.Hash
+	Data  []any
 }
 
 // IDs of StateDB Operations

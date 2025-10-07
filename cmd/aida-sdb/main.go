@@ -20,11 +20,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"github.com/urfave/cli/v2"
 )
 
-// initTraceApp initializes a trace-cli app. This function is called by the main
+// traceApp initializes a trace-cli app. This function is called by the main
 // function and unit tests.
 var traceApp = &cli.App{
 	Name:      "Aida Storage Trace Manager",
@@ -33,9 +32,7 @@ var traceApp = &cli.App{
 	Flags:     []cli.Flag{},
 	Commands: []*cli.Command{
 		&RunRecordCmd,
-		// todo: will be handled in upcoming PR
-		&trace.TraceReplayCommand,
-		//&trace.TraceReplaySubstateCommand,
+		&RunReplaySubstateCmd,
 	},
 }
 

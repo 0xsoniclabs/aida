@@ -91,10 +91,10 @@ func runTransactions(
 		logger.MakeDbLogger[txcontext.TxContext](cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
-		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
+		tracker.MakeBlockProgressTracker[txcontext.TxContext](cfg, cfg.TrackerGranularity),
 		profiler.MakeMemoryUsagePrinter[txcontext.TxContext](cfg),
 		profiler.MakeMemoryProfiler[txcontext.TxContext](cfg),
-		validator.MakeShadowDbValidator(cfg),
+		validator.MakeShadowDbValidator[txcontext.TxContext](cfg),
 		statedb.MakeTxGeneratorBlockEventEmitter[txcontext.TxContext](),
 	}
 

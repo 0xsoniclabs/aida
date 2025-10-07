@@ -18,8 +18,12 @@ package main
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/cockroachdb/errors"
 
 	"github.com/0xsoniclabs/aida/executor"
+	"github.com/0xsoniclabs/aida/executor/extension/logger"
 	"github.com/0xsoniclabs/aida/executor/extension/profiler"
 	"github.com/0xsoniclabs/aida/executor/extension/statedb"
 	"github.com/0xsoniclabs/aida/executor/extension/tracker"
@@ -60,7 +64,7 @@ The trace record command requires two arguments:
 last block of the inclusive range of blocks to trace transactions.`,
 }
 
-func RunRecord(ctx *cli.Context) error {
+func RunRecord(ctx *cli.Context) (finalErr error) {
 	cfg, err := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if err != nil {
 		return err
@@ -73,7 +77,9 @@ func RunRecord(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
-	defer aidaDb.Close()
+	defer func() {
+		finalErr = errors.Join(finalErr, aidaDb.Close())
+	}()
 
 	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
 	defer substateIterator.Close()
@@ -93,12 +99,13 @@ func record(
 	extra []executor.Extension[txcontext.TxContext],
 ) error {
 	var extensions = []executor.Extension[txcontext.TxContext]{
+		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		profiler.MakeCpuProfiler[txcontext.TxContext](cfg),
-		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
+		tracker.MakeBlockProgressTracker[txcontext.TxContext](cfg, cfg.TrackerGranularity),
 		statedb.MakeTemporaryStatePrepper(cfg),
 		statedb.MakeTracerProxyPrepper[txcontext.TxContext](cfg),
-		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 		statedb.MakeTransactionEventEmitter[txcontext.TxContext](),
+		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),
 	}
 
 	extensions = append(extensions, extra...)

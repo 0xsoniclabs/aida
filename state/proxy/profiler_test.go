@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/0xsoniclabs/aida/tracer"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
