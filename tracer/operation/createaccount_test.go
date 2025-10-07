@@ -63,7 +63,13 @@ func TestCreateAccountExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("expected execution to be > 0; got %v", execute)
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{CreateAccountID, []any{addr}}}

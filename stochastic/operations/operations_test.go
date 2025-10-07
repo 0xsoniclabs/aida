@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -268,4 +269,5 @@ func TestOperations_ToHash(t *testing.T) {
 	// case 4
 	h, err = ToHash(-1)
 	assert.NotNil(t, err)
+	assert.Equal(t, common.Hash{}, h)
 }

@@ -197,7 +197,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().Commit(uint64Val, boolVal).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_Commit", func(t *testing.T) {
-			proxy.Commit(uint64Val, boolVal)
+			_, err := proxy.Commit(uint64Val, boolVal)
+			assert.NoError(t, err)
 		})
 	}
 
@@ -213,7 +214,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().GetHash().Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_GetHash", func(t *testing.T) {
-			proxy.GetHash()
+			_, err := proxy.GetHash()
+			assert.NoError(t, err)
 		})
 	}
 
@@ -238,7 +240,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().Error().Times(len(proxies) - 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_Error", func(t *testing.T) {
-			proxy.Error()
+			err := proxy.Error()
+			assert.NoError(t, err)
 		})
 	}
 
@@ -469,7 +472,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().BeginBlock(uint64Val).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_BeginBlock", func(t *testing.T) {
-			proxy.BeginBlock(uint64Val)
+			err := proxy.BeginBlock(uint64Val)
+			assert.NoError(t, err)
 		})
 	}
 
@@ -478,7 +482,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().BeginTransaction(txNum).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_BeginTransaction", func(t *testing.T) {
-			proxy.BeginTransaction(txNum)
+			err := proxy.BeginTransaction(txNum)
+			assert.NoError(t, err)
 		})
 	}
 
@@ -486,7 +491,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().EndTransaction().Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_EndTransaction", func(t *testing.T) {
-			proxy.EndTransaction()
+			err := proxy.EndTransaction()
+			assert.NoError(t, err)
 		})
 	}
 
@@ -494,7 +500,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().EndBlock().Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_EndBlock", func(t *testing.T) {
-			proxy.EndBlock()
+			err := proxy.EndBlock()
+			assert.NoError(t, err)
 		})
 	}
 
@@ -518,7 +525,8 @@ func TestProxies_AllCalls(t *testing.T) {
 	base.EXPECT().Close().Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_Close", func(t *testing.T) {
-			proxy.Close()
+			err := proxy.Close()
+			assert.NoError(t, err)
 		})
 	}
 

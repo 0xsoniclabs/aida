@@ -79,7 +79,7 @@ func MakeRegisterProgress(cfg *utils.Config, reportFrequency int, when whenToPri
 		return extension.NilExtension[txcontext.TxContext]{}
 	}
 
-	var freq uint64 = defaultReportFrequency
+	var freq = defaultReportFrequency
 	if reportFrequency > 0 {
 		freq = uint64(reportFrequency)
 	}
@@ -107,8 +107,7 @@ type registerProgress struct {
 	when whenToPrint
 
 	// Where am I?
-	interval           *utils.Interval
-	lastProcessedBlock int
+	interval *utils.Interval
 
 	// Stats
 	startOfRun      time.Time
@@ -160,7 +159,10 @@ func (rp *registerProgress) PreRun(_ executor.State[txcontext.TxContext], ctx *e
 		rp.log.Errorf("Metadata warnings: %s.", err)
 	}
 	rp.meta = rm
-	rm.Print()
+	err = rm.Print()
+	if err != nil {
+		return err
+	}
 
 	// Proceed
 	now := time.Now()
@@ -218,7 +220,10 @@ func (rp *registerProgress) PreTransaction(state executor.State[txcontext.TxCont
 // printAndReset sends the state to the report goroutine and reset current-interval tracker.
 func (rp *registerProgress) printAndReset(ctx *executor.Context) error {
 	rp.memory = ctx.State.GetMemoryUsage()
-	rp.ps.Print()
+	err := rp.ps.Print()
+	if err != nil {
+		return err
+	}
 	rp.Reset()
 	rp.interval.Next()
 
@@ -243,22 +248,34 @@ func (rp *registerProgress) PostTransaction(state executor.State[txcontext.TxCon
 }
 
 // PostRun prints the remaining statistics and terminates any printer resources.
-func (rp *registerProgress) PostRun(_ executor.State[txcontext.TxContext], ctx *executor.Context, err error) error {
+func (rp *registerProgress) PostRun(_ executor.State[txcontext.TxContext], ctx *executor.Context, inputErr error) error {
 	rp.memory = ctx.State.GetMemoryUsage()
-	rp.ps.Print()
+	err := rp.ps.Print()
+	if err != nil {
+		return err
+	}
 	rp.Reset()
-	rp.ps.Close()
+	err = rp.ps.Close()
+	if err != nil {
+		return err
+	}
 
 	rp.meta.Meta["Runtime"] = strconv.Itoa(int(time.Since(rp.startOfRun).Seconds()))
-	if err != nil {
+	if inputErr != nil {
 		rp.meta.Meta["RunSucceed"] = strconv.FormatBool(false)
-		rp.meta.Meta["RunError"] = fmt.Sprintf("%v", err)
+		rp.meta.Meta["RunError"] = fmt.Sprintf("%v", inputErr)
 	} else {
 		rp.meta.Meta["RunSucceed"] = strconv.FormatBool(true)
 	}
 
-	rp.meta.Print()
-	rp.meta.Close()
+	err = rp.meta.Print()
+	if err != nil {
+		return err
+	}
+	err = rp.meta.Close()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

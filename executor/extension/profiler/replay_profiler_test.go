@@ -33,15 +33,14 @@ func TestReplayProfiler_MakeReplayProfiler(t *testing.T) {
 		Profile: true,
 	}
 	ext := MakeReplayProfiler[int](cfg, nil)
-	_, ok := ext.(executor.Extension[int])
-	assert.True(t, ok)
+	assert.NotNil(t, ext)
 
 	// case profile false
 	cfg = &utils.Config{
 		Profile: false,
 	}
 	ext = MakeReplayProfiler[int](cfg, nil)
-	_, ok = ext.(extension.NilExtension[int])
+	_, ok := ext.(extension.NilExtension[int])
 	assert.True(t, ok)
 }
 

@@ -27,7 +27,7 @@ import (
 )
 
 func initGetTransientStateLccs(t *testing.T) (*context.Replay, *GetTransientStateLccs, common.Address, common.Hash, common.Hash) {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	pos := 0
 
 	// create context context
@@ -73,11 +73,23 @@ func TestGetTransientStateLccsExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("expected execution to be > 0; got %v", execute)
+	}
 
 	ctx.EncodeKey(storage2)
 
-	op.Execute(mock, ctx)
+	execute, err = op.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("expected execution to be > 0; got %v", execute)
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{GetStateID, []any{addr, storage}}, {GetStateID, []any{addr, storage2}}}

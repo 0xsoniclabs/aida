@@ -48,11 +48,12 @@ type validator struct {
 func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDbMetadata) ([]byte, error) {
 	var url string
 
-	if chainId == utils.SonicMainnetChainID {
+	switch chainId {
+	case utils.SonicMainnetChainID:
 		url = utils.AidaDbRepositorySonicUrl
-	} else if chainId == utils.MainnetChainID {
+	case utils.MainnetChainID:
 		url = utils.AidaDbRepositoryOperaUrl
-	} else if chainId == utils.TestnetChainID {
+	case utils.TestnetChainID:
 		url = utils.AidaDbRepositoryTestnetUrl
 	}
 
@@ -194,9 +195,6 @@ func (v *validator) iterate() {
 	v.log.Infof("State Hashes took %v.", time.Since(now).Round(1*time.Second))
 
 	v.log.Noticef("Total time elapsed: %v", time.Since(v.start).Round(1*time.Second))
-
-	return
-
 }
 
 // doIterate over all key/value inside AidaDb and create md5 hash for each par for given prefix
@@ -221,7 +219,6 @@ func (v *validator) doIterate(prefix string) (count uint64) {
 		case <-v.closed:
 			return
 		case v.input <- dst:
-			break
 		}
 
 		b = iter.Value()
@@ -232,7 +229,6 @@ func (v *validator) doIterate(prefix string) (count uint64) {
 		case <-v.closed:
 			return
 		case v.input <- dst:
-			break
 		}
 	}
 

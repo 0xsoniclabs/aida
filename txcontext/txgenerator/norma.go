@@ -29,7 +29,7 @@ import (
 // NewNormaTxContext creates a new transaction context for a norma transaction.
 // It expects a signed transaction if sender is nil.
 func NewNormaTxContext(tx *types.Transaction, blkNumber uint64, sender *common.Address, fork string) (txcontext.TxContext, error) {
-	s := common.Address{}
+	var s common.Address
 	if sender == nil {
 		addr, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
 		if err != nil {

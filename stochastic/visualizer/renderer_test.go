@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
@@ -268,9 +269,14 @@ func TestVisualizer_FireUpWeb(t *testing.T) {
 		},
 	}
 
-	assert.NotPanics(t, func() {
-		go func() {
-			FireUpWeb(stateJSON, "0")
-		}()
-	})
+	done := make(chan error, 1)
+	go func() {
+		done <- FireUpWeb(stateJSON, "0")
+	}()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(1 * time.Second):
+		// If no error after 1 seconds, pass the test
+	}
 }

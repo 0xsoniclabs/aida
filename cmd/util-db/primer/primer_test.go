@@ -21,15 +21,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"fmt"
+	"os"
+
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-)
-
-import (
-	"fmt"
-	"os"
 )
 
 var testDataDir string

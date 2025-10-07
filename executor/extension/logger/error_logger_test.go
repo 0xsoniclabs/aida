@@ -32,7 +32,10 @@ import (
 func TestErrorLogger_FileIsNotCreatedIfNotDefined(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := makeErrorLogger[any](cfg, logger.NewLogger("critical", "Test"))
-	ext.PreRun(executor.State[any]{}, new(executor.Context))
+	err := ext.PreRun(executor.State[any]{}, new(executor.Context))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if ext.file != nil {
 		t.Error("file must be nil")
@@ -45,7 +48,10 @@ func TestErrorLogger_PostRunClosesLoggingThreadAndDoesNotBlockTheExecution(t *te
 
 	ctx := new(executor.Context)
 
-	ext.PreRun(executor.State[any]{}, ctx)
+	err := ext.PreRun(executor.State[any]{}, ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)

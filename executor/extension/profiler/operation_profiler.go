@@ -201,7 +201,10 @@ func (p *operationProfiler[T]) PreBlock(state executor.State[T], _ *executor.Con
 	// Since there are blocks without transaction, change can only be detected at the beginning of the upcoming block
 	if uint64(state.Block) > p.interval.End() {
 		p.log.Debug(p.prettyTable().Render())
-		p.ps[IntervalLevel].Print()
+		err := p.ps[IntervalLevel].Print()
+		if err != nil {
+			return err
+		}
 		p.interval.Next()
 		p.anlts[IntervalLevel].Reset()
 	}
@@ -212,7 +215,10 @@ func (p *operationProfiler[T]) PostBlock(state executor.State[T], _ *executor.Co
 	// On Block End -> Print and reset block level analytics
 	p.lastProcessedBlock = state.Block
 	if p.depth >= BlockLevel {
-		p.ps[BlockLevel].Print()
+		err := p.ps[BlockLevel].Print()
+		if err != nil {
+			return err
+		}
 		p.anlts[BlockLevel].Reset()
 	}
 	return nil
@@ -222,7 +228,10 @@ func (p *operationProfiler[T]) PostTransaction(state executor.State[T], _ *execu
 	// On Transaction End -> Print and reset tx level analytics
 	p.lastProcessedTransaction = state.Transaction
 	if p.depth >= TransactionLevel {
-		p.ps[TransactionLevel].Print()
+		err := p.ps[TransactionLevel].Print()
+		if err != nil {
+			return err
+		}
 		p.anlts[TransactionLevel].Reset()
 	}
 	return nil
@@ -230,10 +239,16 @@ func (p *operationProfiler[T]) PostTransaction(state executor.State[T], _ *execu
 
 func (p *operationProfiler[T]) PostRun(executor.State[T], *executor.Context, error) error {
 	// Print any analytics still unprinted and clean up
-	p.ps[IntervalLevel].Print()
+	err := p.ps[IntervalLevel].Print()
+	if err != nil {
+		return err
+	}
 	p.anlts[IntervalLevel].Reset() // so it's consistant with other levels
 	for _, printers := range p.ps {
-		printers.Close() // close all printers
+		err := printers.Close()
+		if err != nil {
+			return err
+		} // close all printers
 	}
 	return nil
 }
