@@ -6,6 +6,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/tracer"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
