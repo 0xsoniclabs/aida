@@ -115,3 +115,20 @@ func TestArgCountJSON(t *testing.T) {
 	stats.place(10)
 	testArgStatJSON(stats, t)
 }
+
+func TestArgCountMarshalJSON(t *testing.T) {
+	stats := newCount[int]()
+	stats.place(1)
+	stats.place(2)
+	payload, err := stats.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON failed: %v", err)
+	}
+	var decoded ArgStatsJSON
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, stats.json()) {
+		t.Fatalf("MarshalJSON mismatch\nexpected: %+v\ngot: %+v", stats.json(), decoded)
+	}
+}
