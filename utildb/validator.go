@@ -188,10 +188,19 @@ func (v *validator) iterate() {
 
 	v.log.Infof("Destroyed Accounts took %v.", time.Since(now).Round(1*time.Second))
 
+	now = time.Now()
+
 	v.log.Notice("Iterating over State Hashes...")
 	v.doIterate(utils.StateRootHashPrefix)
 
 	v.log.Infof("State Hashes took %v.", time.Since(now).Round(1*time.Second))
+
+	now = time.Now()
+
+	v.log.Notice("Iterating over Block Hashes...")
+	v.doIterate(utils.BlockHashPrefix)
+
+	v.log.Infof("Block Hashes took %v.", time.Since(now).Round(1*time.Second))
 
 	v.log.Noticef("Total time elapsed: %v", time.Since(v.start).Round(1*time.Second))
 
