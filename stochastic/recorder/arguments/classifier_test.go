@@ -144,3 +144,19 @@ func TestArgClassifierJSONOutput(t *testing.T) {
 		t.Errorf("Unmarshaling mismatch. Expected:\n%+v\nActual:\n%+v", jsonX, jsonY)
 	}
 }
+
+func TestArgClassifierMarshalJSON(t *testing.T) {
+	c := NewClassifier[int]()
+	c.Classify(1)
+	payload, err := c.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON failed: %v", err)
+	}
+	var decoded ClassifierJSON
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, c.JSON()) {
+		t.Fatalf("MarshalJSON mismatch\nexpected: %+v\ngot: %+v", c.JSON(), decoded)
+	}
+}
