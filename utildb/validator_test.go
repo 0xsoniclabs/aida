@@ -60,7 +60,7 @@ func TestGenerateDbHash_ComponentsAffectingHash(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tmpDir := t.TempDir() + "/aidaDb"
+			tmpDir := t.TempDir() + "/aidaDb" + tc.name
 			baseDB, err := db.NewDefaultBaseDB(tmpDir)
 			if err != nil {
 				t.Fatal(err)
