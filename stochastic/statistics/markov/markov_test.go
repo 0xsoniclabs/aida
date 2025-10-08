@@ -264,6 +264,31 @@ func TestMarkov_SampleDeterministic2(t *testing.T) {
 	}
 }
 
+func TestMarkov_StationaryFactorizeFailure(t *testing.T) {
+	mc := Chain{
+		n: 1,
+		a: [][]float64{{math.NaN()}},
+		l: []string{"s"},
+	}
+	if _, err := mc.Stationary(); err == nil {
+		t.Fatalf("expected factorization error")
+	}
+}
+
+func TestMarkov_StationaryMissingEigenvalue(t *testing.T) {
+	mc := Chain{
+		n: 2,
+		a: [][]float64{
+			{0.0, 1.0},
+			{0.0, 0.0},
+		},
+		l: []string{"s1", "s2"},
+	}
+	if _, err := mc.Stationary(); err == nil || err.Error() != "eigen-decomposition failed; no eigenvalue of one found" {
+		t.Fatalf("expected missing eigenvalue error, got %v", err)
+	}
+}
+
 // checkMarkovChain checks via chi-squared test whether
 // transitions are independent using the number of
 // observed states. For this test, we assume that all
