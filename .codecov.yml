@@ -28,7 +28,6 @@ coverage:
       status:
         patch:
           target: 70%
-          threshold: 1%
     core:
       name: Core
       paths:
@@ -36,7 +35,6 @@ coverage:
       status:
         patch:
           target: 80%
-          threshold: 1%
 
 ignore:
   - "sonic/"
