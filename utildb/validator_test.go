@@ -18,6 +18,7 @@ package utildb
 
 import (
 	"encoding/hex"
+	"os"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -44,108 +45,44 @@ func TestGenerateDbHash_EmptyDb(t *testing.T) {
 }
 
 func TestGenerateDbHash_ComponentsAffectingHash(t *testing.T) {
-	t.Run("AddSubstate", func(t *testing.T) {
-		tmpDir := t.TempDir() + "/aidaDb"
-		baseDB, err := db.NewDefaultBaseDB(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
+	tests := []struct {
+		name   string
+		prefix []byte
+		key    string
+		val    []byte
+	}{
+		{"AddSubstate", []byte(db.SubstateDBPrefix), "key1", []byte("value1")},
+		{"AddDeletion", []byte(db.DestroyedAccountPrefix), "del1", []byte("deleted")},
+		{"AddUpdate", []byte(db.UpdateDBPrefix), "upd1", []byte("update")},
+		{"AddStateHash", []byte(utils.StateRootHashPrefix), "state1", []byte("statehash")},
+		{"AddBlockHash", []byte(utils.BlockHashPrefix), "block1", []byte("blockhash")},
+	}
 
-		key := append([]byte(db.SubstateDBPrefix), []byte("key1")...)
-		val := []byte("value1")
-		if err := baseDB.Put(key, val); err != nil {
-			t.Fatalf("failed to put substate: %v", err)
-		}
-		hash, err := GenerateDbHash(baseDB, "error")
-		if err != nil {
-			t.Fatalf("failed to hash db: %v", err)
-		}
-		if hex.EncodeToString(hash) == emptyDBHash {
-			t.Error("db-hash did not change after adding substate")
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir() + "/aidaDb"
+			baseDB, err := db.NewDefaultBaseDB(tmpDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	t.Run("AddDeletion", func(t *testing.T) {
-		tmpDir := t.TempDir() + "/aidaDb"
-		baseDB, err := db.NewDefaultBaseDB(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
+			key := append(tc.prefix, []byte(tc.key)...)
+			if err := baseDB.Put(key, tc.val); err != nil {
+				t.Fatalf("failed to put %s: %v", tc.name, err)
+			}
+			hash, err := GenerateDbHash(baseDB, "error")
+			if err != nil {
+				t.Fatalf("failed to hash db: %v", err)
+			}
+			if hex.EncodeToString(hash) == emptyDBHash {
+				t.Errorf("db-hash did not change after adding %s", tc.name)
+			}
 
-		key := append([]byte(db.DestroyedAccountPrefix), []byte("del1")...)
-		val := []byte("deleted")
-		if err := baseDB.Put(key, val); err != nil {
-			t.Fatalf("failed to put deletion: %v", err)
-		}
-		hash, err := GenerateDbHash(baseDB, "error")
-		if err != nil {
-			t.Fatalf("failed to hash db: %v", err)
-		}
-		if hex.EncodeToString(hash) == emptyDBHash {
-			t.Error("db-hash did not change after adding deletion")
-		}
-	})
-
-	t.Run("AddUpdate", func(t *testing.T) {
-		tmpDir := t.TempDir() + "/aidaDb"
-		baseDB, err := db.NewDefaultBaseDB(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		key := append([]byte(db.UpdateDBPrefix), []byte("upd1")...)
-		val := []byte("update")
-		if err := baseDB.Put(key, val); err != nil {
-			t.Fatalf("failed to put update: %v", err)
-		}
-		hash, err := GenerateDbHash(baseDB, "error")
-		if err != nil {
-			t.Fatalf("failed to hash db: %v", err)
-		}
-		if hex.EncodeToString(hash) == emptyDBHash {
-			t.Error("db-hash did not change after adding update")
-		}
-	})
-
-	t.Run("AddStateHash", func(t *testing.T) {
-		tmpDir := t.TempDir() + "/aidaDb"
-		baseDB, err := db.NewDefaultBaseDB(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		key := append([]byte(utils.StateRootHashPrefix), []byte("state1")...)
-		val := []byte("statehash")
-		if err := baseDB.Put(key, val); err != nil {
-			t.Fatalf("failed to put state hash: %v", err)
-		}
-		hash, err := GenerateDbHash(baseDB, "error")
-		if err != nil {
-			t.Fatalf("failed to hash db: %v", err)
-		}
-		if hex.EncodeToString(hash) == emptyDBHash {
-			t.Error("db-hash did not change after adding state hash")
-		}
-	})
-
-	t.Run("AddBlockHash", func(t *testing.T) {
-		tmpDir := t.TempDir() + "/aidaDb"
-		baseDB, err := db.NewDefaultBaseDB(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		key := append([]byte(utils.BlockHashPrefix), []byte("block1")...)
-		val := []byte("blockhash")
-		if err := baseDB.Put(key, val); err != nil {
-			t.Fatalf("failed to put block hash: %v", err)
-		}
-		hash, err := GenerateDbHash(baseDB, "error")
-		if err != nil {
-			t.Fatalf("failed to hash db: %v", err)
-		}
-		if hex.EncodeToString(hash) == emptyDBHash {
-			t.Error("db-hash did not change after adding block hash")
-		}
-	})
+			// Remove the tmpDir after test
+			t.Cleanup(func() {
+				_ = baseDB.Close()
+				_ = os.RemoveAll(tmpDir)
+			})
+		})
+	}
 }
