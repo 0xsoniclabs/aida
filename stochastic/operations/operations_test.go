@@ -21,6 +21,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/stochastic"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestOperationDecoding checks whether number encoding/decoding of operations with their arguments works.
@@ -268,4 +269,29 @@ func TestOperations_ToHash(t *testing.T) {
 	// case 4
 	h, err = ToHash(-1)
 	assert.NotNil(t, err)
+}
+
+func TestOperations_checkArgOpInvalidArity(t *testing.T) {
+	op := SnapshotID
+	original := OpNumArgs[op]
+	OpNumArgs[op] = 4
+	t.Cleanup(func() {
+		OpNumArgs[op] = original
+	})
+
+	err := checkArgOp(op, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid number of arguments")
+}
+
+func TestOperations_EncodeOpcodeLengthMismatch(t *testing.T) {
+	original := argMnemo[stochastic.NoArgID]
+	argMnemo[stochastic.NoArgID] = "x"
+	t.Cleanup(func() {
+		argMnemo[stochastic.NoArgID] = original
+	})
+
+	_, err := EncodeOpcode(SnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "wrong opcode length")
 }
