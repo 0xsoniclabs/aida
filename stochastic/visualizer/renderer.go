@@ -163,7 +163,6 @@ func convertQueuingData(data []float64) []opts.ScatterData {
 }
 
 // renderQueuing renders a queuing statistics.
-
 func renderQueuing(w http.ResponseWriter, r *http.Request) {
 	view, err := currentView()
 	if err != nil {

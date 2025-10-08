@@ -500,7 +500,7 @@ func TestStats_CountValueOpPanicsForInvalidOp(t *testing.T) {
 	})
 }
 
-func TestStatsJSONMarshalJSONSetsDefaultFileID(t *testing.T) {
+func TestStats_MarshalJSONSetsDefaultFileID(t *testing.T) {
 	stats := StatsJSON{}
 	data, err := stats.MarshalJSON()
 	if err != nil {
@@ -515,7 +515,7 @@ func TestStatsJSONMarshalJSONSetsDefaultFileID(t *testing.T) {
 	}
 }
 
-func TestStatsJSONUnmarshalRejectsMissingFileID(t *testing.T) {
+func TestStats_UnmarshalRejectsMissingFileID(t *testing.T) {
 	payload := []byte(`{"operations":[]}`)
 	var statsJSON StatsJSON
 	if err := json.Unmarshal(payload, &statsJSON); err == nil {
@@ -523,7 +523,7 @@ func TestStatsJSONUnmarshalRejectsMissingFileID(t *testing.T) {
 	}
 }
 
-func TestStatsJSONUnmarshalInvalidJSON(t *testing.T) {
+func TestStat_UnmarshalInvalidJSON(t *testing.T) {
 	var statsJSON StatsJSON
 	if err := statsJSON.UnmarshalJSON([]byte("{invalid")); err == nil {
 		t.Fatalf("expected unmarshal error for malformed input")
