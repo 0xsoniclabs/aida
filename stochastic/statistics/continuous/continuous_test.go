@@ -141,6 +141,12 @@ func TestContinuous_CheckECDFBasic(t *testing.T) {
 	}
 }
 
+func TestContinuous_CheckRequiresAtLeastTwoPoints(t *testing.T) {
+	if err := Check([][2]float64{{0.0, 0.0}}); err == nil {
+		t.Fatalf("expected failure for too few points")
+	}
+}
+
 // TestContinuous_QuantileBoundaries checks the evaluation of the CDF
 func TestContinuous_QuantileBoundaries(t *testing.T) {
 	f := [][2]float64{
