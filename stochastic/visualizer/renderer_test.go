@@ -20,7 +20,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -58,11 +61,50 @@ func sampleStats() *recorder.StatsJSON {
 	}
 }
 
+func colorStats() *recorder.StatsJSON {
+	ops := []string{
+		operations.OpMnemo(operations.BeginSyncPeriodID),
+		operations.OpMnemo(operations.BeginBlockID),
+		operations.OpMnemo(operations.BeginTransactionID),
+		operations.OpMnemo(operations.EndTransactionID),
+	}
+	matrix := [][]float64{
+		{0.0, 0.2, 0.8, 0.0},
+		{0.0, 0.0, 1.0, 0.0},
+		{0.25, 0.75, 0.0, 0.0},
+		{1.0, 0.0, 0.0, 0.0},
+	}
+	dist := make([]float64, stochastic.QueueLen)
+	if len(dist) > 0 {
+		dist[0] = 1.0
+	}
+	cls := arguments.ClassifierJSON{
+		Counting: arguments.ArgStatsJSON{
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+		Queuing: arguments.QueueStatsJSON{Distribution: dist},
+	}
+	return &recorder.StatsJSON{
+		SnapshotECDF:     [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		Contracts:        cls,
+		Keys:             cls,
+		Values:           cls,
+		Operations:       ops,
+		StochasticMatrix: matrix,
+	}
+}
+
 func mustSetView(t *testing.T, stats *recorder.StatsJSON) {
 	t.Helper()
 	require.NoError(t, setViewState(stats))
 }
 
+func clearView(t *testing.T) {
+	t.Helper()
+	currentMu.Lock()
+	currentState = nil
+	currentMu.Unlock()
+}
 func TestVisualizer_renderMain(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	assert.NoError(t, err)
@@ -250,6 +292,45 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 	assert.Contains(t, response, "StateDB Markov-Chain")
 }
 
+func TestVisualizer_renderMarkovVariantsColorCoverage(t *testing.T) {
+	mustSetView(t, colorStats())
+
+	req, err := http.NewRequest("GET", "/simplified-markov-stats", nil)
+	require.NoError(t, err)
+	simplified := httptest.NewRecorder()
+	renderSimplifiedMarkovChain(simplified, req)
+	assert.Equal(t, http.StatusOK, simplified.Code)
+
+	markov := httptest.NewRecorder()
+	renderMarkovChain(markov, req)
+	assert.Equal(t, http.StatusOK, markov.Code)
+}
+
+func TestVisualizer_handlersWithoutState(t *testing.T) {
+	handlers := []struct {
+		name    string
+		handler http.HandlerFunc
+	}{
+		{"renderCounting", renderCounting},
+		{"renderQueuing", renderQueuing},
+		{"renderSnapshotStats", renderSnapshotStats},
+		{"renderOperationStats", renderOperationStats},
+		{"renderTransactionalOperationStats", renderTransactionalOperationStats},
+		{"renderSimplifiedMarkovChain", renderSimplifiedMarkovChain},
+		{"renderMarkovChain", renderMarkovChain},
+	}
+	for _, tc := range handlers {
+		t.Run(tc.name, func(t *testing.T) {
+			clearView(t)
+			req, err := http.NewRequest("GET", "/", nil)
+			require.NoError(t, err)
+			rr := httptest.NewRecorder()
+			tc.handler.ServeHTTP(rr, req)
+			assert.Equal(t, http.StatusServiceUnavailable, rr.Code)
+		})
+	}
+}
+
 func TestVisualizer_FireUpWeb(t *testing.T) {
 	stateJSON := &recorder.StatsJSON{
 		SnapshotECDF: [][2]float64{{0.1, 0.2}, {0.3, 0.4}},
@@ -281,8 +362,21 @@ func TestVisualizer_FireUpWeb(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() {
+		done := make(chan struct{})
 		go func() {
-			FireUpWeb(stateJSON, "0")
+			defer close(done)
+			FireUpWeb(stateJSON, "-1")
 		}()
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Fatal("FireUpWeb did not return in time")
+		}
+	})
+}
+
+func TestVisualizer_FireUpWebPanicsOnNilStats(t *testing.T) {
+	assert.Panics(t, func() {
+		FireUpWeb(nil, "0")
 	})
 }
