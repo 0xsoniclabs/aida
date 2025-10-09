@@ -75,7 +75,7 @@ pipeline {
                             currentBuild.description = "Building on ${env.NODE_NAME}"
                         }
                         sh "git submodule update --init --recursive"
-                        sh "make all -j 4"
+                        sh "make all"
                     }
                 }
 
