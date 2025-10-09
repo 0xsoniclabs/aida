@@ -291,8 +291,8 @@ func printMarkovInDotty(title string, stochasticMatrix [][]float64, label []stri
 		graph.Close()
 		g.Close()
 	}()
-	nodes := make([]*cgraph.Node, operations.NumOps)
 	n := len(label)
+	nodes := make([]*cgraph.Node, n)
 	for i := 0; i < n; i++ {
 		var err error
 		nodes[i], err = graph.CreateNode(label[i])
