@@ -37,7 +37,7 @@ type viewState struct {
 	txOperation         []opDatum
 	txPerBlock          float64
 	blocksPerSyncPeriod float64
-	simplifiedMatrix    [operations.NumOps][operations.NumOps]float64
+	simplifiedMatrix    [][]float64
 }
 
 var (
@@ -158,8 +158,13 @@ func computeTxOperation(stats *recorder.StatsJSON, stationary []float64) ([]opDa
 	return txData, txPerBlock, blocksPerSync, nil
 }
 
-func computeSimplifiedMatrix(stats *recorder.StatsJSON) ([operations.NumOps][operations.NumOps]float64, error) {
-	var simplified [operations.NumOps][operations.NumOps]float64
+func computeSimplifiedMatrix(stats *recorder.StatsJSON) ([][]float64, error) {
+	// Initialize a simplified matrix with dimensions NumOps x NumOps
+	var simplified [][]float64 = make([][]float64, operations.NumOps)
+	for i := 0; i < operations.NumOps; i++ {
+		simplified[i] = make([]float64, operations.NumOps)
+	}
+
 	n := len(stats.Operations)
 	for i := 0; i < n; i++ {
 		iop, _, _, _, err := operations.DecodeOpcode(stats.Operations[i])

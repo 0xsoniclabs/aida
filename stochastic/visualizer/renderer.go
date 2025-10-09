@@ -283,13 +283,8 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 	bar.Render(w)
 }
 
-// renderSimplifiedMarkovChain renders a reduced markov chain whose nodes have no argument classes.
-func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
-	view, err := currentView()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
+// printMarkovInDotty renders a markov chain in dotty format
+func printMarkovInDotty(title string, stochasticMatrix [][]float64, label []string) (string, error) {
 	g := graphviz.New()
 	graph, _ := g.Graph()
 	defer func() {
@@ -297,13 +292,26 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 		g.Close()
 	}()
 	nodes := make([]*cgraph.Node, operations.NumOps)
-	for op := 0; op < operations.NumOps; op++ {
-		nodes[op], _ = graph.CreateNode(operations.OpMnemo(op))
-		nodes[op].SetLabel(operations.OpMnemo(op))
+	n := len(label)
+	for i := 0; i < n; i++ {
+		var err error
+		nodes[i], err = graph.CreateNode(label[i])
+		if err != nil {
+			return "", fmt.Errorf("renderMarkovChain: failed to create node for label (%v, %v). Error: %v", i, label[i], err)
+		}
+		nodes[i].SetLabel(label[i])
 	}
-	for i := 0; i < operations.NumOps; i++ {
-		for j := 0; j < operations.NumOps; j++ {
-			p := view.simplifiedMatrix[i][j]
+	if n != len(stochasticMatrix) {
+		return "", fmt.Errorf("renderMarkovChain: stochastic matrix has %d rows, expected %d", len(stochasticMatrix), n)
+	}
+	for i := 0; i < n; i++ {
+		if stochasticMatrix[i] == nil {
+			return "", fmt.Errorf("renderMarkovChain: stochastic matrix row %d is nil", i)
+		} else if len(stochasticMatrix[i]) != n {
+			return "", fmt.Errorf("renderMarkovChain: stochastic matrix row %d has length %d, expected %d", i, len(stochasticMatrix[i]), n)
+		}
+		for j := 0; j < n; j++ {
+			p := stochasticMatrix[i][j]
 			if p > 0.0 {
 				txt := fmt.Sprintf("%.2f", p)
 				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
@@ -323,8 +331,11 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	txt, _ := renderDotGraph("StateDB Simplified Markov-Chain", g, graph)
-	fmt.Fprint(w, txt)
+	txt, err := renderDotGraph(title, g, graph)
+	if err != nil {
+		return "", fmt.Errorf("renderMarkovChain: failed to render. Error: %v", err)
+	}
+	return txt, nil
 }
 
 // renderMarkovChain renders a markov chain.
@@ -334,42 +345,28 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	g := graphviz.New()
-	graph, _ := g.Graph()
-	defer func() {
-		graph.Close()
-		g.Close()
-	}()
-	n := len(view.stats.Operations)
-	nodes := make([]*cgraph.Node, n)
-	for i := 0; i < n; i++ {
-		label := view.stats.Operations[i]
-		nodes[i], _ = graph.CreateNode(label)
-		nodes[i].SetLabel(label)
+	txt, err := printMarkovInDotty("StateDB Markov Chain with Argument Kinds", view.stats.StochasticMatrix, view.stats.Operations)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
-	for i := 0; i < n; i++ {
-		for j := 0; j < n; j++ {
-			p := view.stats.StochasticMatrix[i][j]
-			if p > 0.0 {
-				txt := fmt.Sprintf("%.2f", p)
-				e, _ := graph.CreateEdge("", nodes[i], nodes[j])
-				e.SetLabel(txt)
-				var color string
-				switch int(4 * p) {
-				case 0:
-					color = "gray"
-				case 1:
-					color = "green"
-				case 3:
-					color = "indianred"
-				case 4:
-					color = "red"
-				}
-				e.SetColor(color)
-			}
-		}
+	fmt.Fprint(w, txt)
+}
+
+// renderSimplifiedMarkovChain renders the simplified markov chain whose nodes have no argument classes.
+func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
-	txt, _ := renderDotGraph("StateDB Markov-Chain", g, graph)
+	label := make([]string, operations.NumOps)
+	for i := 0; i < operations.NumOps; i++ {
+		label[i] = operations.OpMnemo(i)
+	}
+	txt, err := printMarkovInDotty("Simplified StateDB Markov Chain", view.simplifiedMatrix, label)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
 	fmt.Fprint(w, txt)
 }
 
