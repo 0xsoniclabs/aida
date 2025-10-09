@@ -33,11 +33,11 @@ all: aida-rpc aida-sdb aida-vm-adb aida-vm-sdb aida-stochastic-sdb aida-vm aida-
 
 carmen:
 	@cd ./carmen ; \
-	make -j
+	make
 
 tosca:
 	@cd ./tosca ; \
-	make -j
+	make
 
 aida-rpc: carmen tosca
 	GOPROXY=$(GOPROXY) \
