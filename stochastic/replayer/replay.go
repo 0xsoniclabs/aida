@@ -66,6 +66,9 @@ type replayContext struct {
 	syncPeriodNum   uint64                // current sync-period number
 	balanceRange    int64                 // balance range for randomized values
 	nonceRange      int                   // nonce range for randomized nonces
+	balanceSampler  *arguments.ValueSampler
+	nonceSampler    *arguments.ValueSampler
+	codeSampler     *arguments.ValueSampler
 }
 
 // newReplayContext creates a new replay context for execution StateDB operations stochastically.
@@ -95,6 +98,9 @@ func newReplayContext(
 		log:            log,
 		balanceRange:   balanceRange,
 		nonceRange:     nonceRange,
+		balanceSampler: arguments.NewValueSampler(rg, nil),
+		nonceSampler:   arguments.NewValueSampler(rg, nil),
+		codeSampler:    arguments.NewValueSampler(rg, nil),
 	}
 }
 
@@ -140,8 +146,24 @@ func populateReplayContext(
 
 	snapshots := arguments.NewEmpiricalSnapshotRandomizer(rg, e.SnapshotECDF)
 
+	if recordedRange := e.Balance.Max + 1; recordedRange > balanceRange {
+		balanceRange = recordedRange
+	}
+	if balanceRange <= 0 {
+		balanceRange = 1
+	}
+	if recordedNonce := int(e.Nonce.Max + 1); recordedNonce > nonceRange {
+		nonceRange = recordedNonce
+	}
+	if nonceRange <= 0 {
+		nonceRange = 1
+	}
+
 	// setup state
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log, balanceRange, nonceRange)
+	ss.balanceSampler = arguments.NewValueSampler(rg, e.Balance.ECDF)
+	ss.nonceSampler = arguments.NewValueSampler(rg, e.Nonce.ECDF)
+	ss.codeSampler = arguments.NewValueSampler(rg, e.CodeSize.ECDF)
 
 	// create accounts in StateDB before starting the simulation
 	err = ss.prime()
@@ -189,14 +211,12 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 		log.Warning("balance range <= 0, defaulting to 1")
 		balanceRange = 1
 	}
-	log.Noticef("balance range %d", balanceRange)
 
 	nonceRange := cfg.NonceRange
 	if nonceRange <= 0 {
 		log.Warning("nonce range <= 0, defaulting to 1")
 		nonceRange = 1
 	}
-	log.Noticef("nonce range %d", nonceRange)
 
 	// random arguments
 	rg := rand.New(rand.NewSource(cfg.RandomSeed))
@@ -207,6 +227,8 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	if err != nil {
 		return err
 	}
+	log.Noticef("balance range %d", ss.balanceRange)
+	log.Noticef("nonce range %d", ss.nonceRange)
 
 	// get stochastic matrix
 	mc, state, mcErr := getStochasticMatrix(e)
@@ -328,7 +350,8 @@ func (ss *replayContext) prime() error {
 			return err
 		}
 		db.CreateAccount(addr)
-		db.AddBalance(addr, uint256.NewInt(uint64(ss.rg.Int63n(ss.balanceRange))), 0)
+		value := ss.balanceSampler.Sample(ss.balanceRange)
+		db.AddBalance(addr, uint256.NewInt(uint64(value)), 0)
 		pt.PrintProgress()
 	}
 	ss.log.Notice("Finalizing...")
@@ -432,7 +455,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 
 	switch op {
 	case operations.AddBalanceID:
-		value := rg.Int63n(ss.balanceRange)
+		value := ss.balanceSampler.Sample(ss.balanceRange)
 		if ss.traceDebug {
 			msg = fmt.Sprintf("%v value: %v", msg, value)
 		}
@@ -564,7 +587,10 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		ss.selfDestructed[addrIdx] = struct{}{}
 
 	case operations.SetCodeID:
-		sz := rg.Intn(MaxCodeSize-1) + 1
+		sz := int(ss.codeSampler.Sample(int64(MaxCodeSize)))
+		if sz <= 0 {
+			sz = 1
+		}
 		if ss.traceDebug {
 			msg = fmt.Sprintf("%v code-size: %v", msg, sz)
 		}
@@ -576,7 +602,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		db.SetCode(addr, code)
 
 	case operations.SetNonceID:
-		value := uint64(rg.Intn(ss.nonceRange))
+		value := uint64(ss.nonceSampler.Sample(int64(ss.nonceRange)))
 		db.SetNonce(addr, value, tracing.NonceChangeUnspecified)
 
 	case operations.SetStateID:
@@ -598,7 +624,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		if balance > 0 {
 			// get a delta that does not exceed current balance
 			// in the current snapshot
-			value := uint64(rg.Int63n(int64(balance)))
+			value := uint64(ss.balanceSampler.Sample(int64(balance)))
 			if ss.traceDebug {
 				msg = fmt.Sprintf("%v value: %v", msg, value)
 			}
