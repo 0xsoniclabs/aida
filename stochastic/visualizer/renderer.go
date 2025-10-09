@@ -345,7 +345,7 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	txt, err := printMarkovInDotty("StateDB Simplified Markov-Chain", view.stats.StochasticMatrix, view.stats.Operations)
+	txt, err := printMarkovInDotty("StateDB Markov-Chain", view.stats.StochasticMatrix, view.stats.Operations)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
@@ -363,7 +363,7 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < operations.NumOps; i++ {
 		label[i] = operations.OpMnemo(i)
 	}
-	txt, err := printMarkovInDotty("StateDB Markov-Chain", view.simplifiedMatrix, label)
+	txt, err := printMarkovInDotty("StateDB Simplified Markov-Chain", view.simplifiedMatrix, label)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
