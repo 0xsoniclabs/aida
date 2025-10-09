@@ -465,3 +465,67 @@ func TestStats_CountValueOp_FatalIfInvalid(t *testing.T) {
 		t.Fatalf("expected process to exit due to log.Fatalf in CountValueOp")
 	}
 }
+
+func TestStats_CountOpPanicsForInvalidOp(t *testing.T) {
+	r := NewStats()
+	assert.Panics(t, func() {
+		r.CountOp(operations.NumOps)
+	})
+}
+
+func TestStats_CountAddressOpPanicsForInvalidOp(t *testing.T) {
+	r := NewStats()
+	addr := common.Address{}
+	assert.Panics(t, func() {
+		r.CountAddressOp(operations.NumOps, &addr)
+	})
+}
+
+func TestStats_CountKeyOpPanicsForInvalidOp(t *testing.T) {
+	r := NewStats()
+	addr := common.Address{}
+	key := common.Hash{}
+	assert.Panics(t, func() {
+		r.CountKeyOp(operations.NumOps, &addr, &key)
+	})
+}
+
+func TestStats_CountValueOpPanicsForInvalidOp(t *testing.T) {
+	r := NewStats()
+	addr := common.Address{}
+	key := common.Hash{}
+	val := common.Hash{}
+	assert.Panics(t, func() {
+		r.CountValueOp(operations.NumOps, &addr, &key, &val)
+	})
+}
+
+func TestStats_MarshalJSONSetsDefaultFileID(t *testing.T) {
+	stats := StatsJSON{}
+	data, err := stats.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON failed: %v", err)
+	}
+	var decoded StatsJSON
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if decoded.FileId != statsFileID {
+		t.Fatalf("expected FileId %q, got %q", statsFileID, decoded.FileId)
+	}
+}
+
+func TestStats_UnmarshalRejectsMissingFileID(t *testing.T) {
+	payload := []byte(`{"operations":[]}`)
+	var statsJSON StatsJSON
+	if err := json.Unmarshal(payload, &statsJSON); err == nil {
+		t.Fatalf("expected error for missing FileId")
+	}
+}
+
+func TestStat_UnmarshalInvalidJSON(t *testing.T) {
+	var statsJSON StatsJSON
+	if err := statsJSON.UnmarshalJSON([]byte("{invalid")); err == nil {
+		t.Fatalf("expected unmarshal error for malformed input")
+	}
+}

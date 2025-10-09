@@ -164,3 +164,31 @@ func TestGenerateUniformStats_ValidationErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateUniformStats_EncodeErrorsBubbleUp(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	original := operations.OpNumArgs[operations.BeginBlockID]
+	operations.OpNumArgs[operations.BeginBlockID] = 4
+	t.Cleanup(func() {
+		operations.OpNumArgs[operations.BeginBlockID] = original
+	})
+
+	mockLogger := logger.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
+
+	cfg := &utils.Config{
+		ContractNumber:    1,
+		KeysNumber:        1,
+		ValuesNumber:      1,
+		SnapshotDepth:     1,
+		BlockLength:       1,
+		SyncPeriodLength:  1,
+		TransactionLength: 1,
+	}
+	stats, err := GenerateUniformStats(cfg, mockLogger)
+	assert.Nil(t, stats)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid operation/arguments")
+}

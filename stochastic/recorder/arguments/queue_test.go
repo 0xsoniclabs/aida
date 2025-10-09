@@ -155,3 +155,20 @@ func TestQueuingJSON(t *testing.T) {
 	// check populated queue JSON output
 	testQueueJSON(queue, t)
 }
+
+func TestQueueMarshalJSON(t *testing.T) {
+	stats := newQueue[int]()
+	stats.place(1)
+	stats.findPos(1)
+	payload, err := stats.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON failed: %v", err)
+	}
+	var decoded QueueStatsJSON
+	if err := json.Unmarshal(payload, &decoded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, stats.json()) {
+		t.Fatalf("MarshalJSON mismatch\nexpected: %+v\ngot: %+v", stats.json(), decoded)
+	}
+}
