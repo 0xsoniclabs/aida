@@ -124,6 +124,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 func TestStateDbPrimerExtension_NoBlockToPrime_Skip(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
+	stateDb := state.NewMockStateDB(ctrl)
 
 	tmpStateDb := t.TempDir()
 
@@ -144,7 +145,7 @@ func TestStateDbPrimerExtension_NoBlockToPrime_Skip(t *testing.T) {
 	log.EXPECT().Infof("Update buffer size: %v bytes", cfg.UpdateBufferSize)
 	log.EXPECT().Debugf("skipping priming; first priming block %v; first block %v", uint64(2), uint64(2))
 
-	err = ext.PreRun(executor.State[any]{}, &executor.Context{})
+	err = ext.PreRun(executor.State[any]{}, &executor.Context{State: stateDb})
 	assert.NoError(t, err, "PreRun should not return an error when there is no block to prime")
 }
 
@@ -181,4 +182,14 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "stop")
+}
+
+func TestStateDbPrimer_PreRun_NilState(t *testing.T) {
+	cfg := &utils.Config{}
+	log := logger.NewLogger(cfg.LogLevel, "test")
+
+	ext := makeStateDbPrimer[any](cfg, log)
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{})
+	assert.Error(t, err)
+	assert.Equal(t, "cannot prime nil state-db", err.Error())
 }
