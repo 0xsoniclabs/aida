@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/cmd/util-db/update"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,10 +39,10 @@ func TestCmd_UpdateCommand(t *testing.T) {
 	require.NoError(t, os.Mkdir(tmpDbPath, os.ModePerm))
 
 	app := cli.NewApp()
-	app.Commands = []*cli.Command{&UpdateCommand}
+	app.Commands = []*cli.Command{&update.Command}
 
 	args := utils.NewArgs("test").
-		Arg(UpdateCommand.Name).
+		Arg(update.Command.Name).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
 		Flag(utils.DbTmpFlag.Name, tmpDbPath).
