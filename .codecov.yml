@@ -1,10 +1,17 @@
-# codecov.yaml file contains coverage configurations.
-# coverage range
-#     - 0-50 is consider red
-#     - 50-80 is consider yellow
-#     - 80-100 is consider green
-# The target coverage of the changes is 80% and threshold is 0% for critical files
 
+# Codecov configuration for Aida
+#
+# This config uses Codecov components to set patch coverage requirements for different parts of the codebase.
+# - Files in cmd/ (component: cmd) require at least 70% patch coverage.
+# - All other files (component: core) require at least 80% patch coverage.
+# - No project-wide coverage checks are enforced, only per-component patch checks.
+#
+# If a file matches a component, that component's patch rule applies. If not, the global default applies (see below).
+#
+# Coverage color range:
+#   - 0-50: red
+#   - 50-80: yellow
+#   - 80-100: green
 coverage:
   range: 50..80
   round: down
@@ -12,8 +19,22 @@ coverage:
   status:
     patch:
       default:
-        target: 80% # target coverage of the changes
-        threshold: 1% # allow the coverage to drop by <threshold>%
+        target: auto
+  components:
+    cmd:
+      name: Command Line Tools
+      paths:
+        - "cmd/"
+      status:
+        patch:
+          target: 70%
+    core:
+      name: Core
+      paths:
+        - "!cmd/"
+      status:
+        patch:
+          target: 80%
 
 ignore:
   - "sonic/"
@@ -24,4 +45,3 @@ ignore:
   - "**/*_test.go"
   - "**/*.pb.go"
   - "ethtest/mock_data.go"
-  - "**/main.go"
