@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,6 +72,80 @@ func TestReplay_ExecuteRevertSnapshot(t *testing.T) {
 
 	assert.GreaterOrEqual(t, len(ss.activeSnapshots), 1)         // must have at least one snapshot
 	assert.LessOrEqual(t, len(ss.activeSnapshots), snapshotSize) // must not have more than initial snapshots
+}
+
+func TestPopulateReplayContextAdjustsRanges(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := state.NewMockStateDB(ctrl)
+	db.EXPECT().BeginSyncPeriod(uint64(0))
+	db.EXPECT().BeginBlock(uint64(0)).Return(nil)
+	db.EXPECT().BeginTransaction(uint32(0)).Return(nil)
+	db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+	db.EXPECT().EndTransaction().Return(nil)
+	db.EXPECT().EndBlock().Return(nil)
+	db.EXPECT().EndSyncPeriod()
+
+	dist := make([]float64, stochastic.QueueLen)
+	for i := range dist {
+		dist[i] = 1.0 / float64(stochastic.QueueLen)
+	}
+	counting := recArgs.ArgStatsJSON{
+		N:    16,
+		ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+	}
+	stats := &recorder.StatsJSON{
+		Contracts: recArgs.ClassifierJSON{
+			Counting: counting,
+			Queuing:  recArgs.QueueStatsJSON{Distribution: dist},
+		},
+		Keys: recArgs.ClassifierJSON{
+			Counting: counting,
+			Queuing:  recArgs.QueueStatsJSON{Distribution: dist},
+		},
+		Values: recArgs.ClassifierJSON{
+			Counting: counting,
+			Queuing:  recArgs.QueueStatsJSON{Distribution: dist},
+		},
+		SnapshotECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		Balance: recorder.ScalarStatsJSON{
+			Max:  9,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+		Nonce: recorder.ScalarStatsJSON{
+			Max:  4,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+		CodeSize: recorder.ScalarStatsJSON{
+			Max:  3,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+	}
+	rg := rand.New(rand.NewSource(99))
+	log := logger.NewLogger("INFO", "test")
+
+	ctx, err := populateReplayContext(stats, db, rg, log, -5, -2)
+	require.NoError(t, err)
+	require.NotNil(t, ctx)
+
+	assert.Equal(t, stats.Balance.Max+1, ctx.balanceRange)
+	assert.Equal(t, int(stats.Nonce.Max+1), ctx.nonceRange)
+
+	for i := 0; i < 5; i++ {
+		b := ctx.balanceSampler.Sample(ctx.balanceRange)
+		assert.GreaterOrEqual(t, b, int64(0))
+		assert.Less(t, b, ctx.balanceRange)
+
+		n := ctx.nonceSampler.Sample(int64(ctx.nonceRange))
+		assert.GreaterOrEqual(t, n, int64(0))
+		assert.Less(t, n, int64(ctx.nonceRange))
+
+		c := ctx.codeSampler.Sample(MaxCodeSize)
+		assert.GreaterOrEqual(t, c, int64(0))
+		assert.Less(t, c, int64(MaxCodeSize))
+	}
 }
 
 // TestExecute_AllOps covers all operation branches in execute.

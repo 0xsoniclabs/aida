@@ -34,6 +34,18 @@ import (
 func sampleStats() *recorder.StatsJSON {
 	return &recorder.StatsJSON{
 		SnapshotECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		Balance: recorder.ScalarStatsJSON{
+			Max:  10,
+			ECDF: [][2]float64{{0.0, 0.0}, {0.5, 0.6}, {1.0, 1.0}},
+		},
+		Nonce: recorder.ScalarStatsJSON{
+			Max:  5,
+			ECDF: [][2]float64{{0.0, 0.0}, {0.4, 0.3}, {1.0, 1.0}},
+		},
+		CodeSize: recorder.ScalarStatsJSON{
+			Max:  20,
+			ECDF: [][2]float64{{0.0, 0.0}, {0.25, 0.5}, {1.0, 1.0}},
+		},
 		Contracts: arguments.ClassifierJSON{
 			Counting: arguments.ArgStatsJSON{
 				ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
@@ -85,7 +97,19 @@ func colorStats() *recorder.StatsJSON {
 		Queuing: arguments.QueueStatsJSON{Distribution: dist},
 	}
 	return &recorder.StatsJSON{
-		SnapshotECDF:     [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		SnapshotECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		Balance: recorder.ScalarStatsJSON{
+			Max:  1,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+		Nonce: recorder.ScalarStatsJSON{
+			Max:  1,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
+		CodeSize: recorder.ScalarStatsJSON{
+			Max:  1,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		},
 		Contracts:        cls,
 		Keys:             cls,
 		Values:           cls,
@@ -139,6 +163,16 @@ func TestVisualizer_newCountingChart(t *testing.T) {
 	assert.NotNil(t, chart)
 }
 
+func TestVisualizer_newScalarChart(t *testing.T) {
+	balance := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	nonce := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+	code := [][2]float64{{0.0, 0.0}, {1.0, 1.0}}
+
+	chart := newScalarChart(balance, nonce, code)
+
+	assert.NotNil(t, chart)
+}
+
 func TestVisualizer_renderCounting(t *testing.T) {
 	stats := sampleStats()
 	stats.Contracts.Counting.ECDF = [][2]float64{{0.0, 0.0}, {1.0, 0.5}}
@@ -169,6 +203,21 @@ func TestVisualizer_renderSnapshotStats(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestVisualizer_renderScalarStats(t *testing.T) {
+	stats := sampleStats()
+	mustSetView(t, stats)
+
+	req, err := http.NewRequest("GET", "/scalar-stats", nil)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(renderScalarStats)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.NotEmpty(t, rr.Body.String())
 }
 
 func TestVisualizer_convertQueuingData(t *testing.T) {
@@ -314,6 +363,7 @@ func TestVisualizer_handlersWithoutState(t *testing.T) {
 		{"renderCounting", renderCounting},
 		{"renderQueuing", renderQueuing},
 		{"renderSnapshotStats", renderSnapshotStats},
+		{"renderScalarStats", renderScalarStats},
 		{"renderOperationStats", renderOperationStats},
 		{"renderTransactionalOperationStats", renderTransactionalOperationStats},
 		{"renderSimplifiedMarkovChain", renderSimplifiedMarkovChain},

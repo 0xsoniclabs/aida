@@ -18,6 +18,7 @@ package recorder
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"os/exec"
 	"runtime"
@@ -162,6 +163,53 @@ func TestStatsOperation(t *testing.T) {
 	transitFreq[argop3][argop4]++
 	if !checkFrequencies(&r, opFreq, transitFreq) {
 		t.Fatalf("operation/transit frequency diverges")
+	}
+}
+
+func TestStatsScalarDistributions(t *testing.T) {
+	stats := NewStats()
+	stats.RecordBalance(-5)
+	stats.RecordBalance(10)
+	stats.RecordBalance(10)
+	stats.RecordNonce(1)
+	stats.RecordNonce(uint64(math.MaxInt64) + 1)
+	stats.RecordCodeSize(-1)
+	stats.RecordCodeSize(42)
+
+	assert.Equal(t, uint64(1), stats.balance.freq[0])
+	assert.Equal(t, uint64(2), stats.balance.freq[10])
+	assert.Equal(t, uint64(1), stats.nonce.freq[1])
+	assert.Equal(t, uint64(1), stats.nonce.freq[math.MaxInt64])
+	if _, exists := stats.code.freq[-1]; exists {
+		t.Fatalf("negative code sizes must be ignored")
+	}
+	assert.Equal(t, uint64(1), stats.code.freq[42])
+
+	json := stats.JSON()
+	assert.Equal(t, int64(10), json.Balance.Max)
+	assert.Equal(t, int64(math.MaxInt64), json.Nonce.Max)
+	assert.Equal(t, int64(42), json.CodeSize.Max)
+
+	if len(json.Balance.ECDF) < 2 {
+		t.Fatalf("balance ecdf must have at least two points")
+	}
+	if len(json.Nonce.ECDF) < 2 {
+		t.Fatalf("nonce ecdf must have at least two points")
+	}
+	if len(json.CodeSize.ECDF) < 2 {
+		t.Fatalf("code size ecdf must have at least two points")
+	}
+	if got, want := json.Balance.ECDF[0], [2]float64{0.0, 0.0}; got != want {
+		t.Fatalf("balance ecdf start mismatch, got %v want %v", got, want)
+	}
+	if got, want := json.Balance.ECDF[len(json.Balance.ECDF)-1], [2]float64{1.0, 1.0}; got != want {
+		t.Fatalf("balance ecdf end mismatch, got %v want %v", got, want)
+	}
+	if got, want := json.Nonce.ECDF[len(json.Nonce.ECDF)-1], [2]float64{1.0, 1.0}; got != want {
+		t.Fatalf("nonce ecdf end mismatch, got %v want %v", got, want)
+	}
+	if got, want := json.CodeSize.ECDF[len(json.CodeSize.ECDF)-1], [2]float64{1.0, 1.0}; got != want {
+		t.Fatalf("code size ecdf end mismatch, got %v want %v", got, want)
 	}
 }
 

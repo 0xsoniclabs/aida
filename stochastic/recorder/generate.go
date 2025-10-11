@@ -71,6 +71,27 @@ func GenerateUniformStats(cfg *utils.Config, log logger.Logger) (*Stats, error) 
 	for i := 0; i < cfg.SnapshotDepth; i++ {
 		s.snapshotFreq[i] = 1
 	}
+	if cfg.BalanceRange > 0 {
+		mid := cfg.BalanceRange / 2
+		if mid <= 0 {
+			mid = 1
+		}
+		s.RecordBalance(0)
+		s.RecordBalance(mid)
+		s.RecordBalance(cfg.BalanceRange - 1)
+	}
+	if cfg.NonceRange > 0 {
+		mid := cfg.NonceRange / 2
+		if mid <= 0 {
+			mid = 1
+		}
+		s.RecordNonce(0)
+		s.RecordNonce(uint64(mid))
+		s.RecordNonce(uint64(cfg.NonceRange - 1))
+	}
+	s.RecordCodeSize(1)
+	s.RecordCodeSize(1024)
+	s.RecordCodeSize(24576)
 	for i := 0; i < operations.NumArgOps; i++ {
 		if !operations.IsValidArgOp(i) {
 			continue

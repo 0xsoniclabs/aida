@@ -17,6 +17,8 @@
 package recorder
 
 import (
+	"math"
+
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/txcontext"
@@ -36,6 +38,16 @@ type StochasticProxy struct {
 	db        state.StateDB // StateDB object
 	snapshots []int         // snapshot stack of currently active snapshots
 	stats     *Stats        // stats for storing state of Markov process
+}
+
+func uint256ToInt64(amount *uint256.Int) int64 {
+	if amount == nil {
+		return 0
+	}
+	if amount.BitLen() > 63 {
+		return math.MaxInt64
+	}
+	return int64(amount.Uint64())
 }
 
 // NewStochasticProxy creates a new StateDB proxy for recording markov stats
@@ -59,11 +71,13 @@ func (p *StochasticProxy) CreateContract(addr common.Address) {
 
 func (p *StochasticProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	p.stats.CountAddressOp(operations.SubBalanceID, &address)
+	p.stats.RecordBalance(uint256ToInt64(amount))
 	return p.db.SubBalance(address, amount, reason)
 }
 
 func (p *StochasticProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
 	p.stats.CountAddressOp(operations.AddBalanceID, &address)
+	p.stats.RecordBalance(uint256ToInt64(amount))
 	return p.db.AddBalance(address, amount, reason)
 }
 
@@ -79,6 +93,7 @@ func (p *StochasticProxy) GetNonce(address common.Address) uint64 {
 
 func (p *StochasticProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
 	p.stats.CountAddressOp(operations.SetNonceID, &address)
+	p.stats.RecordNonce(nonce)
 	p.db.SetNonce(address, nonce, reason)
 }
 
@@ -94,6 +109,7 @@ func (p *StochasticProxy) GetCode(address common.Address) []byte {
 
 func (p *StochasticProxy) SetCode(address common.Address, code []byte) []byte {
 	p.stats.CountAddressOp(operations.SetCodeID, &address)
+	p.stats.RecordCodeSize(len(code))
 	return p.db.SetCode(address, code)
 }
 

@@ -18,6 +18,7 @@ package recorder
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/state"
@@ -70,6 +71,7 @@ func TestStochasticProxy_SubBalance(t *testing.T) {
 	reason := tracing.BalanceChangeUnspecified
 	base.EXPECT().SubBalance(addr, amount, reason)
 	proxy.SubBalance(addr, amount, reason)
+	assert.Equal(t, uint64(1), reg.balance.freq[100])
 }
 
 // TestStochasticProxy_AddBalance tests the AddBalance method of StochasticProxy.
@@ -84,6 +86,7 @@ func TestStochasticProxy_AddBalance(t *testing.T) {
 	reason := tracing.BalanceChangeUnspecified
 	base.EXPECT().AddBalance(addr, amount, reason)
 	proxy.AddBalance(addr, amount, reason)
+	assert.Equal(t, uint64(1), reg.balance.freq[100])
 }
 
 // TestStochasticProxy_GetBalance tests the GetBalance method of StochasticProxy.
@@ -126,6 +129,7 @@ func TestStochasticProxy_SetNonce(t *testing.T) {
 	reason := tracing.NonceChangeUnspecified
 	base.EXPECT().SetNonce(addr, nonce, reason)
 	proxy.SetNonce(addr, nonce, reason)
+	assert.Equal(t, uint64(1), reg.nonce.freq[int64(nonce)])
 }
 
 // TestStochasticProxy_GetCodeHash tests the GetCodeHash method of StochasticProxy.
@@ -167,6 +171,7 @@ func TestStochasticProxy_SetCode(t *testing.T) {
 	code := []byte{0x01, 0x02, 0x03}
 	base.EXPECT().SetCode(addr, code)
 	proxy.SetCode(addr, code)
+	assert.Equal(t, uint64(1), reg.code.freq[int64(len(code))])
 }
 
 // TestStochasticProxy_GetCodeSize tests the GetCodeSize method of StochasticProxy.
@@ -193,6 +198,16 @@ func TestStochasticProxy_AddRefund(t *testing.T) {
 	amount := uint64(100)
 	base.EXPECT().AddRefund(amount)
 	proxy.AddRefund(amount)
+}
+
+func TestUint256ToInt64(t *testing.T) {
+	assert.Equal(t, int64(0), uint256ToInt64(nil))
+
+	small := uint256.NewInt(42)
+	assert.Equal(t, int64(42), uint256ToInt64(small))
+
+	large := new(uint256.Int).Lsh(uint256.NewInt(1), 80)
+	assert.Equal(t, int64(math.MaxInt64), uint256ToInt64(large))
 }
 
 // TestStochasticProxy_SubRefund tests the SubRefund method of StochasticProxy.
