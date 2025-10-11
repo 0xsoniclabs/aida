@@ -42,6 +42,8 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 		BlockLength:       5,
 		SyncPeriodLength:  6,
 		TransactionLength: 7,
+		BalanceRange:      10,
+		NonceRange:        8,
 	}
 
 	r, err := GenerateUniformStats(cfg, mockLogger)
@@ -78,6 +80,22 @@ func TestGenerateUniformRegistry_Basics(t *testing.T) {
 	if operations.IsValidArgOp(gb) {
 		assert.Equal(t, uint64(1), r.transitFreq[gb][et])
 	}
+
+	midBalance := cfg.BalanceRange / 2
+	if midBalance <= 0 {
+		midBalance = 1
+	}
+	assert.Equal(t, uint64(1), r.balance.freq[0])
+	assert.Equal(t, uint64(1), r.balance.freq[midBalance])
+	assert.Equal(t, uint64(1), r.balance.freq[cfg.BalanceRange-1])
+
+	assert.Equal(t, uint64(1), r.nonce.freq[0])
+	assert.Equal(t, uint64(1), r.nonce.freq[int64(cfg.NonceRange/2)])
+	assert.Equal(t, uint64(1), r.nonce.freq[int64(cfg.NonceRange-1)])
+
+	assert.Equal(t, uint64(1), r.code.freq[1])
+	assert.Equal(t, uint64(1), r.code.freq[1024])
+	assert.Equal(t, uint64(1), r.code.freq[24576])
 }
 
 func TestGenerateUniformStats_ValidationErrors(t *testing.T) {
