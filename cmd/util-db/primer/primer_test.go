@@ -17,12 +17,11 @@
 package primer
 
 import (
+	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"testing"
-
-	"fmt"
-	"os"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
