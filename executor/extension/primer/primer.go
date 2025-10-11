@@ -17,6 +17,8 @@
 package primer
 
 import (
+	"fmt"
+
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/logger"
@@ -57,6 +59,11 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 	}
 
 	p.log.Infof("Update buffer size: %v bytes", p.cfg.UpdateBufferSize)
+
+	if ctx.State == nil {
+		return fmt.Errorf("cannot prime nil state-db")
+	}
+
 	primer := prime.NewPrimer(p.cfg, ctx.State, ctx.AidaDb, p.log)
 	return primer.Prime()
 }

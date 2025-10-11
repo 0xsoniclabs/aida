@@ -75,7 +75,7 @@ pipeline {
                             currentBuild.description = "Building on ${env.NODE_NAME}"
                         }
                         sh "git submodule update --init --recursive"
-                        sh "make all -j 4"
+                        sh "make all"
                     }
                 }
 
@@ -107,6 +107,7 @@ pipeline {
                             sh """./build/aida-stochastic-sdb replay \
                                 ${STATEDB} --db-shadow-impl geth \
                                 ${TMPDB}  \
+                                --validate-state-hash \
                                 --balance-range 1000000 \
                                 --memory-breakdown \
                                 --nonce-range 100000 \
@@ -116,6 +117,7 @@ pipeline {
                             sh "./build/aida-stochastic-sdb record ${AIDADB} 1 10000 --output ./stats.json"
                             sh """ ./build/aida-stochastic-sdb replay \
                                 ${STATEDB} --db-shadow-impl geth \
+                                --validate-state-hash \
                                 --memory-breakdown \
                                 --random-seed 4711 \
                                 ${TMPDB} \
@@ -191,7 +193,7 @@ pipeline {
                 stage('aida-vm-sdb db-src') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-vm-sdb substate ${VM} --db-src ${DBSRC} ${AIDADB} --validate-tx --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure 4600001 4610000"
+                            sh "build/aida-vm-sdb substate ${VM} --db-src ${DBSRC} ${AIDADB} ${ARCHIVE} --validate-tx --cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown --continue-on-failure 4600001 4610000"
                         }
                         sh "rm -rf *.dat"
                     }
