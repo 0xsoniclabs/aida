@@ -19,7 +19,6 @@ package blockprofile
 import (
 	"database/sql"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -133,7 +132,8 @@ func newProfileDB(dbFile string, chainID utils.ChainID) (*profileDB, error) {
 		return nil, fmt.Errorf("failed to prepare a SQL statement for tx profile; %v", err)
 	}
 	// update metadata
-	err = insertMetadata(sqlDB, chainID)
+	cmd := command{executor: utils.NewShell()}
+	err = insertMetadata(sqlDB, chainID, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert metadata; %v", err)
 	}
@@ -237,29 +237,29 @@ func (db *profileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, er
 }
 
 // insertMetadata inserts metadata of the profiling run
-func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID) error {
+func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID, cmd command) error {
 	metadataStmt, err := sqlDB.Prepare(insertMetadataSQL)
 	if err != nil {
 		return fmt.Errorf("failed to prepare a SQL statement for metadata; %w", err)
 	}
 
-	processor, err := getProcessor()
+	processor, err := cmd.getProcessor()
 	if err != nil {
 		return fmt.Errorf("failed to get processor information; %w", err)
 	}
-	memory, err := getMemory()
+	memory, err := cmd.getMemory()
 	if err != nil {
 		return fmt.Errorf("failed to get memory information; %w", err)
 	}
-	disks, err := getDisks()
+	disks, err := cmd.getDisks()
 	if err != nil {
 		return fmt.Errorf("failed to get disk information; %w", err)
 	}
-	os, err := getOS()
+	os, err := cmd.getOS()
 	if err != nil {
 		return fmt.Errorf("failed to get OS information; %w", err)
 	}
-	machine, err := getMachine()
+	machine, err := cmd.getMachine()
 	if err != nil {
 		return fmt.Errorf("failed to get machine information; %w", err)
 	}
@@ -279,27 +279,28 @@ func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID) error {
 	return nil
 }
 
-func getProcessor() (string, error) {
-	cmd := exec.Command("sh", "-c", `cat /proc/cpuinfo | grep "^model name" | head -n 1 | awk -F': ' '{print $2}'`)
-	output, err := cmd.CombinedOutput()
+type command struct {
+	executor utils.ShellExecutor
+}
+
+func (c *command) getProcessor() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `cat /proc/cpuinfo | grep "^model name" | head -n 1 | awk -F': ' '{print $2}'`)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(output)), nil
 }
 
-func getMemory() (string, error) {
-	cmd := exec.Command("sh", "-c", `free | grep "^Mem:" | awk '{printf("%dGB RAM\n", $2/1024/1024)}'`)
-	output, err := cmd.CombinedOutput()
+func (c *command) getMemory() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `free | grep "^Mem:" | awk '{printf("%dGB RAM\n", $2/1024/1024)}'`)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(output)), nil
 }
 
-func getDisks() (string, error) {
-	cmd := exec.Command("sh", "-c", `hwinfo --disk | grep Model | awk -F ': \"' '{if (NR > 1) printf(", "); printf("%s", substr($2,1,length($2)-1));}  END {printf("\n")}'`)
-	output, err := cmd.CombinedOutput()
+func (c *command) getDisks() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `hwinfo --disk | grep Model | awk -F ': \"' '{if (NR > 1) printf(", "); printf("%s", substr($2,1,length($2)-1));}  END {printf("\n")}'`)
 	if err != nil {
 		return "", err
 	}
@@ -312,18 +313,16 @@ func getDisks() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func getOS() (string, error) {
-	cmd := exec.Command("sh", "-c", `lsb_release -d | awk -F"\t" '{print $2}'`)
-	output, err := cmd.CombinedOutput()
+func (c *command) getOS() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `lsb_release -d | awk -F"\t" '{print $2}'`)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(output)), nil
 }
 
-func getMachine() (string, error) {
-	cmd := exec.Command("sh", "-c", "echo \"`hostname`(`curl -s api.ipify.org`)\"")
-	output, err := cmd.CombinedOutput()
+func (c *command) getMachine() (string, error) {
+	output, err := c.executor.Command("sh", "-c", "echo \"`hostname`(`curl -s api.ipify.org`)\"")
 	if err != nil {
 		return "", err
 	}

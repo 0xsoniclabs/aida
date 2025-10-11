@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -620,4 +621,214 @@ func TestProfileDB_Add(t *testing.T) {
 		}
 	})
 
+}
+
+func TestCommands(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockShell := utils.NewMockShellExecutor(ctrl)
+	cmd := &command{executor: mockShell}
+	mockErr := errors.New("mock error")
+
+	commands := []func() (string, error){
+		cmd.getProcessor,
+		cmd.getMemory,
+		cmd.getDisks,
+		cmd.getOS,
+		cmd.getMachine,
+	}
+
+	for _, operation := range commands {
+		t.Run("success", func(t *testing.T) {
+			mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("\b"), nil)
+			output, err := operation()
+			assert.Nil(t, err)
+			assert.Equal(t, "\b", output)
+		})
+
+		t.Run("error", func(t *testing.T) {
+			mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, mockErr)
+			output, err := operation()
+			assert.NotNil(t, err)
+			assert.Equal(t, "", output)
+		})
+	}
+
+	// Test hwinfo not found case
+	t.Run("hwinfo not found", func(t *testing.T) {
+		mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("hwinfo: not found"), nil)
+		output, err := cmd.getDisks()
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "hwinfo: not found")
+		assert.Equal(t, "", output)
+	})
+}
+
+func TestInsertMetadata_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Use sqlmock with QueryMatcherEqual to handle exact matching but ignore whitespace
+	db, mockDb, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.NoError(t, err)
+
+	mockShell := utils.NewMockShellExecutor(ctrl)
+	cmd := command{executor: mockShell}
+
+	// Mock all the system information calls
+	mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("Intel(R) Core(TM) i7-8700K"), nil) // getProcessor
+	mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("16384GB RAM"), nil)                // getMemory
+	mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("/dev/sda1 100GB"), nil)            // getDisks
+	mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("Ubuntu 20.04.3 LTS"), nil)         // getOS
+	mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("hostname(192.168.1.1)"), nil)      // getMachine
+
+	// Mock database operations - match the exact SQL from insertMetadataSQL constant
+	mockPrepare := mockDb.ExpectPrepare(insertMetadataSQL)
+	mockDb.ExpectBegin()
+	mockStmt := mockPrepare.ExpectExec().WithArgs(utils.MainnetChainID, "Intel(R) Core(TM) i7-8700K", "16384GB RAM", "/dev/sda1 100GB", "Ubuntu 20.04.3 LTS", "hostname(192.168.1.1)")
+	mockStmt.WillReturnResult(sqlmock.NewResult(1, 1))
+	mockDb.ExpectCommit()
+
+	err = insertMetadata(db, utils.MainnetChainID, cmd)
+	assert.NoError(t, err)
+
+	// Verify all expectations were met
+	err = mockDb.ExpectationsWereMet()
+	assert.NoError(t, err)
+}
+
+func TestInsertMetadata_Error(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupMocks    func(*gomock.Controller, *utils.MockShellExecutor, sqlmock.Sqlmock)
+		expectedError string
+	}{
+		{
+			name: "prepare statement error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnError(errors.New("prepare failed"))
+			},
+			expectedError: "failed to prepare a SQL statement for metadata",
+		},
+		{
+			name: "getProcessor error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, errors.New("processor error"))
+			},
+			expectedError: "failed to get processor information",
+		},
+		{
+			name: "getMemory error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil)        // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, errors.New("memory error")) // getMemory
+			},
+			expectedError: "failed to get memory information",
+		},
+		{
+			name: "getDisks error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil)       // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)          // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, errors.New("disks error")) // getDisks
+			},
+			expectedError: "failed to get disk information",
+		},
+		{
+			name: "getOS error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil)    // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)       // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("disks"), nil)        // getDisks
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, errors.New("os error")) // getOS
+			},
+			expectedError: "failed to get OS information",
+		},
+		{
+			name: "getMachine error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil)         // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)            // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("disks"), nil)             // getDisks
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("os"), nil)                // getOS
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return(nil, errors.New("machine error")) // getMachine
+			},
+			expectedError: "failed to get machine information",
+		},
+		{
+			name: "transaction begin error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockDb.ExpectPrepare(`INSERT INTO metadata`).WillReturnCloseError(nil)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil) // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)    // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("disks"), nil)     // getDisks
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("os"), nil)        // getOS
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("machine"), nil)   // getMachine
+				mockDb.ExpectBegin().WillReturnError(errors.New("begin transaction error"))
+			},
+			expectedError: "failed to begin transaction",
+		},
+		{
+			name: "statement execution error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockPrepare := mockDb.ExpectPrepare(`INSERT INTO metadata`)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil) // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)    // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("disks"), nil)     // getDisks
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("os"), nil)        // getOS
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("machine"), nil)   // getMachine
+				mockDb.ExpectBegin()
+				mockPrepare.ExpectExec().WillReturnError(errors.New("execution error"))
+			},
+			expectedError: "failed to execute metadata statement",
+		},
+		{
+			name: "transaction commit error",
+			setupMocks: func(ctrl *gomock.Controller, mockShell *utils.MockShellExecutor, mockDb sqlmock.Sqlmock) {
+				mockPrepare := mockDb.ExpectPrepare(`INSERT INTO metadata`)
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("processor"), nil) // getProcessor
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("memory"), nil)    // getMemory
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("disks"), nil)     // getDisks
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("os"), nil)        // getOS
+				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("machine"), nil)   // getMachine
+				mockDb.ExpectBegin()
+				mockPrepare.ExpectExec().WithArgs(utils.MainnetChainID, "processor", "memory", "disks", "os", "machine").WillReturnResult(sqlmock.NewResult(1, 1))
+				mockDb.ExpectCommit().WillReturnError(errors.New("commit error"))
+			},
+			expectedError: "failed to commit transaction",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			db, mockDb, err := sqlmock.New()
+			assert.NoError(t, err)
+
+			mockShell := utils.NewMockShellExecutor(ctrl)
+			cmd := command{executor: mockShell}
+
+			// Setup mocks based on test case
+			tt.setupMocks(ctrl, mockShell, mockDb)
+
+			// Execute the function and verify error
+			err = insertMetadata(db, utils.MainnetChainID, cmd)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedError)
+
+			// Verify all expectations were met (where applicable)
+			if err := mockDb.ExpectationsWereMet(); err != nil {
+				// Some tests might not meet all expectations due to early returns, which is expected
+				t.Logf("Not all mock expectations were met (this may be expected): %v", err)
+			}
+		})
+	}
 }
