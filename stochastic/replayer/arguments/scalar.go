@@ -22,22 +22,22 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
 
-// ValueSampler samples scalar values from an empirical distribution.
-type ValueSampler struct {
+// ScalarSampler samples scalar values from an empirical distribution.
+type ScalarSampler struct {
 	rg   *rand.Rand
 	ecdf [][2]float64
 }
 
-// NewValueSampler constructs a sampler for scalar arguments.
-func NewValueSampler(rg *rand.Rand, ecdf [][2]float64) *ValueSampler {
-	return &ValueSampler{
+// NewScalarSampler constructs a sampler for scalar arguments.
+func NewScalarSampler(rg *rand.Rand, ecdf [][2]float64) *ScalarSampler {
+	return &ScalarSampler{
 		rg:   rg,
 		ecdf: ecdf,
 	}
 }
 
 // Sample returns a value scaled to the provided upper bound. The result is in [0, limit).
-func (s *ValueSampler) Sample(limit int64) int64 {
+func (s *ScalarSampler) Sample(limit int64) int64 {
 	if limit <= 0 {
 		return 0
 	}
@@ -55,6 +55,6 @@ func (s *ValueSampler) Sample(limit int64) int64 {
 }
 
 // Replace updates the sampler with a new empirical CDF.
-func (s *ValueSampler) Replace(ecdf [][2]float64) {
+func (s *ScalarSampler) Replace(ecdf [][2]float64) {
 	s.ecdf = ecdf
 }

@@ -66,9 +66,9 @@ type replayContext struct {
 	syncPeriodNum   uint64                // current sync-period number
 	balanceRange    int64                 // balance range for randomized values
 	nonceRange      int                   // nonce range for randomized nonces
-	balanceSampler  *arguments.ValueSampler
-	nonceSampler    *arguments.ValueSampler
-	codeSampler     *arguments.ValueSampler
+	balanceSampler  *arguments.ScalarSampler
+	nonceSampler    *arguments.ScalarSampler
+	codeSampler     *arguments.ScalarSampler
 }
 
 // newReplayContext creates a new replay context for execution StateDB operations stochastically.
@@ -98,9 +98,9 @@ func newReplayContext(
 		log:            log,
 		balanceRange:   balanceRange,
 		nonceRange:     nonceRange,
-		balanceSampler: arguments.NewValueSampler(rg, nil),
-		nonceSampler:   arguments.NewValueSampler(rg, nil),
-		codeSampler:    arguments.NewValueSampler(rg, nil),
+		balanceSampler: arguments.NewScalarSampler(rg, nil),
+		nonceSampler:   arguments.NewScalarSampler(rg, nil),
+		codeSampler:    arguments.NewScalarSampler(rg, nil),
 	}
 }
 
@@ -161,9 +161,9 @@ func populateReplayContext(
 
 	// setup state
 	ss := newReplayContext(rg, db, contracts, keys, values, snapshots, log, balanceRange, nonceRange)
-	ss.balanceSampler = arguments.NewValueSampler(rg, e.Balance.ECDF)
-	ss.nonceSampler = arguments.NewValueSampler(rg, e.Nonce.ECDF)
-	ss.codeSampler = arguments.NewValueSampler(rg, e.CodeSize.ECDF)
+	ss.balanceSampler = arguments.NewScalarSampler(rg, e.Balance.ECDF)
+	ss.nonceSampler = arguments.NewScalarSampler(rg, e.Nonce.ECDF)
+	ss.codeSampler = arguments.NewScalarSampler(rg, e.CodeSize.ECDF)
 
 	// create accounts in StateDB before starting the simulation
 	err = ss.prime()

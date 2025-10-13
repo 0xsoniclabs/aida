@@ -60,23 +60,23 @@ func (s scalarStats) json() ScalarStatsJSON {
 			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
 		}
 	}
-	keys := make([]int64, 0, len(s.freq))
+	values := make([]int64, 0, len(s.freq))
 	var total uint64
 	var maxVal int64
 	for value, freq := range s.freq {
 		if freq == 0 {
 			continue
 		}
-		keys = append(keys, value)
+		values = append(values, value)
 		total += freq
 		if value > maxVal {
 			maxVal = value
 		}
 	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
 	domain := float64(maxVal + 1)
-	pdf := make([][2]float64, 0, len(keys))
-	for _, value := range keys {
+	pdf := make([][2]float64, 0, len(values))
+	for _, value := range values {
 		prob := float64(s.freq[value]) / float64(total)
 		x := (float64(value) + 0.5) / domain
 		pdf = append(pdf, [2]float64{x, prob})

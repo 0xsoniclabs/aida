@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValueSampler_FallbackToUniform(t *testing.T) {
+func TestScalarSampler_FallbackToUniform(t *testing.T) {
 	rg := rand.New(rand.NewSource(42))
-	sampler := NewValueSampler(rg, nil)
+	sampler := NewScalarSampler(rg, nil)
 
 	for i := 0; i < 10; i++ {
 		got := sampler.Sample(7)
@@ -35,14 +35,14 @@ func TestValueSampler_FallbackToUniform(t *testing.T) {
 	assert.Equal(t, int64(0), sampler.Sample(0))
 }
 
-func TestValueSampler_UsesECDFAndClamps(t *testing.T) {
+func TestScalarSampler_UsesECDFAndClamps(t *testing.T) {
 	rg := rand.New(rand.NewSource(7))
 	ecdf := [][2]float64{
 		{0.0, 0.0},
 		{0.5, 0.5},
 		{1.0, 1.0},
 	}
-	sampler := NewValueSampler(rg, ecdf)
+	sampler := NewScalarSampler(rg, ecdf)
 
 	for i := 0; i < 10; i++ {
 		got := sampler.Sample(5)
