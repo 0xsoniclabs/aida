@@ -191,9 +191,13 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"london":      12_965_000,
 		"shanghai":    1681338455, //timestamp
 		"cancun":      1710338135, //timestamp
-		"first":       0,
-		"last":        maxLastBlock,
-		"lastpatch":   0,
+		"prague":      1746612311, //timestamp
+		//"osaka":       TBA, //timestamp
+		//"BPO1":        TBA, //timestamp
+		//"BPO2":        TBA, //timestamp
+		"first":     0,
+		"last":      maxLastBlock,
+		"lastpatch": 0,
 	},
 	// Holesky config - https://github.com/ethereum/go-ethereum/blob/7d8aca95d28c4e8560a657fd1ff7852ad4eee72c/params/config.go#L69C2-L69C36
 	HoleskyChainID: {
@@ -206,6 +210,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1696000704, //timestamp
 		"cancun":      1707305664, //timestamp
 		"prague":      1740434112, //timestamp
+		"osaka":       1759308480, //timestamp
+		"BPO1":        1759800000, //timestamp
+		"BPO2":        1760389824, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -221,6 +228,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    0,          //timestamp
 		"cancun":      0,          //timestamp
 		"prague":      1742999832, //timestamp
+		"osaka":       1761677592, //timestamp
+		"BPO1":        1762365720, //timestamp
+		"BPO2":        1762955544, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -236,6 +246,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1677557088, //timestamp
 		"cancun":      1706655072, //timestamp
 		"prague":      1741159776, //timestamp
+		"osaka":       1760427360, //timestamp
+		"BPO1":        1761017184, //timestamp
+		"BPO2":        1761607008, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -555,14 +568,41 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 	case HoleskyChainID:
 		chainConfig := params.HoleskyChainConfig
 		chainConfig.DAOForkSupport = false
+
+		// temporary override until go-ethereum gets updated to have fork times
+		osakaTime := KeywordBlocks[chainId]["osaka"]
+		chainConfig.OsakaTime = &osakaTime
+		bp01Time := KeywordBlocks[chainId]["BPO1"]
+		chainConfig.BPO1Time = &bp01Time
+		bp02Time := KeywordBlocks[chainId]["BPO2"]
+		chainConfig.BPO2Time = &bp02Time
+
 		return chainConfig, nil
 	case HoodiChainID:
 		chainConfig := params.HoodiChainConfig
 		chainConfig.DAOForkSupport = false
+
+		// temporary override until go-ethereum gets updated to have fork times
+		osakaTime := KeywordBlocks[chainId]["osaka"]
+		chainConfig.OsakaTime = &osakaTime
+		bp01Time := KeywordBlocks[chainId]["BPO1"]
+		chainConfig.BPO1Time = &bp01Time
+		bp02Time := KeywordBlocks[chainId]["BPO2"]
+		chainConfig.BPO2Time = &bp02Time
+
 		return chainConfig, nil
 	case SepoliaChainID:
 		chainConfig := params.SepoliaChainConfig
 		chainConfig.DAOForkSupport = false
+
+		// temporary override until go-ethereum gets updated to have fork times
+		osakaTime := KeywordBlocks[chainId]["osaka"]
+		chainConfig.OsakaTime = &osakaTime
+		bp01Time := KeywordBlocks[chainId]["BPO1"]
+		chainConfig.BPO1Time = &bp01Time
+		bp02Time := KeywordBlocks[chainId]["BPO2"]
+		chainConfig.BPO2Time = &bp02Time
+
 		return chainConfig, nil
 	default:
 		// Make a copy of the basic config before modifying it to avoid
@@ -576,6 +616,14 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 		chainConfig.ShanghaiTime = &shanghaiTime
 		cancunTime := KeywordBlocks[chainId]["cancun"]
 		chainConfig.CancunTime = &cancunTime
+		pragueTime := KeywordBlocks[chainId]["prague"]
+		chainConfig.PragueTime = &pragueTime
+		osakaTime := KeywordBlocks[chainId]["osaka"]
+		chainConfig.OsakaTime = &osakaTime
+		bp01Time := KeywordBlocks[chainId]["BPO1"]
+		chainConfig.BPO1Time = &bp01Time
+		bp02Time := KeywordBlocks[chainId]["BPO2"]
+		chainConfig.BPO2Time = &bp02Time
 		return &chainConfig, nil
 	}
 }
