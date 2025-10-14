@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -30,6 +32,61 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
 	"github.com/0xsoniclabs/aida/stochastic/statistics/continuous"
 )
+
+type scalarStats struct {
+	freq map[int64]uint64
+}
+
+func newScalarStats() scalarStats {
+	return scalarStats{freq: map[int64]uint64{}}
+}
+
+func (s *scalarStats) record(value int64) {
+	if value < 0 {
+		return
+	}
+	s.freq[value]++
+}
+
+type ScalarStatsJSON struct {
+	Max  int64        `json:"max"`
+	ECDF [][2]float64 `json:"ecdf"`
+}
+
+func (s scalarStats) json() ScalarStatsJSON {
+	if len(s.freq) == 0 {
+		return ScalarStatsJSON{
+			Max:  0,
+			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
+		}
+	}
+	values := make([]int64, 0, len(s.freq))
+	var total uint64
+	var maxVal int64
+	for value, freq := range s.freq {
+		if freq == 0 {
+			continue
+		}
+		values = append(values, value)
+		total += freq
+		if value > maxVal {
+			maxVal = value
+		}
+	}
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+	domain := float64(maxVal + 1)
+	pdf := make([][2]float64, 0, len(values))
+	for _, value := range values {
+		prob := float64(s.freq[value]) / float64(total)
+		x := (float64(value) + 0.5) / domain
+		pdf = append(pdf, [2]float64{x, prob})
+	}
+	ecdf := continuous.PDFtoCDF(pdf)
+	return ScalarStatsJSON{
+		Max:  maxVal,
+		ECDF: ecdf,
+	}
+}
 
 // Stats counts states and transitions for a Markov-Process
 // and classifies occurring arguments including snapshot deltas.
@@ -54,6 +111,10 @@ type Stats struct {
 
 	// Snapshot deltas
 	snapshotFreq map[int]uint64
+
+	balance scalarStats
+	nonce   scalarStats
+	code    scalarStats
 }
 
 // NewStats creates a new stats object for recording.
@@ -64,6 +125,9 @@ func NewStats() Stats {
 		keys:         arguments.NewClassifier[common.Hash](),
 		values:       arguments.NewClassifier[common.Hash](),
 		snapshotFreq: map[int]uint64{},
+		balance:      newScalarStats(),
+		nonce:        newScalarStats(),
+		code:         newScalarStats(),
 	}
 }
 
@@ -122,6 +186,31 @@ func (r *Stats) CountValueOp(op int, address *common.Address, key *common.Hash, 
 	}
 }
 
+// RecordBalance tracks the magnitude used in balance updates.
+func (r *Stats) RecordBalance(value int64) {
+	if value < 0 {
+		value = 0
+	}
+	r.balance.record(value)
+}
+
+// RecordNonce tracks nonce assignments.
+func (r *Stats) RecordNonce(value uint64) {
+	if value > math.MaxInt64 {
+		r.nonce.record(math.MaxInt64)
+		return
+	}
+	r.nonce.record(int64(value))
+}
+
+// RecordCodeSize tracks code sizes used when setting bytecode.
+func (r *Stats) RecordCodeSize(size int) {
+	if size < 0 {
+		return
+	}
+	r.code.record(int64(size))
+}
+
 // updateFreq updates operation and transition frequency.
 func (r *Stats) updateFreq(op int, addr int, key int, value int) error {
 	// encode argument classes to compute specialized operation using a Horner's scheme
@@ -156,6 +245,11 @@ type StatsJSON struct {
 
 	// snapshot delta distribution
 	SnapshotECDF [][2]float64 `json:"snapshotEcdf"`
+
+	// scalar argument statistics
+	Balance  ScalarStatsJSON `json:"balanceStats"`
+	Nonce    ScalarStatsJSON `json:"nonceStats"`
+	CodeSize ScalarStatsJSON `json:"codeSizeStats"`
 }
 
 const statsFileID = "stats"
@@ -246,6 +340,9 @@ func (r *Stats) JSON() StatsJSON {
 		Keys:             r.keys.JSON(),
 		Values:           r.values.JSON(),
 		SnapshotECDF:     ecdf,
+		Balance:          r.balance.json(),
+		Nonce:            r.nonce.json(),
+		CodeSize:         r.code.json(),
 	}
 }
 
