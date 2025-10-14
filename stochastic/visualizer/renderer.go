@@ -33,6 +33,7 @@ import (
 const countingRef = "counting-stats"
 const queuingRef = "queuing-stats"
 const snapshotRef = "snapshot-stats"
+const scalarRef = "scalar-stats"
 const operationRef = "operation-stats"
 const txoperationRef = "tx-operation-stats"
 const simplifiedMarkovRef = "simplified-markov-stats"
@@ -54,6 +55,7 @@ const MainHtml = `
     <li> <h3> <a href="/` + countingRef + `"> Counting Statistics </a> </h3> </li>
     <li> <h3> <a href="/` + queuingRef + `"> Queuing Statistics </a> </h3> </li>
     <li> <h3> <a href="/` + snapshotRef + `"> Snapshot Statistics </a> </h3> </li>
+    <li> <h3> <a href="/` + scalarRef + `"> Scalar Argument Statistics </a> </h3> </li>
     <li> <h3> <a href="/` + txoperationRef + `"> Transactional Operation Statistics  </a> </h3> </li>
     <li> <h3> <a href="/` + operationRef + `"> Operation Statistics  </a> </h3> </li>
     <li> <h3> <a href="/` + simplifiedMarkovRef + `"> Simplified Markov Chain </a> </h3> </li>
@@ -117,6 +119,49 @@ func renderCounting(w http.ResponseWriter, r *http.Request) {
 		stats.Contracts.Counting.ECDF,
 		stats.Keys.Counting.ECDF,
 		stats.Values.Counting.ECDF,
+	)
+	chart.Render(w)
+}
+
+// newScalarChart creates a line chart for scalar argument distributions.
+func newScalarChart(balance, nonce, code [][2]float64) *charts.Line {
+	chart := charts.NewLine()
+	chart.SetGlobalOptions(charts.WithInitializationOpts(opts.Initialization{
+		Theme: types.ThemeChalk,
+	}),
+		charts.WithToolboxOpts(opts.Toolbox{
+			Show: true,
+			Feature: &opts.ToolBoxFeature{
+				SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+					Show:  true,
+					Title: "Save",
+				},
+				DataZoom: &opts.ToolBoxFeatureDataZoom{
+					Show: true,
+				},
+			},
+		}),
+		charts.WithLegendOpts(opts.Legend{Show: true}),
+		charts.WithTitleOpts(opts.Title{
+			Title: "Scalar Argument Statistics",
+		}))
+	chart.AddSeries("Balance", convertCountingData(balance)).
+		AddSeries("Nonce", convertCountingData(nonce)).
+		AddSeries("Code Size", convertCountingData(code))
+	return chart
+}
+
+// renderScalarStats renders scalar argument distributions.
+func renderScalarStats(w http.ResponseWriter, r *http.Request) {
+	view, err := currentView()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	chart := newScalarChart(
+		view.stats.Balance.ECDF,
+		view.stats.Nonce.ECDF,
+		view.stats.CodeSize.ECDF,
 	)
 	chart.Render(w)
 }
@@ -385,6 +430,7 @@ func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
 	http.HandleFunc("/"+countingRef, renderCounting)
 	http.HandleFunc("/"+queuingRef, renderQueuing)
 	http.HandleFunc("/"+snapshotRef, renderSnapshotStats)
+	http.HandleFunc("/"+scalarRef, renderScalarStats)
 	http.HandleFunc("/"+operationRef, renderOperationStats)
 	http.HandleFunc("/"+txoperationRef, renderTransactionalOperationStats)
 	http.HandleFunc("/"+simplifiedMarkovRef, renderSimplifiedMarkovChain)
