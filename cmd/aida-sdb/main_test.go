@@ -17,15 +17,9 @@
 package main
 
 import (
-	"archive/tar"
-	"compress/gzip"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/0xsoniclabs/aida/utils"
 )
@@ -46,15 +40,8 @@ func TestMain(m *testing.M) {
 // setup prepares
 // substateDB and creates trace directory
 func setup() {
-	// download and extract substate.test
-	err := setupTestSubstateDB()
-	if err != nil {
-		fmt.Printf("unable to load substatedb. %v\n", err)
-		//os.Exit(1)
-	}
-
 	// create trace directory
-	err = os.Mkdir(testTraceDir, 0700)
+	err := os.Mkdir(testTraceDir, 0700)
 	if err != nil {
 		fmt.Printf("unable to create direcotry. %v\n", err)
 		os.Exit(1)
@@ -97,65 +84,4 @@ func teardown() {
 		os.Exit(1)
 	}
 	fmt.Printf("Teardown completed\n")
-}
-
-// setupTestSubstateDB downloads compressed substates and extract in local directory
-func setupTestSubstateDB() error {
-	// download substate.test from url
-	// set timeout to 1 minutes
-	client := http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Get("https://github.com/0xsoniclabs/substate-cli/releases/download/substate-test/substate.test.tar.gz")
-	if err != nil {
-		return err
-	}
-
-	// channel downloaded content to gzip stream
-	gzipStream, err := gzip.NewReader(resp.Body)
-	if err != nil {
-		return err
-	}
-	defer func(gzipStream *gzip.Reader) {
-		err = errors.Join(err, gzipStream.Close())
-		if err != nil {
-			fmt.Printf("Failed to close gzip stream: %v\n", err)
-		}
-	}(gzipStream)
-
-	tarReader := tar.NewReader(gzipStream)
-
-	// decompress and store each file in archive
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		// if head is a directory, create a new directory
-		if header.Typeflag == tar.TypeDir {
-			if err = os.MkdirAll(header.Name, 0700); err != nil {
-				return err
-			}
-			// if not a directory, copy to out file
-		} else {
-			err = func() error {
-				outFile, err := os.OpenFile(header.Name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
-				if err != nil {
-					return err
-				}
-				defer func(outFile *os.File) {
-					err = errors.Join(err, outFile.Close())
-				}(outFile)
-				if _, err = io.Copy(outFile, tarReader); err != nil {
-					return err
-				}
-				return nil
-			}()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

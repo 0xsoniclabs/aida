@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -80,9 +81,7 @@ func TestMakeEthStateTestLogHashValidator(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestLogHashValidator(cfg)
-	if ext == nil {
-		t.Fatal("unexpected extension initialization")
-	}
+	assert.NotNil(t, ext)
 
 	cfg.Validate = false
 	ext = MakeEthStateTestLogHashValidator(cfg)

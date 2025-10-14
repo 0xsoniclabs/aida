@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 )
 
 func initAddBalance(t *testing.T) (*context.Replay, *AddBalance, common.Address, *uint256.Int, tracing.BalanceChangeReason) {
@@ -70,12 +71,8 @@ func TestAddBalanceExecute(t *testing.T) {
 	// check execution
 	mock := NewMockStateDB()
 	execute, err := op.Execute(mock, ctx)
-	if err != nil {
-		t.Fatalf("Execute failed: %v", err)
-	}
-	if execute <= 0 {
-		t.Fatalf("Execute returned non-positive duration")
-	}
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{AddBalanceID, []any{addr, value, reason}}}

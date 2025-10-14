@@ -53,9 +53,7 @@ func TestStatsUpdateFreq(t *testing.T) {
 	key := stochastic.NoArgID
 	value := stochastic.NoArgID
 	err := r.updateFreq(op, addr, key, value)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 	argop1, _ := operations.EncodeArgOp(op, addr, key, value)
 
 	// check updated operation/transit frequencies
@@ -79,9 +77,7 @@ func TestStatsUpdateFreq(t *testing.T) {
 	key = stochastic.PrevArgID
 	value = stochastic.ZeroArgID
 	err = r.updateFreq(op, addr, key, value)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 	argop2, _ := operations.EncodeArgOp(op, addr, key, value)
 	for i := 0; i < operations.NumArgOps; i++ {
 		for j := 0; j < operations.NumArgOps; j++ {

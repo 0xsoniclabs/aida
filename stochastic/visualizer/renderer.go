@@ -163,7 +163,7 @@ func renderScalarStats(w http.ResponseWriter, r *http.Request) {
 		view.stats.Nonce.ECDF,
 		view.stats.CodeSize.ECDF,
 	)
-	chart.Render(w)
+	_ = chart.Render(w)
 }
 
 // renderSnapshotStats renders a line chart for a snapshot statistics

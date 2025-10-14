@@ -36,6 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -77,9 +78,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenOnlyWorldStateIsTested(t *testing
 
 	log.EXPECT().Warning(gomock.Any())
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, nil)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestLiveTxValidator_ValidatorIsEnabledWhenOnlyReceiptIsTested(t *testing.T) {
@@ -93,9 +92,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenOnlyReceiptIsTested(t *testing.T)
 
 	log.EXPECT().Warning(gomock.Any())
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, nil)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestLiveTxValidator_ValidatorIsEnabledWhenBothAreTested(t *testing.T) {
@@ -109,9 +106,7 @@ func TestLiveTxValidator_ValidatorIsEnabledWhenBothAreTested(t *testing.T) {
 
 	log.EXPECT().Warning(gomock.Any())
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, nil)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestLiveTxValidator_SingleErrorInPreTransactionDoesNotEndProgramWithContinueOnFailure(t *testing.T) {
@@ -135,9 +130,7 @@ func TestLiveTxValidator_SingleErrorInPreTransactionDoesNotEndProgramWithContinu
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -170,9 +163,7 @@ func TestLiveTxValidator_SingleErrorInPreTransactionReturnsErrorWithNoContinueOn
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -214,9 +205,7 @@ func TestLiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContinueO
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -258,9 +247,7 @@ func TestLiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContinueO
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -311,9 +298,7 @@ func TestLiveTxValidator_TwoErrorsDoNotReturnAnErrorWhenContinueOnFailureIsEnabl
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -368,9 +353,7 @@ func TestLiveTxValidator_TwoErrorsDoReturnErrorOnEventWhenContinueOnFailureIsEna
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -406,9 +389,7 @@ func TestLiveTxValidator_PreTransactionDoesNotFailWithIncorrectOutput(t *testing
 	ext := MakeLiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	alloc := &substate.Substate{
 		OutputSubstate: getIncorrectWorldState(),
@@ -438,9 +419,7 @@ func TestLiveTxValidator_PostTransactionDoesNotFailWithIncorrectInput(t *testing
 	ext := MakeLiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	alloc := &substate.Substate{
 		InputSubstate: getIncorrectWorldState(),
@@ -479,9 +458,7 @@ func TestArchiveTxValidator_ValidatorIsEnabled(t *testing.T) {
 
 	log.EXPECT().Warning(gomock.Any())
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, nil)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestArchiveTxValidator_ValidatorDoesNotFailWithEmptySubstate(t *testing.T) {
@@ -497,9 +474,7 @@ func TestArchiveTxValidator_ValidatorDoesNotFailWithEmptySubstate(t *testing.T) 
 
 	log.EXPECT().Warning(gomock.Any())
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -533,9 +508,7 @@ func TestArchiveTxValidator_SingleErrorInPreTransactionDoesNotEndProgramWithCont
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -568,9 +541,7 @@ func TestArchiveTxValidator_SingleErrorInPreTransactionReturnsErrorWithNoContinu
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -612,9 +583,7 @@ func TestArchiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContin
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -650,9 +619,7 @@ func TestArchiveTxValidator_SingleErrorInPostTransactionReturnsErrorWithNoContin
 	db.EXPECT().GetSubstatePostAlloc().Return(substatecontext.NewWorldState(substate.WorldState{}))
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -703,9 +670,7 @@ func TestArchiveTxValidator_TwoErrorsDoNotReturnAnErrorWhenContinueOnFailureIsEn
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -760,9 +725,7 @@ func TestArchiveTxValidator_TwoErrorsDoReturnErrorOnEventWhenContinueOnFailureIs
 	)
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -798,9 +761,7 @@ func TestArchiveTxValidator_PreTransactionDoesNotFailWithIncorrectOutput(t *test
 	ext := MakeArchiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -828,9 +789,7 @@ func TestArchiveTxValidator_PostTransactionDoesNotFailWithIncorrectInput(t *test
 	ext := MakeLiveDbValidator(cfg, ValidateTxTarget{WorldState: true, Receipt: false})
 
 	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	if err != nil {
-		t.Errorf("PreRun must not return an error, got %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       1,
@@ -924,9 +883,7 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 			pc := prime.NewContext(cfg, sDB, log)
 			// Priming state DB with given world state
 			err = pc.PrimeStateDB(ws)
-			if err != nil {
-				t.Error(err)
-			}
+			assert.NoError(t, err)
 
 			// create new random address
 			addr := common.BytesToAddress(utils.MakeRandomByteSlice(t, 40))
@@ -974,9 +931,7 @@ func TestValidateStateDb_OverwriteWorldStateDoesNotFailWithPriming(t *testing.T)
 				t.Fatalf("failed to prime account nonce; Is: %v; Should be: %v", sDB.GetNonce(addr), acc.GetNonce())
 			}
 
-			if !bytes.Equal(sDB.GetCode(addr), acc.GetCode()) {
-				t.Fatalf("failed to prime account code; Is: %v; Should be: %v", sDB.GetCode(addr), acc.GetCode())
-			}
+			assert.True(t, bytes.Equal(sDB.GetCode(addr), acc.GetCode()))
 
 			acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
 				if sDB.GetState(addr, keyHash) != valueHash {

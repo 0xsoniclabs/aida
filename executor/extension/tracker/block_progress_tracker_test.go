@@ -31,6 +31,7 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/substate"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -96,48 +97,39 @@ func TestSubstateProgressTrackerExtension_LoggingHappens(t *testing.T) {
 		),
 	)
 
-	if err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx); err != nil {
-		t.Fatalf("PreRun failed: %v", err)
-	}
+	err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	assert.NoError(t, err)
 
 	// first processed block
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 5,
-	}, ctx); err != nil {
-		t.Fatalf("PostBlock failed: %v", err)
-	}
+	}, ctx)
+	assert.NoError(t, err)
 
 	time.Sleep(500 * time.Millisecond)
 
 	// second processed block
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 6,
-	}, ctx); err != nil {
-		t.Fatalf("PostBlock failed: %v", err)
-	}
+	}, ctx)
+	assert.NoError(t, err)
 
 	time.Sleep(500 * time.Millisecond)
 
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: s}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block: 8,
-	}, ctx); err != nil {
-		t.Fatalf("PostBlock failed: %v", err)
-	}
+	}, ctx)
+	assert.NoError(t, err)
 }
 
 func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
@@ -161,35 +153,30 @@ func TestSubstateProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 		},
 	})
 
-	if err := ext.PreRun(executor.State[txcontext.TxContext]{
+	err := ext.PreRun(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 0,
 		Data:        s,
-	}, ctx); err != nil {
-		t.Fatalf("PreRun failed: %v", err)
-	}
-
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{
+	}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 0,
 		Data:        s,
-	}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostTransaction(executor.State[txcontext.TxContext]{
+	}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostTransaction(executor.State[txcontext.TxContext]{
 		Block:       4,
 		Transaction: 1,
 		Data:        s,
-	}, ctx); err != nil {
-		t.Fatalf("PostTransaction failed: %v", err)
-	}
-	if err := ext.PostBlock(executor.State[txcontext.TxContext]{
+	}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostBlock(executor.State[txcontext.TxContext]{
 		Block:       5,
 		Transaction: 0,
 		Data:        s,
-	}, ctx); err != nil {
-		t.Fatalf("PostBlock failed: %v", err)
-	}
+	}, ctx)
+	assert.NoError(t, err)
 }
 
 func Test_LoggingFormatMatchesRubyScript(t *testing.T) {

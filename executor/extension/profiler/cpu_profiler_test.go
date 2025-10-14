@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCpuExtension_CollectsProfileDataIfEnabled(t *testing.T) {
@@ -33,13 +34,10 @@ func TestCpuExtension_CollectsProfileDataIfEnabled(t *testing.T) {
 	cfg.CPUProfile = path
 	ext := MakeCpuProfiler[any](cfg)
 
-	if err := ext.PreRun(executor.State[any]{}, nil); err != nil {
-		t.Fatalf("failed to to run pre-run: %v", err)
-	}
-	err := ext.PostRun(executor.State[any]{}, nil, nil)
-	if err != nil {
-		t.Fatalf("failed to to post post-run: %v", err)
-	}
+	err := ext.PreRun(executor.State[any]{}, nil)
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[any]{}, nil, nil)
+	assert.NoError(t, err)
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		t.Errorf("no profile was collected")
@@ -64,9 +62,7 @@ func TestCpuExtension_CollectsIntervalProfileDataIfEnabled(t *testing.T) {
 	}
 
 	err := ext.PostRun(executor.State[any]{}, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	for _, interval := range []int{0, 1, 2} {
 		file := fmt.Sprintf("%s_%05d", path, interval)

@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/stretchr/testify/assert"
 )
 
 func initSetNonce(t *testing.T) (*context.Replay, *SetNonce, common.Address, uint64) {
@@ -69,12 +70,8 @@ func TestSetNonceExecute(t *testing.T) {
 	// check execution
 	mock := NewMockStateDB()
 	execute, err := op.Execute(mock, ctx)
-	if err != nil {
-		t.Fatalf("failed to execute operation; %v", err)
-	}
-	if execute <= 0 {
-		t.Fatalf("expected execution to be > 0; got %v", execute)
-	}
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{SetNonceID, []any{addr, nonce, tracing.NonceChangeUnspecified}}}

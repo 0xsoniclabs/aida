@@ -216,16 +216,14 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 		stateDb.EXPECT().GetMemoryUsage().Return(&state.MemoryUsage{UsedBytes: 5555}),
 	)
 
-	if err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx); err != nil {
-		t.Fatalf("PreRun failed: %v", err)
-	}
+	err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	assert.NoError(t, err)
 
 	sub := substatecontext.NewTxContext(s)
 
 	for b := int(cfg.First); b < int(cfg.Last); b++ {
-		if err := ext.PreBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx); err != nil {
-			t.Fatalf("PreBlock failed: %v", err)
-		}
+		err = ext.PreBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		assert.NoError(t, err)
 
 		// check if a print happens here
 		if b > int(itv.End()) {
@@ -233,59 +231,53 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 			expectedRowCount++
 		}
 		stats := []statsResponse{}
-		if err := stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)}); err != nil {
-			t.Fatalf("Failed to select stats: %v", err)
-		}
+		err = stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+		assert.NoError(t, err)
+
 		if len(stats) != expectedRowCount {
 			t.Errorf("Expected #Row: %d, Actual #Row: %d", expectedRowCount, len(stats))
 		}
 
-		if err := ext.PreTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx); err != nil {
-			t.Fatalf("PreTransaction failed: %v", err)
-		}
-		if err := ext.PostTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx); err != nil {
-			t.Fatalf("PostTransaction failed: %v", err)
-		}
-		if err := ext.PostBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx); err != nil {
-			t.Fatalf("PostBlock failed: %v", err)
-		}
+		err = ext.PreTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
+		assert.NoError(t, err)
+
+		err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
+		assert.NoError(t, err)
+
+		err = ext.PostBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		assert.NoError(t, err)
 	}
 
-	if err := ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, nil); err != nil {
-		t.Fatalf("PostRun failed: %v", err)
-	}
+	err = ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, nil)
+	assert.NoError(t, err)
 
 	// check if a print happens here
 	expectedRowCount++
 	stats := []statsResponse{}
-	if err := stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)}); err != nil {
-		t.Fatalf("Failed to select stats: %v", err)
-	}
+	err = stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+	assert.NoError(t, err)
 	if len(stats) != expectedRowCount {
 		t.Errorf("Expected #Row: %d, Actual #Row: %d", expectedRowCount, len(stats))
 	}
 
 	// Check that metadata is not duplicated
 	ms := []metadataResponse{}
-	if err := meta.Select(&ms, metadataQuery{"Processor"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"Processor"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected runtime to be recorded once, Actual #Row: %d", len(ms))
 	}
 
 	// check if runtime is recorded after postrun
-	if err := meta.Select(&ms, metadataQuery{"Runtime"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"Runtime"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected runtime to be recorded once, Actual #Row: %d", len(ms))
 	}
 
 	// check if RunSucceed is recorded after postrun
-	if err := meta.Select(&ms, metadataQuery{"RunSucceed"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"RunSucceed"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunSucceed to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -294,22 +286,18 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 	}
 
 	// check if RunError is not recorded
-	if err := meta.Select(&ms, metadataQuery{"RunError"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"RunError"})
+	assert.NoError(t, err)
 	if len(ms) != 0 {
 		t.Errorf("Expected RunError should not be recorded, Actual: #Row: %d", len(ms))
 	}
 
-	if err := meta.Close(); err != nil {
-		t.Errorf("Failed to close meta statement: %v", err)
-	}
-	if err := stmt.Close(); err != nil {
-		t.Errorf("Failed to close stmt: %v", err)
-	}
-	if err := sDb.Close(); err != nil {
-		t.Errorf("Failed to close database: %v", err)
-	}
+	err = meta.Close()
+	assert.NoError(t, err)
+	err = stmt.Close()
+	assert.NoError(t, err)
+	err = sDb.Close()
+	assert.NoError(t, err)
 }
 
 func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
@@ -364,18 +352,15 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 
 	// this is the run
 	errorText := "This is one random error!"
-	if err := ext.PreRun(executor.State[txcontext.TxContext]{}, ctx); err != nil {
-		t.Fatalf("PreRun failed: %v", err)
-	}
-	if err := ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf("%s", errorText)); err != nil {
-		t.Fatalf("PostRun failed: %v", err)
-	}
+	err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf("%s", errorText))
+	assert.NoError(t, err)
 
 	// check if RunSucceed is recorded after postrun
 	ms := []metadataResponse{}
-	if err := meta.Select(&ms, metadataQuery{"RunSucceed"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"RunSucceed"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunSucceed to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -384,9 +369,8 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	}
 
 	// check if RunError is recorded after postrun
-	if err := meta.Select(&ms, metadataQuery{"RunError"}); err != nil {
-		t.Fatalf("Failed to select metadata: %v", err)
-	}
+	err = meta.Select(&ms, metadataQuery{"RunError"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunError to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -395,13 +379,9 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	}
 
 	err = meta.Close()
-	if err != nil {
-		t.Fatalf("Failed to close db at %s. \n%s", connection, err)
-	}
+	assert.NoError(t, err)
 	err = sDb.Close()
-	if err != nil {
-		t.Fatalf("Failed to close db at %s. \n%s", connection, err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestRegisterProgress_ExtensionContinuesDespiteFetchEnvFailure(t *testing.T) {

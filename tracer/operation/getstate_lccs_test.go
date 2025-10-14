@@ -24,6 +24,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func initGetStateLccs(t *testing.T) (*context.Replay, *GetStateLccs, common.Address, common.Hash, common.Hash) {
@@ -74,22 +75,14 @@ func TestGetStateLccsExecute(t *testing.T) {
 	// check execution
 	mock := NewMockStateDB()
 	execute, err := op.Execute(mock, ctx)
-	if err != nil {
-		t.Fatalf("failed to execute operation; %v", err)
-	}
-	if execute <= 0 {
-		t.Fatalf("expected execution to be > 0; got %v", execute)
-	}
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	ctx.EncodeKey(storage2)
 
 	execute, err = op.Execute(mock, ctx)
-	if err != nil {
-		t.Fatalf("failed to execute operation; %v", err)
-	}
-	if execute <= 0 {
-		t.Fatalf("expected execution to be > 0; got %v", execute)
-	}
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{GetStateID, []any{addr, storage}}, {GetStateID, []any{addr, storage2}}}

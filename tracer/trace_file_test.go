@@ -27,6 +27,7 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/dsnet/compress/bzip2"
+	"github.com/stretchr/testify/assert"
 )
 
 const firstBlockInTrace = 10
@@ -128,10 +129,7 @@ func TestTraceFile_NewAndRelease(t *testing.T) {
 		t.Fatalf("Fail to create a trace file %v; %v", cfg.TraceFile, err)
 	}
 	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, os.Remove(name))
 	}(cfg.TraceFile)
 	// open an existing trace file -- expecting no errors
 	tf, err := NewTraceFile(cfg.TraceFile)
@@ -152,9 +150,7 @@ func TestTraceFile_NewAndRelease(t *testing.T) {
 	}
 	defer func(name string) {
 		err = errors.Join(err, os.Remove(name))
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(fname)
 	if _, err := NewTraceFile(fname); err == nil {
 		t.Fatalf("Expect an error reading trace's first block")
@@ -204,10 +200,7 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 		t.Fatalf("Fail to create a trace file %v; %v", cfg.TraceFile, err)
 	}
 	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			t.Fatalf("Fail to remove a trace file %v; %v", name, err)
-		}
+		assert.NoError(t, os.Remove(name))
 	}(cfg.TraceFile)
 	list, err := GetTraceFiles(cfg)
 	if err != nil {
@@ -228,10 +221,7 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 		t.Fatalf("Fail to prepare a trace directory %v; %v", cfg.TraceDirectory, err)
 	}
 	defer func(path string) {
-		err = os.RemoveAll(path)
-		if err != nil {
-			t.Fatalf("Fail to remove a trace directory %v; %v", path, err)
-		}
+		assert.NoError(t, os.RemoveAll(path))
 	}(cfg.TraceDirectory)
 	list, err = GetTraceFiles(cfg)
 	if err != nil {
@@ -251,8 +241,6 @@ func TestTraceFile_GetTraceFiles(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Trace are not given; expect an error")
 	}
-	if len(list) != 0 {
-		t.Fatalf("No trace files should be found")
-	}
+	assert.Len(t, list, 0)
 
 }

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/stretchr/testify/assert"
 )
 
 func initBeginBlock(t *testing.T) (*context.Replay, *BeginBlock, uint64) {
@@ -65,12 +66,8 @@ func TestBeginBlockExecute(t *testing.T) {
 	// check execution
 	mock := NewMockStateDB()
 	execute, err := op.Execute(mock, ctx)
-	if err != nil {
-		t.Fatalf("failed to execute operation; %v", err)
-	}
-	if execute <= 0 {
-		t.Fatalf("execution time is not positive")
-	}
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{BeginBlockID, []any{op.BlockNumber}}}

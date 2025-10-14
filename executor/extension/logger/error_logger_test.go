@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -33,13 +34,8 @@ func TestErrorLogger_FileIsNotCreatedIfNotDefined(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := makeErrorLogger[any](cfg, logger.NewLogger("critical", "Test"))
 	err := ext.PreRun(executor.State[any]{}, new(executor.Context))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if ext.file != nil {
-		t.Error("file must be nil")
-	}
+	assert.NoError(t, err)
+	assert.Nil(t, ext.file)
 }
 
 func TestErrorLogger_PostRunClosesLoggingThreadAndDoesNotBlockTheExecution(t *testing.T) {
@@ -49,16 +45,13 @@ func TestErrorLogger_PostRunClosesLoggingThreadAndDoesNotBlockTheExecution(t *te
 	ctx := new(executor.Context)
 
 	err := ext.PreRun(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)
 	go func() {
-		if err := ext.PostRun(executor.State[any]{}, ctx, nil); err != nil {
-			t.Errorf("unexpected error; %v", err)
-		}
+		err = ext.PostRun(executor.State[any]{}, ctx, nil)
+		assert.NoError(t, err)
 		close(done)
 	}()
 

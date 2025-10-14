@@ -38,16 +38,13 @@ func TestProgressLoggerExtension_CorrectClose(t *testing.T) {
 
 	// start the report thread
 	err := ext.PreRun(executor.State[any]{}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)
 	go func() {
-		if err := ext.PostRun(executor.State[any]{}, nil, nil); err != nil {
-			t.Errorf("PostRun failed: %v", err)
-		}
+		err = ext.PostRun(executor.State[any]{}, nil, nil)
+		assert.NoError(t, err)
 		close(done)
 	}()
 
@@ -78,9 +75,7 @@ func TestProgressLoggerExtension_LoggingHappens(t *testing.T) {
 	ext := makeProgressLogger[*substate.Substate](cfg, testProgressReportFrequency, log)
 
 	err := ext.PreRun(executor.State[*substate.Substate]{}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	gomock.InOrder(
 		// scheduled logging
@@ -105,16 +100,13 @@ func TestProgressLoggerExtension_LoggingHappens(t *testing.T) {
 	}, &executor.Context{
 		ExecutionResult: substatecontext.NewReceipt(&substate.Result{GasUsed: 100_000_000}),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	// we must wait for the ticker to tick
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
-	if err := ext.PostRun(executor.State[*substate.Substate]{}, nil, nil); err != nil {
-		t.Fatalf("PostRun failed: %v", err)
-	}
+	err = ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	assert.NoError(t, err)
 }
 
 func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTicks(t *testing.T) {
@@ -127,9 +119,7 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	ext := makeProgressLogger[*substate.Substate](cfg, 10*time.Second, log)
 
 	err := ext.PreRun(executor.State[*substate.Substate]{}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	log.EXPECT().Noticef(finalSummaryProgressReportFormat,
 		gomock.Any(), 1,
@@ -145,16 +135,13 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	}, &executor.Context{
 		ExecutionResult: substatecontext.NewReceipt(&substate.Result{GasUsed: 100_000_000}),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	// wait for data to get into logger
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
-	if err := ext.PostRun(executor.State[*substate.Substate]{}, nil, nil); err != nil {
-		t.Fatalf("PostRun failed: %v", err)
-	}
+	err = ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	assert.NoError(t, err)
 }
 
 func TestProgressLoggerExtension_MakeProgressLogger(t *testing.T) {

@@ -99,9 +99,7 @@ func TestTableHash_Filled(t *testing.T) {
 
 	defer func(database db.BaseDB) {
 		err = errors.Join(err, database.Close())
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -145,9 +143,7 @@ func TestTableHash_JustSubstate(t *testing.T) {
 
 	defer func(database db.BaseDB) {
 		err = errors.Join(err, database.Close())
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -181,9 +177,7 @@ func TestTableHash_JustDelete(t *testing.T) {
 
 	defer func(database db.BaseDB) {
 		err = errors.Join(err, database.Close())
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -217,9 +211,7 @@ func TestTableHash_JustUpdate(t *testing.T) {
 
 	defer func(database db.BaseDB) {
 		err = errors.Join(err, database.Close())
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -253,9 +245,7 @@ func TestTableHash_JustStateHash(t *testing.T) {
 
 	defer func(database db.BaseDB) {
 		err = errors.Join(err, database.Close())
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -288,10 +278,7 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 	}
 
 	defer func(database db.BaseDB) {
-		err = database.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, database.Close())
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -324,10 +311,7 @@ func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 	}
 
 	defer func(database db.BaseDB) {
-		err = database.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, database.Close())
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -399,10 +383,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer func(database db.BaseDB) {
-				err = database.Close()
-				if err != nil {
-					t.Fatal(err)
-				}
+				assert.NoError(t, database.Close())
 			}(database)
 
 			tc.setup(t, database)
@@ -437,10 +418,7 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 	}
 
 	defer func(database db.BaseDB) {
-		err = database.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, database.Close())
 	}(database)
 
 	ctrl := gomock.NewController(t)
@@ -467,10 +445,7 @@ func TestTableHash_JustException(t *testing.T) {
 	}
 
 	defer func(database db.BaseDB) {
-		err = database.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, database.Close())
 	}(database)
 
 	ctrl := gomock.NewController(t)

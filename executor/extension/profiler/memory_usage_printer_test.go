@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/gogo/protobuf/plugin/stringer"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -53,14 +54,9 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenBreakdownIsNil(t *tes
 	)
 
 	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenDatabaseIsNil(t *testing.T) {
@@ -77,14 +73,9 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenDatabaseIsNil(t *test
 	)
 
 	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: nil})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: nil}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_MemoryBreakdownIsPrintedWhenEnabled(t *testing.T) {
@@ -113,14 +104,9 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsPrintedWhenEnabled(t *testing.T) {
 	)
 
 	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_NoPrinterIsCreatedIfNotEnabled(t *testing.T) {

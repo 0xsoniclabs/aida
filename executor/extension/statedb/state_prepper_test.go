@@ -25,6 +25,7 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -48,17 +49,13 @@ func TestStatePrepper_PreparesStateBeforeEachTransaction(t *testing.T) {
 		Block: 5,
 		Data:  allocA,
 	}, ctx)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{
 		Block: 7,
 		Data:  allocB,
 	}, ctx)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
@@ -69,15 +66,9 @@ func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
 	prepper := MakeStateDbPrepper()
 	// Check error return values (if any) for PreTransaction
 	err := prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, nil) // misses both
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, ctx) // misses the data
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5, Data: substatecontext.NewTxContext(&substate.Substate{})}, nil) // misses the state
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	assert.NoError(t, err)
 }

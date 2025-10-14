@@ -88,17 +88,11 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 
 		// PRE BLOCK
 		err := ext.PreRun(executor.State[any]{}, &mockCtx)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 		err = ext.PreBlock(executor.State[any]{Block: int(cfg.First)}, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 		err = ext.PreTransaction(executor.State[any]{Transaction: int(0)}, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		// call each function once as a single tx in a single block
 		funcs := getStateDbFuncs(mockCtx.State)
@@ -150,17 +144,11 @@ func TestOperationProfiler_WithEachOpOnce(t *testing.T) {
 
 		// POST BLOCK
 		err = ext.PostTransaction(executor.State[any]{Transaction: int(0)}, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 		err = ext.PostBlock(executor.State[any]{Block: int(cfg.First)}, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 		err = ext.PostRun(executor.State[any]{}, nil, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 	})
 }
@@ -232,9 +220,7 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 			intervalEnd := intervalStart + test.args.interval - 1
 
 			err := ext.PreRun(executor.State[any]{}, &mockCtx)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
 			for b := test.args.first; b <= test.args.last; b += 1 + r.Intn(3) {
 
 				if b > intervalEnd {
@@ -243,10 +229,8 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 					intervalGeneratedOpCount = 0
 				}
 
-				err := ext.PreBlock(executor.State[any]{Block: int(b)}, nil)
-				if err != nil {
-					t.Fatal(err)
-				}
+				err = ext.PreBlock(executor.State[any]{Block: int(b)}, nil)
+				assert.NoError(t, err)
 				if b > intervalEnd {
 					// make sure that the stats is reset
 					if getTotalOpCount(ext.anlts[0]) != 0 {
@@ -269,9 +253,7 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 				}
 
 				err = ext.PostBlock(executor.State[any]{Block: int(b)}, nil)
-				if err != nil {
-					t.Fatal(err)
-				}
+				assert.NoError(t, err)
 
 				// check that amount of ops seen eqals to amount of ops generated within this interval
 				if getTotalOpCount(ext.anlts[0]) != intervalGeneratedOpCount {
@@ -286,9 +268,7 @@ func TestOperationProfiler_WithRandomInput(t *testing.T) {
 			}
 
 			err = ext.PostRun(executor.State[any]{}, nil, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
 		})
 	}
 }
