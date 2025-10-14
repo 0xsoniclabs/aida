@@ -2,7 +2,7 @@
 
 # Check if the correct number of arguments is provided.
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <log_file> <fb|lb|fe|le>"
+    echo "Usage: $0 <log_file> <fb|lb|fe|le|md>"
     exit 1
 fi
 
@@ -11,10 +11,10 @@ argument="$2"
 
 # Validate the argument.
 case "$argument" in
-    "fb"|"lb"|"fe"|"le")
+    "fb"|"lb"|"fe"|"le"|"md")
         ;;
     *)
-        echo "Invalid argument. Use 'fb' for First Block, 'lb' for Last Block, 'fe' for First Epoch, or 'le' for Last Epoch."
+        echo "Invalid argument. Use 'fb' for First Block, 'lb' for Last Block, 'fe' for First Epoch, or 'le' for Last Epoch. 'md' for hash."
         exit 1
         ;;
 esac
@@ -33,6 +33,9 @@ case "$argument" in
     "le")
         value=$(grep -oP "Last Epoch: \K\d+" "$log_file")
         ;;
+    "md")
+        value=$(grep -oP "Db Hash: \\K[0-9a-fA-F]+" "$log_file")
+        ;;
 esac
 
-echo "$value"
+echo "$value" | xargs
