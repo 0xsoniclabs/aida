@@ -1085,6 +1085,7 @@ func Test_setAidaDbRepositoryUrl(t *testing.T) {
 		{"Hoodi", HoodiChainID, AidaDbRepositoryHoodiUrl},
 		{"Sepolia", SepoliaChainID, AidaDbRepositorySepoliaUrl},
 		{"Unknown", ChainID(999), AidaDbRepositorySonicUrl}, // Unknown chain ID defaults to Sonic
+		{"Test", TestChainID, AidaDbRepositoryTestUrl},      // Test chain ID - used for testing
 	}
 
 	for _, tc := range testCases {
