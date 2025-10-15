@@ -19,7 +19,9 @@ package blockprofile
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
+	"github.com/0xsoniclabs/aida/utils"
 	// Your main or test packages require this import so the sql package is properly initialized.
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -45,6 +47,15 @@ block, tx, txType, duration, gas
 )
 `
 
+	// SQL statement for inserting metadata of the profiling run
+	insertMetadataSQL = `
+INSERT INTO metadata (
+    chainid, processor, memory, disks, os, machine
+) VALUES (
+    ?, ?, ?, ?, ?, ?
+)
+`
+
 	// SQL statement for creating profiling tables
 	createSQL = `
 PRAGMA journal_mode = MEMORY;
@@ -66,6 +77,16 @@ CREATE TABLE IF NOT EXISTS txProfile (
 	duration INTEGER,
 	gas INTEGER
 );
+CREATE TABLE IF NOT EXISTS metadata (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    createTimestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    chainid INTEGER,
+    processor TEXT,
+    memory TEXT,
+    disks TEXT,
+    os TEXT,
+    machine TEXT
+);
 `
 )
 
@@ -86,7 +107,12 @@ type profileDB struct {
 }
 
 // NewProfileDB constructs a new profiling database.
-func NewProfileDB(dbFile string) (*profileDB, error) {
+// For unknown chain or testing, chainID may be 0.
+func NewProfileDB(dbFile string, chainID utils.ChainID) (ProfileDB, error) {
+	return newProfileDB(dbFile, chainID)
+}
+
+func newProfileDB(dbFile string, chainID utils.ChainID) (*profileDB, error) {
 	// open SQLITE3 DB
 	sqlDB, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
@@ -104,6 +130,12 @@ func NewProfileDB(dbFile string) (*profileDB, error) {
 	txStmt, err := sqlDB.Prepare(insertTxSQL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare a SQL statement for tx profile; %v", err)
+	}
+	// update metadata
+	cmd := command{executor: utils.NewShell()}
+	err = insertMetadata(sqlDB, chainID, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert metadata; %v", err)
 	}
 
 	return &profileDB{
@@ -202,4 +234,97 @@ func (db *profileDB) DeleteByBlockRange(firstBlock, lastBlock uint64) (int64, er
 	}
 
 	return totalNumRows, nil
+}
+
+// insertMetadata inserts metadata of the profiling run
+func insertMetadata(sqlDB *sql.DB, chainID utils.ChainID, cmd command) error {
+	metadataStmt, err := sqlDB.Prepare(insertMetadataSQL)
+	if err != nil {
+		return fmt.Errorf("failed to prepare a SQL statement for metadata; %w", err)
+	}
+
+	processor, err := cmd.getProcessor()
+	if err != nil {
+		return fmt.Errorf("failed to get processor information; %w", err)
+	}
+	memory, err := cmd.getMemory()
+	if err != nil {
+		return fmt.Errorf("failed to get memory information; %w", err)
+	}
+	disks, err := cmd.getDisks()
+	if err != nil {
+		return fmt.Errorf("failed to get disk information; %w", err)
+	}
+	os, err := cmd.getOS()
+	if err != nil {
+		return fmt.Errorf("failed to get OS information; %w", err)
+	}
+	machine, err := cmd.getMachine()
+	if err != nil {
+		return fmt.Errorf("failed to get machine information; %w", err)
+	}
+
+	tx, err := sqlDB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction; %w", err)
+	}
+	_, err = tx.Stmt(metadataStmt).Exec(chainID, processor, memory, disks, os, machine)
+	if err != nil {
+		return fmt.Errorf("failed to execute metadata statement; %w", err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction; %w", err)
+	}
+	return nil
+}
+
+type command struct {
+	executor utils.ShellExecutor
+}
+
+func (c *command) getProcessor() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `cat /proc/cpuinfo | grep "^model name" | head -n 1 | awk -F': ' '{print $2}'`)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func (c *command) getMemory() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `free | grep "^Mem:" | awk '{printf("%dGB RAM\n", $2/1024/1024)}'`)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func (c *command) getDisks() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `hwinfo --disk | grep Model | awk -F ': \"' '{if (NR > 1) printf(", "); printf("%s", substr($2,1,length($2)-1));}  END {printf("\n")}'`)
+	if err != nil {
+		return "", err
+	}
+
+	// check if output contains `hwinfo: not found`
+	if strings.Contains(string(output), "hwinfo: not found") {
+		return "", fmt.Errorf("%s", string(output))
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+func (c *command) getOS() (string, error) {
+	output, err := c.executor.Command("sh", "-c", `lsb_release -d | awk -F"\t" '{print $2}'`)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func (c *command) getMachine() (string, error) {
+	output, err := c.executor.Command("sh", "-c", "echo \"`hostname`(`curl -s api.ipify.org`)\"")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
