@@ -17,6 +17,7 @@
 package visualizer
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -67,7 +68,7 @@ const MainHtml = `
 
 // renderMain renders the main menu.
 func renderMain(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, MainHtml)
+	_, _ = fmt.Fprint(w, MainHtml)
 }
 
 // convertCountingData converts CDF points to chart points.
@@ -120,7 +121,7 @@ func renderCounting(w http.ResponseWriter, r *http.Request) {
 		stats.Keys.Counting.ECDF,
 		stats.Values.Counting.ECDF,
 	)
-	chart.Render(w)
+	_ = chart.Render(w)
 }
 
 // newScalarChart creates a line chart for scalar argument distributions.
@@ -195,7 +196,7 @@ func renderSnapshotStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chart.AddSeries("eCDF", convertCountingData(view.stats.SnapshotECDF))
-	chart.Render(w)
+	_ = chart.Render(w)
 }
 
 // convertQueuingData rendering plot data for the queuing statistics.
@@ -239,7 +240,7 @@ func renderQueuing(w http.ResponseWriter, r *http.Request) {
 	scatter.AddSeries("Contract", convertQueuingData(stats.Contracts.Queuing.Distribution)).
 		AddSeries("Keys", convertQueuingData(stats.Keys.Queuing.Distribution)).
 		AddSeries("Values", convertQueuingData(stats.Values.Queuing.Distribution))
-	scatter.Render(w)
+	_ = scatter.Render(w)
 }
 
 // convertOperationData produces the data series for the sationary distribution.
@@ -291,7 +292,7 @@ func renderOperationStats(w http.ResponseWriter, r *http.Request) {
 		}))
 	bar.SetXAxis(convertOperationLabel(view.stationary)).AddSeries("Stationary Distribution", convertOperationData(view.stationary))
 	bar.XYReversal()
-	bar.Render(w)
+	_ = bar.Render(w)
 }
 
 // renderTransactionalOperationStats renders the average number of operations per transaction.
@@ -325,16 +326,18 @@ func renderTransactionalOperationStats(w http.ResponseWriter, r *http.Request) {
 			Title: title,
 		}))
 	bar.SetXAxis(convertOperationLabel(view.txOperation)).AddSeries("Ops/Tx", convertOperationData(view.txOperation))
-	bar.Render(w)
+	_ = bar.Render(w)
 }
 
 // printMarkovInDotty renders a markov chain in dotty format
-func printMarkovInDotty(title string, stochasticMatrix [][]float64, label []string) (string, error) {
+func printMarkovInDotty(title string, stochasticMatrix [][]float64, label []string) (out string, err error) {
 	g := graphviz.New()
-	graph, _ := g.Graph()
+	graph, err := g.Graph()
+	if err != nil {
+		return "", fmt.Errorf("renderMarkovChain: failed to create graph. Error: %v", err)
+	}
 	defer func() {
-		graph.Close()
-		g.Close()
+		err = errors.Join(err, graph.Close(), g.Close())
 	}()
 	n := len(label)
 	nodes := make([]*cgraph.Node, n)
@@ -394,7 +397,7 @@ func renderMarkovChain(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
-	fmt.Fprint(w, txt)
+	_, _ = fmt.Fprint(w, txt)
 }
 
 // renderSimplifiedMarkovChain renders the simplified markov chain whose nodes have no argument classes.
@@ -412,14 +415,14 @@ func renderSimplifiedMarkovChain(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
-	fmt.Fprint(w, txt)
+	_, _ = fmt.Fprint(w, txt)
 }
 
 // FireUpWeb produces a data model for the recorded markov stats and
 // visualizes with a local web-server.
-func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
+func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) error {
 	if err := setViewState(statsJSON); err != nil {
-		panic(err)
+		return err
 	}
 
 	// create web server
@@ -432,5 +435,5 @@ func FireUpWeb(statsJSON *recorder.StatsJSON, addr string) {
 	http.HandleFunc("/"+txoperationRef, renderTransactionalOperationStats)
 	http.HandleFunc("/"+simplifiedMarkovRef, renderSimplifiedMarkovChain)
 	http.HandleFunc("/"+markovRef, renderMarkovChain)
-	http.ListenAndServe(":"+addr, nil)
+	return http.ListenAndServe(":"+addr, nil)
 }

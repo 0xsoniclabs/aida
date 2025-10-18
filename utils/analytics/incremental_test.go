@@ -20,7 +20,7 @@ func TestIncrementalStats_String(t *testing.T) {
 		m4:    0,
 	}
 
-	str, err := json.Marshal(obj)
+	str, err := json.Marshal(obj) //nolint:staticcheck // SA9005: ignore for test comparison
 	assert.NoError(t, err)
 	assert.Equal(t, string(str), obj.String())
 }
