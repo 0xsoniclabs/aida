@@ -31,11 +31,11 @@ import (
 
 func TestBipartite_NewBipartiteGraph(t *testing.T) {
 	g0 := NewBipartiteGraph(0)
-	assert.NotNil(t, g0)
+	assert.Nil(t, g0)
 
 	g1 := NewBipartiteGraph(1)
 	assert.NotNil(t, g1)
-	assert.Equal(t, 1, g1.n)
+	assert.Equal(t, uint32(1), g1.n)
 }
 
 func TestBipartite_AddEdge(t *testing.T) {
@@ -124,7 +124,7 @@ func TestBipartite_MaxMatchingSimple(t *testing.T) {
 
 	size, err := g.MaxMatching()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(1), size)
+	assert.Equal(t, 1, size)
 
 	err = CheckConsistentPairing(g.MatchU, g.MatchV)
 	assert.NoError(t, err)
@@ -280,9 +280,8 @@ func TestBipartite_MaxMatchingTwice(t *testing.T) {
 	_, err = g.MaxMatching()
 	assert.NoError(t, err)
 	_, err = g.MaxMatching()
-	if err == nil || !strings.Contains(err.Error(), "Matching has already been performed") {
-		t.Errorf("Expected Matching has already been performed, got %v", err)
-	}
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "matching has already been performed")
 }
 
 // fromAdjacencyMatrix creates a BipartiteGraph from adjacency matrix string
