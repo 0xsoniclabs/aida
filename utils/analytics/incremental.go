@@ -175,5 +175,6 @@ func (s *IncrementalStats) GetMax() float64 {
 }
 
 func (s *IncrementalStats) String() string {
-	return ""
+	// IncrementalStats has no exported fields, so return empty JSON object
+	return "{}"
 }
