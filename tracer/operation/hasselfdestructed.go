@@ -56,11 +56,11 @@ func (op *HasSelfDestructed) Write(f io.Writer) error {
 }
 
 // Execute the HasSelfDestructed operation.
-func (op *HasSelfDestructed) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *HasSelfDestructed) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.HasSelfDestructed(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the HasSelfDestructed operation.

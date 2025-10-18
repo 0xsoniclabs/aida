@@ -56,10 +56,10 @@ func (op *Finalise) Write(f io.Writer) error {
 }
 
 // Execute the finalise operation.
-func (op *Finalise) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *Finalise) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
 	db.Finalise(op.DeleteEmptyObjects)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the finalise operation.

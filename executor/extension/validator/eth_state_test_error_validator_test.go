@@ -31,6 +31,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -125,9 +126,7 @@ func TestEthStateTestValidator_MakeEthStateTestErrorValidator(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.Validate = true
 	ext := MakeEthStateTestErrorValidator(cfg)
-	if _, ok := ext.(executor.Extension[txcontext.TxContext]); !ok {
-		t.Fatal("unexpected extension initialization")
-	}
+	assert.NotNil(t, ext)
 
 	cfg.Validate = false
 	ext = MakeEthStateTestErrorValidator(cfg)

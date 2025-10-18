@@ -55,13 +55,13 @@ type parentBlockHashProcessor struct {
 // iEvmProcessor is an interface that defines the method to process the parent block hash.
 type iEvmProcessor interface {
 	// ProcessParentBlockHash saves prevHash in the blockchain.
-	ProcessParentBlockHash(common.Hash, *vm.EVM, state.StateDB)
+	ProcessParentBlockHash(common.Hash, *vm.EVM, state.StateDB) error
 }
 
 // evmProcessor is a wrapper around evmcore.ProcessParentBlockHash.
 type evmProcessor struct{}
 
-func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, state state.StateDB) {
+func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, state state.StateDB) error {
 	msg := &core.Message{
 		From:      params.SystemAddress,
 		GasLimit:  30_000_000,
@@ -79,7 +79,7 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 		_, _, _ = evm.Call(msg.From, *msg.To, msg.Data, 30_000_000, common.U2560)
 	}
 	state.Finalise(true)
-	state.EndTransaction()
+	return state.EndTransaction()
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
@@ -116,7 +116,10 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
-	p.processor.ProcessParentBlockHash(prevBlockHash, evm, ctx.State)
+	err = p.processor.ProcessParentBlockHash(prevBlockHash, evm, ctx.State)
+	if err != nil {
+		return err
+	}
 	if hashError != nil {
 		return fmt.Errorf("hash error while processing parent block hash: %v", err)
 	}

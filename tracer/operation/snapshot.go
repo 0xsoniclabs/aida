@@ -58,7 +58,7 @@ func (op *Snapshot) Write(f io.Writer) error {
 }
 
 // Execute the snapshot operation.
-func (op *Snapshot) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *Snapshot) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
 	ID := db.Snapshot()
 	elapsed := time.Since(start)
@@ -66,7 +66,7 @@ func (op *Snapshot) Execute(db state.StateDB, ctx *context.Replay) time.Duration
 		log.Fatalf("Snapshot ID exceeds 32 bit")
 	}
 	ctx.AddSnapshot(op.SnapshotID, int32(ID))
-	return elapsed
+	return elapsed, nil
 }
 
 // Debug prints the details for the snapshot operation.

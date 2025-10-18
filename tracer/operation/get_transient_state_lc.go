@@ -62,12 +62,12 @@ func (op *GetTransientStateLc) Write(f io.Writer) error {
 }
 
 // Execute the get-transient-state-lc operation.
-func (op *GetTransientStateLc) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetTransientStateLc) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.PrevContract()
 	storage := ctx.DecodeKey(op.Key)
 	start := time.Now()
 	db.GetState(contract, storage)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-transient-state-lc operation.

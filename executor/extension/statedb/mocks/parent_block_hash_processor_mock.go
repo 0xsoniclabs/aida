@@ -43,9 +43,11 @@ func (m *MockiEvmProcessor) EXPECT() *MockiEvmProcessorMockRecorder {
 }
 
 // ProcessParentBlockHash mocks base method.
-func (m *MockiEvmProcessor) ProcessParentBlockHash(arg0 common.Hash, arg1 *vm.EVM, arg2 state.StateDB) {
+func (m *MockiEvmProcessor) ProcessParentBlockHash(arg0 common.Hash, arg1 *vm.EVM, arg2 state.StateDB) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ProcessParentBlockHash", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ProcessParentBlockHash", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // ProcessParentBlockHash indicates an expected call of ProcessParentBlockHash.

@@ -1,5 +1,12 @@
 version: "2"
 linters:
+  exclusions:
+    paths:
+      - "vendor/.*"
+      - "carmen/.*"
+      - "sonic/.*"
+      - "tosca/.*"
+      - "scripts/.*"
   settings:
     staticcheck:
       initialisms: []

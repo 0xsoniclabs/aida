@@ -57,11 +57,11 @@ func (op *GetStorageRoot) Write(f io.Writer) error {
 }
 
 // Execute the get-storage-root operation.
-func (op *GetStorageRoot) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetStorageRoot) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.GetStorageRoot(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-storage-root operation.

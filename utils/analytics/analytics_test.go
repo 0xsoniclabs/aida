@@ -62,18 +62,6 @@ func assertIsNaN(t *testing.T, a float64) {
 	}
 }
 
-// Assert if Kahan Sum is more corect than naive sum
-func assertKahanSumMoreCorrect(t *testing.T, actual float64, sum float64, ksum float64) float64 {
-	diff := math.Abs(actual - sum)
-	kdiff := math.Abs(actual - ksum)
-
-	if kdiff > diff {
-		t.Errorf("kahan sum %.15f is further from %f (%.15f) than %.15f (%.15f)", ksum, actual, kdiff, sum, diff)
-	}
-
-	return ksum - sum
-}
-
 //
 // Testcases
 //
