@@ -139,3 +139,7 @@ check:
 check-license:
 	@cd scripts/license && go build -o add_license_header_go add_license_header.go
 	@cd scripts/license && chmod +x add_license_header_go && ./add_license_header_go --check
+
+add-license:
+	@cd scripts/license && go build -o add_license_header_go add_license_header.go
+	@cd scripts/license && chmod +x add_license_header_go && ./add_license_header_go
