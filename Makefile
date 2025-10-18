@@ -137,4 +137,5 @@ check:
 	@golangci-lint run -c .golangci.yml ./...
 
 check-license:
-	@cd scripts/license && chmod +x add_license_header.sh && ./add_license_header.sh --check
+	@cd scripts/license && go build -o add_license_header_go add_license_header.go
+	@cd scripts/license && chmod +x add_license_header_go && ./add_license_header_go --check
