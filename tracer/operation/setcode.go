@@ -24,6 +24,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 )
@@ -32,6 +33,7 @@ import (
 type SetCode struct {
 	Contract common.Address
 	Bytecode []byte // encoded bytecode
+	Reason   tracing.CodeChangeReason
 }
 
 // GetId returns the set-code operation identifier.
@@ -40,8 +42,8 @@ func (op *SetCode) GetId() byte {
 }
 
 // NewSetCode creates a new set-code operation.
-func NewSetCode(contract common.Address, bytecode []byte) *SetCode {
-	return &SetCode{Contract: contract, Bytecode: bytecode}
+func NewSetCode(contract common.Address, bytecode []byte, reason tracing.CodeChangeReason) *SetCode {
+	return &SetCode{Contract: contract, Bytecode: bytecode, Reason: reason}
 }
 
 // ReadSetCode reads a set-code operation from a file.
@@ -80,11 +82,11 @@ func (op *SetCode) Write(f io.Writer) error {
 func (op *SetCode) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
-	db.SetCode(contract, op.Bytecode)
+	db.SetCode(contract, op.Bytecode, op.Reason)
 	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the set-code operation.
 func (op *SetCode) Debug(ctx *context.Context) {
-	fmt.Printf("%v%v", op.Contract, op.Bytecode)
+	fmt.Printf("%v%v%v", op.Contract, op.Bytecode, op.Reason)
 }

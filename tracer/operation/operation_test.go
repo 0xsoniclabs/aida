@@ -156,8 +156,8 @@ func (s *MockStateDB) GetCodeSize(addr common.Address) int {
 	return 0
 }
 
-func (s *MockStateDB) SetCode(addr common.Address, code []byte) []byte {
-	s.recording = append(s.recording, Record{SetCodeID, []any{addr, code}})
+func (s *MockStateDB) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
+	s.recording = append(s.recording, Record{SetCodeID, []any{addr, code, reason}})
 	return nil
 }
 

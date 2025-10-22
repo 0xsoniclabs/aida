@@ -599,7 +599,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		if err != nil {
 			return fmt.Errorf("execute: error producing a random byte slice for code: %w", err)
 		}
-		db.SetCode(addr, code)
+		db.SetCode(addr, code, tracing.CodeChangeUnspecified)
 
 	case operations.SetNonceID:
 		value := uint64(ss.nonceSampler.Sample(int64(ss.nonceRange)))

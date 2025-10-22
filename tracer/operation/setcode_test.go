@@ -24,10 +24,11 @@ import (
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/stretchr/testify/assert"
 )
 
-func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byte) {
+func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byte, tracing.CodeChangeReason) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
 	code := make([]byte, 100)
@@ -38,7 +39,7 @@ func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byt
 	contract := ctx.EncodeContract(addr)
 
 	// create new operation
-	op := NewSetCode(contract, code)
+	op := NewSetCode(contract, code, tracing.CodeChangeUnspecified)
 	if op == nil {
 		t.Fatalf("failed to create operation")
 	}
@@ -47,25 +48,25 @@ func initSetCode(t *testing.T) (*context.Replay, *SetCode, common.Address, []byt
 		t.Fatalf("wrong ID returned")
 	}
 
-	return ctx, op, addr, code
+	return ctx, op, addr, code, tracing.CodeChangeUnspecified
 }
 
 // TestSetCodeReadWrite writes a new SetCode object into a buffer, reads from it,
 // and checks equality.
 func TestSetCodeReadWrite(t *testing.T) {
-	_, op1, _, _ := initSetCode(t)
+	_, op1, _, _, _ := initSetCode(t)
 	testOperationReadWrite(t, op1, ReadSetCode)
 }
 
 // TestSetCodeDebug creates a new SetCode object and checks its Debug message.
 func TestSetCodeDebug(t *testing.T) {
-	ctx, op, addr, value := initSetCode(t)
-	testOperationDebug(t, ctx, op, fmt.Sprintf("%v%v", addr, value))
+	ctx, op, addr, value, reason := initSetCode(t)
+	testOperationDebug(t, ctx, op, fmt.Sprintf("%v%v%v", addr, value, reason))
 }
 
 // TestSetCodeExecute
 func TestSetCodeExecute(t *testing.T) {
-	ctx, op, addr, code := initSetCode(t)
+	ctx, op, addr, code, reason := initSetCode(t)
 
 	// check execution
 	mock := NewMockStateDB()
@@ -74,6 +75,6 @@ func TestSetCodeExecute(t *testing.T) {
 	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
-	expected := []Record{{SetCodeID, []any{addr, code}}}
+	expected := []Record{{SetCodeID, []any{addr, code, reason}}}
 	mock.compareRecordings(expected, t)
 }

@@ -325,7 +325,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.SetNonce(mockAddress, 0, tracing.NonceChangeUnspecified) },
 		func() { db.GetCodeHash(mockAddress) },
 		func() { db.GetCode(mockAddress) },
-		func() { db.SetCode(mockAddress, []byte{0}) },
+		func() { db.SetCode(mockAddress, []byte{0}, tracing.CodeChangeUnspecified) },
 		func() { db.GetCodeSize(mockAddress) },
 		func() { db.AddRefund(0) },
 		func() { db.SubRefund(0) },
@@ -389,7 +389,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetCodeHash(gomock.Any()).AnyTimes()
 	m.EXPECT().GetCode(gomock.Any()).AnyTimes()
-	m.EXPECT().SetCode(gomock.Any(), gomock.Any()).AnyTimes()
+	m.EXPECT().SetCode(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetCodeSize(gomock.Any()).AnyTimes()
 	m.EXPECT().AddRefund(gomock.Any()).AnyTimes()
 	m.EXPECT().SubRefund(gomock.Any()).AnyTimes()
@@ -443,7 +443,7 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().GetCodeHash(gomock.Any())
 	m.EXPECT().GetCode(gomock.Any())
-	m.EXPECT().SetCode(gomock.Any(), gomock.Any())
+	m.EXPECT().SetCode(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().GetCodeSize(gomock.Any())
 	m.EXPECT().AddRefund(gomock.Any())
 	m.EXPECT().SubRefund(gomock.Any())

@@ -541,7 +541,7 @@ func TestToscaTxContext_SetCode(t *testing.T) {
 	ethAddr := common.Address(addr)
 
 	code := []byte{1, 2, 3, 4}
-	mockStateDB.EXPECT().SetCode(ethAddr, code)
+	mockStateDB.EXPECT().SetCode(ethAddr, code, gomock.Any())
 
 	ctx := &toscaTxContext{
 		blockEnvironment: mockBlockEnv,
@@ -1740,7 +1740,7 @@ func TestTxProcessor_ProcessTransaction(t *testing.T) {
 		mockStateDB.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any())
 		mockStateDB.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any())
 		mockStateDB.EXPECT().SetNonce(gomock.Any(), uint64(5), gomock.Any())
-		mockStateDB.EXPECT().SetCode(gomock.Any(), []byte{1, 2, 3})
+		mockStateDB.EXPECT().SetCode(gomock.Any(), []byte{1, 2, 3}, gomock.Any())
 		mockStateDB.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any())
 
 		result, err := processor.ProcessTransaction(mockStateDB, block, pseudoTx, mockTxContext)
@@ -1769,15 +1769,15 @@ func TestAidaProcessor_processRegularTx(t *testing.T) {
 
 	// Create test message
 	message := &core.Message{
-		From:             sender,
-		To:               &recipient,
-		Nonce:            10,
-		Value:            big.NewInt(1000),
-		GasLimit:         21048,
-		GasPrice:         big.NewInt(50),
-		Data:             []byte{1, 2, 3},
-		SkipFromEOACheck: true,
-		SkipNonceChecks:  true,
+		From:                  sender,
+		To:                    &recipient,
+		Nonce:                 10,
+		Value:                 big.NewInt(1000),
+		GasLimit:              21048,
+		GasPrice:              big.NewInt(50),
+		Data:                  []byte{1, 2, 3},
+		SkipTransactionChecks: true,
+		SkipNonceChecks:       true,
 	}
 
 	// Common setup for all tests

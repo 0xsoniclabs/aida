@@ -55,6 +55,21 @@ func (mr *MockethDatabaseMockRecorder) Ancient(kind, number any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ancient", reflect.TypeOf((*MockethDatabase)(nil).Ancient), kind, number)
 }
 
+// AncientBytes mocks base method.
+func (m *MockethDatabase) AncientBytes(kind string, id, offset, length uint64) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AncientBytes", kind, id, offset, length)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AncientBytes indicates an expected call of AncientBytes.
+func (mr *MockethDatabaseMockRecorder) AncientBytes(kind, id, offset, length any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AncientBytes", reflect.TypeOf((*MockethDatabase)(nil).AncientBytes), kind, id, offset, length)
+}
+
 // AncientDatadir mocks base method.
 func (m *MockethDatabase) AncientDatadir() (string, error) {
 	m.ctrl.T.Helper()

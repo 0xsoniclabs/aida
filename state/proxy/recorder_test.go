@@ -265,9 +265,9 @@ func TestRecorderProxy_SetCode(t *testing.T) {
 
 	addr := common.Address{0x11}
 	newCode := []byte{0x01, 0x02, 0x03}
-	mockDb.EXPECT().SetCode(addr, newCode).Times(1)
+	mockDb.EXPECT().SetCode(addr, newCode, tracing.CodeChangeUnspecified).Times(1)
 
-	proxy.SetCode(addr, newCode)
+	proxy.SetCode(addr, newCode, tracing.CodeChangeUnspecified)
 }
 func TestRecorderProxy_GetCodeSize(t *testing.T) {
 	ctrl := gomock.NewController(t)
