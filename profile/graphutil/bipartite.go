@@ -113,7 +113,7 @@ func (g *BipartiteGraph) DFS(u uint32) bool {
 // MaxMatching prepares and executes Hopcroft-Karp algorithm
 func (g *BipartiteGraph) MaxMatching() (int, error) {
 	if g.distance != nil || g.MatchU != nil || g.MatchV != nil {
-		return 0, errors.New("Matching has already been performed")
+		return 0, errors.New("matching has already been performed")
 	}
 
 	// initialize distance, matchU, matchV
@@ -181,7 +181,7 @@ func (g *BipartiteGraph) getMatching() (matching, error) {
 	}
 
 	if g.distance == nil || g.MatchU == nil || g.MatchV == nil {
-		return nil, errors.New("Matching has not been performed")
+		return nil, errors.New("matching has not been performed")
 	}
 
 	matches := matching{}

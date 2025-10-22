@@ -72,8 +72,20 @@ func TestRevertToSnapshotExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op1.Execute(mock, ctx)
-	op2.Execute(mock, ctx)
+	execute, err := op1.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if execute <= 0 {
+		t.Fatalf("execution time is not positive")
+	}
+	duration, err := op2.Execute(mock, ctx)
+	if err != nil {
+		t.Fatalf("failed to execute operation; %v", err)
+	}
+	if duration <= 0 {
+		t.Fatalf("execution time is not positive")
+	}
 
 	// check whether methods were correctly called
 	expected := []Record{{SnapshotID, nil}, {RevertToSnapshotID, []any{int(replayedID)}}}

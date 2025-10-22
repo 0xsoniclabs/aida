@@ -119,8 +119,22 @@ install-dev-tools:
 	@go install go.uber.org/mock/mockgen@latest
 
 format:
-	@goimports -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
-	@gofmt -s -d -w ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
+	@find . -type f -name '*.go' \
+		  -not -path './vendor/*' \
+		  -not -path './sonic/*' \
+		  -not -path './tosca/*' \
+		  -not -path './carmen/*' \
+		  -print0 | xargs -0 goimports -w
+
+	@find . -type f -name '*.go' \
+		  -not -path './vendor/*' \
+		  -not -path './sonic/*' \
+		  -not -path './tosca/*' \
+		  -not -path './carmen/*' \
+		  -print0 | xargs -0 gofmt -s -d -w
 
 check:
-	@golangci-lint run -c .golangci.yml ./utils ./profile ./txcontext ./ethtest ./rpc ./stochastic ./cmd/util-db/compact ./cmd/util-db/info ./cmd/util-db/metadata ./cmd/util-db/merge ./cmd/util-db/validate ./cmd/util-db/generate ./cmd/util-db/clone ./logger ./register ./state
+	@golangci-lint run -c .golangci.yml ./...
+
+check-license:
+	@cd scripts/license && chmod +x add_license_header.sh && ./add_license_header.sh --check

@@ -25,8 +25,7 @@ import (
 
 func TestThreadLocker_MakeThreadLocker(t *testing.T) {
 	ext := MakeThreadLocker[int]()
-	_, ok := ext.(executor.Extension[int])
-	assert.True(t, ok)
+	assert.NotNil(t, ext)
 }
 
 func TestThreadLocker_PreRun(t *testing.T) {

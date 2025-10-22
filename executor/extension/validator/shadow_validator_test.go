@@ -154,9 +154,6 @@ func TestShadowDbValidator_MakeShadowDbValidator(t *testing.T) {
 		}
 		ext := MakeShadowDbValidator(cfg)
 		assert.NotNil(t, ext)
-
-		_, ok := ext.(executor.Extension[txcontext.TxContext])
-		assert.True(t, ok)
 		assert.IsType(t, extension.NilExtension[txcontext.TxContext]{}, ext)
 	})
 }

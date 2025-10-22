@@ -25,6 +25,7 @@ import (
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/substate/substate"
 	substatetypes "github.com/0xsoniclabs/substate/types"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -43,15 +44,18 @@ func TestStatePrepper_PreparesStateBeforeEachTransaction(t *testing.T) {
 
 	prepper := MakeStateDbPrepper()
 
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{
+	// Check and handle error return value for PreTransaction
+	err := prepper.PreTransaction(executor.State[txcontext.TxContext]{
 		Block: 5,
 		Data:  allocA,
 	}, ctx)
+	assert.NoError(t, err)
 
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{
 		Block: 7,
 		Data:  allocB,
 	}, ctx)
+	assert.NoError(t, err)
 }
 
 func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
@@ -60,7 +64,11 @@ func TestStatePrepper_DoesNotCrashOnMissingStateOrSubstate(t *testing.T) {
 	ctx := &executor.Context{State: db}
 
 	prepper := MakeStateDbPrepper()
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, nil)                                                           // misses both
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, ctx)                                                           // misses the data
-	prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5, Data: substatecontext.NewTxContext(&substate.Substate{})}, nil) // misses the state
+	// Check error return values (if any) for PreTransaction
+	err := prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, nil) // misses both
+	assert.NoError(t, err)
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5}, ctx) // misses the data
+	assert.NoError(t, err)
+	err = prepper.PreTransaction(executor.State[txcontext.TxContext]{Block: 5, Data: substatecontext.NewTxContext(&substate.Substate{})}, nil) // misses the state
+	assert.NoError(t, err)
 }

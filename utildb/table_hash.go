@@ -101,19 +101,13 @@ func TableHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 // combineJson reads objects from in channel, encodes their []byte representation and writes to out channel
 func combineJson(in chan any, out chan []byte, errChan chan error) {
-	for {
-		select {
-		case value, ok := <-in:
-			if !ok {
-				return
-			}
-			jsonData, err := json.Marshal(value)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			out <- jsonData
+	for value := range in {
+		jsonData, err := json.Marshal(value)
+		if err != nil {
+			errChan <- err
+			return
 		}
+		out <- jsonData
 	}
 }
 

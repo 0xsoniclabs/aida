@@ -23,11 +23,12 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/stretchr/testify/assert"
 )
 
 func initBeginSyncPeriod(t *testing.T) (*context.Replay, *BeginSyncPeriod) {
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Uint64()
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := rng.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()
@@ -64,8 +65,9 @@ func TestBeginSyncPeriodExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
-
+	execute, err := op.Execute(mock, ctx)
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 	// check whether methods were correctly called
 	expected := []Record{{BeginSyncPeriodID, []any{op.SyncPeriodNumber}}}
 	mock.compareRecordings(expected, t)

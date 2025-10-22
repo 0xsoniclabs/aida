@@ -188,10 +188,10 @@ func GetLabel(i byte) string {
 
 // Operation interface.
 type Operation interface {
-	GetId() byte                                          // get operation identifier
-	Write(io.Writer) error                                // write operation to a file
-	Execute(state.StateDB, *context.Replay) time.Duration // execute operation on a stateDB instance
-	Debug(*context.Context)                               // print debug message for operation
+	GetId() byte                                                   // get operation identifier
+	Write(io.Writer) error                                         // write operation to a file
+	Execute(state.StateDB, *context.Replay) (time.Duration, error) // execute operation on a stateDB instance
+	Debug(*context.Context)                                        // print debug message for operation
 }
 
 // Read an operation from file.
@@ -242,11 +242,15 @@ func Write(f io.Writer, op Operation) {
 }
 
 // Execute an operation and profile it.
-func Execute(op Operation, db state.StateDB, ctx *context.Replay) {
-	elapsed := op.Execute(db, ctx)
+func Execute(op Operation, db state.StateDB, ctx *context.Replay) error {
+	elapsed, err := op.Execute(db, ctx)
+	if err != nil {
+		return err
+	}
 	if ctx.Profile {
 		ctx.Stats.Profile(op.GetId(), elapsed)
 	}
+	return nil
 }
 
 // Debug prints debug information of an operation.

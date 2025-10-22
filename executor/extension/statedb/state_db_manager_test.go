@@ -17,6 +17,7 @@
 package statedb
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -642,7 +643,9 @@ func IsEmptyDirectory(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		err = errors.Join(err, f.Close())
+	}()
 
 	_, err = f.Readdirnames(1)
 	if err == io.EOF {

@@ -55,10 +55,13 @@ func (op *BeginTransaction) Write(f io.Writer) error {
 }
 
 // Execute the begin-transaction operation.
-func (op *BeginTransaction) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *BeginTransaction) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
-	db.BeginTransaction(op.TransactionNumber)
-	return time.Since(start)
+	err := db.BeginTransaction(op.TransactionNumber)
+	if err != nil {
+		return 0, err
+	}
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the begin-transaction operation.

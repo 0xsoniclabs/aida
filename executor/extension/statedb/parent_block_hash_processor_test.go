@@ -114,5 +114,6 @@ func TestParentBlockHashProcessor_ProcessParentBlockHash(t *testing.T) {
 		mockState.EXPECT().Finalise(true),
 		mockState.EXPECT().EndTransaction().Return(nil),
 	)
-	evmp.ProcessParentBlockHash(hash, nil, mockState)
+	err := evmp.ProcessParentBlockHash(hash, nil, mockState)
+	require.NoError(t, err)
 }

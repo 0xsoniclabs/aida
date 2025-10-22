@@ -57,11 +57,11 @@ func (op *GetNonce) Write(f io.Writer) error {
 }
 
 // Execute the get-nonce operation.
-func (op *GetNonce) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetNonce) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.GetNonce(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-nonce operation.

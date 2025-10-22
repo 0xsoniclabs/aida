@@ -22,6 +22,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func initCreateAccount(t *testing.T) (*context.Replay, *CreateAccount, common.Address) {
@@ -63,7 +64,9 @@ func TestCreateAccountExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{CreateAccountID, []any{addr}}}
