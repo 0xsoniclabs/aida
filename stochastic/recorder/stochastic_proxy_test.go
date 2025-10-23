@@ -169,8 +169,8 @@ func TestStochasticProxy_SetCode(t *testing.T) {
 	proxy := NewStochasticProxy(base, &reg)
 	addr := common.HexToAddress("0x1234")
 	code := []byte{0x01, 0x02, 0x03}
-	base.EXPECT().SetCode(addr, code)
-	proxy.SetCode(addr, code)
+	base.EXPECT().SetCode(addr, code, tracing.CodeChangeUnspecified)
+	proxy.SetCode(addr, code, tracing.CodeChangeUnspecified)
 	assert.Equal(t, uint64(1), reg.code.freq[int64(len(code))])
 }
 

@@ -236,7 +236,7 @@ func (s *carmenStateDB) GetCodeHash(addr common.Address) common.Hash {
 	return common.Hash(s.txCtx.GetCodeHash(carmen.Address(addr)))
 }
 
-func (s *carmenStateDB) SetCode(addr common.Address, code []byte) []byte {
+func (s *carmenStateDB) SetCode(addr common.Address, code []byte, _ tracing.CodeChangeReason) []byte {
 	before := bytes.Clone(s.GetCode(addr))
 	s.txCtx.SetCode(carmen.Address(addr), code)
 	return before

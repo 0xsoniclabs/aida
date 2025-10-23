@@ -987,9 +987,9 @@ func TestLoggingVmStateDb_SetCode(t *testing.T) {
 	addr := common.HexToAddress("0x1234")
 	code := []byte{0x01, 0x02}
 	expected := []byte{0x03, 0x04}
-	mockDb.EXPECT().SetCode(addr, code).Return(expected)
+	mockDb.EXPECT().SetCode(addr, code, tracing.CodeChangeUnspecified).Return(expected)
 
-	res := proxy.SetCode(addr, code)
+	res := proxy.SetCode(addr, code, tracing.CodeChangeUnspecified)
 	assert.Equal(t, expected, res)
 }
 

@@ -222,7 +222,7 @@ func updateStateDbOnEthereumChain(alloc txcontext.WorldState, db state.StateDB, 
 				db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
 			}
 			if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
-				db.SetCode(addr, acc.GetCode())
+				db.SetCode(addr, acc.GetCode(), tracing.CodeChangeUnspecified)
 			}
 		}
 

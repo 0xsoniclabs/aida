@@ -488,8 +488,8 @@ func TestGethStateDB_SetCode(t *testing.T) {
 	addr := common.HexToAddress("0x1234")
 	code := []byte{0x60, 0x80, 0x60, 0x40}
 	expected := []byte{0x60, 0x80}
-	mockDb.EXPECT().SetCode(addr, code).Return(expected)
-	result := g.SetCode(addr, code)
+	mockDb.EXPECT().SetCode(addr, code, tracing.CodeChangeUnspecified).Return(expected)
+	result := g.SetCode(addr, code, tracing.CodeChangeUnspecified)
 	assert.Equal(t, expected, result)
 }
 
@@ -1062,7 +1062,7 @@ func TestGethBulkLoad_SetCode(t *testing.T) {
 	}
 	addr := common.HexToAddress("0x1234")
 	code := []byte{0x60, 0x80, 0x60, 0x40}
-	mockDb.EXPECT().SetCode(addr, code).Return(code)
+	mockDb.EXPECT().SetCode(addr, code, tracing.CodeChangeGenesis).Return(code)
 	g.SetCode(addr, code)
 }
 

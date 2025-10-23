@@ -107,10 +107,10 @@ func (p *StochasticProxy) GetCode(address common.Address) []byte {
 	return p.db.GetCode(address)
 }
 
-func (p *StochasticProxy) SetCode(address common.Address, code []byte) []byte {
+func (p *StochasticProxy) SetCode(address common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
 	p.stats.CountAddressOp(operations.SetCodeID, &address)
 	p.stats.RecordCodeSize(len(code))
-	return p.db.SetCode(address, code)
+	return p.db.SetCode(address, code, reason)
 }
 
 func (p *StochasticProxy) GetCodeSize(address common.Address) int {

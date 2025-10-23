@@ -369,7 +369,7 @@ func (s *TxProcessor) processPseudoTx(ws txcontext.WorldState, db state.VmStateD
 		db.SubBalance(addr, db.GetBalance(addr), tracing.BalanceChangeUnspecified)
 		db.AddBalance(addr, acc.GetBalance(), tracing.BalanceChangeUnspecified)
 		db.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeUnspecified)
-		db.SetCode(addr, acc.GetCode())
+		db.SetCode(addr, acc.GetCode(), tracing.CodeChangeUnspecified)
 		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
 			db.SetState(addr, keyHash, valueHash)
 		})
@@ -598,7 +598,7 @@ func (a *toscaTxContext) GetCode(addr tosca.Address) tosca.Code {
 }
 
 func (a *toscaTxContext) SetCode(addr tosca.Address, code tosca.Code) {
-	a.db.SetCode(common.Address(addr), code)
+	a.db.SetCode(common.Address(addr), code, tracing.CodeChangeUnspecified)
 }
 
 func (a *toscaTxContext) GetStorage(addr tosca.Address, key tosca.Key) tosca.Word {

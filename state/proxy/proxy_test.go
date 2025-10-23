@@ -278,10 +278,10 @@ func TestProxies_AllCalls(t *testing.T) {
 	}
 
 	// SetCode
-	base.EXPECT().SetCode(addr, code).Times(len(proxies) + 1)
+	base.EXPECT().SetCode(addr, code, tracing.CodeChangeUnspecified).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
 		t.Run(name+"_SetCode", func(t *testing.T) {
-			proxy.SetCode(addr, code)
+			proxy.SetCode(addr, code, tracing.CodeChangeUnspecified)
 		})
 	}
 

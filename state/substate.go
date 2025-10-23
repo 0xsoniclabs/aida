@@ -41,7 +41,7 @@ func MakeOffTheChainStateDB(alloc txcontext.WorldState, block uint64, chainCondu
 	statedb := NewOffTheChainStateDB()
 	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
 		code := acc.GetCode()
-		statedb.SetCode(addr, code)
+		statedb.SetCode(addr, code, tracing.CodeChangeGenesis)
 		statedb.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeGenesis)
 		statedb.SetBalance(addr, acc.GetBalance(), 0)
 		// DON'T USE SetStorage because it makes REVERT and dirtyStorage unavailble

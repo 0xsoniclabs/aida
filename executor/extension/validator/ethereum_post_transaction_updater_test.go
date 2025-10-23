@@ -145,7 +145,7 @@ func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing
 		db.EXPECT().GetNonce(common.HexToAddress("0x2")),
 		db.EXPECT().SetNonce(common.HexToAddress("0x2"), gomock.Any(), gomock.Any()),
 		db.EXPECT().GetCode(common.HexToAddress("0x2")).Return([]byte{0x1}),
-		db.EXPECT().SetCode(common.HexToAddress("0x2"), gomock.Any()),
+		db.EXPECT().SetCode(common.HexToAddress("0x2"), gomock.Any(), gomock.Any()),
 	)
 
 	ext := makeEthereumDbPostTransactionUpdater(cfg, log)
