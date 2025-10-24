@@ -813,9 +813,8 @@ func TestStochasticProxy_StartBulkLoad(t *testing.T) {
 	base := state.NewMockStateDB(ctrl)
 	reg := NewStats()
 	proxy := NewStochasticProxy(base, &reg)
-	assert.Panics(t, func() {
-		_, _ = proxy.StartBulkLoad(uint64(1))
-	})
+	_, err := proxy.StartBulkLoad(uint64(1))
+	assert.Error(t, err)
 }
 
 // TestStochasticProxy_StartBulkLoad tests the StartBulkLoad method of StochasticProxy.
