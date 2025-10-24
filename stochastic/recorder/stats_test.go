@@ -131,7 +131,8 @@ func TestStatsOperation(t *testing.T) {
 
 	// inject first operation and check frequencies.
 	addr := common.HexToAddress("0x000000010")
-	r.CountAddressOp(operations.CreateAccountID, &addr)
+	err := r.CountAddressOp(operations.CreateAccountID, &addr)
+	assert.NoError(t, err)
 	argop1, _ := operations.EncodeArgOp(operations.CreateAccountID, stochastic.NewArgID, stochastic.NoArgID, stochastic.NoArgID)
 	opFreq[argop1]++
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -140,7 +141,8 @@ func TestStatsOperation(t *testing.T) {
 
 	// inject second operation and check frequencies.
 	key := common.HexToHash("0x000000200")
-	r.CountKeyOp(operations.GetStateID, &addr, &key)
+	err = r.CountKeyOp(operations.GetStateID, &addr, &key)
+	assert.NoError(t, err)
 	argop2, _ := operations.EncodeArgOp(operations.GetStateID, stochastic.PrevArgID, stochastic.NewArgID, stochastic.NoArgID)
 	opFreq[argop2]++
 	transitFreq[argop1][argop2]++
@@ -150,7 +152,8 @@ func TestStatsOperation(t *testing.T) {
 
 	// inject third operation and check frequencies.
 	value := common.Hash{}
-	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	err = r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	assert.NoError(t, err)
 	argop3, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.PrevArgID, stochastic.PrevArgID, stochastic.ZeroArgID)
 	opFreq[argop3]++
 	transitFreq[argop2][argop3]++
@@ -159,7 +162,8 @@ func TestStatsOperation(t *testing.T) {
 	}
 
 	// inject forth operation and check frequencies.
-	r.CountOp(operations.SnapshotID)
+	err = r.CountOp(operations.SnapshotID)
+	assert.NoError(t, err)
 	argop4, _ := operations.EncodeArgOp(operations.SnapshotID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID)
 	opFreq[argop4]++
 	transitFreq[argop3][argop4]++
@@ -187,7 +191,8 @@ func TestStatsScalarDistributions(t *testing.T) {
 	}
 	assert.Equal(t, uint64(1), stats.code.freq[42])
 
-	json := stats.JSON()
+	json, err := stats.JSON()
+	assert.NoError(t, err)
 	assert.Equal(t, int64(10), json.Balance.Max)
 	assert.Equal(t, int64(math.MaxInt64), json.Nonce.Max)
 	assert.Equal(t, int64(42), json.CodeSize.Max)
@@ -234,7 +239,8 @@ func TestStatsZeroOperation(t *testing.T) {
 	addr := common.Address{}
 	key := common.Hash{}
 	value := common.Hash{}
-	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	err := r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	assert.NoError(t, err)
 	argop1, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.ZeroArgID, stochastic.ZeroArgID, stochastic.ZeroArgID)
 	opFreq[argop1]++
 	if !checkFrequencies(&r, opFreq, transitFreq) {
@@ -245,7 +251,8 @@ func TestStatsZeroOperation(t *testing.T) {
 	addr = common.HexToAddress("0x12312121212")
 	key = common.HexToHash("0x232313123123213")
 	value = common.HexToHash("0x2301238021830912830")
-	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	err = r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	assert.NoError(t, err)
 	argop2, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.NewArgID, stochastic.NewArgID, stochastic.NewArgID)
 	opFreq[argop2]++
 	transitFreq[argop1][argop2]++
@@ -254,7 +261,8 @@ func TestStatsZeroOperation(t *testing.T) {
 	}
 
 	// inject third operation and check frequencies.
-	r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	err = r.CountValueOp(operations.SetStateID, &addr, &key, &value)
+	assert.NoError(t, err)
 	argop3, _ := operations.EncodeArgOp(operations.SetStateID, stochastic.PrevArgID, stochastic.PrevArgID, stochastic.PrevArgID)
 	opFreq[argop3]++
 	transitFreq[argop2][argop3]++
@@ -386,7 +394,8 @@ func TestStats_JSON(t *testing.T) {
 	r.CountSnapshot(0) // implicit RevertToSnapshot op
 	r.CountSnapshot(1)
 
-	stats := r.JSON()
+	stats, err := r.JSON()
+	assert.NoError(t, err)
 	assert.Equal(t, "stats", stats.FileId)
 	assert.Len(t, stats.Operations, 3)
 	assert.Len(t, stats.StochasticMatrix, 3)
@@ -455,7 +464,8 @@ func TestStats_WriteJSON_WriteError(t *testing.T) {
 func TestStats_CountOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_COUNT_OP") == "1" {
 		r := NewStats()
-		r.CountOp(-1)
+		err := r.CountOp(-1)
+		assert.NoError(t, err)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountOp_FatalIfInvalid")
@@ -471,7 +481,8 @@ func TestStats_CountAddressOp_FatalIfInvalid(t *testing.T) {
 	if os.Getenv("WANT_FATAL_COUNT_ADDR") == "1" {
 		r := NewStats()
 		addr := common.Address{}
-		r.CountAddressOp(-1, &addr)
+		err := r.CountAddressOp(-1, &addr)
+		assert.NoError(t, err)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountAddressOp_FatalIfInvalid")
@@ -488,7 +499,8 @@ func TestStats_CountKeyOp_FatalIfInvalid(t *testing.T) {
 		r := NewStats()
 		addr := common.Address{}
 		key := common.Hash{}
-		r.CountKeyOp(-1, &addr, &key)
+		err := r.CountKeyOp(-1, &addr, &key)
+		assert.NoError(t, err)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountKeyOp_FatalIfInvalid")
@@ -505,7 +517,8 @@ func TestStats_CountValueOp_FatalIfInvalid(t *testing.T) {
 		addr := common.Address{}
 		key := common.Hash{}
 		val := common.Hash{}
-		r.CountValueOp(-1, &addr, &key, &val)
+		err := r.CountValueOp(-1, &addr, &key, &val)
+		assert.NoError(t, err)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestStats_CountValueOp_FatalIfInvalid")
@@ -518,26 +531,24 @@ func TestStats_CountValueOp_FatalIfInvalid(t *testing.T) {
 
 func TestStats_CountOpPanicsForInvalidOp(t *testing.T) {
 	r := NewStats()
-	assert.Panics(t, func() {
-		r.CountOp(operations.NumOps)
-	})
+
+	err := r.CountOp(operations.NumOps)
+	assert.Error(t, err)
 }
 
 func TestStats_CountAddressOpPanicsForInvalidOp(t *testing.T) {
 	r := NewStats()
 	addr := common.Address{}
-	assert.Panics(t, func() {
-		r.CountAddressOp(operations.NumOps, &addr)
-	})
+	err := r.CountAddressOp(operations.NumOps, &addr)
+	assert.Error(t, err)
 }
 
 func TestStats_CountKeyOpPanicsForInvalidOp(t *testing.T) {
 	r := NewStats()
 	addr := common.Address{}
 	key := common.Hash{}
-	assert.Panics(t, func() {
-		r.CountKeyOp(operations.NumOps, &addr, &key)
-	})
+	err := r.CountKeyOp(operations.NumOps, &addr, &key)
+	assert.Error(t, err)
 }
 
 func TestStats_CountValueOpPanicsForInvalidOp(t *testing.T) {
@@ -545,9 +556,8 @@ func TestStats_CountValueOpPanicsForInvalidOp(t *testing.T) {
 	addr := common.Address{}
 	key := common.Hash{}
 	val := common.Hash{}
-	assert.Panics(t, func() {
-		r.CountValueOp(operations.NumOps, &addr, &key, &val)
-	})
+	err := r.CountValueOp(operations.NumOps, &addr, &key, &val)
+	assert.Error(t, err)
 }
 
 func TestStats_MarshalJSONSetsDefaultFileID(t *testing.T) {

@@ -439,7 +439,7 @@ func (r *RecorderProxy) Close() error {
 }
 
 func (r *RecorderProxy) StartBulkLoad(uint64) (state.BulkLoad, error) {
-	panic("StartBulkLoad not supported by RecorderProxy")
+	return nil, fmt.Errorf("StartBulkLoad not supported by RecorderProxy")
 }
 
 func (r *RecorderProxy) GetMemoryUsage() *state.MemoryUsage {

@@ -355,8 +355,8 @@ func TestPrime_Errors(t *testing.T) {
 func TestGetStochasticMatrix_Success(t *testing.T) {
 	// Labels include BeginSyncPeriod to find initial state
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.BeginBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.BeginBlockID)),
 	}
 	A := [][]float64{
 		{0, 1},
@@ -407,9 +407,9 @@ func TestRunStochasticReplay_Success(t *testing.T) {
 
 	// Minimal eCDFs and distributions
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.BeginBlockID),
-		operations.OpMnemo(operations.EndBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.BeginBlockID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
 	}
 	A := [][]float64{
 		{0, 1, 0}, // BS -> BB
@@ -457,9 +457,9 @@ func TestRunStochasticReplay_ErrorBreaks(t *testing.T) {
 	db.EXPECT().Error().Return(assert.AnError).Times(1)
 
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.BeginBlockID),
-		operations.OpMnemo(operations.EndBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.BeginBlockID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
 	}
 	A := [][]float64{
 		{0, 1, 0},
@@ -505,8 +505,8 @@ func TestRunStochasticReplay_ErrorContinue(t *testing.T) {
 	db.EXPECT().Error().Return(nil).AnyTimes()
 
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.EndBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
 	}
 	A := [][]float64{{0, 1}, {1, 0}}
 	qpdf := make([]float64, stochastic.QueueLen)
@@ -601,7 +601,7 @@ func TestRunStochasticReplay_CannotDecodeOpcode(t *testing.T) {
 	db.EXPECT().Error().Return(nil).AnyTimes()
 
 	// labels: valid initial BS, then unknown "ZZ"
-	labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID), "ZZ"}
+	labels := []string{utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)), "ZZ"}
 	A := [][]float64{{0, 1}, {1, 1}} // second row not used (we error before)
 	qpdf := make([]float64, stochastic.QueueLen)
 	qpdf[0] = 0.4
@@ -802,7 +802,9 @@ func TestPopulateReplayContext_PrimeError(t *testing.T) {
 		qpdf[i] = 0.8 / float64(stochastic.QueueLen-1)
 	}
 	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
-	e := &recorder.StatsJSON{Operations: []string{operations.OpMnemo(operations.BeginSyncPeriodID)}, StochasticMatrix: [][]float64{{1.0}}, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	e := &recorder.StatsJSON{Operations: []string{
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+	}, StochasticMatrix: [][]float64{{1.0}}, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
 
 	// Cause prime to fail at BeginBlock
 	db.EXPECT().BeginSyncPeriod(uint64(0))
@@ -835,8 +837,8 @@ func TestRunStochasticReplay_ProgressLogBranch(t *testing.T) {
 	db.EXPECT().Error().Return(nil).AnyTimes()
 
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.EndBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
 	}
 	A := [][]float64{{0, 1}, {1, 0}}
 	qpdf := make([]float64, stochastic.QueueLen)
@@ -873,7 +875,7 @@ func TestRunStochasticReplay_LabelError(t *testing.T) {
 	db.EXPECT().EndSyncPeriod().AnyTimes()
 
 	// Valid MC
-	labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID)}
+	labels := []string{utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID))}
 	A := [][]float64{{1.0}}
 	qpdf := make([]float64, stochastic.QueueLen)
 	qpdf[0] = 0.5
@@ -908,7 +910,10 @@ func TestRunStochasticReplay_SampleError(t *testing.T) {
 	db.EXPECT().EndSyncPeriod().AnyTimes()
 	db.EXPECT().Error().Return(nil).AnyTimes()
 
-	labels := []string{operations.OpMnemo(operations.BeginSyncPeriodID), operations.OpMnemo(operations.EndBlockID)}
+	labels := []string{
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
+	}
 	A := [][]float64{{0, 1}, {1, 0}}
 	qpdf := make([]float64, stochastic.QueueLen)
 	qpdf[0] = 0.5
@@ -940,8 +945,8 @@ func TestRunStochasticReplay_EnableDebugInLoop(t *testing.T) {
 	db.EXPECT().Error().Return(nil).AnyTimes()
 
 	labels := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.EndBlockID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.EndBlockID)),
 	}
 	A := [][]float64{{0, 1}, {1, 0}}
 	qpdf := make([]float64, stochastic.QueueLen)

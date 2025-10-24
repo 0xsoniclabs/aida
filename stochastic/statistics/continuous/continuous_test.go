@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/stretchr/testify/assert"
 
 	"gonum.org/v1/gonum/stat/distuv"
 )
@@ -311,7 +312,8 @@ func TestContinuous_simplifiedCDF(t *testing.T) {
 		xy := float64(i+1) / float64(n)
 		f = append(f, [2]float64{xy, xy})
 	}
-	ecdf := PDFtoCDF(f)
+	ecdf, err := PDFtoCDF(f)
+	assert.NoError(t, err)
 	if len(ecdf) != stochastic.NumECDFPoints {
 		t.Fatalf("simplified CDF length: want 3, got %v", len(ecdf))
 	}

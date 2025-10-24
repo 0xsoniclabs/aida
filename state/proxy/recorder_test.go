@@ -1235,9 +1235,8 @@ func TestRecorderProxy_StartBulkLoad(t *testing.T) {
 
 	block := uint64(100)
 
-	assert.Panics(t, func() {
-		_, _ = proxy.StartBulkLoad(block)
-	})
+	_, err = proxy.StartBulkLoad(block)
+	assert.Error(t, err)
 }
 
 func TestRecorderProxy_GetMemoryUsage(t *testing.T) {

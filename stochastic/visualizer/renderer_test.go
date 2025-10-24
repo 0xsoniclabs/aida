@@ -26,6 +26,7 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,10 +76,10 @@ func sampleStats() *recorder.StatsJSON {
 
 func colorStats() *recorder.StatsJSON {
 	ops := []string{
-		operations.OpMnemo(operations.BeginSyncPeriodID),
-		operations.OpMnemo(operations.BeginBlockID),
-		operations.OpMnemo(operations.BeginTransactionID),
-		operations.OpMnemo(operations.EndTransactionID),
+		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
+		utils.Must(operations.OpMnemo(operations.BeginBlockID)),
+		utils.Must(operations.OpMnemo(operations.BeginTransactionID)),
+		utils.Must(operations.OpMnemo(operations.EndTransactionID)),
 	}
 	matrix := [][]float64{
 		{0.0, 0.2, 0.8, 0.0},

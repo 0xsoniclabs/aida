@@ -88,10 +88,18 @@ type ClassifierJSON struct {
 }
 
 // JSON produces output for the classifier statistics.
-func (a *Classifier[T]) JSON() ClassifierJSON {
-	return ClassifierJSON{a.cstats.json(), a.qstats.json()}
+func (a *Classifier[T]) JSON() (ClassifierJSON, error) {
+	cs, err := a.cstats.json()
+	if err != nil {
+		return ClassifierJSON{}, err
+	}
+	return ClassifierJSON{cs, a.qstats.json()}, nil
 }
 
 func (a *Classifier[T]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.JSON())
+	value, err := a.JSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(value)
 }
