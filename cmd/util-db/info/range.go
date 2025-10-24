@@ -57,14 +57,17 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 		return err
 	}
 
-	baseDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	baseDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
 
 	// print substate range
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
-		sdb := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
+		sdb, err := db.MakeDefaultSubstateDBFromBaseDB(baseDb)
+		if err != nil {
+			return err
+		}
 		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)
@@ -80,7 +83,10 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print update range
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
-		udb := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
+		udb, err := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
+		if err != nil {
+			return err
+		}
 		firstUsBlock, lastUsBlock, err := utildb.FindBlockRangeInUpdate(udb)
 		if err != nil {
 			log.Warningf("cannot find updateset range; %w", err)
@@ -91,7 +97,10 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
+		ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
+		if err != nil {
+			return err
+		}
 		first, last, err := utildb.FindBlockRangeInDeleted(ddb)
 		if err != nil {
 			log.Warningf("cannot find deleted range; %w", err)

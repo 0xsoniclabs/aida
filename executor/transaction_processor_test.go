@@ -1885,7 +1885,9 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R:       common.Big1,
 			S:       common.Big1,
 		})
-		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		bin, err := mockTx.MarshalBinary()
+		assert.NoError(t, err)
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, bin)
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1904,7 +1906,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 		mockBlockEnv.EXPECT().GetFork().Return("unknown_fork").Times(1)
 
 		// Execute test
-		err := processor.Process(testState, execContext)
+		err = processor.Process(testState, execContext)
 
 		// Verify results
 		assert.Error(t, err)
@@ -1920,7 +1922,9 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R:       common.Big1,
 			S:       common.Big1,
 		})
-		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		bin, err := mockTx.MarshalBinary()
+		assert.NoError(t, err)
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, bin)
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1946,7 +1950,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 		mockTxProcessor.EXPECT().processRegularTx(mockStateDB, testState.Block, testState.Transaction, mockTxContext).Return(expectedResult, nil).Times(1)
 
 		// Execute test
-		err := processor.Process(testState, execContext)
+		err = processor.Process(testState, execContext)
 
 		// Verify results
 		assert.NoError(t, err)
@@ -1979,7 +1983,9 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			R: common.Big1,
 			S: common.Big1,
 		})
-		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, utils.Must(mockTx.MarshalBinary()))
+		bin, err := mockTx.MarshalBinary()
+		assert.NoError(t, err)
+		mockTxContext := ethtest.NewStateTestContext(message, mockBlockEnv, bin)
 
 		// Create a context that would be passed to the processor
 		execContext := &Context{
@@ -1993,7 +1999,7 @@ func TestEthTestProcessor_Process(t *testing.T) {
 			Transaction: 456,
 			Data:        mockTxContext,
 		}
-		err := processor.Process(testState, execContext)
+		err = processor.Process(testState, execContext)
 		assert.Nil(t, err)
 	})
 

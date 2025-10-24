@@ -29,7 +29,7 @@ const emptyDBHash = "d41d8cd98f00b204e9800998ecf8427e"
 
 func TestGenerateDbHash_EmptyDb(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	emptyDB, err := db.NewDefaultBaseDB(tmpDir)
+	emptyDB, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestGenerateDbHash_ComponentsAffectingHash(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tmpDir := t.TempDir() + "/aidaDb" + tc.name
-			baseDB, err := db.NewDefaultBaseDB(tmpDir)
+			baseDB, err := db.NewDefaultSubstateDB(tmpDir)
 			if err != nil {
 				t.Fatal(err)
 			}

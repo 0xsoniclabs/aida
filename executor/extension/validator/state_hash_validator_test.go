@@ -323,7 +323,7 @@ func TestStateHashValidator_PreRunAdjustFirstArchiveBlockToCheck(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockSubstateDb := substateDb.NewMockSubstateDB(ctrl)
-	aidaDb, err := substateDb.NewDefaultBaseDB(t.TempDir())
+	aidaDb, err := substateDb.NewDefaultSubstateDB(t.TempDir())
 	require.NoError(t, err)
 	cfg := &utils.Config{
 		First:          3,

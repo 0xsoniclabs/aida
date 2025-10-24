@@ -58,7 +58,7 @@ func mergeAction(ctx *cli.Context) error {
 		sourcePaths[i] = ctx.Args().Get(i)
 	}
 
-	targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	targetDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}

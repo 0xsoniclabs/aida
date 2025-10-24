@@ -32,9 +32,12 @@ func TestUtils_OpenSourceDatabases(t *testing.T) {
 
 	dbs, err := OpenSourceDatabases([]string{path1, path2, path3})
 	require.NoError(t, err)
-	sdb1 := db.MakeDefaultSubstateDBFromBaseDB(dbs[0])
-	sdb2 := db.MakeDefaultSubstateDBFromBaseDB(dbs[1])
-	sdb3 := db.MakeDefaultSubstateDBFromBaseDB(dbs[2])
+	sdb1, err := db.MakeDefaultSubstateDBFromBaseDB(dbs[0])
+	require.NoError(t, err)
+	sdb2, err := db.MakeDefaultSubstateDBFromBaseDB(dbs[1])
+	require.NoError(t, err)
+	sdb3, err := db.MakeDefaultSubstateDBFromBaseDB(dbs[2])
+	require.NoError(t, err)
 
 	gotSs1, err := sdb1.GetSubstate(ss1.Block, ss1.Transaction)
 	require.NoError(t, err)

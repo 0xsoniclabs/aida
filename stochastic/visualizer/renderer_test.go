@@ -26,7 +26,6 @@ import (
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,12 +73,17 @@ func sampleStats() *recorder.StatsJSON {
 	}
 }
 
-func colorStats() *recorder.StatsJSON {
+func colorStats(t *testing.T) *recorder.StatsJSON {
+	ops0, err := operations.OpMnemo(operations.BeginSyncPeriodID)
+	assert.NoError(t, err)
+	ops1, err := operations.OpMnemo(operations.BeginBlockID)
+	assert.NoError(t, err)
+	ops2, err := operations.OpMnemo(operations.BeginTransactionID)
+	assert.NoError(t, err)
+	ops3, err := operations.OpMnemo(operations.EndTransactionID)
+	assert.NoError(t, err)
 	ops := []string{
-		utils.Must(operations.OpMnemo(operations.BeginSyncPeriodID)),
-		utils.Must(operations.OpMnemo(operations.BeginBlockID)),
-		utils.Must(operations.OpMnemo(operations.BeginTransactionID)),
-		utils.Must(operations.OpMnemo(operations.EndTransactionID)),
+		ops0, ops1, ops2, ops3,
 	}
 	matrix := [][]float64{
 		{0.0, 0.2, 0.8, 0.0},
@@ -343,7 +347,7 @@ func TestVisualizer_renderMarkovChain(t *testing.T) {
 }
 
 func TestVisualizer_renderMarkovVariantsColorCoverage(t *testing.T) {
-	mustSetView(t, colorStats())
+	mustSetView(t, colorStats(t))
 
 	req, err := http.NewRequest("GET", "/simplified-markov-stats", nil)
 	require.NoError(t, err)
