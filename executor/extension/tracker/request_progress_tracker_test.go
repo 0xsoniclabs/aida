@@ -29,6 +29,7 @@ import (
 	"github.com/0xsoniclabs/aida/rpc"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -69,47 +70,60 @@ func TestRpcProgressTrackerExtension_LoggingHappens(t *testing.T) {
 		),
 	)
 
-	ext.PreRun(executor.State[*rpc.RequestAndResults]{}, ctx)
+	err := ext.PreRun(executor.State[*rpc.RequestAndResults]{}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 	time.Sleep(500 * time.Millisecond)
 
 	ctx.ExecutionResult = rpc.NewResult(new(big.Int).Bytes(), nil, 10)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: validReq}, ctx)
+	assert.NoError(t, err)
 
 	ctx.ExecutionResult = rpc.NewResult(nil, errors.New("test error"), 11)
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{Data: errReq}, ctx)
+	assert.NoError(t, err)
 
 }
 
@@ -125,16 +139,18 @@ func TestRpcProgressTrackerExtension_FirstLoggingIsIgnored(t *testing.T) {
 
 	ctx := &executor.Context{State: db}
 
-	ext.PreRun(executor.State[*rpc.RequestAndResults]{
+	err := ext.PreRun(executor.State[*rpc.RequestAndResults]{
 		Block:       4,
 		Transaction: 0,
 	}, ctx)
+	assert.NoError(t, err)
 
-	ext.PostTransaction(executor.State[*rpc.RequestAndResults]{
+	err = ext.PostTransaction(executor.State[*rpc.RequestAndResults]{
 		Block:       4,
 		Transaction: 0,
 		Data:        validReq,
 	}, ctx)
+	assert.NoError(t, err)
 
 }
 

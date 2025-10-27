@@ -56,11 +56,11 @@ func (op *GetCodeHashLc) Write(f io.Writer) error {
 }
 
 // Execute the get-code-hash-lc operation.
-func (op *GetCodeHashLc) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetCodeHashLc) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.PrevContract()
 	start := time.Now()
 	db.GetCodeHash(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-code-hash-lc operation.

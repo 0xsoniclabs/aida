@@ -57,11 +57,11 @@ func (op *Exist) Write(f io.Writer) error {
 }
 
 // Execute the exist operation.
-func (op *Exist) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *Exist) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.Exist(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the exist operation.

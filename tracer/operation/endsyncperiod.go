@@ -52,10 +52,10 @@ func (op *EndSyncPeriod) Write(f io.Writer) error {
 }
 
 // Execute the end-sync-period operation.
-func (op *EndSyncPeriod) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *EndSyncPeriod) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
 	db.EndSyncPeriod()
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the end-sync-period operation.

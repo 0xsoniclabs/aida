@@ -30,12 +30,12 @@ func Check(f []float64) error {
 	for i := range len(f) {
 		x := f[i]
 		if x < 0.0 || x > 1.0 || math.IsNaN(x) {
-			return fmt.Errorf("Invalid probability (%v) in the pmf", x)
+			return fmt.Errorf("invalid probability (%v) in the pmf", x)
 		}
 		total += x
 	}
 	if math.Abs(total-1.0) > 1e-9 {
-		return fmt.Errorf("Total is not one (%v)", total)
+		return fmt.Errorf("total is not one (%v)", total)
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func Shrink(f []float64) ([]float64, error) {
 	}
 	factor := 1.0 - f[0]
 	if math.Abs(factor) < 1e-9 || math.IsNaN(factor) {
-		return nil, fmt.Errorf("Invalid scaling factor (%v)", factor)
+		return nil, fmt.Errorf("invalid scaling factor (%v)", factor)
 	}
 	scaledPMF := make([]float64, n-1)
 	for i := range n - 1 {

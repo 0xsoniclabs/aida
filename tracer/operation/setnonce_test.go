@@ -25,12 +25,13 @@ import (
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/stretchr/testify/assert"
 )
 
 func initSetNonce(t *testing.T) (*context.Replay, *SetNonce, common.Address, uint64) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	addr := getRandomAddress(t)
-	nonce := rand.Uint64()
+	nonce := r.Uint64()
 
 	// create context context
 	ctx := context.NewReplay()
@@ -68,7 +69,9 @@ func TestSetNonceExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{SetNonceID, []any{addr, nonce, tracing.NonceChangeUnspecified}}}

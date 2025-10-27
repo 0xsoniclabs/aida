@@ -205,7 +205,7 @@ func (db *inMemoryStateDB) GetCode(addr common.Address) []byte {
 	return db.ws.Get(addr).GetCode()
 }
 
-func (db *inMemoryStateDB) SetCode(addr common.Address, code []byte) []byte {
+func (db *inMemoryStateDB) SetCode(addr common.Address, code []byte, _ tracing.CodeChangeReason) []byte {
 	before := bytes.Clone(db.GetCode(addr))
 	db.state.touched[addr] = 0
 	db.state.codes[addr] = code

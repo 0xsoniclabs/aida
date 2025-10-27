@@ -51,6 +51,5 @@ func (r *archivePrepper[T]) PostTransaction(_ executor.State[T], ctx *executor.C
 
 // PostBlock releases the Archive StateDb
 func (r *archivePrepper[T]) PostBlock(_ executor.State[T], ctx *executor.Context) error {
-	ctx.Archive.Release()
-	return nil
+	return ctx.Archive.Release()
 }

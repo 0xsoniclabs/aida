@@ -702,7 +702,7 @@ func newUnexpectedDataTypeErr(data *rpc.RequestAndResults) *comparatorError {
 		error: fmt.Errorf("unexpected data type:\n"+
 			"params: %v\n"+
 			"method: %v\n"+
-			"response: %v\n", string(data.ParamsRaw), data.Query.Method, res),
+			"response: %v", string(data.ParamsRaw), data.Query.Method, res),
 		typ: unexpectedDataType,
 	}
 }

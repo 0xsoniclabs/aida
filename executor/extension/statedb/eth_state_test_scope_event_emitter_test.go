@@ -63,8 +63,7 @@ func TestEthStateScopeEventEmitter_PostBlockCallsEndBlockAndEndTransaction(t *te
 
 func TestEthStateScopeEventEmitter_MakeEthStateScopeTestEventEmitter(t *testing.T) {
 	ext := MakeEthStateScopeTestEventEmitter()
-	_, ok := ext.(executor.Extension[txcontext.TxContext])
-	assert.True(t, ok)
+	assert.NotNil(t, ext)
 }
 
 func TestEthStateScopeEventEmitter_PreBlockError(t *testing.T) {

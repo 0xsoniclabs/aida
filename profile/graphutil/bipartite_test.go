@@ -25,21 +25,17 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBipartite_NewBipartiteGraph(t *testing.T) {
 	g0 := NewBipartiteGraph(0)
-	if g0 != nil {
-		t.Errorf("Expected nil, got a graph of size %d", g0.n)
-	}
+	assert.Nil(t, g0)
 
 	g1 := NewBipartiteGraph(1)
-	if g1 == nil {
-		t.Errorf("Expected a graph of size 1, got a nil")
-	}
-	if g1.n != 1 {
-		t.Errorf("Expected a graph of size 1, got a graph of size %d", g1.n)
-	}
+	assert.NotNil(t, g1)
+	assert.Equal(t, uint32(1), g1.n)
 }
 
 func TestBipartite_AddEdge(t *testing.T) {
@@ -121,29 +117,30 @@ func TestBipartite_MaxMatchingEdgeless(t *testing.T) {
 func TestBipartite_MaxMatchingSimple(t *testing.T) {
 	g := NewBipartiteGraph(2)
 
-	g.AddEdge(0, 0)
-	g.AddEdge(0, 1)
+	err := g.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(0, 1)
+	assert.NoError(t, err)
 
 	size, err := g.MaxMatching()
-	if err != nil {
-		t.Errorf("Expected success when MaxMatching, got %v", err)
-	}
-	if size != 1 {
-		t.Errorf("Expected matching of size 1, got %d", size)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 1, size)
+
 	err = CheckConsistentPairing(g.MatchU, g.MatchV)
-	if err != nil {
-		t.Errorf("Expected success when CheckConsistentPairing, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestBipartite_MaxMatchingSimple2(t *testing.T) {
 	g := NewBipartiteGraph(4)
 
-	g.AddEdge(0, 0)
-	g.AddEdge(1, 0)
-	g.AddEdge(2, 2)
-	g.AddEdge(3, 3)
+	err := g.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(1, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(2, 2)
+	assert.NoError(t, err)
+	err = g.AddEdge(3, 3)
+	assert.NoError(t, err)
 
 	size, err := g.MaxMatching()
 	if err != nil {
@@ -161,12 +158,18 @@ func TestBipartite_MaxMatchingSimple2(t *testing.T) {
 func TestBipartite_MaxMatchingSimple3(t *testing.T) {
 	g := NewBipartiteGraph(4)
 
-	g.AddEdge(0, 0)
-	g.AddEdge(0, 1)
-	g.AddEdge(1, 0)
-	g.AddEdge(2, 2)
-	g.AddEdge(3, 2)
-	g.AddEdge(3, 3)
+	err := g.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(0, 1)
+	assert.NoError(t, err)
+	err = g.AddEdge(1, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(2, 2)
+	assert.NoError(t, err)
+	err = g.AddEdge(3, 2)
+	assert.NoError(t, err)
+	err = g.AddEdge(3, 3)
+	assert.NoError(t, err)
 
 	size, err := g.MaxMatching()
 	if err != nil {
@@ -229,20 +232,30 @@ func TestBipartite_MaxMatchingBlock4775_Failed(t *testing.T) {
 
 func TestBipartite_CheckConsistentPairing(t *testing.T) {
 	g1 := NewBipartiteGraph(4)
-	g1.AddEdge(0, 0)
-	g1.AddEdge(0, 1)
-	g1.AddEdge(1, 0)
-	g1.AddEdge(2, 2)
-	g1.AddEdge(3, 2)
-	g1.AddEdge(3, 3)
-	g1.MaxMatching()
+	err := g1.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g1.AddEdge(0, 1)
+	assert.NoError(t, err)
+	err = g1.AddEdge(1, 0)
+	assert.NoError(t, err)
+	err = g1.AddEdge(2, 2)
+	assert.NoError(t, err)
+	err = g1.AddEdge(3, 2)
+	assert.NoError(t, err)
+	err = g1.AddEdge(3, 3)
+	assert.NoError(t, err)
+	_, err = g1.MaxMatching()
+	assert.NoError(t, err)
 
 	g2 := NewBipartiteGraph(2)
-	g2.AddEdge(0, 0)
-	g2.AddEdge(0, 1)
-	g2.MaxMatching()
+	err = g2.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g2.AddEdge(0, 1)
+	assert.NoError(t, err)
+	_, err = g2.MaxMatching()
+	assert.NoError(t, err)
 
-	err := CheckConsistentPairing(g1.MatchU, g1.MatchV)
+	err = CheckConsistentPairing(g1.MatchU, g1.MatchV)
 	if err != nil {
 		t.Errorf("Expected success when CheckConsistentPairing, got %v", err)
 	}
@@ -259,14 +272,16 @@ func TestBipartite_CheckConsistentPairing(t *testing.T) {
 func TestBipartite_MaxMatchingTwice(t *testing.T) {
 	g := NewBipartiteGraph(2)
 
-	g.AddEdge(0, 0)
-	g.AddEdge(0, 1)
+	err := g.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = g.AddEdge(0, 1)
+	assert.NoError(t, err)
 
-	g.MaxMatching()
-	_, err := g.MaxMatching()
-	if err == nil || !strings.Contains(err.Error(), "Matching has already been performed") {
-		t.Errorf("Expected Matching has already been performed, got %v", err)
-	}
+	_, err = g.MaxMatching()
+	assert.NoError(t, err)
+	_, err = g.MaxMatching()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "matching has already been performed")
 }
 
 // fromAdjacencyMatrix creates a BipartiteGraph from adjacency matrix string
@@ -371,12 +386,18 @@ func TestBipartite_fromAdjacencyMatrix(t *testing.T) {
 		t.Errorf("Expected success when parsing %s, got %v", s4, err)
 	}
 	actual4 := NewBipartiteGraph(4)
-	actual4.AddEdge(0, 0)
-	actual4.AddEdge(0, 1)
-	actual4.AddEdge(1, 0)
-	actual4.AddEdge(2, 2)
-	actual4.AddEdge(3, 2)
-	actual4.AddEdge(3, 3)
+	err = actual4.AddEdge(0, 0)
+	assert.NoError(t, err)
+	err = actual4.AddEdge(0, 1)
+	assert.NoError(t, err)
+	err = actual4.AddEdge(1, 0)
+	assert.NoError(t, err)
+	err = actual4.AddEdge(2, 2)
+	assert.NoError(t, err)
+	err = actual4.AddEdge(3, 2)
+	assert.NoError(t, err)
+	err = actual4.AddEdge(3, 3)
+	assert.NoError(t, err)
 	equal = reflect.DeepEqual(g4.adj, actual4.adj)
 	if !equal {
 		t.Errorf("Expected equality when parsing %s, got %+v", s4, actual4.adj)
@@ -400,14 +421,18 @@ func readAdjDat(filepath string) ([]maxMatchingTestcase, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		tokens := strings.Split(scanner.Text(), ";")
 		expected, err := strconv.Atoi(tokens[1])
 		if err != nil {
-			return nil, fmt.Errorf("Failed to generate max-matching test case; %v", err)
+			return nil, fmt.Errorf("failed to generate max-matching test case; %v", err)
 		}
 
 		testcases = append(testcases, maxMatchingTestcase{

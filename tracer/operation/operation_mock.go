@@ -56,11 +56,12 @@ func (mr *MockOperationMockRecorder) Debug(arg0 any) *gomock.Call {
 }
 
 // Execute mocks base method.
-func (m *MockOperation) Execute(arg0 state.StateDB, arg1 *context.Replay) time.Duration {
+func (m *MockOperation) Execute(arg0 state.StateDB, arg1 *context.Replay) (time.Duration, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Execute", arg0, arg1)
 	ret0, _ := ret[0].(time.Duration)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Execute indicates an expected call of Execute.

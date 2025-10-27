@@ -56,10 +56,13 @@ func (op *BeginBlock) Write(f io.Writer) error {
 }
 
 // Execute the begin-block operation.
-func (op *BeginBlock) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *BeginBlock) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	start := time.Now()
-	db.BeginBlock(op.BlockNumber)
-	return time.Since(start)
+	err := db.BeginBlock(op.BlockNumber)
+	if err != nil {
+		return 0, fmt.Errorf("cannot begin block %d; %w", op.BlockNumber, err)
+	}
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the begin-block operation.

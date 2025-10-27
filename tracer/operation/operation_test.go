@@ -156,8 +156,8 @@ func (s *MockStateDB) GetCodeSize(addr common.Address) int {
 	return 0
 }
 
-func (s *MockStateDB) SetCode(addr common.Address, code []byte) []byte {
-	s.recording = append(s.recording, Record{SetCodeID, []any{addr, code}})
+func (s *MockStateDB) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
+	s.recording = append(s.recording, Record{SetCodeID, []any{addr, code, reason}})
 	return nil
 }
 
@@ -365,7 +365,7 @@ func areEqual(v1 any, v2 any) bool {
 	switch c1 := v1.(type) {
 	case []byte:
 		c2 := v2.([]byte)
-		return bytes.Compare(c1, c2) == 0
+		return bytes.Equal(c1, c2)
 	case *uint256.Int:
 		c2 := v2.(*uint256.Int)
 		return c2.Cmp(c1) == 0
@@ -425,10 +425,16 @@ func testOperationDebug(t *testing.T, ctx *context.Replay, op Operation, args st
 	Debug(&ctx.Context, op)
 
 	// restore stdout
-	w.Close()
+	err := w.Close()
+	if err != nil {
+		t.Fatalf("cannot close writer pipe; %v", err)
+	}
 	os.Stdout = old
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, err = io.Copy(&buf, r)
+	if err != nil {
+		t.Fatalf("cannot read from reader pipe; %v", err)
+	}
 
 	// check debug message
 	label := GetLabel(op.GetId())
