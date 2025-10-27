@@ -446,15 +446,12 @@ func parseUint64(args []string, idx int) (uint64, error) {
 	return strconv.ParseUint(s, 10, 64)
 }
 
-func parseUint32(args []string, idx int) (uint32, error) {
-	val, err := parseUint64(args, idx)
-	if err != nil {
-		return 0, err
-	}
-	if val > math.MaxUint32 {
-		return 0, fmt.Errorf("value %d overflows uint32", val)
-	}
-	return uint32(val), nil
+func parseUint32(s string) (uint32, error) {
+    v, err := strconv.ParseUint(s, 10, 32)
+    if err != nil {
+        return 0, err
+    }
+    return uint32(v), nil
 }
 
 func parseInt(args []string, idx int) (int, error) {
