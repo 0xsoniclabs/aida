@@ -354,8 +354,10 @@ func TestStochastic_ReadStats(t *testing.T) {
 // TestStats_CountSnapshotDelta checks snapshot registrations.
 func TestStats_CountSnapshotDelta(t *testing.T) {
 	r := NewStats()
-	r.CountSnapshot(3)
-	r.CountSnapshot(5)
+	err := r.CountSnapshot(3)
+	assert.NoError(t, err)
+	err = r.CountSnapshot(5)
+	assert.NoError(t, err)
 	assert.Equal(t, uint64(1), r.snapshotFreq[3])
 	assert.Equal(t, uint64(1), r.snapshotFreq[5])
 }
@@ -363,12 +365,14 @@ func TestStats_CountSnapshotDelta(t *testing.T) {
 // TestStats_WriteJSON_SuccessAndError tests writing stats to a JSON file.
 func TestStats_WriteJSON_SuccessAndError(t *testing.T) {
 	r := NewStats()
-	r.CountSnapshot(1)
-	r.CountSnapshot(1)
+	err := r.CountSnapshot(1)
+	assert.NoError(t, err)
+	err = r.CountSnapshot(1)
+	assert.NoError(t, err)
 
 	tmp := t.TempDir()
 	file := tmp + "/stats.json"
-	err := r.Write(file)
+	err = r.Write(file)
 	assert.NoError(t, err)
 	_, err = os.Stat(file)
 	assert.NoError(t, err)
@@ -391,8 +395,10 @@ func TestStats_JSON(t *testing.T) {
 	r.transitFreq[argop1][argop2] = 1
 	r.transitFreq[argop2][argop1] = 2
 
-	r.CountSnapshot(0) // implicit RevertToSnapshot op
-	r.CountSnapshot(1)
+	err := r.CountSnapshot(0) // implicit RevertToSnapshot op
+	assert.NoError(t, err)
+	err = r.CountSnapshot(1)
+	assert.NoError(t, err)
 
 	stats, err := r.JSON()
 	assert.NoError(t, err)
@@ -441,10 +447,11 @@ func TestReadStats_ReadErrorOnDirectory(t *testing.T) {
 // TestStats_WriteJSON_MarshalError tests error handling during JSON marshalling.
 func TestStats_WriteJSON_MarshalError(t *testing.T) {
 	r := NewStats()
-	r.CountSnapshot(0)
+	err := r.CountSnapshot(0)
+	assert.NoError(t, err)
 
 	tmp := t.TempDir()
-	err := r.Write(tmp + "/stats.json")
+	err = r.Write(tmp + "/stats.json")
 	assert.Nil(t, err)
 }
 
@@ -455,8 +462,9 @@ func TestStats_WriteJSON_WriteError(t *testing.T) {
 	}
 	r := NewStats()
 	// Avoid NaN in ecdf by using delta 1
-	r.CountSnapshot(1)
-	err := r.Write("/dev/full")
+	err := r.CountSnapshot(1)
+	assert.NoError(t, err)
+	err = r.Write("/dev/full")
 	assert.Error(t, err)
 }
 

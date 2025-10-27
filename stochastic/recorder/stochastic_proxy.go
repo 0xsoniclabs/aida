@@ -61,61 +61,94 @@ func NewStochasticProxy(db state.StateDB, stats *Stats) *StochasticProxy {
 }
 
 func (p *StochasticProxy) CreateAccount(address common.Address) {
-	p.stats.CountAddressOp(operations.CreateAccountID, &address)
+	err := p.stats.CountAddressOp(operations.CreateAccountID, &address)
+	if err != nil {
+		panic(err)
+	}
 	p.db.CreateAccount(address)
 }
 
 func (p *StochasticProxy) CreateContract(addr common.Address) {
-	p.stats.CountAddressOp(operations.CreateContractID, &addr)
+	err := p.stats.CountAddressOp(operations.CreateContractID, &addr)
+	if err != nil {
+		panic(err)
+	}
 	p.db.CreateContract(addr)
 }
 
 func (p *StochasticProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	p.stats.CountAddressOp(operations.SubBalanceID, &address)
+	err := p.stats.CountAddressOp(operations.SubBalanceID, &address)
+	if err != nil {
+		panic(err)
+	}
 	p.stats.RecordBalance(uint256ToInt64(amount))
 	return p.db.SubBalance(address, amount, reason)
 }
 
 func (p *StochasticProxy) AddBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	p.stats.CountAddressOp(operations.AddBalanceID, &address)
+	err := p.stats.CountAddressOp(operations.AddBalanceID, &address)
+	if err != nil {
+		panic(err)
+	}
 	p.stats.RecordBalance(uint256ToInt64(amount))
 	return p.db.AddBalance(address, amount, reason)
 }
 
 func (p *StochasticProxy) GetBalance(address common.Address) *uint256.Int {
-	p.stats.CountAddressOp(operations.GetBalanceID, &address)
+	err := p.stats.CountAddressOp(operations.GetBalanceID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetBalance(address)
 }
 
 func (p *StochasticProxy) GetNonce(address common.Address) uint64 {
-	p.stats.CountAddressOp(operations.GetNonceID, &address)
+	err := p.stats.CountAddressOp(operations.GetNonceID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetNonce(address)
 }
 
 func (p *StochasticProxy) SetNonce(address common.Address, nonce uint64, reason tracing.NonceChangeReason) {
-	p.stats.CountAddressOp(operations.SetNonceID, &address)
+	err := p.stats.CountAddressOp(operations.SetNonceID, &address)
+	if err != nil {
+		panic(err)
+	}
 	p.stats.RecordNonce(nonce)
 	p.db.SetNonce(address, nonce, reason)
 }
 
 func (p *StochasticProxy) GetCodeHash(address common.Address) common.Hash {
-	p.stats.CountAddressOp(operations.GetCodeHashID, &address)
+	err := p.stats.CountAddressOp(operations.GetCodeHashID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetCodeHash(address)
 }
 
 func (p *StochasticProxy) GetCode(address common.Address) []byte {
-	p.stats.CountAddressOp(operations.GetCodeID, &address)
+	err := p.stats.CountAddressOp(operations.GetCodeID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetCode(address)
 }
 
 func (p *StochasticProxy) SetCode(address common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
-	p.stats.CountAddressOp(operations.SetCodeID, &address)
+	err := p.stats.CountAddressOp(operations.SetCodeID, &address)
+	if err != nil {
+		panic(err)
+	}
 	p.stats.RecordCodeSize(len(code))
 	return p.db.SetCode(address, code, reason)
 }
 
 func (p *StochasticProxy) GetCodeSize(address common.Address) int {
-	p.stats.CountAddressOp(operations.GetCodeSizeID, &address)
+	err := p.stats.CountAddressOp(operations.GetCodeSizeID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetCodeSize(address)
 }
 
@@ -132,62 +165,98 @@ func (p *StochasticProxy) GetRefund() uint64 {
 }
 
 func (p *StochasticProxy) GetCommittedState(address common.Address, key common.Hash) common.Hash {
-	p.stats.CountKeyOp(operations.GetCommittedStateID, &address, &key)
+	err := p.stats.CountKeyOp(operations.GetCommittedStateID, &address, &key)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetCommittedState(address, key)
 }
 
 func (p *StochasticProxy) GetStateAndCommittedState(address common.Address, hash common.Hash) (common.Hash, common.Hash) {
-	p.stats.CountKeyOp(operations.GetStateAndCommittedStateID, &address, &hash)
+	err := p.stats.CountKeyOp(operations.GetStateAndCommittedStateID, &address, &hash)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetStateAndCommittedState(address, hash)
 }
 
 func (p *StochasticProxy) GetState(address common.Address, key common.Hash) common.Hash {
-	p.stats.CountKeyOp(operations.GetStateID, &address, &key)
+	err := p.stats.CountKeyOp(operations.GetStateID, &address, &key)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetState(address, key)
 }
 
 func (p *StochasticProxy) GetStorageRoot(addr common.Address) common.Hash {
-	p.stats.CountAddressOp(operations.GetStorageRootID, &addr)
+	err := p.stats.CountAddressOp(operations.GetStorageRootID, &addr)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetStorageRoot(addr)
 }
 
 func (p *StochasticProxy) SetState(address common.Address, key common.Hash, value common.Hash) common.Hash {
-	p.stats.CountValueOp(operations.SetStateID, &address, &key, &value)
+	err := p.stats.CountValueOp(operations.SetStateID, &address, &key, &value)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.SetState(address, key, value)
 }
 
 func (p *StochasticProxy) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	p.stats.CountKeyOp(operations.GetTransientStateID, &addr, &key)
+	err := p.stats.CountKeyOp(operations.GetTransientStateID, &addr, &key)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.GetTransientState(addr, key)
 }
 
 func (p *StochasticProxy) SetTransientState(addr common.Address, key common.Hash, value common.Hash) {
-	p.stats.CountValueOp(operations.SetTransientStateID, &addr, &key, &value)
+	err := p.stats.CountValueOp(operations.SetTransientStateID, &addr, &key, &value)
+	if err != nil {
+		panic(err)
+	}
 	p.db.SetTransientState(addr, key, value)
 }
 
 func (p *StochasticProxy) SelfDestruct(address common.Address) uint256.Int {
-	p.stats.CountAddressOp(operations.SelfDestructID, &address)
+	err := p.stats.CountAddressOp(operations.SelfDestructID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.SelfDestruct(address)
 }
 
 func (p *StochasticProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	p.stats.CountAddressOp(operations.SelfDestruct6780ID, &addr)
+	err := p.stats.CountAddressOp(operations.SelfDestruct6780ID, &addr)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.SelfDestruct6780(addr)
 }
 
 func (p *StochasticProxy) HasSelfDestructed(address common.Address) bool {
-	p.stats.CountAddressOp(operations.HasSelfDestructedID, &address)
+	err := p.stats.CountAddressOp(operations.HasSelfDestructedID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.HasSelfDestructed(address)
 }
 
 func (p *StochasticProxy) Exist(address common.Address) bool {
-	p.stats.CountAddressOp(operations.ExistID, &address)
+	err := p.stats.CountAddressOp(operations.ExistID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.Exist(address)
 }
 
 func (p *StochasticProxy) Empty(address common.Address) bool {
-	p.stats.CountAddressOp(operations.EmptyID, &address)
+	err := p.stats.CountAddressOp(operations.EmptyID, &address)
+	if err != nil {
+		panic(err)
+	}
 	return p.db.Empty(address)
 }
 
@@ -214,7 +283,10 @@ func (p *StochasticProxy) AddSlotToAccessList(address common.Address, slot commo
 func (p *StochasticProxy) RevertToSnapshot(snapshot int) {
 	for i, recordedSnapshot := range p.snapshots {
 		if recordedSnapshot == snapshot {
-			p.stats.CountSnapshot(len(p.snapshots) - i - 1)
+			err := p.stats.CountSnapshot(len(p.snapshots) - i - 1)
+			if err != nil {
+				panic(err)
+			}
 			p.snapshots = p.snapshots[0:i]
 			break
 		}
@@ -223,7 +295,10 @@ func (p *StochasticProxy) RevertToSnapshot(snapshot int) {
 }
 
 func (p *StochasticProxy) Snapshot() int {
-	p.stats.CountOp(operations.SnapshotID)
+	err := p.stats.CountOp(operations.SnapshotID)
+	if err != nil {
+		panic(err)
+	}
 	snapshot := p.db.Snapshot()
 	p.snapshots = append(p.snapshots, snapshot)
 	return snapshot
@@ -287,7 +362,9 @@ func (p *StochasticProxy) PrepareSubstate(substate txcontext.WorldState, block u
 }
 
 func (p *StochasticProxy) BeginTransaction(number uint32) error {
-	p.stats.CountOp(operations.BeginTransactionID)
+	if err := p.stats.CountOp(operations.BeginTransactionID); err != nil {
+		return err
+	}
 	if err := p.db.BeginTransaction(number); err != nil {
 		return err
 	}
@@ -296,7 +373,9 @@ func (p *StochasticProxy) BeginTransaction(number uint32) error {
 }
 
 func (p *StochasticProxy) EndTransaction() error {
-	p.stats.CountOp(operations.EndTransactionID)
+	if err := p.stats.CountOp(operations.EndTransactionID); err != nil {
+		return err
+	}
 	if err := p.db.EndTransaction(); err != nil {
 		return err
 	}
@@ -305,22 +384,30 @@ func (p *StochasticProxy) EndTransaction() error {
 }
 
 func (p *StochasticProxy) BeginBlock(number uint64) error {
-	p.stats.CountOp(operations.BeginBlockID)
+	if err := p.stats.CountOp(operations.BeginBlockID); err != nil {
+		return err
+	}
 	return p.db.BeginBlock(number)
 }
 
 func (p *StochasticProxy) EndBlock() error {
-	p.stats.CountOp(operations.EndBlockID)
+	if err := p.stats.CountOp(operations.EndBlockID); err != nil {
+		return err
+	}
 	return p.db.EndBlock()
 }
 
 func (p *StochasticProxy) BeginSyncPeriod(number uint64) {
-	p.stats.CountOp(operations.BeginSyncPeriodID)
+	if err := p.stats.CountOp(operations.BeginSyncPeriodID); err != nil {
+		panic(err)
+	}
 	p.db.BeginSyncPeriod(number)
 }
 
 func (p *StochasticProxy) EndSyncPeriod() {
-	p.stats.CountOp(operations.EndSyncPeriodID)
+	if err := p.stats.CountOp(operations.EndSyncPeriodID); err != nil {
+		panic(err)
+	}
 	p.db.EndSyncPeriod()
 }
 
