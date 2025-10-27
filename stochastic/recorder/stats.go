@@ -149,9 +149,13 @@ func (r *Stats) CountOp(op int) error {
 
 // CountSnapshot counts the delta between snapshot identifiers
 // and the operation RevertToSnapshot.
-func (r *Stats) CountSnapshot(delta int) {
-	r.CountOp(operations.RevertToSnapshotID)
+func (r *Stats) CountSnapshot(delta int) error {
+	err := r.CountOp(operations.RevertToSnapshotID)
+	if err != nil {
+		return err
+	}
 	r.snapshotFreq[delta]++
+	return nil
 }
 
 // CountAddressOp counts an operation with a contract-address argument

@@ -91,7 +91,10 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	lastSec := time.Since(start).Seconds()
 	stats := recorder.NewStats()
 	curSyncPeriod := cfg.First / cfg.SyncPeriodLength
-	stats.CountOp(operations.BeginSyncPeriodID)
+	err = stats.CountOp(operations.BeginSyncPeriodID)
+	if err != nil {
+		return err
+	}
 	for iter.Next() {
 		tx := iter.Value()
 		if oldBlock != tx.Block {
@@ -99,25 +102,43 @@ func stochasticRecordAction(ctx *cli.Context) error {
 				break
 			}
 			if oldBlock != math.MaxUint64 {
-				stats.CountOp(operations.EndBlockID)
+				err = stats.CountOp(operations.EndBlockID)
+				if err != nil {
+					return err
+				}
 				newSyncPeriod := tx.Block / cfg.SyncPeriodLength
 				for curSyncPeriod < newSyncPeriod {
-					stats.CountOp(operations.EndSyncPeriodID)
+					err = stats.CountOp(operations.EndSyncPeriodID)
+					if err != nil {
+						return err
+					}
 					curSyncPeriod++
-					stats.CountOp(operations.BeginSyncPeriodID)
+					err = stats.CountOp(operations.BeginSyncPeriodID)
+					if err != nil {
+						return err
+					}
 				}
 			}
-			stats.CountOp(operations.BeginBlockID)
+			err = stats.CountOp(operations.BeginBlockID)
+			if err != nil {
+				return err
+			}
 			oldBlock = tx.Block
 		}
-		stats.CountOp(operations.BeginTransactionID)
+		err = stats.CountOp(operations.BeginTransactionID)
+		if err != nil {
+			return err
+		}
 		var statedb state.StateDB
 		statedb = state.MakeInMemoryStateDB(substatecontext.NewWorldState(tx.InputSubstate), tx.Block)
 		statedb = recorder.NewStochasticProxy(statedb, &stats)
 		if _, err = processor.ProcessTransaction(statedb, int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)); err != nil {
 			return err
 		}
-		stats.CountOp(operations.EndTransactionID)
+		err = stats.CountOp(operations.EndTransactionID)
+		if err != nil {
+			return err
+		}
 
 		// report progress
 		sec = time.Since(start).Seconds()
@@ -128,9 +149,15 @@ func stochasticRecordAction(ctx *cli.Context) error {
 	}
 	// end last block
 	if oldBlock != math.MaxUint64 {
-		stats.CountOp(operations.EndBlockID)
+		err = stats.CountOp(operations.EndBlockID)
+		if err != nil {
+			return err
+		}
 	}
-	stats.CountOp(operations.EndSyncPeriodID)
+	err = stats.CountOp(operations.EndSyncPeriodID)
+	if err != nil {
+		return err
+	}
 
 	sec = time.Since(start).Seconds()
 	log.Noticef("Total elapsed time: %.3f s, processed %v blocks", sec, cfg.Last-cfg.First+1)
