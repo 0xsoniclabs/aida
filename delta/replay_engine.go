@@ -448,7 +448,13 @@ func parseUint64(args []string, idx int) (uint64, error) {
 
 func parseUint32(args []string, idx int) (uint32, error) {
 	val, err := parseUint64(args, idx)
-	return uint32(val), err
+	if err != nil {
+		return 0, err
+	}
+	if val > math.MaxUint32 {
+		return 0, fmt.Errorf("value %d overflows uint32", val)
+	}
+	return uint32(val), nil
 }
 
 func parseInt(args []string, idx int) (int, error) {
