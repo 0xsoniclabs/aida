@@ -447,11 +447,11 @@ func parseUint64(args []string, idx int) (uint64, error) {
 }
 
 func parseUint32(s string) (uint32, error) {
-    v, err := strconv.ParseUint(s, 10, 32)
-    if err != nil {
-        return 0, err
-    }
-    return uint32(v), nil
+	v, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(v), nil
 }
 
 func parseInt(args []string, idx int) (int, error) {
