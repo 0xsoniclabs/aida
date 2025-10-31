@@ -21,9 +21,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/testutil"
-
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
@@ -44,7 +41,8 @@ func TestSubstateProvider_IterateOverExistingDb(t *testing.T) {
 	}
 
 	// Open the substate data for reading.
-	provider := openSubstateDb(path, t)
+	provider, err := openSubstateDb(path, t)
+	assert.NoError(t, err)
 	defer provider.Close()
 
 	gomock.InOrder(
@@ -69,7 +67,8 @@ func TestSubstateProvider_LowerBoundIsInclusive(t *testing.T) {
 	}
 
 	// Open the substate data for reading.
-	provider := openSubstateDb(path, nil)
+	provider, err := openSubstateDb(path, nil)
+	assert.NoError(t, err)
 	defer provider.Close()
 
 	gomock.InOrder(
@@ -94,7 +93,8 @@ func TestSubstateProvider_UpperBoundIsExclusive(t *testing.T) {
 	}
 
 	// Open the substate data for reading.
-	provider := openSubstateDb(path, nil)
+	provider, err := openSubstateDb(path, nil)
+	assert.NoError(t, err)
 	defer provider.Close()
 
 	gomock.InOrder(
@@ -118,7 +118,8 @@ func TestSubstateProvider_RangeCanBeEmpty(t *testing.T) {
 	}
 
 	// Open the substate data for reading.
-	provider := openSubstateDb(path, nil)
+	provider, err := openSubstateDb(path, nil)
+	assert.NoError(t, err)
 	defer provider.Close()
 
 	if err := provider.Run(5, 10, toSubstateConsumer(consumer)); err != nil {
@@ -137,7 +138,8 @@ func TestSubstateProvider_IterationCanBeAbortedByConsumer(t *testing.T) {
 	}
 
 	// Open the substate data for reading.
-	provider := openSubstateDb(path, nil)
+	provider, err := openSubstateDb(path, nil)
+	assert.NoError(t, err)
 	defer provider.Close()
 
 	stop := errors.New("stop!")
@@ -151,11 +153,11 @@ func TestSubstateProvider_IterationCanBeAbortedByConsumer(t *testing.T) {
 	}
 }
 
-func openSubstateDb(path string, t *testing.T) Provider[txcontext.TxContext] {
+func openSubstateDb(path string, t *testing.T) (Provider[txcontext.TxContext], error) {
 	cfg := utils.Config{}
 	cfg.AidaDb = path
 	cfg.Workers = 1
-	aidaDb, err := db.NewReadOnlyBaseDB(path)
+	aidaDb, err := db.NewReadOnlySubstateDB(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,15 +221,14 @@ func TestExecutor_OpenSubstateProvider(t *testing.T) {
 			AidaDb: "testdb",
 		}
 		ctxt := cli.NewContext(nil, nil, nil)
-		kv := &testutil.KeyValue{}
 
 		mockBaseDb := db.NewMockBaseDB(ctrl)
 		mockDb := db.NewMockDbAdapter(ctrl)
-		// Try catch mechanism for finding encoding
-		mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iterator.NewArrayIterator(kv)).MinTimes(1)
 		mockBaseDb.EXPECT().GetBackend().Return(mockDb)
+		mockBaseDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema)
 
-		provider := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
+		provider, err := OpenSubstateProvider(cfg, ctxt, mockBaseDb)
+		assert.NoError(t, err)
 		assert.NotNil(t, provider)
 	})
 }

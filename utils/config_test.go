@@ -930,7 +930,7 @@ func createFakeAidaDb(cfg *Config) error {
 	)
 
 	// open fake aidaDB
-	testDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	testDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open patch db; %v", err)
 	}

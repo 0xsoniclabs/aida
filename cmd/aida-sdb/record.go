@@ -70,7 +70,7 @@ func RecordStateDbTrace(ctx *cli.Context) error {
 	// force enable transaction validation
 	cfg.ValidateTxState = true
 
-	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
@@ -78,7 +78,10 @@ func RecordStateDbTrace(ctx *cli.Context) error {
 		err = errors.Join(err, aidaDb.Close())
 	}(aidaDb)
 
-	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	if err != nil {
+		return err
+	}
 	defer substateIterator.Close()
 
 	processor, err := executor.MakeLiveDbTxProcessor(cfg)

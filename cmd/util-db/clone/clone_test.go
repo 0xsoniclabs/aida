@@ -64,7 +64,7 @@ func TestClone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			aidaDb := utildb.GenerateTestAidaDb(t)
-			err := testClone(t, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), tt.cloningType, tt.name, tt.dbc)
+			err := testClone(t, utils.Must(db.MakeDefaultSubstateDBFromBaseDB(aidaDb)), tt.cloningType, tt.name, tt.dbc)
 			if tt.wantErr != "" {
 				assert.Error(t, err, "Expected error but got none")
 				assert.Contains(t, err.Error(), tt.wantErr, "Error message does not match")
@@ -96,7 +96,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 	if dbc == "" || dbc == "all" || dbc == "substate" {
 		t.Run("Substates", func(t *testing.T) {
 			substateCount := 0
-			substateDb := db.MakeDefaultSubstateDBFromBaseDB(cloneDb)
+			substateDb := utils.Must(db.MakeDefaultSubstateDBFromBaseDB(cloneDb))
 			substateIter := substateDb.NewIterator([]byte(db.SubstateDBPrefix), nil)
 			for substateIter.Next() {
 				substateCount++
@@ -107,7 +107,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 
 	if dbc == "" || dbc == "all" || dbc == "update" {
 		t.Run("UpdateSets", func(t *testing.T) {
-			udb := db.MakeDefaultUpdateDBFromBaseDB(cloneDb)
+			udb := utils.Must(db.MakeDefaultUpdateDBFromBaseDB(cloneDb))
 			updateSetCount := 0
 			updateSetIter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
 			for updateSetIter.Next() {
@@ -244,7 +244,7 @@ func TestClone_BlockHashes(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CustomType)
+	err = clone(cfg, utils.Must(db.MakeDefaultSubstateDBFromBaseDB(aidaDb)), cloneDb, utils.CustomType)
 
 	assert.NoError(t, err)
 
@@ -270,7 +270,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CloneType)
+	err = clone(cfg, utils.Must(db.MakeDefaultSubstateDBFromBaseDB(aidaDb)), cloneDb, utils.CloneType)
 
 	assert.NoError(t, err)
 
@@ -305,7 +305,7 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	targetDir := t.TempDir() + "/target"
 
 	// Create a source database
-	sourceDb, err := db.NewDefaultBaseDB(sourceDir)
+	sourceDb, err := db.NewDefaultSubstateDB(sourceDir)
 	assert.NoError(t, err)
 
 	err = sourceDb.Close()

@@ -71,7 +71,11 @@ func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDb
 
 	var ok bool
 
-	md.FirstBlock, md.LastBlock, ok = utils.FindBlockRangeInSubstate(db.MakeDefaultSubstateDBFromBaseDB(md.Db))
+	myDb, err := db.MakeDefaultSubstateDBFromBaseDB(md.Db)
+	if err != nil {
+		return nil, err
+	}
+	md.FirstBlock, md.LastBlock, ok = utils.FindBlockRangeInSubstate(myDb)
 	if !ok {
 		return nil, errors.New("cannot find block range in substate")
 	}

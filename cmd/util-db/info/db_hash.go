@@ -41,7 +41,7 @@ var printDbHashCommand = cli.Command{
 func printDbHashAction(ctx *cli.Context) error {
 	var force = ctx.Bool(flags.ForceFlag.Name)
 
-	aidaDb, err := db.NewReadOnlyBaseDB(ctx.String(utils.AidaDbFlag.Name))
+	aidaDb, err := db.NewReadOnlySubstateDB(ctx.String(utils.AidaDbFlag.Name))
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}

@@ -52,7 +52,7 @@ func scrapeAction(ctx *cli.Context) (err error) {
 	log := logger.NewLogger(cfg.LogLevel, "UtilDb-Scrape")
 	log.Infof("Scraping for range %d-%d", cfg.First, cfg.Last)
 
-	database, err := db.NewDefaultBaseDB(cfg.TargetDb)
+	database, err := db.NewDefaultSubstateDB(cfg.TargetDb)
 	if err != nil {
 		return fmt.Errorf("error opening stateHash leveldb %s: %v", cfg.TargetDb, err)
 	}

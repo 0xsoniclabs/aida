@@ -41,12 +41,15 @@ func generateAction(ctx *cli.Context) error {
 		return argErr
 	}
 
-	base, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	base, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
 
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+	sdb, err := db.MakeDefaultSubstateDBFromBaseDB(base)
+	if err != nil {
+		return err
+	}
 	fb, lb, ok := utils.FindBlockRangeInSubstate(sdb)
 	if !ok {
 		return errors.New("cannot find block range in substate")

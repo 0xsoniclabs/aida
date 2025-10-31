@@ -62,7 +62,7 @@ func TestCmd_ScrapeCommand(t *testing.T) {
 // TestStateHash_ZeroHasSameStateHashAsOne tests that the state hash of block 0 is the same as the state hash of block 1
 func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashes"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -77,7 +77,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 		t.Fatalf("error closing stateHash leveldb %s: %v", tmpDir, err)
 	}
 
-	database, err = db.NewReadOnlyBaseDB(tmpDir)
+	database, err = db.NewReadOnlySubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -107,7 +107,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 
 func TestStateHash_Log(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashes"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -127,7 +127,7 @@ func TestStateHash_Log(t *testing.T) {
 // we are expecting that at least some storage has changed between block  and block 100
 func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashes"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -142,7 +142,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 		t.Fatalf("error closing stateHash leveldb %s: %v", tmpDir, err)
 	}
 
-	database, err = db.NewReadOnlyBaseDB(tmpDir)
+	database, err = db.NewReadOnlySubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
