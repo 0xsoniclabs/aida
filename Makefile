@@ -28,7 +28,7 @@ GOPROXY ?= "https://proxy.golang.org,direct"
 
 .PHONY: all clean help test carmen tosca
 
-all: aida-rpc aida-sdb aida-vm-adb aida-vm-sdb aida-stochastic-sdb aida-vm aida-profile aida-delta-debugger util-updateset util-db
+all: aida-rpc aida-sdb aida-vm-adb aida-vm-sdb aida-stochastic-sdb aida-stochastic-sdb-coverage aida-vm aida-profile aida-delta-debugger util-updateset util-db
 
 
 carmen:
@@ -49,6 +49,13 @@ aida-stochastic-sdb: carmen tosca
 	GOPROXY=$(GOPROXY) \
 	go build -ldflags "-s -w -X 'github.com/0xsoniclabs/Aida/utils.GitCommit=$(BUILD_COMMIT)'" \
 	-o $(GO_BIN)/aida-stochastic-sdb \
+	./cmd/aida-stochastic-sdb
+
+aida-stochastic-sdb-coverage: carmen tosca
+	GOPROXY=$(GOPROXY) \
+	go build -cover -covermode=atomic \
+	-ldflags "-X 'github.com/0xsoniclabs/Aida/utils.GitCommit=$(BUILD_COMMIT)'" \
+	-o $(GO_BIN)/aida-stochastic-sdb-coverage \
 	./cmd/aida-stochastic-sdb
 
 aida-vm-adb: carmen tosca
