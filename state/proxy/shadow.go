@@ -194,9 +194,9 @@ func (s *shadowVmStateDb) GetCodeHash(addr common.Address) common.Hash {
 	return s.getHash("GetCodeHash", func(s state.VmStateDB) common.Hash { return s.GetCodeHash(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SetCode(addr common.Address, code []byte) []byte {
+func (s *shadowVmStateDb) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
 	return s.getBytes("SetCode", func(s state.VmStateDB) []byte {
-		return s.SetCode(addr, code)
+		return s.SetCode(addr, code, reason)
 	})
 }
 

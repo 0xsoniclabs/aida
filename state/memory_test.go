@@ -362,7 +362,7 @@ func TestInMemoryStateDB_SetCode(t *testing.T) {
 	mockWs.EXPECT().Get(gomock.Any()).Return(mockAcc).Times(1)
 	mockAcc.EXPECT().GetCode().Return(expectedCode).Times(1)
 
-	retrievedCode := mem.SetCode(addr, expectedCode)
+	retrievedCode := mem.SetCode(addr, expectedCode, tracing.CodeChangeUnspecified)
 	assert.Equal(t, expectedCode, retrievedCode)
 }
 

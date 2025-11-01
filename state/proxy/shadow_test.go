@@ -332,7 +332,7 @@ func TestShadowState_CodeOperations(t *testing.T) {
 				t.Fatal("failed to update account code; wrong initial size")
 			}
 
-			shadowDB.SetCode(addr, code)
+			shadowDB.SetCode(addr, code, tracing.CodeChangeUnspecified)
 
 			if !bytes.Equal(shadowDB.GetCode(addr), code) {
 				t.Fatal("failed to update account code; wrong value")
@@ -1379,8 +1379,8 @@ func TestShadowVmStateDb_SetCode(t *testing.T) {
 	addr := common.Address{0x12}
 	code := []byte{0x01, 0x02, 0x03}
 	expectedHash := []byte{0x04, 0x05, 0x06}
-	mockDb.EXPECT().SetCode(addr, code).Return(expectedHash).Times(2)
-	hash := shadow.SetCode(addr, code)
+	mockDb.EXPECT().SetCode(addr, code, tracing.CodeChangeUnspecified).Return(expectedHash).Times(2)
+	hash := shadow.SetCode(addr, code, tracing.CodeChangeUnspecified)
 	assert.Equal(t, expectedHash, hash)
 }
 func TestShadowVmStateDb_Snapshot(t *testing.T) {

@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/gogo/protobuf/plugin/stringer"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -52,9 +53,10 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenBreakdownIsNil(t *tes
 		log.EXPECT().Noticef(gomock.Any(), gomock.Any(), gomock.Any()),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
-
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenDatabaseIsNil(t *testing.T) {
@@ -70,9 +72,10 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsNotPrintedWhenDatabaseIsNil(t *test
 		log.EXPECT().Notice(gomock.Any()).Times(0),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: nil})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: nil}, nil)
-
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: nil})
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: nil}, nil)
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_MemoryBreakdownIsPrintedWhenEnabled(t *testing.T) {
@@ -100,9 +103,10 @@ func TestMemoryUsagePrinter_MemoryBreakdownIsPrintedWhenEnabled(t *testing.T) {
 		log.EXPECT().Noticef(gomock.Any(), uint64(1), gomock.Any()),
 	)
 
-	ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
-	ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
-
+	err := ext.PreRun(executor.State[any]{}, &executor.Context{State: db})
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[any]{}, &executor.Context{State: db}, nil)
+	assert.NoError(t, err)
 }
 
 func TestMemoryUsagePrinter_NoPrinterIsCreatedIfNotEnabled(t *testing.T) {

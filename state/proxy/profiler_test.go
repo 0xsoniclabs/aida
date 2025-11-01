@@ -199,8 +199,8 @@ func TestProfilerProxy_SetCode(t *testing.T) {
 	}
 	expectedAddr := common.HexToAddress("0x1234")
 	expectedCode := []byte{0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00}
-	mockDb.EXPECT().SetCode(expectedAddr, expectedCode)
-	p.SetCode(expectedAddr, expectedCode)
+	mockDb.EXPECT().SetCode(expectedAddr, expectedCode, tracing.CodeChangeUnspecified)
+	p.SetCode(expectedAddr, expectedCode, tracing.CodeChangeUnspecified)
 }
 func TestProfilerProxy_GetCodeSize(t *testing.T) {
 	ctrl := gomock.NewController(t)

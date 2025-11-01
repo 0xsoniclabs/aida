@@ -17,6 +17,8 @@
 package primer
 
 import (
+	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -25,11 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-)
-
-import (
-	"fmt"
-	"os"
 )
 
 var testDataDir string

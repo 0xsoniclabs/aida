@@ -271,7 +271,7 @@ func OverwriteStateDB(patch txcontext.WorldState, db state.VmStateDB) {
 
 		}
 		if code := db.GetCode(addr); !bytes.Equal(code, acc.GetCode()) {
-			db.SetCode(addr, acc.GetCode())
+			db.SetCode(addr, acc.GetCode(), tracing.CodeChangeUnspecified)
 		}
 
 		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {

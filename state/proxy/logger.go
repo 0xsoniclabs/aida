@@ -286,9 +286,9 @@ func (s *loggingVmStateDb) GetCodeHash(addr common.Address) common.Hash {
 	return res
 }
 
-func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte) []byte {
-	res := s.db.SetCode(addr, code)
-	s.writeLog("SetCode, %v, %v, %v", addr, code, res)
+func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
+	res := s.db.SetCode(addr, code, reason)
+	s.writeLog("SetCode, %v, %v, %v, %v", addr, code, res, reason)
 	return res
 }
 

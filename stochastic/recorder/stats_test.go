@@ -52,7 +52,8 @@ func TestStatsUpdateFreq(t *testing.T) {
 	addr := stochastic.RandArgID
 	key := stochastic.NoArgID
 	value := stochastic.NoArgID
-	r.updateFreq(op, addr, key, value)
+	err := r.updateFreq(op, addr, key, value)
+	assert.NoError(t, err)
 	argop1, _ := operations.EncodeArgOp(op, addr, key, value)
 
 	// check updated operation/transit frequencies
@@ -75,7 +76,8 @@ func TestStatsUpdateFreq(t *testing.T) {
 	addr = stochastic.RandArgID
 	key = stochastic.PrevArgID
 	value = stochastic.ZeroArgID
-	r.updateFreq(op, addr, key, value)
+	err = r.updateFreq(op, addr, key, value)
+	assert.NoError(t, err)
 	argop2, _ := operations.EncodeArgOp(op, addr, key, value)
 	for i := 0; i < operations.NumArgOps; i++ {
 		for j := 0; j < operations.NumArgOps; j++ {
@@ -399,7 +401,7 @@ func TestStats_JSON(t *testing.T) {
 	i1, ok1 := labelIndex[exp1]
 	i2, ok2 := labelIndex[exp2]
 	i3, ok3 := labelIndex[exp3]
-	if !(ok1 && ok2 && ok3) {
+	if !ok1 || !ok2 || !ok3 {
 		t.Fatalf("expected labels %v, %v and %v in %v", exp1, exp2, exp3, stats.Operations)
 	}
 

@@ -22,6 +22,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func initGetStateAndCommittedState(t *testing.T) (*context.Replay, *GetStateAndCommittedState, common.Address, common.Hash) {
@@ -65,7 +66,9 @@ func TestGetStateAndCommittedStateExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{GetCommittedStateID, []any{addr, storage}}}

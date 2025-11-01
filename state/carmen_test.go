@@ -224,7 +224,7 @@ func TestCarmenState_CodeOperations(t *testing.T) {
 				t.Fatal("failed to update account code; wrong initial size")
 			}
 
-			csDB.SetCode(addr, code)
+			csDB.SetCode(addr, code, tracing.CodeChangeUnspecified)
 
 			if !bytes.Equal(csDB.GetCode(addr), code) {
 				t.Fatal("failed to update account code; wrong value")
@@ -1201,7 +1201,7 @@ func TestCarmenStateDB_SetCode(t *testing.T) {
 	code := []byte{0x01, 0x02, 0x03}
 	mockTxCtx.EXPECT().GetCode(carmen.Address(addr)).Return(code)
 	mockTxCtx.EXPECT().SetCode(carmen.Address(addr), code)
-	c.SetCode(addr, code)
+	c.SetCode(addr, code, tracing.CodeChangeUnspecified)
 }
 
 func TestCarmenStateDB_Snapshot(t *testing.T) {

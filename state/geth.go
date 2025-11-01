@@ -188,8 +188,8 @@ func (s *gethStateDB) GetCodeSize(addr common.Address) int {
 	return s.db.GetCodeSize(addr)
 }
 
-func (s *gethStateDB) SetCode(addr common.Address, code []byte) []byte {
-	return s.db.SetCode(addr, code)
+func (s *gethStateDB) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
+	return s.db.SetCode(addr, code, reason)
 }
 
 func (s *gethStateDB) Snapshot() int {
@@ -440,7 +440,7 @@ func (l *gethBulkLoad) SetState(addr common.Address, key common.Hash, value comm
 }
 
 func (l *gethBulkLoad) SetCode(addr common.Address, code []byte) {
-	l.db.SetCode(addr, code)
+	l.db.SetCode(addr, code, tracing.CodeChangeGenesis)
 }
 
 func (l *gethBulkLoad) Close() error {

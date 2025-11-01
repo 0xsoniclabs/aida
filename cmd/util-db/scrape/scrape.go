@@ -18,6 +18,7 @@ package scrape
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -42,7 +43,7 @@ var Command = cli.Command{
 }
 
 // scrapeAction stores state hashes into Target for given range
-func scrapeAction(ctx *cli.Context) error {
+func scrapeAction(ctx *cli.Context) (err error) {
 	cfg, argErr := utils.NewConfig(ctx, utils.BlockRangeArgs)
 	if argErr != nil {
 		return argErr
@@ -55,7 +56,9 @@ func scrapeAction(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error opening stateHash leveldb %s: %v", cfg.TargetDb, err)
 	}
-	defer database.Close()
+	defer func(database db.BaseDB) {
+		err = errors.Join(err, database.Close())
+	}(database)
 
 	err = StateAndBlockHashScraper(ctx.Context, cfg.ChainID, cfg.ClientDb, database, cfg.First, cfg.Last, log)
 	if err != nil {

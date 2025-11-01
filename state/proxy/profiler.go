@@ -121,10 +121,10 @@ func (p *ProfilerProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (p *ProfilerProxy) SetCode(addr common.Address, code []byte) []byte {
+func (p *ProfilerProxy) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
 	var res []byte
 	p.do(operation.SetCodeID, func() {
-		res = p.db.SetCode(addr, code)
+		res = p.db.SetCode(addr, code, reason)
 	})
 	return res
 }

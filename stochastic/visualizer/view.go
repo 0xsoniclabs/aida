@@ -160,7 +160,7 @@ func computeTxOperation(stats *recorder.StatsJSON, stationary []float64) ([]opDa
 
 func computeSimplifiedMatrix(stats *recorder.StatsJSON) ([][]float64, error) {
 	// Initialize a simplified matrix with dimensions NumOps x NumOps
-	var simplified [][]float64 = make([][]float64, operations.NumOps)
+	var simplified = make([][]float64, operations.NumOps)
 	for i := 0; i < operations.NumOps; i++ {
 		simplified[i] = make([]float64, operations.NumOps)
 	}

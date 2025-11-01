@@ -18,6 +18,7 @@ package blockprofile
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -147,13 +148,14 @@ func newProfileDB(dbFile string, chainID utils.ChainID) (*profileDB, error) {
 }
 
 // Close flushes buffers of profiling database and closes the profiling database.
-func (db *profileDB) Close() error {
+func (db *profileDB) Close() (err error) {
 	defer func() {
-		db.txStmt.Close()
-		db.blockStmt.Close()
-		db.sql.Close()
+		err = errors.Join(err,
+			db.txStmt.Close(),
+			db.blockStmt.Close(),
+			db.sql.Close())
 	}()
-	if err := db.Flush(); err != nil {
+	if err = db.Flush(); err != nil {
 		return err
 	}
 	return nil

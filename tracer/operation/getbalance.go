@@ -57,11 +57,11 @@ func (op *GetBalance) Write(f io.Writer) error {
 }
 
 // Execute the get-balance operation.
-func (op *GetBalance) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetBalance) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.DecodeContract(op.Contract)
 	start := time.Now()
 	db.GetBalance(contract)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-balance operation.

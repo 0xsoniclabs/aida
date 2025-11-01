@@ -276,7 +276,7 @@ func TestWorldstateUpdate_OverwriteStateDb(t *testing.T) {
 		db.EXPECT().GetNonce(common.Address{0x01}).Return(uint64(2)).Times(1),
 		db.EXPECT().SetNonce(common.Address{0x01}, uint64(1), tracing.NonceChangeUnspecified).Times(1),
 		db.EXPECT().GetCode(common.Address{0x01}).Return([]byte{0x60, 0x00}).Times(1),
-		db.EXPECT().SetCode(common.Address{0x01}, []byte{0x60, 0x60}).Times(1),
+		db.EXPECT().SetCode(common.Address{0x01}, []byte{0x60, 0x60}, tracing.CodeChangeUnspecified).Times(1),
 		db.EXPECT().GetState(common.Address{0x01}, common.Hash{0x01}).Return(common.Hash{}).Times(1),
 		db.EXPECT().SetState(common.Address{0x01}, common.Hash{0x01}, common.Hash{0x02}).Times(1),
 	)

@@ -41,7 +41,7 @@ func ReplayTrace(ctx *cli.Context) error {
 
 	operationProvider, err := executor.OpenOperations(cfg)
 	if err != nil {
-
+		return err
 	}
 
 	defer operationProvider.Close()
@@ -75,17 +75,20 @@ type operationProcessor struct {
 }
 
 func (p operationProcessor) Process(state executor.State[[]operation.Operation], ctx *executor.Context) error {
-	p.runTransaction(uint64(state.Block), state.Data, ctx.State)
-	return nil
+	return p.runTransaction(uint64(state.Block), state.Data, ctx.State)
 }
 
-func (p operationProcessor) runTransaction(block uint64, operations []operation.Operation, stateDb state.StateDB) {
+func (p operationProcessor) runTransaction(block uint64, operations []operation.Operation, stateDb state.StateDB) error {
 	for _, op := range operations {
-		operation.Execute(op, stateDb, p.rCtx)
+		err := operation.Execute(op, stateDb, p.rCtx)
+		if err != nil {
+			return err
+		}
 		if p.cfg.Debug && block >= p.cfg.DebugFrom {
 			operation.Debug(&p.rCtx.Context, op)
 		}
 	}
+	return nil
 }
 
 func replay(cfg *utils.Config, provider executor.Provider[[]operation.Operation], processor executor.Processor[[]operation.Operation], extra []executor.Extension[[]operation.Operation], aidaDb db.BaseDB) error {

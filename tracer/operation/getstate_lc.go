@@ -62,12 +62,12 @@ func (op *GetStateLc) Write(f io.Writer) error {
 }
 
 // Execute the get-state-lc operation.
-func (op *GetStateLc) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *GetStateLc) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	contract := ctx.PrevContract()
 	storage := ctx.DecodeKey(op.Key)
 	start := time.Now()
 	db.GetState(contract, storage)
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the get-state-lc operation.

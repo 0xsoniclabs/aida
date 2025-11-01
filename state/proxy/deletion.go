@@ -98,8 +98,8 @@ func (r *DeletionProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (r *DeletionProxy) SetCode(addr common.Address, code []byte) []byte {
-	return r.db.SetCode(addr, code)
+func (r *DeletionProxy) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
+	return r.db.SetCode(addr, code, reason)
 }
 
 // GetCodeSize returns the EVM bytecode's size.

@@ -23,11 +23,12 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/tracer/context"
+	"github.com/stretchr/testify/assert"
 )
 
 func initFinalise(t *testing.T) (*context.Replay, *Finalise, bool) {
-	rand.Seed(time.Now().UnixNano())
-	deleteEmpty := rand.Intn(2) == 1
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	deleteEmpty := rng.Intn(2) == 1
 	// create context context
 	ctx := context.NewReplay()
 
@@ -63,7 +64,9 @@ func TestFinaliseExecute(t *testing.T) {
 
 	// check execution
 	mock := NewMockStateDB()
-	op.Execute(mock, ctx)
+	execute, err := op.Execute(mock, ctx)
+	assert.NoError(t, err)
+	assert.True(t, execute > 0)
 
 	// check whether methods were correctly called
 	expected := []Record{{FinaliseID, []any{deleteEmpty}}}

@@ -91,7 +91,7 @@ func TestRegisterProgress_DoNothingIfDisabled(t *testing.T) {
 
 func TestRegisterProgress_TerminatesIfPathToRegisterDirDoesNotExist(t *testing.T) {
 	var (
-		pathToRegisterDir string = filepath.Join("does", "not", "exist")
+		pathToRegisterDir = filepath.Join("does", "not", "exist")
 	)
 
 	cfg := &utils.Config{}
@@ -113,7 +113,7 @@ func TestRegisterProgress_TerminatesIfPathToRegisterDirDoesNotExist(t *testing.T
 
 func TestRegisterProgress_TerminatesIfPathToStateDBDoesNotExist(t *testing.T) {
 	var (
-		dummyStateDbPath string = filepath.Join("does", "not", "exist")
+		dummyStateDbPath = filepath.Join("does", "not", "exist")
 	)
 
 	cfg := &utils.Config{}
@@ -140,10 +140,10 @@ func TestRegisterProgress_TerminatesIfPathToStateDBDoesNotExist(t *testing.T) {
 
 func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 	var (
-		tmpDir           string = t.TempDir()
-		dummyStateDbPath string = filepath.Join(tmpDir, "dummy.txt")
-		dbName           string = "tmp"
-		connection       string = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
+		tmpDir           = t.TempDir()
+		dummyStateDbPath = filepath.Join(tmpDir, "dummy.txt")
+		dbName           = "tmp"
+		connection       = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
 	)
 	// Check if path to state db is writable
 	if err := os.WriteFile(dummyStateDbPath, []byte("hello world"), 0x600); err != nil {
@@ -216,12 +216,14 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 		stateDb.EXPECT().GetMemoryUsage().Return(&state.MemoryUsage{UsedBytes: 5555}),
 	)
 
-	ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	assert.NoError(t, err)
 
 	sub := substatecontext.NewTxContext(s)
 
 	for b := int(cfg.First); b < int(cfg.Last); b++ {
-		ext.PreBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		err = ext.PreBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		assert.NoError(t, err)
 
 		// check if a print happens here
 		if b > int(itv.End()) {
@@ -229,41 +231,53 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 			expectedRowCount++
 		}
 		stats := []statsResponse{}
-		stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+		err = stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+		assert.NoError(t, err)
+
 		if len(stats) != expectedRowCount {
 			t.Errorf("Expected #Row: %d, Actual #Row: %d", expectedRowCount, len(stats))
 		}
 
-		ext.PreTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
-		ext.PostTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
-		ext.PostBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		err = ext.PreTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
+		assert.NoError(t, err)
+
+		err = ext.PostTransaction(executor.State[txcontext.TxContext]{Data: sub}, ctx)
+		assert.NoError(t, err)
+
+		err = ext.PostBlock(executor.State[txcontext.TxContext]{Block: b, Data: sub}, ctx)
+		assert.NoError(t, err)
 	}
 
-	ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, nil)
+	err = ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, nil)
+	assert.NoError(t, err)
 
 	// check if a print happens here
 	expectedRowCount++
 	stats := []statsResponse{}
-	stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+	err = stmt.Select(&stats, query{int(cfg.First), int(cfg.Last)})
+	assert.NoError(t, err)
 	if len(stats) != expectedRowCount {
 		t.Errorf("Expected #Row: %d, Actual #Row: %d", expectedRowCount, len(stats))
 	}
 
 	// Check that metadata is not duplicated
 	ms := []metadataResponse{}
-	meta.Select(&ms, metadataQuery{"Processor"})
+	err = meta.Select(&ms, metadataQuery{"Processor"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected runtime to be recorded once, Actual #Row: %d", len(ms))
 	}
 
 	// check if runtime is recorded after postrun
-	meta.Select(&ms, metadataQuery{"Runtime"})
+	err = meta.Select(&ms, metadataQuery{"Runtime"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected runtime to be recorded once, Actual #Row: %d", len(ms))
 	}
 
 	// check if RunSucceed is recorded after postrun
-	meta.Select(&ms, metadataQuery{"RunSucceed"})
+	err = meta.Select(&ms, metadataQuery{"RunSucceed"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunSucceed to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -272,22 +286,26 @@ func TestRegisterProgress_InsertToDbIfEnabled(t *testing.T) {
 	}
 
 	// check if RunError is not recorded
-	meta.Select(&ms, metadataQuery{"RunError"})
+	err = meta.Select(&ms, metadataQuery{"RunError"})
+	assert.NoError(t, err)
 	if len(ms) != 0 {
 		t.Errorf("Expected RunError should not be recorded, Actual: #Row: %d", len(ms))
 	}
 
-	meta.Close()
-	stmt.Close()
-	sDb.Close()
+	err = meta.Close()
+	assert.NoError(t, err)
+	err = stmt.Close()
+	assert.NoError(t, err)
+	err = sDb.Close()
+	assert.NoError(t, err)
 }
 
 func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	var (
-		tmpDir           string = t.TempDir()
-		dummyStateDbPath string = filepath.Join(tmpDir, "dummy.txt")
-		dbName           string = "tmp"
-		connection       string = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
+		tmpDir           = t.TempDir()
+		dummyStateDbPath = filepath.Join(tmpDir, "dummy.txt")
+		dbName           = "tmp"
+		connection       = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
 	)
 	// Check if path to state db is writable
 	if err := os.WriteFile(dummyStateDbPath, []byte("hello world"), 0x600); err != nil {
@@ -334,12 +352,15 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 
 	// this is the run
 	errorText := "This is one random error!"
-	ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
-	ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf("%s", errorText))
+	err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
+	assert.NoError(t, err)
+	err = ext.PostRun(executor.State[txcontext.TxContext]{}, ctx, fmt.Errorf("%s", errorText))
+	assert.NoError(t, err)
 
 	// check if RunSucceed is recorded after postrun
 	ms := []metadataResponse{}
-	meta.Select(&ms, metadataQuery{"RunSucceed"})
+	err = meta.Select(&ms, metadataQuery{"RunSucceed"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunSucceed to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -348,7 +369,8 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 	}
 
 	// check if RunError is recorded after postrun
-	meta.Select(&ms, metadataQuery{"RunError"})
+	err = meta.Select(&ms, metadataQuery{"RunError"})
+	assert.NoError(t, err)
 	if len(ms) != 1 {
 		t.Errorf("Expected RunError to be recorded once, Actual #Row: %d", len(ms))
 	}
@@ -356,16 +378,18 @@ func TestRegisterProgress_IfErrorRecordIntoMetadata(t *testing.T) {
 		t.Errorf("Expected RunError expected to be %s, Actual #Row: %s", errorText, ms[0].Value)
 	}
 
-	meta.Close()
-	sDb.Close()
+	err = meta.Close()
+	assert.NoError(t, err)
+	err = sDb.Close()
+	assert.NoError(t, err)
 }
 
 func TestRegisterProgress_ExtensionContinuesDespiteFetchEnvFailure(t *testing.T) {
 	var (
-		tmpDir     string = t.TempDir()
-		dbName     string = "tmp"
-		connection string = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
-		noBash     error  = errors.New("I'm using Windows! I need help!")
+		tmpDir     = t.TempDir()
+		dbName     = "tmp"
+		connection = filepath.Join(tmpDir, fmt.Sprintf("%s.db", dbName))
+		noBash     = errors.New("I'm using Windows! I need help!")
 	)
 
 	mockEnvInfoFetcher := func() (map[string]string, error) {
@@ -423,7 +447,7 @@ func TestRegisterProgress_ChecksDefaultReportInterval(t *testing.T) {
 	}
 
 	for cfg, expectedFreq := range tests {
-		var freq int = int(cfg.BlockLength)
+		var freq = int(cfg.BlockLength)
 		if cfg.CommandName == "tx-generator" {
 			freq = int(math.Ceil(float64(50_000) / float64(cfg.BlockLength)))
 		}

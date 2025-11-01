@@ -120,10 +120,10 @@ func (r *RecorderProxy) GetCode(addr common.Address) []byte {
 }
 
 // SetCode sets the EVM bytecode of a contract.
-func (r *RecorderProxy) SetCode(addr common.Address, code []byte) []byte {
+func (r *RecorderProxy) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
 	contract := r.ctx.EncodeContract(addr)
-	r.write(operation.NewSetCode(contract, code))
-	return r.db.SetCode(addr, code)
+	r.write(operation.NewSetCode(contract, code, reason))
+	return r.db.SetCode(addr, code, reason)
 }
 
 // GetCodeSize returns the EVM bytecode's size.

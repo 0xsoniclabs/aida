@@ -37,12 +37,14 @@ func TestProgressLoggerExtension_CorrectClose(t *testing.T) {
 	ext := MakeProgressLogger[any](cfg, testProgressReportFrequency)
 
 	// start the report thread
-	ext.PreRun(executor.State[any]{}, nil)
+	err := ext.PreRun(executor.State[any]{}, nil)
+	assert.NoError(t, err)
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)
 	go func() {
-		ext.PostRun(executor.State[any]{}, nil, nil)
+		err = ext.PostRun(executor.State[any]{}, nil, nil)
+		assert.NoError(t, err)
 		close(done)
 	}()
 
@@ -72,7 +74,8 @@ func TestProgressLoggerExtension_LoggingHappens(t *testing.T) {
 
 	ext := makeProgressLogger[*substate.Substate](cfg, testProgressReportFrequency, log)
 
-	ext.PreRun(executor.State[*substate.Substate]{}, nil)
+	err := ext.PreRun(executor.State[*substate.Substate]{}, nil)
+	assert.NoError(t, err)
 
 	gomock.InOrder(
 		// scheduled logging
@@ -90,18 +93,20 @@ func TestProgressLoggerExtension_LoggingHappens(t *testing.T) {
 	)
 
 	// fill the logger with some data
-	ext.PostTransaction(executor.State[*substate.Substate]{
+	err = ext.PostTransaction(executor.State[*substate.Substate]{
 		Block:       1,
 		Transaction: 1,
 		Data:        nil,
 	}, &executor.Context{
 		ExecutionResult: substatecontext.NewReceipt(&substate.Result{GasUsed: 100_000_000}),
 	})
+	assert.NoError(t, err)
 
 	// we must wait for the ticker to tick
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
-	ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	err = ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	assert.NoError(t, err)
 }
 
 func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTicks(t *testing.T) {
@@ -113,7 +118,8 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	// we set large tick rate that does not trigger the ticker
 	ext := makeProgressLogger[*substate.Substate](cfg, 10*time.Second, log)
 
-	ext.PreRun(executor.State[*substate.Substate]{}, nil)
+	err := ext.PreRun(executor.State[*substate.Substate]{}, nil)
+	assert.NoError(t, err)
 
 	log.EXPECT().Noticef(finalSummaryProgressReportFormat,
 		gomock.Any(), 1,
@@ -122,18 +128,20 @@ func TestProgressLoggerExtension_LoggingHappensEvenWhenProgramEndsBeforeTickerTi
 	)
 
 	// fill the logger with some data
-	ext.PostTransaction(executor.State[*substate.Substate]{
+	err = ext.PostTransaction(executor.State[*substate.Substate]{
 		Block:       1,
 		Transaction: 1,
 		Data:        nil,
 	}, &executor.Context{
 		ExecutionResult: substatecontext.NewReceipt(&substate.Result{GasUsed: 100_000_000}),
 	})
+	assert.NoError(t, err)
 
 	// wait for data to get into logger
 	time.Sleep((3 * testProgressReportFrequency) / 2)
 
-	ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	err = ext.PostRun(executor.State[*substate.Substate]{}, nil, nil)
+	assert.NoError(t, err)
 }
 
 func TestProgressLoggerExtension_MakeProgressLogger(t *testing.T) {

@@ -32,6 +32,7 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -42,12 +43,14 @@ func TestDbLoggerExtension_CorrectClose(t *testing.T) {
 	ext := MakeDbLogger[any](cfg)
 
 	// start the report thread
-	ext.PreRun(executor.State[any]{}, nil)
+	err := ext.PreRun(executor.State[any]{}, nil)
+	assert.NoError(t, err)
 
 	// make sure PostRun is not blocking.
 	done := make(chan bool)
 	go func() {
-		ext.PostRun(executor.State[any]{}, nil, nil)
+		err = ext.PostRun(executor.State[any]{}, nil, nil)
+		assert.NoError(t, err)
 		close(done)
 	}()
 
@@ -62,10 +65,8 @@ func TestDbLoggerExtension_CorrectClose(t *testing.T) {
 func TestDbLoggerExtension_NoLoggerIsCreatedIfNotEnabled(t *testing.T) {
 	cfg := &utils.Config{}
 	ext := MakeDbLogger[any](cfg)
-	if _, ok := ext.(extension.NilExtension[any]); !ok {
-		t.Errorf("Logger is enabled although not set in configuration")
-	}
-
+	_, ok := ext.(extension.NilExtension[any])
+	assert.True(t, ok)
 }
 
 func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
@@ -82,22 +83,18 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 	ctx := &executor.Context{State: db}
 
 	err := ext.PreRun(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-run returned err; %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction returned err; %v", err)
-	}
+	assert.NoError(t, err)
 
 	balance := new(uint256.Int).SetUint64(10)
 
 	beginBlock := fmt.Sprintf("BeginBlock, %v", 1)
 	beginTransaction := fmt.Sprintf("BeginTransaction, %v", 0)
 	getBalance := fmt.Sprintf("GetBalance, %v, %v", testAddr, balance)
-	endTransaction := fmt.Sprintf("EndTransaction")
-	endBlock := fmt.Sprintf("EndBlock")
+	endTransaction := "EndTransaction"
+	endBlock := "EndBlock"
 
 	gomock.InOrder(
 		log.EXPECT().Debug(beginBlock),
@@ -112,38 +109,41 @@ func TestDbLoggerExtension_LoggingHappens(t *testing.T) {
 		db.EXPECT().EndBlock(),
 	)
 
-	ctx.State.BeginBlock(1)
-	ctx.State.BeginTransaction(0)
+	err = ctx.State.BeginBlock(1)
+	assert.NoError(t, err)
+
+	err = ctx.State.BeginTransaction(0)
+	assert.NoError(t, err)
+
 	ctx.State.GetBalance(testAddr)
-	ctx.State.EndTransaction()
-	ctx.State.EndBlock()
+
+	err = ctx.State.EndTransaction()
+	assert.NoError(t, err)
+
+	err = ctx.State.EndBlock()
+	assert.NoError(t, err)
 
 	err = ext.PostRun(executor.State[any]{}, ctx, nil)
-	if err != nil {
-		t.Fatalf("post-run returned err; %v", err)
-	}
+	assert.NoError(t, err)
 
 	// signal and await the close
 	close(ext.input)
 	ext.wg.Wait()
 
 	file, err := os.Open(fileName)
-	if err != nil {
-		t.Fatalf("cannot open testing; %v", err)
-	}
-	defer file.Close()
+	assert.NoError(t, err)
+	defer func() {
+		err = file.Close()
+		assert.NoError(t, err)
+	}()
 
 	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		t.Fatalf("cannot read content of the testing log; %v", err)
-	}
+	assert.NoError(t, err)
 
 	got := strings.TrimSpace(string(fileContent))
 	want := strings.TrimSpace("BeginBlock, 1\nBeginTransaction, 0\nGetBalance, 0x0000000000000000000000000000000000000000, 10\nEndTransaction\nEndBlock")
 
-	if strings.Compare(got, want) != 0 {
-		t.Fatalf("unexpected file output\nGot: %v\nWant: %v", got, want)
-	}
+	assert.Equal(t, want, got)
 }
 
 func TestDbLoggerExtension_PreTransactionCreatesNewLoggerProxy(t *testing.T) {
@@ -161,13 +161,10 @@ func TestDbLoggerExtension_PreTransactionCreatesNewLoggerProxy(t *testing.T) {
 
 	// ctx.State is not yet a LoggerProxy hence PreTransaction assigns it
 	err := ext.PreTransaction(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction failed; %v", err)
-	}
+	assert.NoError(t, err)
 
-	if _, ok := ctx.State.(*proxy.LoggingStateDb); !ok {
-		t.Fatal("db must be of type LoggingStateDb!")
-	}
+	_, ok := ctx.State.(*proxy.LoggingStateDb)
+	assert.True(t, ok)
 }
 
 func TestDbLoggerExtension_PreTransactionDoesNotCreateNewLoggerProxy(t *testing.T) {
@@ -185,22 +182,16 @@ func TestDbLoggerExtension_PreTransactionDoesNotCreateNewLoggerProxy(t *testing.
 
 	// first call PreTransaction to assign the proxy
 	err := ext.PreTransaction(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction failed; %v", err)
-	}
+	assert.NoError(t, err)
 
 	// save original state to make sure next call to PreTransaction will not have changed the ctx.State
 	originalDb := ctx.State
 
 	// then make sure it is not re-assigned again
 	err = ext.PreTransaction(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction failed; %v", err)
-	}
+	assert.NoError(t, err)
 
-	if originalDb != ctx.State {
-		t.Fatal("db must not be be changed!")
-	}
+	assert.Equal(t, originalDb, ctx.State)
 }
 
 func TestDbLoggerExtension_PreRunCreatesNewLoggerProxyIfStateIsNotNil(t *testing.T) {
@@ -217,13 +208,10 @@ func TestDbLoggerExtension_PreRunCreatesNewLoggerProxyIfStateIsNotNil(t *testing
 	ext := MakeDbLogger[any](cfg)
 
 	err := ext.PreRun(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction failed; %v", err)
-	}
+	assert.NoError(t, err)
 
-	if _, ok := ctx.State.(*proxy.LoggingStateDb); !ok {
-		t.Fatal("db must be of type LoggingStateDb!")
-	}
+	_, ok := ctx.State.(*proxy.LoggingStateDb)
+	assert.True(t, ok)
 }
 
 func TestDbLoggerExtension_PreRunDoesNotCreateNewLoggerProxyIfStateIsNil(t *testing.T) {
@@ -236,13 +224,10 @@ func TestDbLoggerExtension_PreRunDoesNotCreateNewLoggerProxyIfStateIsNil(t *test
 	ext := MakeDbLogger[any](cfg)
 
 	err := ext.PreRun(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction failed; %v", err)
-	}
+	assert.NoError(t, err)
 
-	if ctx.State != nil {
-		t.Fatal("db must be nil!")
-	}
+	_, ok := ctx.State.(*proxy.LoggingStateDb)
+	assert.False(t, ok)
 }
 
 func TestDbLoggerExtension_StateDbCloseIsWrittenInTheFile(t *testing.T) {
@@ -259,14 +244,10 @@ func TestDbLoggerExtension_StateDbCloseIsWrittenInTheFile(t *testing.T) {
 	ctx := &executor.Context{State: db}
 
 	err := ext.PreRun(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-run returned err; %v", err)
-	}
+	assert.NoError(t, err)
 
 	err = ext.PreTransaction(executor.State[any]{}, ctx)
-	if err != nil {
-		t.Fatalf("pre-transaction returned err; %v", err)
-	}
+	assert.NoError(t, err)
 
 	want := "Close"
 	gomock.InOrder(
@@ -275,22 +256,17 @@ func TestDbLoggerExtension_StateDbCloseIsWrittenInTheFile(t *testing.T) {
 	)
 
 	err = ctx.State.Close()
-	if err != nil {
-		t.Fatalf("cannot close database; %v", err)
-	}
+	assert.NoError(t, err)
 
 	file, err := os.Open(fileName)
-	if err != nil {
-		t.Fatalf("cannot open testing; %v", err)
-	}
-	defer file.Close()
+	assert.NoError(t, err)
+	defer func() {
+		err = file.Close()
+		assert.NoError(t, err)
+	}()
 
 	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		t.Fatalf("cannot read content of the testing log; %v", err)
-	}
+	assert.NoError(t, err)
 
-	if !strings.Contains(string(fileContent), want) {
-		t.Fatalf("close was not logged\nlog: %v", string(fileContent))
-	}
+	assert.Contains(t, string(fileContent), want)
 }

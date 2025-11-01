@@ -56,11 +56,11 @@ func (op *RevertToSnapshot) Write(f io.Writer) error {
 }
 
 // Execute the revert-to-snapshot operation.
-func (op *RevertToSnapshot) Execute(db state.StateDB, ctx *context.Replay) time.Duration {
+func (op *RevertToSnapshot) Execute(db state.StateDB, ctx *context.Replay) (time.Duration, error) {
 	id := ctx.GetSnapshot(op.SnapshotID)
 	start := time.Now()
 	db.RevertToSnapshot(int(id))
-	return time.Since(start)
+	return time.Since(start), nil
 }
 
 // Debug prints a debug message for the revert-to-snapshot operation.

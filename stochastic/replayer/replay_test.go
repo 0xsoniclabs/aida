@@ -191,7 +191,7 @@ func TestExecute_AllOps(t *testing.T) {
 	db.EXPECT().RevertToSnapshot(gomock.Any()).AnyTimes()
 	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
 	db.EXPECT().SelfDestruct6780(gomock.Any()).Return(*uint256.NewInt(0), false).AnyTimes()
-	db.EXPECT().SetCode(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().SetCode(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	db.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	db.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return(common.Hash{}).AnyTimes()
 	db.EXPECT().SetTransientState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
