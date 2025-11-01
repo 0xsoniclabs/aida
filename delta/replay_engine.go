@@ -270,7 +270,7 @@ func (r *StateReplayer) execute(op TraceOp) error {
 		if err != nil {
 			return err
 		}
-		r.backend.SetCode(addr, code)
+		r.backend.SetCode(addr, code, tracing.CodeChangeUnspecified)
 	case "Snapshot":
 		r.backend.Snapshot()
 	case "RevertToSnapshot":
@@ -280,7 +280,11 @@ func (r *StateReplayer) execute(op TraceOp) error {
 		}
 		r.backend.RevertToSnapshot(id)
 	case "BeginTransaction":
-		txID, err := parseUint32(op.Args, 0)
+		s, err := getArg(op.Args, 0)
+		if err != nil {
+			return err
+		}
+		txID, err := parseUint32(s)
 		if err != nil {
 			return err
 		}
