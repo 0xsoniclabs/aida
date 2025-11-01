@@ -85,6 +85,40 @@ func (mc Chain) Sample(i int, x float64) (int, error) {
 	return discrete.Quantile(mc.a[i], x), nil
 }
 
+// WeightedSample samples the next state in a markov chain for a given state i,
+// applying custom weights to each potential next state and renormalizing the transition probabilities.
+func (mc Chain) WeightedSample(i int, x float64, weights []float64) (int, error) {
+	if x < 0 || x >= 1.0 {
+		return 0, fmt.Errorf("WeightedSample: probabilistic argument (%v) is not in interval [0,1]", x)
+	}
+	if i < 0 || i >= mc.n {
+		return 0, fmt.Errorf("WeightedSample: state index (%v) out of range", i)
+	}
+	if len(weights) != mc.n {
+		return 0, fmt.Errorf("WeightedSample: weights length (%v) does not match number of states (%v)", len(weights), mc.n)
+	}
+
+	// Apply weights to transition probabilities
+	weighted := make([]float64, mc.n)
+	sum := 0.0
+	for j := 0; j < mc.n; j++ {
+		weighted[j] = mc.a[i][j] * weights[j]
+		sum += weighted[j]
+	}
+
+	// Handle case where all weighted transitions are zero
+	if sum == 0 {
+		return 0, fmt.Errorf("WeightedSample: all weighted transitions from state %v are zero", i)
+	}
+
+	// Renormalize the weighted probabilities
+	for j := 0; j < mc.n; j++ {
+		weighted[j] /= sum
+	}
+
+	return discrete.Quantile(weighted, x), nil
+}
+
 // Stationary computes the stationary distribution of a Markov Chain.
 func (mc Chain) Stationary() ([]float64, error) {
 	// flatten matrix for gonum package
@@ -152,4 +186,9 @@ func (mc Chain) Find(label string) (int, error) {
 		}
 	}
 	return -1, nil
+}
+
+// NumStates returns the number of states in the Markov chain.
+func (mc Chain) NumStates() int {
+	return mc.n
 }

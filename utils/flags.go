@@ -174,6 +174,15 @@ var (
 		Usage: "Set random seed",
 		Value: -1,
 	}
+	EnableCoverageFlag = cli.BoolFlag{
+		Name:  "enable-coverage",
+		Usage: "Enable coverage-guided fuzzing (requires binary built with -cover)",
+	}
+	CoverageSnapshotIntervalFlag = cli.IntFlag{
+		Name:  "coverage-snapshot-interval",
+		Usage: "Number of operations between coverage snapshots (0 = every operation)",
+		Value: 100,
+	}
 	SkipPrimingFlag = cli.BoolFlag{
 		Name:  "skip-priming",
 		Usage: "if set, DB priming should be skipped; most useful with the 'memory' DB implementation",
