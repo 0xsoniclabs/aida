@@ -51,6 +51,13 @@ aida-stochastic-sdb: carmen tosca
 	-o $(GO_BIN)/aida-stochastic-sdb \
 	./cmd/aida-stochastic-sdb
 
+aida-stochastic-sdb-coverage: carmen tosca
+	GOPROXY=$(GOPROXY) \
+	go build -cover -covermode=atomic \
+	-ldflags "-X 'github.com/0xsoniclabs/Aida/utils.GitCommit=$(BUILD_COMMIT)'" \
+	-o $(GO_BIN)/aida-stochastic-sdb-coverage \
+	./cmd/aida-stochastic-sdb
+
 aida-vm-adb: carmen tosca
 	GOPROXY=$(GOPROXY) \
 	go build -ldflags "-s -w -X 'github.com/0xsoniclabs/Aida/utils.GitCommit=$(BUILD_COMMIT)'" \
