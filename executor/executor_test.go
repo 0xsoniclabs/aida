@@ -1294,14 +1294,6 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_TransactionLevelParalle
 	log.EXPECT().Debugf(gomock.Any(), gomock.Any())
 	extension.EXPECT().PreRun(gomock.Any(), gomock.Any())
 	extension.EXPECT().PreTransaction(gomock.Any(), gomock.Any())
-
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	stop := "stop"
 	processor.EXPECT().Process(gomock.Any(), gomock.Any()).Do(func(any, any) {
 		panic(stop)
@@ -1313,7 +1305,7 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_TransactionLevelParalle
 		[]Extension[any]{extension},
 		nil,
 	)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestProcessor_APanicInAnExecutorSkipsPostRunActions_BlockLevelParallelism(t *testing.T) {
@@ -1334,13 +1326,6 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_BlockLevelParallelism(t
 	extension.EXPECT().PreBlock(gomock.Any(), gomock.Any())
 	extension.EXPECT().PreTransaction(gomock.Any(), gomock.Any())
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	stop := "stop"
 	processor.EXPECT().Process(gomock.Any(), gomock.Any()).Do(func(any, any) {
 		panic(stop)
@@ -1352,7 +1337,7 @@ func TestProcessor_APanicInAnExecutorSkipsPostRunActions_BlockLevelParallelism(t
 		[]Extension[any]{extension},
 		nil,
 	)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestProcessor_SingleBlockRun_BlockLevelParallelism(t *testing.T) {
@@ -1462,13 +1447,6 @@ func TestProcessor_PanicCaughtInPreRunIsProperlyLogged_TransactionLevelParalleli
 	extension := NewMockExtension[any](ctrl)
 	log := logger.NewMockLogger(ctrl)
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()).Do(func(any, any) {
 			panic("stop")
@@ -1476,11 +1454,10 @@ func TestProcessor_PanicCaughtInPreRunIsProperlyLogged_TransactionLevelParalleli
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{ParallelismGranularity: TransactionLevel},
+	err := executor.Run(Params{ParallelismGranularity: TransactionLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPreRunIsProperlyLogged_BlockLevelParallelism(t *testing.T) {
@@ -1490,13 +1467,6 @@ func TestProcessor_PanicCaughtInPreRunIsProperlyLogged_BlockLevelParallelism(t *
 	extension := NewMockExtension[any](ctrl)
 	log := logger.NewMockLogger(ctrl)
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()).Do(func(any, any) {
 			panic("stop")
@@ -1504,11 +1474,10 @@ func TestProcessor_PanicCaughtInPreRunIsProperlyLogged_BlockLevelParallelism(t *
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{ParallelismGranularity: BlockLevel},
+	err := executor.Run(Params{ParallelismGranularity: BlockLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPreBlockIsProperlyLogged_BlockLevelParallelism(t *testing.T) {
@@ -1529,13 +1498,6 @@ func TestProcessor_PanicCaughtInPreBlockIsProperlyLogged_BlockLevelParallelism(t
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1545,11 +1507,10 @@ func TestProcessor_PanicCaughtInPreBlockIsProperlyLogged_BlockLevelParallelism(t
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_TransactionLevelParallelism(t *testing.T) {
@@ -1570,13 +1531,6 @@ func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_TransactionLevelP
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1586,11 +1540,10 @@ func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_TransactionLevelP
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: TransactionLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: TransactionLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_BlockLevelParallelism(t *testing.T) {
@@ -1611,13 +1564,6 @@ func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_BlockLevelParalle
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1628,11 +1574,10 @@ func TestProcessor_PanicCaughtInPreTransactionIsProperlyLogged_BlockLevelParalle
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_TransactionLevelParallelism(t *testing.T) {
@@ -1653,13 +1598,6 @@ func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_TransactionLevel
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1671,11 +1609,10 @@ func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_TransactionLevel
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: TransactionLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: TransactionLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_BlockLevelParallelism(t *testing.T) {
@@ -1696,13 +1633,6 @@ func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_BlockLevelParall
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1715,11 +1645,10 @@ func TestProcessor_PanicCaughtInPostTransactionIsProperlyLogged_BlockLevelParall
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPostBlockIsProperlyLogged_BlockLevelParallelism(t *testing.T) {
@@ -1740,13 +1669,6 @@ func TestProcessor_PanicCaughtInPostBlockIsProperlyLogged_BlockLevelParallelism(
 			return nil
 		})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-	}()
-
 	gomock.InOrder(
 		extension.EXPECT().PreRun(gomock.Any(), gomock.Any()),
 		log.EXPECT().Debugf(gomock.Any(), gomock.Any()),
@@ -1760,11 +1682,10 @@ func TestProcessor_PanicCaughtInPostBlockIsProperlyLogged_BlockLevelParallelism(
 	)
 
 	executor := newExecutor[any](substate, log)
-	if err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
+	err := executor.Run(Params{From: 1, To: 2, NumWorkers: 2, ParallelismGranularity: BlockLevel},
 		processor,
-		[]Extension[any]{extension}, nil); err != nil {
-		t.Errorf("execution failed: %v", err)
-	}
+		[]Extension[any]{extension}, nil)
+	assert.Error(t, err)
 }
 
 func TestProcessor_PanicCaughtInPostRunIsReturned_TransactionLevelParallelism(t *testing.T) {
@@ -1869,17 +1790,7 @@ func TestExecutor_RecoverPanicStack(t *testing.T) {
 		secretFunctionThatPanics()
 	})
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("program must panic")
-		}
-		print := fmt.Sprintf("%v", r)
-		if !strings.Contains(print, "secretFunctionThatPanics") {
-			t.Errorf("stack trace should contain the secret function")
-		}
-	}()
-
 	err := signalPreRun(State[any]{}, nil, []Extension[any]{extension})
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "secretFunctionThatPanics")
 }
