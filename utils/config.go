@@ -568,41 +568,14 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 	case HoleskyChainID:
 		chainConfig := params.HoleskyChainConfig
 		chainConfig.DAOForkSupport = false
-
-		// temporary override until go-ethereum gets updated to have fork times
-		osakaTime := KeywordBlocks[chainId]["osaka"]
-		chainConfig.OsakaTime = &osakaTime
-		bp01Time := KeywordBlocks[chainId]["BPO1"]
-		chainConfig.BPO1Time = &bp01Time
-		bp02Time := KeywordBlocks[chainId]["BPO2"]
-		chainConfig.BPO2Time = &bp02Time
-
 		return chainConfig, nil
 	case HoodiChainID:
 		chainConfig := params.HoodiChainConfig
 		chainConfig.DAOForkSupport = false
-
-		// temporary override until go-ethereum gets updated to have fork times
-		osakaTime := KeywordBlocks[chainId]["osaka"]
-		chainConfig.OsakaTime = &osakaTime
-		bp01Time := KeywordBlocks[chainId]["BPO1"]
-		chainConfig.BPO1Time = &bp01Time
-		bp02Time := KeywordBlocks[chainId]["BPO2"]
-		chainConfig.BPO2Time = &bp02Time
-
 		return chainConfig, nil
 	case SepoliaChainID:
 		chainConfig := params.SepoliaChainConfig
 		chainConfig.DAOForkSupport = false
-
-		// temporary override until go-ethereum gets updated to have fork times
-		osakaTime := KeywordBlocks[chainId]["osaka"]
-		chainConfig.OsakaTime = &osakaTime
-		bp01Time := KeywordBlocks[chainId]["BPO1"]
-		chainConfig.BPO1Time = &bp01Time
-		bp02Time := KeywordBlocks[chainId]["BPO2"]
-		chainConfig.BPO2Time = &bp02Time
-
 		return chainConfig, nil
 	default:
 		// Make a copy of the basic config before modifying it to avoid
