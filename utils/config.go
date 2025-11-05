@@ -192,12 +192,12 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1681338455, //timestamp
 		"cancun":      1710338135, //timestamp
 		"prague":      1746612311, //timestamp
-		//"osaka":       TBA, //timestamp
-		//"BPO1":        TBA, //timestamp
-		//"BPO2":        TBA, //timestamp
-		"first":     0,
-		"last":      maxLastBlock,
-		"lastpatch": 0,
+		"osaka":       1764798551, //timestamp
+		"BPO1":        1765290071, //timestamp
+		"BPO2":        1767747671, //timestamp
+		"first":       0,
+		"last":        maxLastBlock,
+		"lastpatch":   0,
 	},
 	// Holesky config - https://github.com/ethereum/go-ethereum/blob/7d8aca95d28c4e8560a657fd1ff7852ad4eee72c/params/config.go#L69C2-L69C36
 	HoleskyChainID: {
