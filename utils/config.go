@@ -147,8 +147,12 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"muirglacier": 0,
 		"berlin":      0,
 		"london":      0,
-		"shanghai":    0, //timestamp
-		"cancun":      0, //timestamp
+		"shanghai":    0,            //timestamp
+		"cancun":      0,            //timestamp
+		"prague":      0,            //timestamp
+		"osaka":       maxLastBlock, //timestamp
+		"BPO1":        maxLastBlock, //timestamp
+		"BPO2":        maxLastBlock, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,

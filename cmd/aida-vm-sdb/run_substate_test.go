@@ -47,9 +47,11 @@ func TestCmd_RunSubstate(t *testing.T) {
 	app.Flags = []cli.Flag{
 		&utils.AidaDbFlag,
 		&utils.SubstateEncodingFlag,
+		&utils.ChainIDFlag,
 	}
 
-	err := app.Run([]string{RunSubstateCmd.Name, "--aida-db", path, "--substate-encoding", "pb", "first", "last"})
+	// running on holesky because sonic does not have blocks prior to prague
+	err := app.Run([]string{RunSubstateCmd.Name, "--aida-db", path, "--substate-encoding", "pb", "--chainid", "17000", "first", "last"})
 	require.ErrorContains(t, err, "nonce too high")
 }
 
