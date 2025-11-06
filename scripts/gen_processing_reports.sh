@@ -2,8 +2,8 @@
 # Name:
 #    gen_processing_reports.sh -  script for generating the block processing reports
 #
-# Synopsis:
-#    gen_processing_report.sh <db-impl> <db-variant> <carmen-schema> <vm-impl> <output-dir>
+# Usage: ./gen_processing_reports.sh [options]
+# For help on available options, run: ./gen_processing_reports.sh --help
 #
 # Description:
 #    Produces block processing reports in the HTML format.
@@ -12,23 +12,46 @@
 #    The script must be invoked in the main directory of the Aida repository.
 #
 
-# check the number of command line arguments
-if [ "$#" -ne 5 ]; then
-    echo "Invalid number of command line arguments supplied"
-    exit 1
-fi
+# default values
+dbimpl="carmen"
+dbvariant="gofile"
+carmenschema="5"
+vmimpl="lfvm"
+outputdir="./output"
 
-# assign variables for command line arguments
-dbimpl=$1
-dbvariant=$2
-carmenschema=$3
-vmimpl=$4
-outputdir=$5
+# Parse command-line arguments using --option-name format
+print_usage() {
+    echo "Usage: $0 \\"
+    echo "  [--output-dir <dir>]       # Output directory for results (optional, default: ./output)"
+    echo "  [--db-impl <name>]         # Database implementation (optional, default: carmen)"
+    echo "  [--db-variant <name>]      # Database variant (optional, default: go-file)"
+    echo "  [--carmen-schema <name>]   # Carmen schema version (optional, default: 5)"
+    echo "  [--vm-impl <name>]         # VM implementation (optional, default: lfvm)"
+    exit 1
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --output-dir) outputdir="$2"; shift 2 ;;
+        --db-impl) dbimpl="$2"; shift 2 ;;
+        --db-variant) dbvariant="$2"; shift 2 ;;
+        --carmen-schema) carmenschema="$2"; shift 2 ;;
+        --vm-impl) vmimpl="$2"; shift 2 ;;
+        *) echo "Unknown option: $1"; print_usage ;;
+    esac
+done
 
 # logging
 log() {
     echo "$(date) $1" | tee -a "$outputdir/block_processing.log"
 }
+
+# Check if profile.db in output directory exists
+if [ ! -f "$outputdir/profile.db" ]; then
+    echo "Error: profile.db not found in output directory: $outputdir"
+    exit 1
+fi
 
 #  HardwareDescription() retrieve the hardware description of the profile.db recording server
 HardwareDescription()  {
