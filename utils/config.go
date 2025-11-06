@@ -149,7 +149,7 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"london":      0,
 		"shanghai":    0,            //timestamp
 		"cancun":      0,            //timestamp
-		"prague":      0,            //timestamp
+		"prague":      maxLastBlock, //timestamp
 		"osaka":       maxLastBlock, //timestamp
 		"BPO1":        maxLastBlock, //timestamp
 		"BPO2":        maxLastBlock, //timestamp

@@ -48,7 +48,6 @@ func TestCmd_RunVmAdb(t *testing.T) {
 		&utils.AidaDbFlag,
 		&utils.SubstateEncodingFlag,
 		&utils.StateDbSrcFlag,
-		&utils.ChainIDFlag,
 	}
 
 	tmp := t.TempDir()
@@ -69,8 +68,7 @@ func TestCmd_RunVmAdb(t *testing.T) {
 	err = utils.WriteStateDbInfo(archivePath, cfg, 1, common.Hash{0x13}, true)
 	require.NoError(t, err)
 
-	// running on holesky because sonic does not have blocks prior to prague
-	err = app.Run([]string{RunArchiveApp.Name, "--aida-db", path, "--db-src", archivePath, "--substate-encoding", "pb", "--chainid", "17000", "first", "last"})
+	err = app.Run([]string{RunArchiveApp.Name, "--aida-db", path, "--db-src", archivePath, "--substate-encoding", "pb", "first", "last"})
 	require.ErrorContains(t, err, "archive is empty")
 }
 
