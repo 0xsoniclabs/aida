@@ -147,8 +147,12 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"muirglacier": 0,
 		"berlin":      0,
 		"london":      0,
-		"shanghai":    0, //timestamp
-		"cancun":      0, //timestamp
+		"shanghai":    0,            //timestamp
+		"cancun":      0,            //timestamp
+		"prague":      maxLastBlock, //timestamp
+		"osaka":       maxLastBlock, //timestamp
+		"BPO1":        maxLastBlock, //timestamp
+		"BPO2":        maxLastBlock, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -191,6 +195,10 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"london":      12_965_000,
 		"shanghai":    1681338455, //timestamp
 		"cancun":      1710338135, //timestamp
+		"prague":      1746612311, //timestamp
+		"osaka":       1764798551, //timestamp
+		"BPO1":        1765290071, //timestamp
+		"BPO2":        1767747671, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -206,6 +214,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1696000704, //timestamp
 		"cancun":      1707305664, //timestamp
 		"prague":      1740434112, //timestamp
+		"osaka":       1759308480, //timestamp
+		"BPO1":        1759800000, //timestamp
+		"BPO2":        1760389824, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -221,6 +232,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    0,          //timestamp
 		"cancun":      0,          //timestamp
 		"prague":      1742999832, //timestamp
+		"osaka":       1761677592, //timestamp
+		"BPO1":        1762365720, //timestamp
+		"BPO2":        1762955544, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -236,6 +250,9 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"shanghai":    1677557088, //timestamp
 		"cancun":      1706655072, //timestamp
 		"prague":      1741159776, //timestamp
+		"osaka":       1760427360, //timestamp
+		"BPO1":        1761017184, //timestamp
+		"BPO2":        1761607008, //timestamp
 		"first":       0,
 		"last":        maxLastBlock,
 		"lastpatch":   0,
@@ -576,6 +593,14 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 		chainConfig.ShanghaiTime = &shanghaiTime
 		cancunTime := KeywordBlocks[chainId]["cancun"]
 		chainConfig.CancunTime = &cancunTime
+		pragueTime := KeywordBlocks[chainId]["prague"]
+		chainConfig.PragueTime = &pragueTime
+		osakaTime := KeywordBlocks[chainId]["osaka"]
+		chainConfig.OsakaTime = &osakaTime
+		bp01Time := KeywordBlocks[chainId]["BPO1"]
+		chainConfig.BPO1Time = &bp01Time
+		bp02Time := KeywordBlocks[chainId]["BPO2"]
+		chainConfig.BPO2Time = &bp02Time
 		return &chainConfig, nil
 	}
 }
