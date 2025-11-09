@@ -70,7 +70,7 @@ func readTraceFile(path string) ([]TraceOp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("delta: open trace %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 0, 1024*1024)
@@ -212,7 +212,7 @@ func WriteTrace(path string, ops []TraceOp) error {
 	if err != nil {
 		return fmt.Errorf("delta: create trace: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer := bufio.NewWriter(file)
 	for _, op := range ops {

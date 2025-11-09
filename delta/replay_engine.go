@@ -378,7 +378,7 @@ func (r *StateReplayer) execute(op TraceOp) error {
 		}
 		r.backend.GetLogs(txHash, blockNumber, blockHash, timestamp)
 	case "GetHash":
-		r.backend.GetHash()
+		_, _ = r.backend.GetHash()
 	case "IntermediateRoot":
 		flag, err := parseBool(op.Args, 0)
 		if err != nil {
@@ -411,7 +411,7 @@ func (r *StateReplayer) execute(op TraceOp) error {
 	case "GetSubstatePostAlloc":
 		r.backend.GetSubstatePostAlloc()
 	case "GetArchiveBlockHeight":
-		r.backend.GetArchiveBlockHeight()
+		_, _, _ = r.backend.GetArchiveBlockHeight()
 	case "GetCodeHashLc", "GetCodeHashLcS", "GetStateLccs", "GetStateLc", "GetStateLcls":
 		return fmt.Errorf("operation %s is not supported in logger traces", op.Kind)
 	case "AddLog", "Prepare", "PrepareSubstate", "Close", "Error", "Release":
