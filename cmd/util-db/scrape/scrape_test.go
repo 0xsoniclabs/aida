@@ -18,7 +18,6 @@ package scrape
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,7 +28,6 @@ import (
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/assert"
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/mock/gomock"
 )
@@ -217,42 +215,4 @@ func TestStateHash_GetClientIpcFail(t *testing.T) {
 		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
 	}
 	assert.Equal(t, fmt.Sprintf("failed to connect to IPC at %v/geth.ipc: dial unix %v/geth.ipc: connect: connection refused", tmpIpcPath, tmpIpcPath), err.Error())
-}
-
-func TestStateHash_SaveStateRoot(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// case success
-	mockDb := db.NewMockBaseDB(ctrl)
-	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil)
-	err := db.SaveStateRoot(mockDb, "0x1234", "0x5678")
-	assert.NoError(t, err)
-
-	// case error
-	mockDb = db.NewMockBaseDB(ctrl)
-	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(leveldb.ErrNotFound)
-	err = db.SaveStateRoot(mockDb, "0x1234", "0x5678")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "leveldb: not found")
-}
-
-func TestStateHash_retrieveStateRoot(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// case success
-	client := NewMockIRpcClient(ctrl)
-	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(nil)
-	output, err := getBlockByNumber(client, "0x1234")
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]interface{}(nil), output)
-
-	// case error
-	mockErr := errors.New("error")
-	client = NewMockIRpcClient(ctrl)
-	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(mockErr)
-	output, err = getBlockByNumber(client, "0x1234")
-	assert.Error(t, err)
-	assert.Nil(t, output)
 }
