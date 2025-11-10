@@ -52,7 +52,7 @@ type stateHashValidator[T any] struct {
 	log                     logger.Logger
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
-	hashProvider            utils.HashProvider
+	hashProvider            db.HashProvider
 	sdb                     db.SubstateDB // substate db pointer
 }
 
@@ -88,7 +88,7 @@ func (v *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 		}
 	}
 
-	v.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
+	v.hashProvider = db.MakeHashProvider(ctx.AidaDb)
 	return nil
 }
 
@@ -203,6 +203,6 @@ func (v *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, erro
 		return common.Hash{}, fmt.Errorf("cannot get state hash for block %v; %v", blockNumber, err)
 	}
 
-	return want, nil
+	return common.Hash(want), nil
 
 }

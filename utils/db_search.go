@@ -19,6 +19,7 @@ package utils
 import (
 	"fmt"
 
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/ethdb"
 )
 
@@ -39,9 +40,9 @@ func NewSearchableDB(backend ethDatabase) *SearchableDB {
 }
 
 func GetLastKey(dbIn ethDatabase, keyPrefix string) (uint64, error) {
-	db := NewSearchableDB(dbIn)
+	sdb := NewSearchableDB(dbIn)
 
-	zeroBytes, err := db.getLongestEncodedKeyZeroPrefixLength(keyPrefix)
+	zeroBytes, err := sdb.getLongestEncodedKeyZeroPrefixLength(keyPrefix)
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +59,7 @@ func GetLastKey(dbIn ethDatabase, keyPrefix string) (uint64, error) {
 
 	// binary search for biggest key
 	for {
-		nextBiggestPrefixValue, err := db.binarySearchForLastPrefixKey(lastKeyPrefix)
+		nextBiggestPrefixValue, err := sdb.binarySearchForLastPrefixKey(lastKeyPrefix)
 		if err != nil {
 			return 0, err
 		}
@@ -72,7 +73,7 @@ func GetLastKey(dbIn ethDatabase, keyPrefix string) (uint64, error) {
 				return 0, fmt.Errorf("undefined behaviour in value search; retrieved block bytes can't be converted")
 			}
 			var res uint64
-			res, err = StateHashKeyToUint64(stateHashValue)
+			res, err = db.StateHashKeyToUint64(stateHashValue)
 			if err != nil {
 				return 0, err
 			}

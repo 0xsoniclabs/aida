@@ -21,7 +21,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 )
 
@@ -54,8 +53,8 @@ func TestGenerateDbHash_ComponentsAffectingHash(t *testing.T) {
 		{"AddSubstate", []byte(db.SubstateDBPrefix), "key1", []byte("value1")},
 		{"AddDeletion", []byte(db.DestroyedAccountPrefix), "del1", []byte("deleted")},
 		{"AddUpdate", []byte(db.UpdateDBPrefix), "upd1", []byte("update")},
-		{"AddStateHash", []byte(utils.StateRootHashPrefix), "state1", []byte("statehash")},
-		{"AddBlockHash", []byte(utils.BlockHashPrefix), "block1", []byte("blockhash")},
+		{"AddStateHash", []byte(db.StateRootHashPrefix), "state1", []byte("statehash")},
+		{"AddBlockHash", []byte(db.BlockHashPrefix), "block1", []byte("blockhash")},
 	}
 
 	for _, tc := range tests {

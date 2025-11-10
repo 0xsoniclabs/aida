@@ -25,7 +25,7 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/paulmach/orb v0.9.0
 	github.com/sigurn/crc8 v0.0.0-20220107193325-2243fe600f9f
-	github.com/status-im/keycard-go v0.3.2
+	github.com/status-im/keycard-go v0.3.3
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/urfave/cli/v2 v2.27.5
@@ -147,3 +147,5 @@ replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundati
 // Sonic client is integrated as a git-submodule to make version configuration easier
 // when running tests.
 replace github.com/0xsoniclabs/sonic => ./sonic
+
+replace github.com/0xsoniclabs/substate => ../Substate
