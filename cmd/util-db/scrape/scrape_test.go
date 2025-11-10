@@ -88,7 +88,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 		}
 	}(database)
 
-	shp := utils.MakeHashProvider(database)
+	shp := db.MakeHashProvider(database)
 
 	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
@@ -100,8 +100,8 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 		t.Fatalf("error getting state hash for block 1: %v", err)
 	}
 
-	if hashZero != hashOne {
-		t.Fatalf("state hash of block 0 (%s) is not the same as the state hash of block 1 (%s)", hashZero.Hex(), hashOne.Hex())
+	if hashZero.Compare(hashOne) != 0 {
+		t.Fatalf("state hash of block 0 (%s) is not the same as the state hash of block 1 (%s)", hashZero.String(), hashOne.String())
 	}
 }
 
@@ -153,7 +153,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 		}
 	}(database)
 
-	shp := utils.MakeHashProvider(database)
+	shp := db.MakeHashProvider(database)
 
 	hashZero, err := shp.GetStateRootHash(0)
 	if err != nil {
@@ -166,8 +166,8 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 
 	// block 0 should have a different state hash than block 100
-	if hashZero == hashHundred {
-		t.Fatalf("state hash of block 0 (%s) is the same as the state hash of block 100 (%s)", hashZero.Hex(), hashHundred.Hex())
+	if hashZero.Compare(hashHundred) == 0 {
+		t.Fatalf("state hash of block 0 (%s) is the same as the state hash of block 100 (%s)", hashZero.String(), hashHundred.String())
 	}
 }
 
@@ -226,13 +226,13 @@ func TestStateHash_SaveStateRoot(t *testing.T) {
 	// case success
 	mockDb := db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(nil)
-	err := utils.SaveStateRoot(mockDb, "0x1234", "0x5678")
+	err := db.SaveStateRoot(mockDb, "0x1234", "0x5678")
 	assert.NoError(t, err)
 
 	// case error
 	mockDb = db.NewMockBaseDB(ctrl)
 	mockDb.EXPECT().Put(gomock.Any(), gomock.Any()).Return(leveldb.ErrNotFound)
-	err = utils.SaveStateRoot(mockDb, "0x1234", "0x5678")
+	err = db.SaveStateRoot(mockDb, "0x1234", "0x5678")
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "leveldb: not found")
 }

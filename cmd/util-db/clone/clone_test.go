@@ -131,7 +131,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 	if dbc == "" || dbc == "all" || dbc == "state-hash" {
 		t.Run("StateHashes", func(t *testing.T) {
 			stateHashCount := 0
-			stateHashIter := cloneDb.NewIterator([]byte(utils.StateRootHashPrefix), nil)
+			stateHashIter := cloneDb.NewIterator([]byte(db.StateRootHashPrefix), nil)
 			for stateHashIter.Next() {
 				stateHashCount++
 			}
@@ -142,7 +142,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 	if dbc == "" || dbc == "all" || dbc == "block-hash" {
 		t.Run("BlockHashes", func(t *testing.T) {
 			blockHashCount := 0
-			blockHashIter := cloneDb.NewIterator([]byte(utils.BlockHashPrefix), nil)
+			blockHashIter := cloneDb.NewIterator([]byte(db.BlockHashPrefix), nil)
 			for blockHashIter.Next() {
 				blockHashCount++
 			}
@@ -191,7 +191,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 		},
 		{
 			name:        "BlockHashInvalidDbKey",
-			keyPrefix:   utils.BlockHashPrefix,
+			keyPrefix:   db.BlockHashPrefix,
 			dbComponent: "block-hash",
 			expectedErr: "clone failed for BlockHashInvalidDbKey: condition emit error; invalid length of block hash key, expected at least 10, got 5",
 		},
@@ -250,7 +250,7 @@ func TestClone_BlockHashes(t *testing.T) {
 
 	// Verify that the cloned database has the expected block hashes
 	blockHashCount := 0
-	blockHashIter := cloneDb.NewIterator([]byte(utils.BlockHashPrefix), nil)
+	blockHashIter := cloneDb.NewIterator([]byte(db.BlockHashPrefix), nil)
 	for blockHashIter.Next() {
 		blockHashCount++
 	}
@@ -276,7 +276,7 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 
 	// Verify that the cloned database has the expected block hashes
 	blockHashCount := 0
-	blockHashIter := cloneDb.NewIterator([]byte(utils.BlockHashPrefix), nil)
+	blockHashIter := cloneDb.NewIterator([]byte(db.BlockHashPrefix), nil)
 	for blockHashIter.Next() {
 		blockHashCount++
 	}

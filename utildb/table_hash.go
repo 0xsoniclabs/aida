@@ -251,7 +251,7 @@ func GetStateRootHashesHash(
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := utils.MakeHashProvider(base)
+		provider := db.MakeHashProvider(base)
 
 		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
@@ -293,7 +293,7 @@ func GetBlockHashesHash(
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := utils.MakeHashProvider(base)
+		provider := db.MakeHashProvider(base)
 
 		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
