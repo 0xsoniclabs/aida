@@ -1,19 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package delta
 
 import (
@@ -1046,7 +1030,6 @@ func TestParseNonceReason_UnknownValue(t *testing.T) {
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
-
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -1061,7 +1044,6 @@ func TestParseBalanceReason_UnknownValue(t *testing.T) {
 	db := newTrackingStateDB(t)
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
-
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1078,7 +1060,6 @@ func TestParseEnumNumber_HexFormat(t *testing.T) {
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
-
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -1093,7 +1074,6 @@ func TestParseEnumNumber_EmptyString(t *testing.T) {
 	db := newTrackingStateDB(t)
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
-
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1424,7 +1404,6 @@ func TestParseNonceReason_MissingArg(t *testing.T) {
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
-
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -1439,7 +1418,6 @@ func TestParseBalanceReason_MissingArg(t *testing.T) {
 	db := newTrackingStateDB(t)
 	replayer := NewStateReplayer(db)
 	addr := common.HexToAddress("0x1")
-
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
