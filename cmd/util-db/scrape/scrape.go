@@ -70,7 +70,7 @@ func scrapeAction(ctx *cli.Context) (err error) {
 }
 
 // StateAndBlockHashScraper scrapes state and block hashes from a node and saves them to a leveldb database
-func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, clientDb string, db db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
+func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, clientDb string, bdb db.BaseDB, firstBlock, lastBlock uint64, log logger.Logger) error {
 	client, err := getClient(ctx, chainId, clientDb, log)
 	if err != nil {
 		return err
@@ -91,11 +91,11 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 			return fmt.Errorf("block 1 not found")
 		}
 
-		err = utils.SaveStateRoot(db, "0x0", block["stateRoot"].(string))
+		err = db.SaveStateRoot(bdb, "0x0", block["stateRoot"].(string))
 		if err != nil {
 			return err
 		}
-		err = utils.SaveBlockHash(db, "0x1", block["hash"].(string))
+		err = db.SaveBlockHash(bdb, "0x1", block["hash"].(string))
 		if err != nil {
 			return err
 		}
@@ -113,11 +113,11 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 			return fmt.Errorf("block %d not found", i)
 		}
 
-		err = utils.SaveStateRoot(db, blockNumber, block["stateRoot"].(string))
+		err = db.SaveStateRoot(bdb, blockNumber, block["stateRoot"].(string))
 		if err != nil {
 			return err
 		}
-		err = utils.SaveBlockHash(db, blockNumber, block["hash"].(string))
+		err = db.SaveBlockHash(bdb, blockNumber, block["hash"].(string))
 		if err != nil {
 			return err
 		}
