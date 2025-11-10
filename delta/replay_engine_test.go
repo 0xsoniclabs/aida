@@ -840,3 +840,189 @@ func TestSetTransientState_MissingArgs(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing argument")
 }
+
+func TestBeginTransaction_InvalidUint32(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []struct {
+		name  string
+		value string
+	}{
+		{"overflow uint32", "4294967296"},
+		{"negative", "-1"},
+		{"invalid format", "not_a_number"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "BeginTransaction", Args: []string{tc.value}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseBool_ValidValues(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []string{"true", "false", "TRUE", "FALSE", "True", "False", "1", "0"}
+
+	for _, val := range testCases {
+		t.Run(val, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "IntermediateRoot", Args: []string{val}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestParseBalanceReason_Variants(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	testCases := []struct {
+		name   string
+		reason string
+	}{
+		{"lowercase", "balancechangetransfer"},
+		{"with quotes", "\"BalanceChangeTransfer\""},
+		{"with single quotes", "'BalanceChangeTransfer'"},
+		{"with suffix", "BalanceChangeTransfer,"},
+		{"with space", "BalanceChangeTransfer "},
+		{"with paren", "BalanceChangeTransfer(0)"},
+		{"numeric value", "1"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+				{Kind: "AddBalance", Args: []string{addr.Hex(), "100", "0", tc.reason, "100"}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestParseNonceReason_Variants(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	testCases := []struct {
+		name   string
+		reason string
+	}{
+		{"lowercase", "noncechangeresetcaller"},
+		{"with quotes", "\"NonceChangeResetCaller\""},
+		{"with suffix", "NonceChangeResetCaller,"},
+		{"numeric value", "1"},
+		{"unspecified", "NonceChangeUnspecified"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+				{Kind: "SetNonce", Args: []string{addr.Hex(), "42", tc.reason}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestGetStateAndCommittedState_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetStateAndCommittedState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetTransientState_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetTransientState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSlotInAccessList_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SlotInAccessList", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSubBalance_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	testCases := []struct {
+		name string
+		args []string
+	}{
+		{"missing all", []string{addr.Hex()}},
+		{"missing reason", []string{addr.Hex(), "100", "0"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "SubBalance", Args: tc.args},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestBeginSyncPeriod_InvalidArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "BeginSyncPeriod", Args: []string{"invalid"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+}
