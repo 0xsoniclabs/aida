@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251014092906-75df60dc78cb
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
-	github.com/0xsoniclabs/substate v0.0.0-20251113092044-f83bec23e451
+	github.com/0xsoniclabs/substate v0.0.0-20251118214143-ef0b309b9e24
 	github.com/0xsoniclabs/tosca v0.0.0-20251023131117-f542dea83f5b
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
@@ -147,5 +147,3 @@ replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundati
 // Sonic client is integrated as a git-submodule to make version configuration easier
 // when running tests.
 replace github.com/0xsoniclabs/sonic => ./sonic
-
-replace github.com/0xsoniclabs/substate => ../Substate
