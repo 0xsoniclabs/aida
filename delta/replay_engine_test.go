@@ -554,3 +554,289 @@ func TestParseErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestParseUint256_Errors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	testCases := []struct {
+		name  string
+		value string
+	}{
+		{"negative value", "-100"},
+		{"invalid format", "not_a_number"},
+		{"overflow", "115792089237316195423570985008687907853269984665640564039457584007913129639936"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+				{Kind: "AddBalance", Args: []string{addr.Hex(), tc.value, "0", "BalanceChangeUnspecified"}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseByteSlice_Errors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	testCases := []struct {
+		name  string
+		value string
+	}{
+		{"invalid hex", "0xZZZZ"},
+		{"invalid byte in array", "[1, 2, 999]"},
+		{"invalid byte format", "[1, not_a_number]"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "SetCode", Args: []string{addr.Hex(), tc.value}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseBool_Errors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "IntermediateRoot", Args: []string{"not_a_bool"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+}
+
+func TestParseInt_Errors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []struct {
+		name  string
+		value string
+	}{
+		{"invalid decimal", "not_a_number"},
+		{"invalid hex", "0xZZZ"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "RevertToSnapshot", Args: []string{tc.value}},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseHash_Errors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetState_MissingValue(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+	key := common.HexToHash("0x2")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetState", Args: []string{addr.Hex(), key.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetCode_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetCode", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestBeginTransaction_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "BeginTransaction", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestAddRefund_InvalidArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddRefund", Args: []string{"invalid"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+}
+
+func TestSubRefund_InvalidArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SubRefund", Args: []string{"invalid"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+}
+
+func TestSetTxContext_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []struct {
+		name string
+		args []string
+	}{
+		{"missing hash", []string{}},
+		{"missing index", []string{common.HexToHash("0x1").Hex()}},
+		{"invalid index", []string{common.HexToHash("0x1").Hex(), "invalid"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "SetTxContext", Args: tc.args},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestAddSlotToAccessList_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddSlotToAccessList", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetLogs_InvalidArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []struct {
+		name string
+		args []string
+	}{
+		{"missing args", []string{}},
+		{"invalid block", []string{common.HexToHash("0x1").Hex(), "invalid"}},
+		{"invalid time", []string{common.HexToHash("0x1").Hex(), "100", common.HexToHash("0x2").Hex(), "invalid"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{
+				{Kind: "BeginBlock", Args: []string{"1"}},
+				{Kind: "GetLogs", Args: tc.args},
+			}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestAddPreimage_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddPreimage", Args: []string{common.HexToHash("0x1").Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetCommittedState_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetCommittedState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetTransientState_MissingArgs(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+	key := common.HexToHash("0x2")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetTransientState", Args: []string{addr.Hex(), key.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
