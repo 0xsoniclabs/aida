@@ -414,3 +414,143 @@ func TestStateReplayer_BulkOperation(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "bulk operations are not supported")
 }
+
+func TestStateReplayer_MoreOperations(t *testing.T) {
+	addr := common.HexToAddress("0xabc")
+	key := common.HexToHash("0xdef")
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"100"}},
+		{Kind: "BeginSyncPeriod", Args: []string{"1"}},
+		{Kind: "CreateContract", Args: []string{addr.Hex()}},
+		{Kind: "GetCode", Args: []string{addr.Hex()}},
+		{Kind: "GetCodeSize", Args: []string{addr.Hex()}},
+		{Kind: "GetCodeHash", Args: []string{addr.Hex()}},
+		{Kind: "SetCode", Args: []string{addr.Hex(), "0x1234"}},
+		{Kind: "GetCommittedState", Args: []string{addr.Hex(), key.Hex()}},
+		{Kind: "GetStateAndCommittedState", Args: []string{addr.Hex(), key.Hex()}},
+		{Kind: "SetTransientState", Args: []string{addr.Hex(), key.Hex(), key.Hex()}},
+		{Kind: "GetTransientState", Args: []string{addr.Hex(), key.Hex()}},
+		{Kind: "SelfDestruct", Args: []string{addr.Hex()}},
+		{Kind: "SelfDestruct6780", Args: []string{addr.Hex()}},
+		{Kind: "HasSelfDestructed", Args: []string{addr.Hex()}},
+		{Kind: "AddRefund", Args: []string{"100"}},
+		{Kind: "SubRefund", Args: []string{"50"}},
+		{Kind: "GetRefund"},
+		{Kind: "SetTxContext", Args: []string{key.Hex(), "5"}},
+		{Kind: "GetStorageRoot", Args: []string{addr.Hex()}},
+		{Kind: "AddAddressToAccessList", Args: []string{addr.Hex()}},
+		{Kind: "AddSlotToAccessList", Args: []string{addr.Hex(), key.Hex()}},
+		{Kind: "AddressInAccessList", Args: []string{addr.Hex()}},
+		{Kind: "SlotInAccessList", Args: []string{addr.Hex(), key.Hex()}},
+		{Kind: "GetLogs", Args: []string{key.Hex(), "100", key.Hex(), "1000"}},
+		{Kind: "AddPreimage", Args: []string{key.Hex(), "0xabcd"}},
+		{Kind: "AccessEvents"},
+		{Kind: "PointCache"},
+		{Kind: "Witness"},
+		{Kind: "GetSubstatePostAlloc"},
+		{Kind: "EndSyncPeriod"},
+		{Kind: "EndBlock"},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+}
+
+func TestStateReplayer_SnapshotRevert(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "Snapshot"},
+		{Kind: "RevertToSnapshot", Args: []string{"0"}},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+}
+
+func TestParseInt(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetTxContext", Args: []string{common.HexToHash("0x1").Hex(), "42"}},
+		{Kind: "SetTxContext", Args: []string{common.HexToHash("0x1").Hex(), "0x10"}},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+}
+
+func TestParseByteSlice(t *testing.T) {
+	addr := common.HexToAddress("0x1")
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetCode", Args: []string{addr.Hex(), "0xdeadbeef"}},
+		{Kind: "SetCode", Args: []string{addr.Hex(), "[1, 2, 3]"}},
+		{Kind: "SetCode", Args: []string{addr.Hex(), "[]"}},
+		{Kind: "AddPreimage", Args: []string{common.HexToHash("0x1").Hex(), "0x"}},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+}
+
+func TestParseUint256_Formats(t *testing.T) {
+	addr := common.HexToAddress("0x1")
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "AddBalance", Args: []string{addr.Hex(), "0x100", "0", "BalanceChangeTransfer", "256"}},
+		{Kind: "AddBalance", Args: []string{addr.Hex(), "1000", "0", "BalanceChangeTransfer", "1000"}},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+}
+
+func TestParseUint64_HexFormat(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"0x64"}},
+		{Kind: "EndBlock"},
+	}
+
+	require.NoError(t, replayer.Execute(context.Background(), ops))
+	require.Equal(t, uint64(100), replayer.currentBlock)
+}
+
+func TestParseErrors(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	testCases := []struct {
+		name string
+		op   TraceOp
+	}{
+		{"missing address", TraceOp{Kind: "CreateAccount", Args: []string{}}},
+		{"missing nonce arg", TraceOp{Kind: "SetNonce", Args: []string{"0x1"}}},
+		{"invalid nonce", TraceOp{Kind: "SetNonce", Args: []string{"0x1", "invalid", "NonceChangeUnspecified"}}},
+		{"missing block", TraceOp{Kind: "BeginBlock", Args: []string{}}},
+		{"invalid block", TraceOp{Kind: "BeginBlock", Args: []string{"invalid"}}},
+		{"missing state key", TraceOp{Kind: "GetState", Args: []string{"0x1"}}},
+		{"missing balance", TraceOp{Kind: "AddBalance", Args: []string{"0x1"}}},
+		{"invalid balance", TraceOp{Kind: "AddBalance", Args: []string{"0x1", "invalid", "0", "BalanceChangeUnspecified"}}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ops := []TraceOp{tc.op}
+			err := replayer.Execute(context.Background(), ops)
+			require.Error(t, err, "expected error for %s", tc.name)
+		})
+	}
+}
