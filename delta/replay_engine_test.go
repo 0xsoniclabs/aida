@@ -1444,3 +1444,502 @@ func TestParseBalanceReason_MissingArg(t *testing.T) {
 	err := replayer.Execute(context.Background(), ops)
 	require.Error(t, err)
 }
+
+func TestAddBalance_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddBalance", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSubBalance_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SubBalance", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetCommittedState_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetCommittedState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetStateAndCommittedState_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetStateAndCommittedState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetState_MissingKeyArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetState_MissingValueArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+	key := common.HexToHash("0x2")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetState", Args: []string{addr.Hex(), key.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetTransientState_MissingKeyArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetTransientState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetTransientState_MissingValueArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+	key := common.HexToHash("0x2")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetTransientState", Args: []string{addr.Hex(), key.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetTransientState_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetTransientState", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetCodeSize_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetCodeSize", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetCode_MissingByteSliceArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetCode", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestAddSlotToAccessList_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddSlotToAccessList", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSlotInAccessList_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SlotInAccessList", Args: []string{addr.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetLogs_MissingTimestampArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	txHash := common.HexToHash("0x1")
+	blockHash := common.HexToHash("0x2")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetLogs", Args: []string{txHash.Hex(), "100", blockHash.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestCommit_MissingBoolArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "Commit", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestAddPreimage_MissingByteSliceArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	hash := common.HexToHash("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddPreimage", Args: []string{hash.Hex()}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestParseBalanceReason_LowercaseFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "AddBalance", Args: []string{addr.Hex(), "100", "0", "balancechangetransfer"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestParseNonceReason_LowercaseFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "SetNonce", Args: []string{addr.Hex(), "1", "noncechangeunspecified"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestParseNonceReason_NumericFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "SetNonce", Args: []string{addr.Hex(), "1", "0"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestParseBalanceReason_NumericFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "AddBalance", Args: []string{addr.Hex(), "100", "0", "1"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestGetCommittedState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetCommittedState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetStateAndCommittedState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetStateAndCommittedState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetTransientState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetTransientState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetTransientState_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetTransientState", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSetCode_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SetCode", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestAddSlotToAccessList_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddSlotToAccessList", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestSlotInAccessList_MissingAddressArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "SlotInAccessList", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestGetLogs_MissingBlockHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	txHash := common.HexToHash("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "GetLogs", Args: []string{txHash.Hex(), "100"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestAddPreimage_MissingHashArg(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "AddPreimage", Args: []string{}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing argument")
+}
+
+func TestParseBalanceReason_UppercaseFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "AddBalance", Args: []string{addr.Hex(), "100", "0", "TRANSFER"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestParseNonceReason_UppercaseFallback(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "SetNonce", Args: []string{addr.Hex(), "1", "UNSPECIFIED"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
+
+func TestParseNonceReason_DirectMatch(t *testing.T) {
+	db := newTrackingStateDB(t)
+	replayer := NewStateReplayer(db)
+	addr := common.HexToAddress("0x1")
+
+	ops := []TraceOp{
+		{Kind: "BeginBlock", Args: []string{"1"}},
+		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
+		{Kind: "SetNonce", Args: []string{addr.Hex(), "1", "Unspecified"}},
+	}
+
+	err := replayer.Execute(context.Background(), ops)
+	require.NoError(t, err)
+}
