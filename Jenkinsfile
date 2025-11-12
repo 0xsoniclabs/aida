@@ -17,7 +17,7 @@ pipeline {
         ARCHIVE = '--archive --archive-variant s5'
         PRIME = '--update-buffer-size 4000'
         VM = '--vm-impl lfvm'
-        AIDADB = '--aida-db /mnt/substate-opera-mainnet/aida-db'
+        AIDADB = '--aida-db /mnt/substate-opera-mainnet/aida-db --substate-encoding rlp'
         TMPDB = '--db-tmp /mnt/tmp-disk'
         DBSRC = '/mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}'
         PROFILE = '--cpu-profile cpu-profile.dat --memory-profile mem-profile.dat --memory-breakdown'
@@ -248,7 +248,7 @@ pipeline {
                     steps {
                         sh "make clean"
                         sh "rm -rf *.dat ${TRACEDIR}"
-                        sh "rm -rf /var/opera/Aida/dbtmpjenkins/state_db_carmen_go-file_${TOBLOCK}"
+                        sh "rm -rf /mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}"
                     }
                 }
             }
