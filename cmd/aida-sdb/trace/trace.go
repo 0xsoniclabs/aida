@@ -62,6 +62,7 @@ var TraceReplayCommand = cli.Command{
 		//&utils.ValidateFlag,
 		//&utils.ValidateTxStateFlag,
 		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
@@ -99,6 +100,7 @@ var TraceReplaySubstateCommand = cli.Command{
 		//&utils.ValidateFlag,
 		//&utils.ValidateTxStateFlag,
 		&utils.AidaDbFlag,
+		&utils.SubstateEncodingFlag,
 		&logger.LogLevelFlag,
 	},
 	Description: `
