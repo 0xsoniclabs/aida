@@ -41,7 +41,7 @@ func TestSdbRecord_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	path := t.TempDir() + "test_trace"
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 10, 11, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 10, 11, false, "")
 	cfg.TraceFile = path
 	cfg.SyncPeriodLength = 1
 	provider.EXPECT().
@@ -107,7 +107,7 @@ func TestCmd_RunRecordCommand(t *testing.T) {
 	app.Commands = []*cli.Command{&RecordCommand}
 	args := utils.NewArgs("test").
 		Arg(RecordCommand.Name).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.TraceFileFlag.Name, traceFile).
 		Flag(utils.WorkersFlag.Name, 1).

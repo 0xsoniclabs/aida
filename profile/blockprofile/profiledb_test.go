@@ -718,11 +718,11 @@ func TestInsertMetadata_Success(t *testing.T) {
 	// Mock database operations - match the exact SQL from insertMetadataSQL constant
 	mockPrepare := mockDb.ExpectPrepare(insertMetadataSQL)
 	mockDb.ExpectBegin()
-	mockStmt := mockPrepare.ExpectExec().WithArgs(utils.MainnetChainID, "Intel(R) Core(TM) i7-8700K", "16384GB RAM", "/dev/sda1 100GB", "Ubuntu 20.04.3 LTS", "hostname(192.168.1.1)")
+	mockStmt := mockPrepare.ExpectExec().WithArgs(utils.OperaMainnetChainID, "Intel(R) Core(TM) i7-8700K", "16384GB RAM", "/dev/sda1 100GB", "Ubuntu 20.04.3 LTS", "hostname(192.168.1.1)")
 	mockStmt.WillReturnResult(sqlmock.NewResult(1, 1))
 	mockDb.ExpectCommit()
 
-	err = insertMetadata(db, utils.MainnetChainID, cmd)
+	err = insertMetadata(db, utils.OperaMainnetChainID, cmd)
 	assert.NoError(t, err)
 
 	// Verify all expectations were met
@@ -830,7 +830,7 @@ func TestInsertMetadata_Error(t *testing.T) {
 				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("os"), nil)        // getOS
 				mockShell.EXPECT().Command("sh", "-c", gomock.Any()).Return([]byte("machine"), nil)   // getMachine
 				mockDb.ExpectBegin()
-				mockPrepare.ExpectExec().WithArgs(utils.MainnetChainID, "processor", "memory", "disks", "os", "machine").WillReturnResult(sqlmock.NewResult(1, 1))
+				mockPrepare.ExpectExec().WithArgs(utils.OperaMainnetChainID, "processor", "memory", "disks", "os", "machine").WillReturnResult(sqlmock.NewResult(1, 1))
 				mockDb.ExpectCommit().WillReturnError(errors.New("commit error"))
 			},
 			expectedError: "failed to commit transaction",
@@ -852,7 +852,7 @@ func TestInsertMetadata_Error(t *testing.T) {
 			tt.setupMocks(ctrl, mockShell, mockDb)
 
 			// Execute the function and verify error
-			err = insertMetadata(db, utils.MainnetChainID, cmd)
+			err = insertMetadata(db, utils.OperaMainnetChainID, cmd)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
 

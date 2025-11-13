@@ -53,7 +53,7 @@ func TestCases_MakeTestConfig(t *testing.T) {
 	testCases := GetStateDbTestCases()
 	cfg := MakeTestConfig(testCases[0])
 	assert.NotNil(t, cfg)
-	assert.Equal(t, MainnetChainID, cfg.ChainID)
+	assert.Equal(t, OperaMainnetChainID, cfg.ChainID)
 	assert.Equal(t, "", cfg.VmImpl)
 	assert.Equal(t, "geth", cfg.DbImpl)
 	assert.Equal(t, "", cfg.ArchiveVariant)

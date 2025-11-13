@@ -224,7 +224,7 @@ func (c *rpcComparator) resendRequest(result txcontext.Result, state executor.St
 
 	c.log.Debugf("Retried params: %v", retriedReq.Params)
 	// we only record on mainnet, so we can safely put mainnet chainID constant here
-	m, err := utils.SendRpcRequest(retriedReq, utils.MainnetChainID)
+	m, err := utils.SendRpcRequest(retriedReq, utils.OperaMainnetChainID)
 	if err != nil {
 		return newComparatorError(result, nil, nil, state.Data, state.Block, cannotSendRpcRequest)
 	}

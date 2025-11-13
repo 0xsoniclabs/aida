@@ -55,8 +55,8 @@ func prepareMockCliContext() *cli.Context {
 
 func TestUtilsConfig_GetChainConfig(t *testing.T) {
 	testCases := []ChainID{
-		TestnetChainID,
-		MainnetChainID,
+		OperaTestnetChainID,
+		OperaMainnetChainID,
 	}
 
 	for _, tc := range testCases {
@@ -66,20 +66,20 @@ func TestUtilsConfig_GetChainConfig(t *testing.T) {
 				t.Fatalf("cannot get chain config: %v", err)
 			}
 
-			if tc == MainnetChainID && chainConfig.BerlinBlock.Cmp(new(big.Int).SetUint64(37455223)) != 0 {
-				t.Fatalf("Incorrect Berlin fork block on chainID: %d; Block number: %d, should be: %d", MainnetChainID, chainConfig.BerlinBlock, 37455223)
+			if tc == OperaMainnetChainID && chainConfig.BerlinBlock.Cmp(new(big.Int).SetUint64(37455223)) != 0 {
+				t.Fatalf("Incorrect Berlin fork block on chainID: %d; Block number: %d, should be: %d", OperaMainnetChainID, chainConfig.BerlinBlock, 37455223)
 			}
 
-			if tc == MainnetChainID && chainConfig.LondonBlock.Cmp(new(big.Int).SetUint64(37534833)) != 0 {
-				t.Fatalf("Incorrect London fork block on chainID: %d; Block number: %d, should be: %d", MainnetChainID, chainConfig.LondonBlock, 37534833)
+			if tc == OperaMainnetChainID && chainConfig.LondonBlock.Cmp(new(big.Int).SetUint64(37534833)) != 0 {
+				t.Fatalf("Incorrect London fork block on chainID: %d; Block number: %d, should be: %d", OperaMainnetChainID, chainConfig.LondonBlock, 37534833)
 			}
 
-			if tc == TestnetChainID && chainConfig.BerlinBlock.Cmp(new(big.Int).SetUint64(1559470)) != 0 {
-				t.Fatalf("Incorrect Berlin fork block on chainID: %d; Block number: %d, should be: %d", TestnetChainID, chainConfig.BerlinBlock, 1559470)
+			if tc == OperaTestnetChainID && chainConfig.BerlinBlock.Cmp(new(big.Int).SetUint64(1559470)) != 0 {
+				t.Fatalf("Incorrect Berlin fork block on chainID: %d; Block number: %d, should be: %d", OperaTestnetChainID, chainConfig.BerlinBlock, 1559470)
 			}
 
-			if tc == TestnetChainID && chainConfig.LondonBlock.Cmp(new(big.Int).SetUint64(7513335)) != 0 {
-				t.Fatalf("Incorrect London fork block on chainID: %d; Block number: %d, should be: %d", TestnetChainID, chainConfig.LondonBlock, 7513335)
+			if tc == OperaTestnetChainID && chainConfig.LondonBlock.Cmp(new(big.Int).SetUint64(7513335)) != 0 {
+				t.Fatalf("Incorrect London fork block on chainID: %d; Block number: %d, should be: %d", OperaTestnetChainID, chainConfig.LondonBlock, 7513335)
 			}
 		})
 	}
@@ -108,7 +108,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 		t.Fatalf("Failed to parse last block; expected: %d, have: %d", 40_000_000, last)
 	}
 
-	first, last, err = SetBlockRange("OpeRa", "berlin", MainnetChainID)
+	first, last, err = SetBlockRange("OpeRa", "berlin", OperaMainnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (opera-berlin on mainnet): %v", err)
 	}
@@ -121,7 +121,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 		t.Fatalf("Failed to parse last block; expected: %d, have: %d", 37_455_223, last)
 	}
 
-	first, last, err = SetBlockRange("zero", "London", TestnetChainID)
+	first, last, err = SetBlockRange("zero", "London", OperaTestnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (zero-london on testnet): %v", err)
 	}
@@ -135,7 +135,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 	}
 
 	// test addition/subtraction
-	first, last, err = SetBlockRange("opera+23456", "London-100", TestnetChainID)
+	first, last, err = SetBlockRange("opera+23456", "London-100", OperaTestnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (opera+23456-London-100 on mainnet): %v", err)
 	}
@@ -149,7 +149,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 	}
 
 	// test upper/lower cases
-	first, last, err = SetBlockRange("berlin-1000", "LonDoN", MainnetChainID)
+	first, last, err = SetBlockRange("berlin-1000", "LonDoN", OperaMainnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (berlin-1000-LonDoN on mainnet): %v", err)
 	}
@@ -163,7 +163,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 	}
 
 	// test first and last keyword. Since no metadata, default values are expected
-	first, last, err = SetBlockRange("first", "last", MainnetChainID)
+	first, last, err = SetBlockRange("first", "last", OperaMainnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (first-last on mainnet): %v", err)
 	}
@@ -177,7 +177,7 @@ func TestUtilsConfig_SetBlockRange(t *testing.T) {
 	}
 
 	// test lastpatch and last keyword
-	first, last, err = SetBlockRange("lastpatch", "last", MainnetChainID)
+	first, last, err = SetBlockRange("lastpatch", "last", OperaMainnetChainID)
 	if err != nil {
 		t.Fatalf("Failed to set block range (lastpatch-last on mainnet): %v", err)
 	}
@@ -197,27 +197,27 @@ func TestUtilsConfig_SetInvalidBlockRange(t *testing.T) {
 		t.Fatalf("Failed to throw an error")
 	}
 
-	_, _, err = SetBlockRange("1000", "0", TestnetChainID)
+	_, _, err = SetBlockRange("1000", "0", OperaTestnetChainID)
 	if err == nil {
 		t.Fatalf("Failed to throw an error")
 	}
 
-	_, _, err = SetBlockRange("tokyo", "berlin", MainnetChainID)
+	_, _, err = SetBlockRange("tokyo", "berlin", OperaMainnetChainID)
 	if err == nil {
 		t.Fatalf("Failed to throw an error")
 	}
 
-	_, _, err = SetBlockRange("tokyo", "berlin", TestnetChainID)
+	_, _, err = SetBlockRange("tokyo", "berlin", OperaTestnetChainID)
 	if err == nil {
 		t.Fatalf("Failed to throw an error")
 	}
 
-	_, _, err = SetBlockRange("london-opera", "opera+london", MainnetChainID)
+	_, _, err = SetBlockRange("london-opera", "opera+london", OperaMainnetChainID)
 	if err == nil {
 		t.Fatalf("Failed to throw an error")
 	}
 
-	_, _, err = SetBlockRange("london-opera", "opera+london", TestnetChainID)
+	_, _, err = SetBlockRange("london-opera", "opera+london", OperaTestnetChainID)
 	if err == nil {
 		t.Fatalf("Failed to throw an error")
 	}
@@ -237,7 +237,7 @@ func TestUtilsConfig_adjustBlockRange(t *testing.T) {
 		firstArg, lastArg uint64
 		err               error
 	)
-	chainId = MainnetChainID
+	chainId = OperaMainnetChainID
 	KeywordBlocks[chainId]["first"] = 1000
 	KeywordBlocks[chainId]["last"] = 2000
 
@@ -294,9 +294,9 @@ func TestUtilsConfig_getMdBlockRange(t *testing.T) {
 	// create new leveldb
 	var (
 		logLevel   = "NOTICE"
-		firstBlock = KeywordBlocks[MainnetChainID]["opera"]
+		firstBlock = KeywordBlocks[OperaMainnetChainID]["opera"]
 		lastBlock  = uint64(20001704)
-		chainId    = MainnetChainID
+		chainId    = OperaMainnetChainID
 	)
 	// prepare mock config
 	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel, ChainID: chainId}
@@ -409,7 +409,7 @@ func TestUtilsConfig_setChainIdFromFlag(t *testing.T) {
 	var (
 		err      error
 		logLevel = "NOTICE"
-		chainId  = MainnetChainID
+		chainId  = OperaMainnetChainID
 	)
 
 	// prepare mock config
@@ -445,7 +445,7 @@ func TestUtilsConfig_setDefaultChainId(t *testing.T) {
 		{
 			name:        "No ChainID",
 			setChainID:  UnknownChainID,
-			wantChainID: MainnetChainID,
+			wantChainID: OperaMainnetChainID,
 			aidaDbPath:  "",
 		},
 		{
@@ -490,7 +490,7 @@ func TestUtilsConfig_updateConfigBlockRangeBlockRange(t *testing.T) {
 	)
 
 	// prepare mock config
-	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel, ChainID: MainnetChainID}
+	cfg := &Config{AidaDb: "./test.db", LogLevel: logLevel, ChainID: OperaMainnetChainID}
 
 	// create config context
 	cc := NewConfigContext(cfg, nil)
@@ -618,7 +618,7 @@ func TestUtilsConfig_updateConfigBlockRangeOneToNInvalid(t *testing.T) {
 func TestUtilsConfig_adjustMissingConfigValues(t *testing.T) {
 	// prepare components
 	var (
-		chainId           = MainnetChainID
+		chainId           = OperaMainnetChainID
 		aidaDB            = "./test.db"
 		dbImpl            = "carmen"
 		dbVariant         = ""
@@ -899,7 +899,7 @@ func TestConfigContext_setVmConfig_InvalidVmImplCausesError(t *testing.T) {
 }
 
 func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
-	chainId := MainnetChainID
+	chainId := OperaMainnetChainID
 	first := uint64(123)
 	last := uint64(456)
 	fork := "london"
@@ -923,7 +923,7 @@ func TestNewTestConfig_CorrectlyFillsData(t *testing.T) {
 func createFakeAidaDb(cfg *Config) error {
 	// fake metadata values
 	var (
-		firstBlock        = KeywordBlocks[MainnetChainID]["opera"]
+		firstBlock        = KeywordBlocks[OperaMainnetChainID]["opera"]
 		lastBlock  uint64 = 20001704
 		firstEpoch uint64 = 100
 		lastEpoch  uint64 = 200
@@ -961,7 +961,7 @@ func Test_SetChainConfig(t *testing.T) {
 	// case 2
 	cfg = configContext{
 		cfg: &Config{
-			ChainID: MainnetChainID,
+			ChainID: OperaMainnetChainID,
 		},
 	}
 	err = cfg.setChainConfig()
@@ -996,7 +996,7 @@ func Test_AdjustMissingConfigValues(t *testing.T) {
 	cfg := configContext{
 		log: logger.NewLogger("NOTICE", "Config"),
 		cfg: &Config{
-			ChainID:      MainnetChainID,
+			ChainID:      OperaMainnetChainID,
 			AidaDb:       "./test.db",
 			DbImpl:       "carmen",
 			DbVariant:    "",
@@ -1054,7 +1054,7 @@ func Test_getChainConfig(t *testing.T) {
 	assert.Equal(t, big.NewInt(11155111), chainConfig.ChainID)
 	assert.Equal(t, false, chainConfig.DAOForkSupport)
 
-	chainConfig, err = getChainConfig(MainnetChainID, "Frontier")
+	chainConfig, err = getChainConfig(OperaMainnetChainID, "Frontier")
 	assert.NoError(t, err)
 	assert.Equal(t, big.NewInt(250), chainConfig.ChainID)
 	assert.Equal(t, false, chainConfig.DAOForkSupport)
@@ -1078,8 +1078,8 @@ func Test_setAidaDbRepositoryUrl(t *testing.T) {
 		expected string
 	}{
 		{"SonicMainnet", SonicMainnetChainID, AidaDbRepositorySonicUrl},
-		{"Mainnet", MainnetChainID, AidaDbRepositoryOperaUrl},
-		{"Testnet", TestnetChainID, AidaDbRepositoryTestnetUrl},
+		{"Mainnet", OperaMainnetChainID, AidaDbRepositoryOperaUrl},
+		{"Testnet", OperaTestnetChainID, AidaDbRepositoryTestnetUrl},
 		{"Ethereum", EthereumChainID, AidaDbRepositoryEthereumUrl},
 		{"Holesky", HoleskyChainID, AidaDbRepositoryHoleskyUrl},
 		{"Hoodi", HoodiChainID, AidaDbRepositoryHoodiUrl},
@@ -1113,7 +1113,7 @@ func Test_setAidaDbRepositoryUrl(t *testing.T) {
 func Test_setFirstOperaBlock(t *testing.T) {
 	cfg := configContext{
 		cfg: &Config{
-			ChainID: MainnetChainID,
+			ChainID: OperaMainnetChainID,
 		},
 	}
 
@@ -1174,7 +1174,7 @@ func Test_GetInterpreterFactory(t *testing.T) {
 
 func Test_GetChainConfig(t *testing.T) {
 	cfg := &Config{
-		ChainID: MainnetChainID,
+		ChainID: OperaMainnetChainID,
 	}
 
 	chainConfig, err := cfg.GetChainConfig("")

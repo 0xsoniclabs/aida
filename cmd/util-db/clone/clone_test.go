@@ -721,7 +721,7 @@ func TestClone_CorrectlyClonesData(t *testing.T) {
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
 	md := utils.NewAidaDbMetadata(srcDb, "INFO")
-	err = md.SetChainID(utils.MainnetChainID)
+	err = md.SetChainID(utils.OperaMainnetChainID)
 	require.NoError(t, err, "failed to set chain id")
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
@@ -733,7 +733,7 @@ func TestClone_CorrectlyClonesData(t *testing.T) {
 	targetDb, err := db.NewDefaultSubstateDB(targetPath)
 	require.NoError(t, err, "failed to create target db")
 
-	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.OperaMainnetChainID, Workers: 1}
 	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
 	require.NoError(t, err, "failed to clone codes")
 
@@ -750,7 +750,7 @@ func TestCloneCodes_PutsDataHashAsCode(t *testing.T) {
 	srcDb, err := db.NewDefaultSubstateDB(srcPath)
 	require.NoError(t, err, "failed to create source db")
 	md := utils.NewAidaDbMetadata(srcDb, "INFO")
-	err = md.SetChainID(utils.MainnetChainID)
+	err = md.SetChainID(utils.OperaMainnetChainID)
 	require.NoError(t, err, "failed to set chain id")
 	err = srcDb.SetSubstateEncoding("protobuf")
 	require.NoError(t, err, "failed to set substate encoding")
@@ -767,7 +767,7 @@ func TestCloneCodes_PutsDataHashAsCode(t *testing.T) {
 	targetDb, err := db.NewDefaultSubstateDB(targetPath)
 	require.NoError(t, err, "failed to create target db")
 
-	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.MainnetChainID, Workers: 1}
+	cfg := &utils.Config{First: 0, Last: 1, ChainID: utils.OperaMainnetChainID, Workers: 1}
 	err = createPatchClone(cfg, srcDb, targetDb, 5577, 5578)
 	require.NoError(t, err, "failed to clone codes")
 

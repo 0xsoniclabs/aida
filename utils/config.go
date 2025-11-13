@@ -76,8 +76,8 @@ const (
 	UnknownChainID      ChainID = 0
 	EthereumChainID     ChainID = 1
 	SonicMainnetChainID ChainID = 146
-	MainnetChainID      ChainID = 250
-	TestnetChainID      ChainID = 4002
+	OperaMainnetChainID ChainID = 250
+	OperaTestnetChainID ChainID = 4002
 	HoleskyChainID      ChainID = 17000
 	HoodiChainID        ChainID = 560048
 	SepoliaChainID      ChainID = 11155111
@@ -88,8 +88,8 @@ const (
 
 var RealChainIDs = ChainIDs{
 	SonicMainnetChainID: "mainnet-sonic",
-	MainnetChainID:      "mainnet-opera",
-	TestnetChainID:      "testnet",
+	OperaMainnetChainID: "mainnet-opera",
+	OperaTestnetChainID: "testnet",
 	EthereumChainID:     "ethereum",
 	HoleskyChainID:      "holesky",
 	HoodiChainID:        "hoodi",
@@ -97,8 +97,8 @@ var RealChainIDs = ChainIDs{
 }
 var AllowedChainIDs = ChainIDs{
 	SonicMainnetChainID: "mainnet-sonic",
-	MainnetChainID:      "mainnet-opera",
-	TestnetChainID:      "testnet",
+	OperaMainnetChainID: "mainnet-opera",
+	OperaTestnetChainID: "testnet",
 	EthereumChainID:     "ethereum",
 	HoleskyChainID:      "holesky",
 	HoodiChainID:        "hoodi",
@@ -157,7 +157,7 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"last":        maxLastBlock,
 		"lastpatch":   0,
 	},
-	MainnetChainID: {
+	OperaMainnetChainID: {
 		"zero":        0,
 		"opera":       4_564_026,
 		"istanbul":    0, // todo istanbul block for mainnet?
@@ -170,7 +170,7 @@ var KeywordBlocks = map[ChainID]map[string]uint64{
 		"last":        maxLastBlock,
 		"lastpatch":   0,
 	},
-	TestnetChainID: {
+	OperaTestnetChainID: {
 		"zero":        0,
 		"opera":       479_327,
 		"istanbul":    0, // todo istanbul block for testnet?
@@ -530,9 +530,9 @@ func (cc *configContext) setAidaDbRepositoryUrl() error {
 	switch cc.cfg.ChainID {
 	case SonicMainnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
-	case MainnetChainID:
+	case OperaMainnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryOperaUrl
-	case TestnetChainID:
+	case OperaTestnetChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryTestnetUrl
 	case EthereumChainID:
 		AidaDbRepositoryUrl = AidaDbRepositoryEthereumUrl
@@ -699,7 +699,7 @@ func splitKeywordOffset(arg string, symbol string) (string, uint64, bool) {
 	res := strings.Split(arg, symbol)
 
 	// if the keyword doesn't exist, return.
-	if _, ok := KeywordBlocks[MainnetChainID][strings.ToLower(res[0])]; !ok {
+	if _, ok := KeywordBlocks[OperaMainnetChainID][strings.ToLower(res[0])]; !ok {
 		return "", 0, false
 	}
 
@@ -811,7 +811,7 @@ func (cc *configContext) setChainId() error {
 
 		if cc.cfg.ChainID == 0 {
 			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
-			cc.cfg.ChainID = MainnetChainID
+			cc.cfg.ChainID = SonicMainnetChainID // default chain ID
 		} else {
 			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
 		}
