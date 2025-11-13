@@ -445,7 +445,7 @@ func TestUtilsConfig_setDefaultChainId(t *testing.T) {
 		{
 			name:        "No ChainID",
 			setChainID:  UnknownChainID,
-			wantChainID: OperaMainnetChainID,
+			wantChainID: SonicMainnetChainID,
 			aidaDbPath:  "",
 		},
 		{
