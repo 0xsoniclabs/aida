@@ -57,7 +57,7 @@ func ReplayTrace(ctx *cli.Context) error {
 	var aidaDb db.BaseDB
 	// we need to open substate if we are priming
 	if cfg.First > 0 && !cfg.SkipPriming {
-		aidaDb, err = db.NewReadOnlyBaseDB(cfg.AidaDb)
+		aidaDb, err = db.NewReadOnlySubstateDB(cfg.AidaDb)
 		if err != nil {
 			return fmt.Errorf("cannot open aida-db; %w", err)
 		}

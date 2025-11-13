@@ -64,6 +64,9 @@ func (p *stateDbPrimer[T]) PreRun(_ executor.State[T], ctx *executor.Context) (e
 		return fmt.Errorf("cannot prime nil state-db")
 	}
 
-	primer := prime.NewPrimer(p.cfg, ctx.State, ctx.AidaDb, p.log)
+	primer, err := prime.NewPrimer(p.cfg, ctx.State, ctx.AidaDb, p.log)
+	if err != nil {
+		return err
+	}
 	return primer.Prime()
 }

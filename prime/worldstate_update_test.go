@@ -103,13 +103,14 @@ func TestStatedb_DeleteDestroyedAccountsFromWorldState(t *testing.T) {
 			cfg.DeletionDb = deletionDb
 
 			// Initializing backend DB for storing destroyed accounts
-			daBackend, err := db.NewDefaultBaseDB(deletionDb)
+			daBackend, err := db.NewDefaultSubstateDB(deletionDb)
 			if err != nil {
 				t.Fatalf("failed to create backend DB: %s; %v", deletionDb, err)
 			}
 
 			// Creating new destroyed accounts DB
-			daDB := db.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
+			daDB, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
+			assert.NoError(t, err)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
 			err = daDB.SetDestroyedAccounts(5, 1, destroyedAccounts, []types.Address{})
@@ -156,13 +157,14 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			cfg.DeletionDb = deletedAccountsDir
 
 			// Initializing backend DB for storing destroyed accounts
-			aidaDb, err := db.NewDefaultBaseDB(deletedAccountsDir)
+			aidaDb, err := db.NewDefaultSubstateDB(deletedAccountsDir)
 			if err != nil {
 				t.Fatalf("failed to create backend DB: %s; %v", deletedAccountsDir, err)
 			}
 
 			// Creating new destroyed accounts DB
-			ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+			ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+			assert.NoError(t, err)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
 			err = ddb.SetDestroyedAccounts(5, 1, destroyedAccounts, []types.Address{})

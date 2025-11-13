@@ -80,7 +80,7 @@ func printTableHashAction(ctx *cli.Context) error {
 		return err
 	}
 
-	database, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	database, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func printPrefixHashAction(ctx *cli.Context) error {
 		return err
 	}
 
-	database, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	database, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func printHash(ctx *cli.Context, hashType string) error {
 
 // printHashForBlock prints state or block hash for given block number in AidaDb
 func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashType string) error {
-	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	base, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}

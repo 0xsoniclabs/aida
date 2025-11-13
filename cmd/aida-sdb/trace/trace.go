@@ -97,6 +97,7 @@ var TraceReplaySubstateCommand = cli.Command{
 		&utils.TraceDirectoryFlag,
 		&utils.TraceDebugFlag,
 		&utils.DebugFromFlag,
+		&utils.SubstateEncodingFlag,
 		//&utils.ValidateFlag,
 		//&utils.ValidateTxStateFlag,
 		&utils.AidaDbFlag,

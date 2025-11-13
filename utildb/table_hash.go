@@ -123,7 +123,11 @@ func GetSubstateHash(
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		sdb, err := db.MakeDefaultSubstateDBFromBaseDB(base)
+		if err != nil {
+			errChan <- err
+			return
+		}
 		it := sdb.NewSubstateIterator(int(cfg.First), 10)
 		defer it.Release()
 
@@ -159,13 +163,17 @@ func GetDeletionHash(
 	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
+	dDb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+	if err != nil {
+		return nil, 0, err
+	}
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
 		startingBlockBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(startingBlockBytes, cfg.First)
 
-		iter := aidaDb.NewIterator([]byte(db.DestroyedAccountPrefix), startingBlockBytes)
+		iter := dDb.NewIterator([]byte(db.DestroyedAccountPrefix), startingBlockBytes)
 		defer iter.Release()
 
 		for iter.Next() {
@@ -178,7 +186,7 @@ func GetDeletionHash(
 				break
 			}
 
-			list, err := db.DecodeAddressList(iter.Value())
+			list, err := dDb.Decode(iter.Value())
 			if err != nil {
 				errChan <- err
 				return
@@ -216,7 +224,11 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		udb := db.MakeDefaultUpdateDBFromBaseDB(base)
+		udb, err := db.MakeDefaultUpdateDBFromBaseDB(base)
+		if err != nil {
+			errChan <- err
+			return
+		}
 		iter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
 		defer iter.Release()
 

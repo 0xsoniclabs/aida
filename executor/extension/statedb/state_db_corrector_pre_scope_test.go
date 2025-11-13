@@ -269,7 +269,7 @@ func TestStateDbCorrector_PreRun(t *testing.T) {
 			if test.withAidaDb {
 				// Init directory for aida-db
 				aidaDbDir := t.TempDir() + "aida-db"
-				ctx.AidaDb, err = substatedb.NewDefaultBaseDB(aidaDbDir)
+				ctx.AidaDb, err = substatedb.NewDefaultSubstateDB(aidaDbDir)
 				assert.NoError(t, err, "failed to create aida-db")
 			}
 			err = ext.PreRun(executor.State[txcontext.TxContext]{}, ctx)
@@ -286,7 +286,7 @@ func TestStateDbCorrector_PreBlockProcessesLastFixBlockInitialize(t *testing.T) 
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -318,7 +318,7 @@ func TestStateDbCorrector_PreBlockSuccessful(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -364,7 +364,7 @@ func TestStateDbCorrector_PreBlockFailsLoadCurrentException(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -390,7 +390,7 @@ func TestStateDbCorrector_PreBlockFailsFixException(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -417,7 +417,7 @@ func TestStateDbCorrector_PreTransactionProcessesException(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -447,7 +447,7 @@ func TestStateDbCorrector_PreTransactionFails(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -468,7 +468,7 @@ func TestStateDbCorrector_PostBlockProcessesException(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{
@@ -501,7 +501,7 @@ func TestStateDbCorrector_PostBlockFails(t *testing.T) {
 
 	// Initialize aida-db directory
 	aidaDbDir := t.TempDir() + "aida-db"
-	aidaDb, err := substatedb.NewDefaultBaseDB(aidaDbDir)
+	aidaDb, err := substatedb.NewDefaultSubstateDB(aidaDbDir)
 	assert.NoError(t, err)
 
 	corrector := &stateDbCorrector{

@@ -72,7 +72,11 @@ func (v *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 	// adjust first block to the earliest substate block if available
 	// this condition is added for setting sdb in seting.
 	if ctx.AidaDb != nil && v.sdb == nil {
-		v.sdb = db.MakeDefaultSubstateDBFromBaseDB(ctx.AidaDb)
+		var err error
+		v.sdb, err = db.MakeDefaultSubstateDBFromBaseDB(ctx.AidaDb)
+		if err != nil {
+			return err
+		}
 	}
 	if v.sdb != nil {
 		sub := v.sdb.GetFirstSubstate()
