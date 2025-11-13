@@ -266,7 +266,10 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 
 		// if database had no metadata we will look for blocks in substate
 		if hasNoBlockRangeInMetadata {
-			sdb := db.MakeDefaultSubstateDBFromBaseDB(database)
+			sdb, err := db.MakeDefaultSubstateDBFromBaseDB(database)
+			if err != nil {
+				return nil, err
+			}
 			md.FirstBlock, md.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
 				md.log.Warningf("Cannot find blocks in substate; is substate present in given database? %v", paths[i])
@@ -337,7 +340,10 @@ func ProcessMergeMetadata(cfg *Config, aidaDb db.BaseDB, sourceDbs []db.BaseDB, 
 		if err = targetMD.Db.Close(); err != nil {
 			return nil, fmt.Errorf("cannot close targetDb; %v", err)
 		}
-		sdb := db.MakeDefaultSubstateDBFromBaseDB(targetMD.Db)
+		sdb, err := db.MakeDefaultSubstateDBFromBaseDB(targetMD.Db)
+		if err != nil {
+			return nil, err
+		}
 		targetMD.FirstBlock, targetMD.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 		if !ok {
 			targetMD.log.Warningf("Cannot find block range in substate of AidaDb (%v); this will in corrupted metadata but will not affect data itself", cfg.AidaDb)
@@ -795,7 +801,10 @@ func (md *AidaDbMetadata) CheckUpdateMetadata(cfg *Config, patchDb db.BaseDB) er
 		if patchMD.LastBlock == 0 {
 			var ok bool
 
-			sdb := db.MakeDefaultSubstateDBFromBaseDB(patchDb)
+			sdb, err := db.MakeDefaultSubstateDBFromBaseDB(patchDb)
+			if err != nil {
+				return err
+			}
 			patchMD.FirstBlock, patchMD.LastBlock, ok = FindBlockRangeInSubstate(sdb)
 			if !ok {
 				return errors.New("patch does not contain metadata and block range was not found in substate")

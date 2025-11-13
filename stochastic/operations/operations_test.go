@@ -98,13 +98,14 @@ func TestOperationOpcode(t *testing.T) {
 
 func TestOperations_OpMnemo(t *testing.T) {
 	// case 1
-	out := OpMnemo(SnapshotID)
+	out, err := OpMnemo(SnapshotID)
+	assert.NoError(t, err)
 	assert.Equal(t, "SN", out)
 
 	// case 2
-	assert.Panics(t, func() {
-		OpMnemo(-1)
-	})
+	out, err = OpMnemo(-1)
+	assert.Error(t, err)
+	assert.Equal(t, "", out)
 }
 
 func TestOperations_EncodeArgOp(t *testing.T) {

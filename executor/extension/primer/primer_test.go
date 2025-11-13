@@ -63,7 +63,9 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForExistingStateDb(t *testing.
 	input := utils.GetTestSubstate("default")
 	input.Block = 9
 	input.Transaction = 1
-	encoded, err := trlp.EncodeToBytes(rlp.NewRLP(input))
+	newRlp, err := rlp.NewRLP(input)
+	assert.NoError(t, err)
+	encoded, err := trlp.EncodeToBytes(newRlp)
 	if err != nil {
 		t.Fatalf("Failed to encode substate: %v", err)
 	}
@@ -74,6 +76,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForExistingStateDb(t *testing.
 
 	// start priming
 	mockAidaDb.EXPECT().GetBackend().Return(mockAdapter).AnyTimes()
+	mockAidaDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema).Times(3)
 	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter).AnyTimes()
 	// loadExistingAccountsIntoCache is executed only if an existing db is used
 	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
@@ -114,7 +117,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForNonExistingStateDb(t *testi
 
 	ext := makeStateDbPrimer[any](cfg, log)
 
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	assert.NoError(t, err, "cannot open test aida-db")
 	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})
 	assert.Error(t, err)
@@ -176,7 +179,7 @@ func TestStateDbPrimerExtension_UserIsInformedAboutRandomPriming(t *testing.T) {
 		stateDb.EXPECT().StartBulkLoad(uint64(0)).Return(nil, errors.New("stop")),
 	)
 
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	assert.NoError(t, err)
 
 	err = ext.PreRun(executor.State[any]{}, &executor.Context{AidaDb: aidaDb, State: stateDb})

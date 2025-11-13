@@ -38,7 +38,7 @@ func RunPrimer(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}

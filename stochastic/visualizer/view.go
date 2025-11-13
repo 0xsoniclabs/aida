@@ -145,8 +145,12 @@ func computeTxOperation(stats *recorder.StatsJSON, stationary []float64) ([]opDa
 					sum += stationary[i]
 				}
 			}
+			opM, err := operations.OpMnemo(op)
+			if err != nil {
+				return nil, 0, 0, fmt.Errorf("visualizer: get opcode mnemo %d: %w", op, err)
+			}
 			txData = append(txData, opDatum{
-				label: operations.OpMnemo(op),
+				label: opM,
 				value: sum / txProb,
 			})
 		}

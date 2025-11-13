@@ -101,7 +101,7 @@ func TestGenerateDbHash_Command(t *testing.T) {
 	err := app.Run(argsBuilder.Build())
 	require.NoError(t, err)
 
-	aidaDb, err := db.NewDefaultBaseDB(path)
+	aidaDb, err := db.NewDefaultSubstateDB(path)
 	require.NoError(t, err)
 	md := utils.NewAidaDbMetadata(aidaDb, "CRITICAL")
 	got := md.GetDbHash()

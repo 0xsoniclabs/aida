@@ -41,7 +41,7 @@ func ReplaySubstate(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open aida-db; %w", err)
 	}
@@ -49,7 +49,14 @@ func ReplaySubstate(ctx *cli.Context) error {
 		err = errors.Join(err, aidaDb.Close())
 	}(aidaDb)
 
-	substateIterator := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	err = aidaDb.SetSubstateEncoding(cfg.SubstateEncoding)
+	if err != nil {
+		return fmt.Errorf("cannot set substate encoding; %w", err)
+	}
+	substateIterator, err := executor.OpenSubstateProvider(cfg, ctx, aidaDb)
+	if err != nil {
+		return err
+	}
 	defer substateIterator.Close()
 
 	operationProvider, err := executor.OpenOperations(cfg)

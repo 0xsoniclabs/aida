@@ -50,7 +50,7 @@ func printCountAction(ctx *cli.Context) error {
 
 	log := logger.NewLogger(cfg.LogLevel, "AidaDb-Count")
 
-	base, err := db.NewReadOnlyBaseDB(cfg.AidaDb)
+	base, err := db.NewReadOnlySubstateDB(cfg.AidaDb)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,10 @@ func printCount(cfg *utils.Config, base db.BaseDB, log logger.Logger) error {
 
 	// print substate count
 	if dbComponent == dbcomponent.Substate || dbComponent == dbcomponent.All {
-		sdb := db.MakeDefaultSubstateDBFromBaseDB(base)
+		sdb, err := db.MakeDefaultSubstateDBFromBaseDB(base)
+		if err != nil {
+			return err
+		}
 		err = sdb.SetSubstateEncoding(cfg.SubstateEncoding)
 		if err != nil {
 			return fmt.Errorf("cannot set substate encoding; %w", err)

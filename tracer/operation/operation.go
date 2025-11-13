@@ -224,7 +224,7 @@ func Read(f io.Reader) (Operation, error) {
 }
 
 func ReadPanic(f io.Reader) (Operation, error) {
-	panic("operation not implemented")
+	return nil, fmt.Errorf("operation not implemented")
 }
 
 // Write an operation to file.

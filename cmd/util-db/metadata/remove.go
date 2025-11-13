@@ -43,7 +43,7 @@ func removeAction(ctx *cli.Context) (finalErr error) {
 	aidaDbPath := ctx.String(utils.AidaDbFlag.Name)
 
 	// open db
-	base, err := db.NewDefaultBaseDB(aidaDbPath)
+	base, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		return err
 	}

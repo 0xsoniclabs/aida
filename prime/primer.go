@@ -34,11 +34,12 @@ type Primer interface {
 	Prime() error
 }
 
-func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) Primer {
+func NewPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) (Primer, error) {
 	return newPrimer(cfg, state, aidaDb, log)
 }
 
-func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) *primer {
+func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log logger.Logger) (*primer, error) {
+	var err error
 	p := &primer{
 		cfg:    cfg,
 		log:    log,
@@ -46,12 +47,21 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 		aidadb: aidaDb,
 	}
 	if aidaDb != nil {
-		p.sdb = db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
-		p.udb = db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
-		p.ddb = db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+		p.sdb, err = db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+		if err != nil {
+			return nil, err
+		}
+		p.udb, err = db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+		if err != nil {
+			return nil, err
+		}
+		p.ddb, err = db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+		if err != nil {
+			return nil, err
+		}
 	}
 	p.trySetBlocks()
-	return p
+	return p, nil
 }
 
 type primer struct {

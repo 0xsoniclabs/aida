@@ -59,7 +59,7 @@ type ArgStatsJSON struct {
 }
 
 // json computes the ECDF of the counting stats.
-func (s *count[T]) json() ArgStatsJSON {
+func (s *count[T]) json() (ArgStatsJSON, error) {
 	// compute the PDF of the counting statistcs
 	n := len(s.freq)
 	args := make([]T, 0, n)
@@ -77,13 +77,20 @@ func (s *count[T]) json() ArgStatsJSON {
 		x := (float64(i) + 0.5) / float64(n)
 		pdf = append(pdf, [2]float64{x, f})
 	}
-	ecdf := continuous.PDFtoCDF(pdf)
+	ecdf, err := continuous.PDFtoCDF(pdf)
+	if err != nil {
+		return ArgStatsJSON{}, err
+	}
 	return ArgStatsJSON{
 		N:    int64(len(s.freq)),
 		ECDF: ecdf,
-	}
+	}, nil
 }
 
 func (s *count[T]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.json())
+	value, err := s.json()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(value)
 }

@@ -59,7 +59,7 @@ func insertAction(ctx *cli.Context) (finalErr error) {
 	valArg := ctx.Args().Get(1)
 
 	// open db
-	base, err := db.NewDefaultBaseDB(aidaDbPath)
+	base, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		return err
 	}

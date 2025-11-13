@@ -98,7 +98,7 @@ func Check(f [][2]float64) error {
 // the Visvalingam-Whyatt algorithm
 // to reduce the number of points to a manageable size defined by stochastic.NumECDFPoints.
 // The function panics if the resulting ECDF is not valid.
-func PDFtoCDF(pdf [][2]float64) [][2]float64 {
+func PDFtoCDF(pdf [][2]float64) ([][2]float64, error) {
 	// sort frequency entries for arguments by frequency (highest frequency first)
 	n := len(pdf)
 	var compressedECDF orb.LineString
@@ -135,7 +135,7 @@ func PDFtoCDF(pdf [][2]float64) [][2]float64 {
 		ecdf[i] = [2]float64(compressedECDF[i])
 	}
 	if err := Check(ecdf); err != nil {
-		panic(fmt.Sprintf("PDFtoCDF: cannot create valid CDF from counting statistics; Error %v", err))
+		return nil, fmt.Errorf("PDFtoCDF: cannot create valid CDF from counting statistics; Error %v", err)
 	}
-	return ecdf
+	return ecdf, nil
 }
