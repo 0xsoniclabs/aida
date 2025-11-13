@@ -31,7 +31,7 @@ func TestCmd_ScrapeCommand(t *testing.T) {
 		Arg(Command.Name).
 		Flag(utils.TargetDbFlag.Name, targetDbPath).
 		Flag(utils.ClientDbFlag.Name, clientDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Arg("1"). // blockNumFirst
 		Arg("5"). // blockNumLast - small range for testing
 		Build()
@@ -52,7 +52,7 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 0, 1, log)
+	err = StateAndBlockHashScraper(context.TODO(), utils.OperaTestnetChainID, "", database, 0, 1, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestStateHash_Log(t *testing.T) {
 	log.EXPECT().Infof("Connected to RPC at %s", utils.RPCTestnet)
 	log.EXPECT().Infof("Scraping block %d done!\n", uint64(10000))
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 9990, 10100, log)
+	err = StateAndBlockHashScraper(context.TODO(), utils.OperaTestnetChainID, "", database, 9990, 10100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 	}
 	log := logger.NewLogger("info", "Test state hash")
 
-	err = StateAndBlockHashScraper(context.TODO(), utils.TestnetChainID, "", database, 0, 100, log)
+	err = StateAndBlockHashScraper(context.TODO(), utils.OperaTestnetChainID, "", database, 0, 100, log)
 	if err != nil {
 		t.Fatalf("error scraping state hashes: %v", err)
 	}
@@ -169,9 +169,9 @@ func Test_getClient(t *testing.T) {
 		wantErr bool
 	}{
 		{"testGetClientRpcSonicMainnet", args{context.Background(), utils.SonicMainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcOperaMainnet", args{context.Background(), utils.MainnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientRpcTestnet", args{context.Background(), utils.TestnetChainID, ""}, &rpc.Client{}, false},
-		{"testGetClientIpcNonExistant", args{context.Background(), utils.TestnetChainID, "/non-existant-path"}, nil, false},
+		{"testGetClientRpcOperaMainnet", args{context.Background(), utils.OperaMainnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientRpcTestnet", args{context.Background(), utils.OperaTestnetChainID, ""}, &rpc.Client{}, false},
+		{"testGetClientIpcNonExistant", args{context.Background(), utils.OperaTestnetChainID, "/non-existant-path"}, nil, false},
 		{"testGetClientRpcUnknownChainId", args{context.Background(), 88888, ""}, nil, true},
 	}
 	for _, tt := range tests {
@@ -196,7 +196,7 @@ func TestStateHash_GetClientIpcFail(t *testing.T) {
 	}
 
 	log := logger.NewLogger("info", "Test state hash")
-	_, err := getClient(context.Background(), utils.TestnetChainID, tmpIpcPath, log)
+	_, err := getClient(context.Background(), utils.OperaTestnetChainID, tmpIpcPath, log)
 	if err == nil {
 		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
 	}

@@ -95,7 +95,7 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 	for name, check := range tests {
 		t.Run(name, func(t *testing.T) {
 			cfg := &utils.Config{
-				ChainID: utils.MainnetChainID,
+				ChainID: utils.OperaMainnetChainID,
 				EvmImpl: name,
 				VmImpl:  "geth",
 			}
@@ -111,7 +111,7 @@ func TestMakeTxProcessor_CanSelectBetweenProcessorImplementations(t *testing.T) 
 
 func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
 	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+		ChainID: utils.OperaMainnetChainID,
 		EvmImpl: "tosca",
 		VmImpl:  "invalid",
 	}
@@ -122,7 +122,7 @@ func TestMakeTxProcessor_InvalidVmImplCausesError(t *testing.T) {
 
 func TestMakeTxProcessor_InvalidEvmImplCausesError(t *testing.T) {
 	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+		ChainID: utils.OperaMainnetChainID,
 		EvmImpl: "invalid",
 		VmImpl:  "lfvm",
 	}
@@ -1306,7 +1306,7 @@ func TestToscaProcessor_processRegularTx(t *testing.T) {
 
 	// Create the processor instance
 	cfg := &utils.Config{
-		ChainID: utils.MainnetChainID,
+		ChainID: utils.OperaMainnetChainID,
 	}
 
 	processor := &toscaProcessor{
@@ -1565,7 +1565,7 @@ func TestExecutor_MakeTxProcessor(t *testing.T) {
 		{
 			name: "default_opera_processor",
 			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+				ChainID:  utils.OperaMainnetChainID,
 				EvmImpl:  "opera",
 				LogLevel: "info",
 			},
@@ -1784,7 +1784,7 @@ func TestAidaProcessor_processRegularTx(t *testing.T) {
 	cfg := &utils.Config{
 		EvmImpl:  "opera",
 		LogLevel: "info",
-		ChainID:  utils.MainnetChainID,
+		ChainID:  utils.OperaMainnetChainID,
 	}
 
 	processor := &aidaProcessor{
@@ -2245,7 +2245,7 @@ func TestExecutor_MakeLiveDbTxProcessor(t *testing.T) {
 		{
 			name: "invalid_live_db_processor",
 			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+				ChainID:  utils.OperaMainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},
@@ -2290,7 +2290,7 @@ func TestExecutor_MakeArchiveDbTxProcessor(t *testing.T) {
 		{
 			name: "invalid_archive_db_processor",
 			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+				ChainID:  utils.OperaMainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},
@@ -2335,7 +2335,7 @@ func TestExecutor_MakeMakeEthTestProcessor(t *testing.T) {
 		{
 			name: "invalid_eth_test_processor",
 			cfg: &utils.Config{
-				ChainID:  utils.MainnetChainID,
+				ChainID:  utils.OperaMainnetChainID,
 				EvmImpl:  "invalid_impl",
 				LogLevel: "info",
 			},

@@ -154,7 +154,7 @@ func TestStateDB_makeNewStateDB(t *testing.T) {
 		PathToStateDb:          tempDir,
 		StateDbSrc:             tempDir,
 		StateDbSrcDirectAccess: true,
-		ChainID:                MainnetChainID,
+		ChainID:                OperaMainnetChainID,
 	}
 
 	db, dbPath, err := makeNewStateDB(cfg)
@@ -185,7 +185,7 @@ func TestStateDB_useExistingStateDB(t *testing.T) {
 		PathToStateDb:          tempDir,
 		StateDbSrc:             tempDir,
 		StateDbSrcDirectAccess: true,
-		ChainID:                MainnetChainID,
+		ChainID:                OperaMainnetChainID,
 	}
 
 	// Create state DB info of existing state DB

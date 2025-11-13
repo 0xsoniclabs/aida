@@ -74,7 +74,7 @@ func TestCmd_GenerateMetadataCommand(t *testing.T) {
 		Arg(Command.Name).
 		Arg(generateCommand.Name).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Build()
 
 	// when
@@ -93,7 +93,7 @@ func TestCmd_GenerateMetadataCommand_EmptyAidaDb(t *testing.T) {
 		Arg(Command.Name).
 		Arg(generateCommand.Name).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Build()
 
 	// when

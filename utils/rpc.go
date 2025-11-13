@@ -77,9 +77,9 @@ func GetProvider(chainId ChainID) (string, error) {
 	switch chainId {
 	case SonicMainnetChainID:
 		return RPCSonicMainnet, nil
-	case MainnetChainID:
+	case OperaMainnetChainID:
 		return RPCOperaMainnet, nil
-	case TestnetChainID:
+	case OperaTestnetChainID:
 		return RPCTestnet, nil
 	case EthereumChainID:
 		return "", ErrRPCUnsupported

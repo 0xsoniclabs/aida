@@ -42,7 +42,7 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
 		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg.ChainID = utils.OperaMainnetChainID
 		cfg.ArchiveQueryRate = 100
 		ext, err := makeArchiveInquirer(&cfg, log, nil)
 		assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
 		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg.ChainID = utils.OperaMainnetChainID
 		cfg.ArchiveQueryRate = 100
 		duration := 150 * time.Second
 		ext, err := makeArchiveInquirer(&cfg, log, &duration)
@@ -69,7 +69,7 @@ func TestArchiveInquirer_makeArchiveInquirer(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		log := logger.NewMockLogger(ctrl)
 		cfg := utils.Config{}
-		cfg.ChainID = utils.MainnetChainID
+		cfg.ChainID = utils.OperaMainnetChainID
 		cfg.ArchiveQueryRate = 100
 		duration := -150 * time.Second
 		ext, err := makeArchiveInquirer(&cfg, log, &duration)
@@ -95,7 +95,7 @@ func TestArchiveInquirer_ReportsErrorIfNoArchiveIsPresent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	log := logger.NewMockLogger(ctrl)
 	cfg := utils.Config{}
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetChainID
 	cfg.ArchiveQueryRate = 100
 	ext, err := makeArchiveInquirer(&cfg, log, nil)
 	if err != nil {
@@ -116,7 +116,7 @@ func TestArchiveInquirer_CanStartUpAndShutdownGracefully(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 
 	cfg := utils.Config{}
-	cfg.ChainID = utils.MainnetChainID
+	cfg.ChainID = utils.OperaMainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
 	ext, err := makeArchiveInquirer(&cfg, log, nil)
@@ -140,7 +140,7 @@ func TestArchiveInquirer_RunsRandomTransactionsInBackground(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.TestnetChainID, 0, 0, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaTestnetChainID, 0, 0, false, "")
 	cfg.ArchiveMode = true
 	cfg.ArchiveQueryRate = 100
 	cfg.ArchiveMaxQueryAge = 100
