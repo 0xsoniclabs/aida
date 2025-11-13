@@ -108,7 +108,7 @@ func TestSendRPCRequest_InvalidChainID(t *testing.T) {
 
 func TestRpc_FindEpochNumber(t *testing.T) {
 	// case success
-	output, err := FindEpochNumber(uint64(1234), MainnetChainID)
+	output, err := FindEpochNumber(uint64(1234), OperaMainnetChainID)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(11), output)
 
@@ -120,7 +120,7 @@ func TestRpc_FindEpochNumber(t *testing.T) {
 
 func TestRpc_FindHeadEpochNumber(t *testing.T) {
 	// case success
-	output, err := FindHeadEpochNumber(MainnetChainID)
+	output, err := FindHeadEpochNumber(OperaMainnetChainID)
 	assert.NoError(t, err)
 	assert.Greater(t, output, uint64(0))
 
@@ -132,7 +132,7 @@ func TestRpc_FindHeadEpochNumber(t *testing.T) {
 
 func TestRpc_getEpochByNumber(t *testing.T) {
 	// case success
-	output, err := getEpochByNumber("0x4e20", MainnetChainID)
+	output, err := getEpochByNumber("0x4e20", OperaMainnetChainID)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(228), output)
 

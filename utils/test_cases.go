@@ -98,7 +98,7 @@ func MakeTestConfig(testCase StateDbTestCase) *Config {
 		ArchiveVariant: testCase.ArchiveVariant,
 		ArchiveMode:    testCase.archiveMode,
 		PrimeRandom:    testCase.primeRandom,
-		ChainID:        MainnetChainID,
+		ChainID:        OperaMainnetChainID,
 	}
 
 	if testCase.Variant == "flat" {

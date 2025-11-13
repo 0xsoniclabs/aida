@@ -437,9 +437,9 @@ func appendFirstPatch(cfg *utils.Config, availablePatches []utils.PatchJson, pat
 	var expectedFileName string
 
 	switch cfg.ChainID {
-	case utils.MainnetChainID:
+	case utils.OperaMainnetChainID:
 		expectedFileName = firstMainnetPatchFileName
-	case utils.TestnetChainID:
+	case utils.OperaTestnetChainID:
 		expectedFileName = firstTestnetPatchFileName
 	default:
 		return nil, errors.New("please choose chain-id with --chainid")

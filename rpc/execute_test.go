@@ -85,7 +85,7 @@ func TestRpc_Execute(t *testing.T) {
 			Timestamp: uint64(42),
 		}
 		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+			ChainID: utils.OperaMainnetChainID,
 		}
 		out, err := Execute(uint64(0), rec, mockArchive, cfg)
 		assert.NotNil(t, out)

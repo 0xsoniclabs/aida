@@ -38,7 +38,7 @@ func TestCmd_RunStochasticRecordCommand(t *testing.T) {
 	app.Commands = []*cli.Command{&StochasticRecordCommand}
 	args := utils.NewArgs("test").
 		Arg(StochasticRecordCommand.Name).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.WorkersFlag.Name, 1).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.OutputFlag.Name, outputFile).
