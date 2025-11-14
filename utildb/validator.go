@@ -51,9 +51,9 @@ func FindDbHashOnline(chainId utils.ChainID, log logger.Logger, md *utils.AidaDb
 	switch chainId {
 	case utils.SonicMainnetChainID:
 		url = utils.AidaDbRepositorySonicUrl
-	case utils.MainnetChainID:
+	case utils.OperaMainnetChainID:
 		url = utils.AidaDbRepositoryOperaUrl
-	case utils.TestnetChainID:
+	case utils.OperaTestnetChainID:
 		url = utils.AidaDbRepositoryTestnetUrl
 	}
 

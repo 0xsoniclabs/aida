@@ -98,7 +98,7 @@ func TestCmd_RunTraceReplayCommand(t *testing.T) {
 	app.Commands = []*cli.Command{&TraceReplayCommand}
 	args := utils.NewArgs("test").
 		Arg(TraceReplayCommand.Name).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.TraceFileFlag.Name, traceFile).
 		Flag(utils.WorkersFlag.Name, 1).

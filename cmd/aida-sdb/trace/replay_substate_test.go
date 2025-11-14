@@ -205,7 +205,7 @@ func TestCmd_RunTraceReplaySubstateCommand(t *testing.T) {
 	app.Commands = []*cli.Command{&TraceReplaySubstateCommand}
 	args := utils.NewArgs("test").
 		Arg(TraceReplaySubstateCommand.Name).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.TraceFileFlag.Name, traceFile).
 		Flag(utils.WorkersFlag.Name, 1).

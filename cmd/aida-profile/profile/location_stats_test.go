@@ -36,7 +36,7 @@ func TestCmd_RunGetLocationStatsCommand(t *testing.T) {
 	app.Commands = []*cli.Command{&GetLocationStatsCommand}
 	args := utils.NewArgs("test").
 		Arg(GetLocationStatsCommand.Name).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
 		Flag(utils.WorkersFlag.Name, 1).
 		Arg("1").

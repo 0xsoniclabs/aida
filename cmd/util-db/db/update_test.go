@@ -43,7 +43,7 @@ func TestCmd_UpdateCommand(t *testing.T) {
 	args := utils.NewArgs("test").
 		Arg(UpdateCommand.Name).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
-		Flag(utils.ChainIDFlag.Name, int(utils.MainnetChainID)).
+		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.DbTmpFlag.Name, tmpDbPath).
 		Flag(utils.UpdateTypeFlag.Name, "stable").
 		Flag(utils.SubstateEncodingFlag.Name, "protobuf").

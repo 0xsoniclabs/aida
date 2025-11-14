@@ -49,7 +49,7 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 		{
 			name:    "SkipWrongChainId",
 			vmImpl:  "lfvm",
-			chainId: utils.MainnetChainID,
+			chainId: utils.OperaMainnetChainID,
 		},
 	}
 
