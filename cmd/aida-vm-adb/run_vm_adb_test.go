@@ -79,7 +79,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Sequential(t *testing.T) {
 	archiveBlockTwo := state.NewMockNonCommittableStateDB(ctrl)
 	archiveBlockThree := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, false, "")
 	cfg.ContinueOnFailure = true
 	// Simulate the execution of three transactions in two blocks.
 	provider.EXPECT().
@@ -163,7 +163,7 @@ func TestVmAdb_AllDbEventsAreIssuedInOrder_Parallel(t *testing.T) {
 	archiveBlockTwo := state.NewMockNonCommittableStateDB(ctrl)
 	archiveBlockThree := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, false, "")
 	cfg.ContinueOnFailure = true
 	cfg.Workers = 2
 	// Simulate the execution of three transactions in two blocks.
@@ -256,7 +256,7 @@ func TestVmAdb_AllTransactionsAreProcessedInOrder_Sequential(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, false, "")
 	// Simulate the execution of three transactions in two blocks.
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
@@ -337,7 +337,7 @@ func TestVmAdb_AllTransactionsAreProcessed_Parallel(t *testing.T) {
 	ext := executor.NewMockExtension[txcontext.TxContext](ctrl)
 	processor := executor.NewMockProcessor[txcontext.TxContext](ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, false, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, false, "")
 	cfg.Workers = 2
 	// Simulate the execution of three transactions in two blocks.
 	provider.EXPECT().
@@ -418,7 +418,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Sequential(t *testing.T) 
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, true, "")
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
@@ -471,7 +471,7 @@ func TestVmAdb_ValidationDoesNotFailOnValidTransaction_Parallel(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
@@ -523,7 +523,7 @@ func TestVmAdb_ValidationFailsOnInvalidTransaction_Sequential(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, true, "")
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).
 		DoAndReturn(func(_ int, _ int, consumer executor.Consumer[txcontext.TxContext]) error {
@@ -564,7 +564,7 @@ func TestVmAdb_ValidationFailsOnInvalidTransaction_Parallel(t *testing.T) {
 	db := state.NewMockStateDB(ctrl)
 	archive := state.NewMockNonCommittableStateDB(ctrl)
 
-	cfg := utils.NewTestConfig(t, utils.MainnetChainID, 2, 4, true, "")
+	cfg := utils.NewTestConfig(t, utils.OperaMainnetChainID, 2, 4, true, "")
 	cfg.Workers = 2
 	provider.EXPECT().
 		Run(2, 5, gomock.Any()).

@@ -434,9 +434,9 @@ func (a ByToBlock) Less(i, j int) bool {
 func appendFirstPatch(cfg *utils.Config, availablePatches []utils.PatchJson, patchesToDownload []utils.PatchJson) ([]utils.PatchJson, error) {
 	var expectedFileName string
 
-	if cfg.ChainID == utils.MainnetChainID {
+	if cfg.ChainID == utils.OperaMainnetChainID {
 		expectedFileName = firstMainnetPatchFileName
-	} else if cfg.ChainID == utils.TestnetChainID {
+	} else if cfg.ChainID == utils.OperaTestnetChainID {
 		expectedFileName = firstTestnetPatchFileName
 	} else {
 		return nil, errors.New("please choose chain-id with --chainid")

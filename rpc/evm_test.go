@@ -41,7 +41,7 @@ func TestRpc_newEvmExecutor(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+			ChainID: utils.OperaMainnetChainID,
 		}
 		p := map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}
 		exec, err := newEvmExecutor(1, mockArchive, cfg, p, 123)
@@ -51,7 +51,7 @@ func TestRpc_newEvmExecutor(t *testing.T) {
 
 	t.Run("no factory", func(t *testing.T) {
 		cfg := &utils.Config{
-			ChainID: utils.MainnetChainID,
+			ChainID: utils.OperaMainnetChainID,
 			VmImpl:  "1234",
 		}
 		p := map[string]interface{}{"from": "0x0000000000000000000000000000000000000001"}

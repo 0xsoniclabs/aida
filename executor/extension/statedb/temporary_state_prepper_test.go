@@ -75,7 +75,7 @@ func TestTemporaryStatePrepper_PreTransaction(t *testing.T) {
 func TestTemporaryOffTheChainStatePrepper_PreRun(t *testing.T) {
 	tt := &temporaryOffTheChainStatePrepper{
 		cfg: &utils.Config{
-			ChainID: utils.MainnetChainID,
+			ChainID: utils.OperaMainnetChainID,
 		},
 		chainConduit: nil,
 	}
@@ -86,7 +86,7 @@ func TestTemporaryOffTheChainStatePrepper_PreRun(t *testing.T) {
 func TestTemporaryOffTheChainStatePrepper_PreTransaction(t *testing.T) {
 	tt := &temporaryOffTheChainStatePrepper{
 		cfg: &utils.Config{
-			ChainID: utils.MainnetChainID,
+			ChainID: utils.OperaMainnetChainID,
 		},
 		chainConduit: nil,
 	}
