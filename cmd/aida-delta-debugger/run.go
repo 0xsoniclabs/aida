@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -27,26 +26,28 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/delta"
-	log "github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/op/go-logging"
 	"github.com/urfave/cli/v2"
 )
 
 func run(c *cli.Context) error {
-	traceFiles := c.StringSlice("trace-file")
-	outputPath := c.String("output")
-	timeout := c.Duration("timeout")
-	verbose := c.Bool("verbose")
-	addressRuns := c.Int("address-sample-runs")
-	seed := c.Int64("seed")
-	maxFactor := c.Int("max-factor")
+	traceFiles := c.StringSlice(utils.DeltaTraceFileFlag.Name)
+	outputPath := c.String(utils.DeltaOutputFlag.Name)
+	timeout := c.Duration(utils.DeltaTimeoutFlag.Name)
+	addressRuns := c.Int(utils.AddressSampleRunsFlag.Name)
+	seed := c.Int64(utils.RandomSeedFlag.Name)
+	maxFactor := c.Int(utils.MaxFactorFlag.Name)
 
 	dbImpl := c.String(utils.StateDbImplementationFlag.Name)
 	dbVariant := c.String(utils.StateDbVariantFlag.Name)
 	tmpDir := c.Path(utils.DbTmpFlag.Name)
 	carmenSchema := c.Int(utils.CarmenSchemaFlag.Name)
 	chainID := c.Int(utils.ChainIDFlag.Name)
-	logLevel := c.String(log.LogLevelFlag.Name)
+	logLevel := c.String(logger.LogLevelFlag.Name)
+
+	log := logger.NewLogger(logLevel, "DeltaDebugger")
 
 	if len(traceFiles) == 0 {
 		return cli.Exit("provide --trace-file pointing to the logger output", 1)
@@ -66,9 +67,9 @@ func run(c *cli.Context) error {
 	}
 
 	loggerFn := func(string, ...any) {}
-	if verbose {
+	if log.IsEnabledFor(logging.INFO) {
 		loggerFn = func(format string, args ...any) {
-			fmt.Fprintf(os.Stderr, format+"\n", args...)
+			log.Infof(format, args...)
 		}
 	}
 
@@ -123,10 +124,9 @@ func run(c *cli.Context) error {
 	originalContracts := len(delta.UniqueContracts(ops))
 	reducedContracts := len(delta.UniqueContracts(minimized))
 
-	fmt.Fprintf(os.Stderr,
-		"aida-delta-debugger: reduced operations %d -> %d, contracts %d -> %d in %.2fs\n",
+	log.Noticef("reduced operations %d -> %d, contracts %d -> %d in %.2fs",
 		len(ops), len(minimized), originalContracts, reducedContracts, duration.Seconds())
-	fmt.Fprintf(os.Stderr, "aida-delta-debugger: minimized trace written to %s\n", outputPath)
+	log.Noticef("minimized trace written to %s", outputPath)
 
 	return nil
 }

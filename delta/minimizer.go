@@ -102,6 +102,9 @@ func (m *Minimizer) Minimize(ctx context.Context, ops []TraceOp, test testFunc) 
 	return addressReduced, nil
 }
 
+// reducePrefix removes leading operations from the trace using binary search.
+// It finds the earliest starting point where the trace still fails, effectively
+// eliminating operations at the beginning that are not necessary to reproduce the failure.
 func (m *Minimizer) reducePrefix(ctx context.Context, meta []operationMeta, test testFunc) ([]TraceOp, []operationMeta, error) {
 	if len(meta) == 0 {
 		return nil, nil, fmt.Errorf("delta: empty metadata")
@@ -150,6 +153,10 @@ func (m *Minimizer) reducePrefix(ctx context.Context, meta []operationMeta, test
 	return bestOps, bestMeta, nil
 }
 
+// reduceAddresses attempts to remove operations associated with specific contract addresses.
+// It uses probabilistic sampling to identify and exclude contracts that are not essential
+// for reproducing the failure. The reduction proceeds by trying to exclude groups of contracts
+// at various sampling factors until no further reduction is possible.
 func (m *Minimizer) reduceAddresses(
 	ctx context.Context,
 	ops []TraceOp,

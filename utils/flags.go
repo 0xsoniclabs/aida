@@ -178,6 +178,29 @@ var (
 		Name:  "skip-priming",
 		Usage: "if set, DB priming should be skipped; most useful with the 'memory' DB implementation",
 	}
+	DeltaTraceFileFlag = cli.StringSliceFlag{
+		Name:    "trace-file",
+		Usage:   "path to a trace file (repeatable)",
+		Aliases: []string{"f"},
+	}
+	DeltaOutputFlag = cli.StringFlag{
+		Name:    "output",
+		Aliases: []string{"o"},
+		Usage:   "write the minimized trace to the given path",
+	}
+	AddressSampleRunsFlag = cli.IntFlag{
+		Name:  "address-sample-runs",
+		Usage: "number of attempts per sampling factor when reducing contracts",
+		Value: 5,
+	}
+	DeltaTimeoutFlag = cli.DurationFlag{
+		Name:  "timeout",
+		Usage: "overall timeout for the minimization run",
+	}
+	MaxFactorFlag = cli.IntFlag{
+		Name:  "max-factor",
+		Usage: "maximum sampling factor when reducing addresses",
+	}
 	StateDbImplementationFlag = cli.StringFlag{
 		Name:  "db-impl",
 		Usage: "select state DB implementation",

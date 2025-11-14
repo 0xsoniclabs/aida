@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
@@ -29,19 +30,18 @@ import (
 func createTestContext(traceFiles []string, output string) *cli.Context {
 	set := flag.NewFlagSet("test", 0)
 	traceSlice := cli.NewStringSlice(traceFiles...)
-	set.Var(traceSlice, "trace-file", "")
-	set.String("output", output, "")
-	set.String("db-impl", "geth", "")
-	set.String("db-variant", "", "")
-	set.String("db-tmp", "", "")
-	set.Int("carmen-schema", 0, "")
-	set.Int("chain-id", 250, "")
+	set.Var(traceSlice, utils.DeltaTraceFileFlag.Name, "")
+	set.String(utils.DeltaOutputFlag.Name, output, "")
+	set.String(utils.StateDbImplementationFlag.Name, "geth", "")
+	set.String(utils.StateDbVariantFlag.Name, "", "")
+	set.String(utils.DbTmpFlag.Name, "", "")
+	set.Int(utils.CarmenSchemaFlag.Name, 0, "")
+	set.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "")
 	set.String("log-level", "", "")
-	set.Duration("timeout", 0, "")
-	set.Bool("verbose", false, "")
-	set.Int("address-sample-runs", 0, "")
-	set.Int64("seed", 0, "")
-	set.Int("max-factor", 0, "")
+	set.Duration(utils.DeltaTimeoutFlag.Name, 0, "")
+	set.Int(utils.AddressSampleRunsFlag.Name, 0, "")
+	set.Int64(utils.RandomSeedFlag.Name, 0, "")
+	set.Int(utils.MaxFactorFlag.Name, 0, "")
 
 	return cli.NewContext(nil, set, nil)
 }

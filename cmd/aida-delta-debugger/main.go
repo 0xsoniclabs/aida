@@ -32,37 +32,12 @@ func main() {
 		Usage:     "minimize failing state traces via delta debugging",
 		Copyright: "(c) 2025 Sonic Labs",
 		Flags: []cli.Flag{
-			&cli.StringSliceFlag{
-				Name:    "trace-file",
-				Usage:   "path to a trace file (repeatable)",
-				Aliases: []string{"f"},
-			},
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Usage:   "write the minimized trace to the given path",
-			},
-			&cli.IntFlag{
-				Name:  "address-sample-runs",
-				Usage: "number of attempts per sampling factor when reducing contracts",
-				Value: 5,
-			},
-			&cli.DurationFlag{
-				Name:  "timeout",
-				Usage: "overall timeout for the minimization run",
-			},
-			&cli.BoolFlag{
-				Name:  "verbose",
-				Usage: "print progress information for each test run",
-			},
-			&cli.Int64Flag{
-				Name:  "seed",
-				Usage: "seed for random address sampling (default: time-based)",
-			},
-			&cli.IntFlag{
-				Name:  "max-factor",
-				Usage: "maximum sampling factor when reducing addresses",
-			},
+			&utils.DeltaTraceFileFlag,
+			&utils.DeltaOutputFlag,
+			&utils.AddressSampleRunsFlag,
+			&utils.DeltaTimeoutFlag,
+			&utils.RandomSeedFlag,
+			&utils.MaxFactorFlag,
 			&utils.StateDbImplementationFlag,
 			&utils.StateDbVariantFlag,
 			&utils.CarmenSchemaFlag,
