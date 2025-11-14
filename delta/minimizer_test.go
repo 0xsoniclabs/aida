@@ -77,13 +77,13 @@ func TestMinimize_PrefixReduction(t *testing.T) {
 		{Raw: "EndBlock", Kind: "EndBlock", HasBlock: true, Block: 1},
 	}
 
-	test := func(_ context.Context, candidate []TraceOp) (Outcome, error) {
+	test := func(_ context.Context, candidate []TraceOp) (outcome, error) {
 		for _, op := range candidate {
 			if op.Kind == "SetState" {
-				return OutcomeFail, nil
+				return outcomeFail, nil
 			}
 		}
-		return OutcomePass, nil
+		return outcomePass, nil
 	}
 
 	m := NewMinimizer(MinimizerConfig{
@@ -132,13 +132,13 @@ func TestMinimize_AddressReduction(t *testing.T) {
 		{Raw: "EndBlock", Kind: "EndBlock", HasBlock: true, Block: 1},
 	}
 
-	test := func(_ context.Context, candidate []TraceOp) (Outcome, error) {
+	test := func(_ context.Context, candidate []TraceOp) (outcome, error) {
 		for _, op := range candidate {
 			if op.Kind == "SetState" && op.Contract == addrA {
-				return OutcomeFail, nil
+				return outcomeFail, nil
 			}
 		}
-		return OutcomePass, nil
+		return outcomePass, nil
 	}
 
 	m := NewMinimizer(MinimizerConfig{
@@ -155,10 +155,10 @@ func TestMinimize_AddressReduction(t *testing.T) {
 }
 
 func TestOutcome_String(t *testing.T) {
-	require.Equal(t, "pass", OutcomePass.String())
-	require.Equal(t, "fail", OutcomeFail.String())
-	require.Equal(t, "unresolved", OutcomeUnresolved.String())
-	require.Equal(t, "unknown(99)", Outcome(99).String())
+	require.Equal(t, "pass", outcomePass.String())
+	require.Equal(t, "fail", outcomeFail.String())
+	require.Equal(t, "unresolved", outcomeUnresolved.String())
+	require.Equal(t, "unknown(99)", outcome(99).String())
 }
 
 func TestMinimize_NilTestFunc(t *testing.T) {
@@ -173,8 +173,8 @@ func TestMinimize_NilTestFunc(t *testing.T) {
 
 func TestMinimize_EmptyTrace(t *testing.T) {
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
 	_, err := m.Minimize(context.Background(), []TraceOp{}, test)
 	require.Error(t, err)
@@ -186,8 +186,8 @@ func TestMinimize_ReducePrefixError(t *testing.T) {
 		{Kind: "BeginBlock"},
 	}
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, fmt.Errorf("test error")
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, fmt.Errorf("test error")
 	}
 	_, err := m.Minimize(context.Background(), ops, test)
 	require.Error(t, err)
@@ -202,12 +202,12 @@ func TestMinimize_ReduceAddressesError(t *testing.T) {
 	}
 	m := NewMinimizer(MinimizerConfig{})
 	callCount := 0
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
 		callCount++
 		if callCount == 1 {
-			return OutcomeFail, nil
+			return outcomeFail, nil
 		}
-		return OutcomeFail, fmt.Errorf("address reduction error")
+		return outcomeFail, fmt.Errorf("address reduction error")
 	}
 	_, err := m.Minimize(context.Background(), ops, test)
 	require.Error(t, err)
@@ -216,21 +216,21 @@ func TestMinimize_ReduceAddressesError(t *testing.T) {
 
 func TestReducePrefix_EmptyMetadata(t *testing.T) {
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
-	_, _, err := m.reducePrefix(context.Background(), []OperationMeta{}, test)
+	_, _, err := m.reducePrefix(context.Background(), []operationMeta{}, test)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "empty metadata")
 }
 
 func TestReducePrefix_TestFunctionError(t *testing.T) {
-	meta := []OperationMeta{
+	meta := []operationMeta{
 		{Op: TraceOp{Kind: "BeginBlock"}, Kind: "BeginBlock"},
 	}
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, fmt.Errorf("test function error")
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, fmt.Errorf("test function error")
 	}
 	_, _, err := m.reducePrefix(context.Background(), meta, test)
 	require.Error(t, err)
@@ -238,12 +238,12 @@ func TestReducePrefix_TestFunctionError(t *testing.T) {
 }
 
 func TestReducePrefix_InputDoesNotFail(t *testing.T) {
-	meta := []OperationMeta{
+	meta := []operationMeta{
 		{Op: TraceOp{Kind: "BeginBlock"}, Kind: "BeginBlock"},
 	}
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomePass, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomePass, nil
 	}
 	_, _, err := m.reducePrefix(context.Background(), meta, test)
 	require.Error(t, err)
@@ -251,9 +251,9 @@ func TestReducePrefix_InputDoesNotFail(t *testing.T) {
 }
 
 func TestReducePrefix_ContextCancellation(t *testing.T) {
-	meta := make([]OperationMeta, 10)
+	meta := make([]operationMeta, 10)
 	for i := range meta {
-		meta[i] = OperationMeta{
+		meta[i] = operationMeta{
 			Op:    TraceOp{Kind: "GetBalance"},
 			Kind:  "GetBalance",
 			Index: i,
@@ -261,8 +261,8 @@ func TestReducePrefix_ContextCancellation(t *testing.T) {
 	}
 
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -274,9 +274,9 @@ func TestReducePrefix_ContextCancellation(t *testing.T) {
 }
 
 func TestReducePrefix_BinarySearchTestError(t *testing.T) {
-	meta := make([]OperationMeta, 10)
+	meta := make([]operationMeta, 10)
 	for i := range meta {
-		meta[i] = OperationMeta{
+		meta[i] = operationMeta{
 			Op:    TraceOp{Kind: "GetBalance"},
 			Kind:  "GetBalance",
 			Index: i,
@@ -285,12 +285,12 @@ func TestReducePrefix_BinarySearchTestError(t *testing.T) {
 
 	m := NewMinimizer(MinimizerConfig{})
 	callCount := 0
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
 		callCount++
 		if callCount == 1 {
-			return OutcomeFail, nil
+			return outcomeFail, nil
 		}
-		return OutcomeFail, fmt.Errorf("binary search error")
+		return outcomeFail, fmt.Errorf("binary search error")
 	}
 
 	_, _, err := m.reducePrefix(context.Background(), meta, test)
@@ -306,8 +306,8 @@ func TestReduceAddresses_SingleAddress(t *testing.T) {
 	meta := collectMetadata(ops, defaultMandatoryKinds())
 
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -325,8 +325,8 @@ func TestReduceAddresses_ContextCancellation(t *testing.T) {
 	meta := collectMetadata(ops, defaultMandatoryKinds())
 
 	m := NewMinimizer(MinimizerConfig{})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -349,9 +349,9 @@ func TestReduceAddresses_SampleSizeZero(t *testing.T) {
 		AddressSampleRuns: 1,
 	})
 	testCalled := false
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
 		testCalled = true
-		return OutcomeFail, nil
+		return outcomeFail, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -373,8 +373,8 @@ func TestReduceAddresses_SampleSizeEqualsAddressCount(t *testing.T) {
 		MaxFactor:         1,
 		AddressSampleRuns: 1,
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -394,8 +394,8 @@ func TestReduceAddresses_TestErrorInLoop(t *testing.T) {
 	m := NewMinimizer(MinimizerConfig{
 		AddressSampleRuns: 5,
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomeFail, fmt.Errorf("test error in loop")
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomeFail, fmt.Errorf("test error in loop")
 	}
 
 	_, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -418,12 +418,12 @@ func TestReduceAddresses_ContextCancelInLoop(t *testing.T) {
 	})
 
 	callCount := 0
-	test := func(ctx context.Context, ops []TraceOp) (Outcome, error) {
+	test := func(ctx context.Context, ops []TraceOp) (outcome, error) {
 		callCount++
 		if callCount > 1 {
-			return OutcomeFail, context.Canceled
+			return outcomeFail, context.Canceled
 		}
-		return OutcomePass, nil
+		return outcomePass, nil
 	}
 
 	ctx := context.Background()
@@ -444,8 +444,8 @@ func TestReduceAddresses_NoReduction(t *testing.T) {
 		AddressSampleRuns: 2,
 		RandSeed:          1,
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomePass, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomePass, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -541,8 +541,8 @@ func TestReduceAddresses_SampleSizeZeroWithMultipleAddresses(t *testing.T) {
 		MaxFactor:         3,
 		AddressSampleRuns: 1,
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomePass, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomePass, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -566,8 +566,8 @@ func TestReduceAddresses_SampleSizeEqualsAddresses(t *testing.T) {
 		MaxFactor:         1,
 		AddressSampleRuns: 1,
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomePass, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomePass, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)
@@ -593,12 +593,12 @@ func TestReduceAddresses_ContextCancelInInnerLoop(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	callCount := 0
-	test := func(ctx context.Context, ops []TraceOp) (Outcome, error) {
+	test := func(ctx context.Context, ops []TraceOp) (outcome, error) {
 		callCount++
 		if callCount > 1 {
 			cancel()
 		}
-		return OutcomePass, nil
+		return outcomePass, nil
 	}
 
 	_, _, err := m.reduceAddresses(ctx, ops, meta, test)
@@ -623,8 +623,8 @@ func TestReduceAddresses_SampleSizeZeroDuringIteration(t *testing.T) {
 			logged = append(logged, fmt.Sprintf(format, args...))
 		},
 	})
-	test := func(_ context.Context, ops []TraceOp) (Outcome, error) {
-		return OutcomePass, nil
+	test := func(_ context.Context, ops []TraceOp) (outcome, error) {
+		return outcomePass, nil
 	}
 
 	result, _, err := m.reduceAddresses(context.Background(), ops, meta, test)

@@ -32,7 +32,7 @@ func TestStateReplayer_CreateAccount(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -47,7 +47,7 @@ func TestStateReplayer_AddBalance(t *testing.T) {
 	addr := common.HexToAddress("0x2")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"5"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -77,7 +77,7 @@ func TestStateReplayer_AddBalance(t *testing.T) {
 
 func TestStateReplayer_CommitUsesCurrentBlock(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"7"}},
@@ -93,7 +93,7 @@ func TestStateReplayer_CommitUsesCurrentBlock(t *testing.T) {
 
 func TestStateReplayer_UnsupportedOperation(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	op := TraceOp{Kind: "Unknown"}
 
 	err := replayer.Execute(context.Background(), []TraceOp{op})
@@ -166,7 +166,7 @@ func TestStateReplayer_SetState(t *testing.T) {
 	value := common.HexToHash("0x3")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -182,7 +182,7 @@ func TestStateReplayer_GetState(t *testing.T) {
 	key := common.HexToHash("0x2")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "GetState", Args: []string{addr.Hex(), key.Hex()}},
@@ -195,7 +195,7 @@ func TestStateReplayer_SetNonce(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -210,7 +210,7 @@ func TestStateReplayer_GetNonce(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "GetNonce", Args: []string{addr.Hex()}},
@@ -221,7 +221,7 @@ func TestStateReplayer_GetNonce(t *testing.T) {
 
 func TestStateReplayer_BeginEndTransaction(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -234,7 +234,7 @@ func TestStateReplayer_BeginEndTransaction(t *testing.T) {
 
 func TestStateReplayer_Snapshot(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -246,7 +246,7 @@ func TestStateReplayer_Snapshot(t *testing.T) {
 
 func TestStateReplayer_GetHash(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -258,7 +258,7 @@ func TestStateReplayer_GetHash(t *testing.T) {
 
 func TestStateReplayer_GetArchiveBlockHeight(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -272,7 +272,7 @@ func TestStateReplayer_SubBalance(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "CreateAccount", Args: []string{addr.Hex()}},
@@ -289,7 +289,7 @@ func TestStateReplayer_GetBalance(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "GetBalance", Args: []string{addr.Hex()}},
@@ -302,7 +302,7 @@ func TestStateReplayer_Exist(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "Exist", Args: []string{addr.Hex()}},
@@ -315,7 +315,7 @@ func TestStateReplayer_Empty(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
 
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "Empty", Args: []string{addr.Hex()}},
@@ -326,7 +326,7 @@ func TestStateReplayer_Empty(t *testing.T) {
 
 func TestStateReplayer_EndBlock(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -338,7 +338,7 @@ func TestStateReplayer_EndBlock(t *testing.T) {
 
 func TestStateReplayer_IntermediateRoot(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -350,7 +350,7 @@ func TestStateReplayer_IntermediateRoot(t *testing.T) {
 
 func TestStateReplayer_Finalise(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -362,7 +362,7 @@ func TestStateReplayer_Finalise(t *testing.T) {
 
 func TestStateReplayer_NoOps(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -379,7 +379,7 @@ func TestStateReplayer_NoOps(t *testing.T) {
 
 func TestStateReplayer_UnsupportedOperations(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	unsupportedOps := []string{
 		"GetCodeHashLc",
@@ -403,7 +403,7 @@ func TestStateReplayer_UnsupportedOperations(t *testing.T) {
 
 func TestStateReplayer_BulkOperation(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -419,7 +419,7 @@ func TestStateReplayer_MoreOperations(t *testing.T) {
 	addr := common.HexToAddress("0xabc")
 	key := common.HexToHash("0xdef")
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"100"}},
@@ -460,7 +460,7 @@ func TestStateReplayer_MoreOperations(t *testing.T) {
 
 func TestStateReplayer_SnapshotRevert(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -473,7 +473,7 @@ func TestStateReplayer_SnapshotRevert(t *testing.T) {
 
 func TestParseInt(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -487,7 +487,7 @@ func TestParseInt(t *testing.T) {
 func TestParseByteSlice(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -503,7 +503,7 @@ func TestParseByteSlice(t *testing.T) {
 func TestParseUint256_Formats(t *testing.T) {
 	addr := common.HexToAddress("0x1")
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -517,7 +517,7 @@ func TestParseUint256_Formats(t *testing.T) {
 
 func TestParseUint64_HexFormat(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"0x64"}},
@@ -530,7 +530,7 @@ func TestParseUint64_HexFormat(t *testing.T) {
 
 func TestParseErrors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []struct {
 		name string
@@ -557,7 +557,7 @@ func TestParseErrors(t *testing.T) {
 
 func TestParseUint256_Errors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	testCases := []struct {
@@ -584,7 +584,7 @@ func TestParseUint256_Errors(t *testing.T) {
 
 func TestParseByteSlice_Errors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	testCases := []struct {
@@ -610,7 +610,7 @@ func TestParseByteSlice_Errors(t *testing.T) {
 
 func TestParseBool_Errors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -623,7 +623,7 @@ func TestParseBool_Errors(t *testing.T) {
 
 func TestParseInt_Errors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []struct {
 		name  string
@@ -647,7 +647,7 @@ func TestParseInt_Errors(t *testing.T) {
 
 func TestParseHash_Errors(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -662,7 +662,7 @@ func TestParseHash_Errors(t *testing.T) {
 
 func TestSetState_MissingValue(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 	key := common.HexToHash("0x2")
 
@@ -678,7 +678,7 @@ func TestSetState_MissingValue(t *testing.T) {
 
 func TestSetCode_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -693,7 +693,7 @@ func TestSetCode_MissingArgs(t *testing.T) {
 
 func TestBeginTransaction_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -707,7 +707,7 @@ func TestBeginTransaction_MissingArgs(t *testing.T) {
 
 func TestAddRefund_InvalidArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -720,7 +720,7 @@ func TestAddRefund_InvalidArgs(t *testing.T) {
 
 func TestSubRefund_InvalidArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -733,7 +733,7 @@ func TestSubRefund_InvalidArgs(t *testing.T) {
 
 func TestSetTxContext_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []struct {
 		name string
@@ -758,7 +758,7 @@ func TestSetTxContext_MissingArgs(t *testing.T) {
 
 func TestAddSlotToAccessList_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -773,7 +773,7 @@ func TestAddSlotToAccessList_MissingArgs(t *testing.T) {
 
 func TestGetLogs_InvalidArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []struct {
 		name string
@@ -798,7 +798,7 @@ func TestGetLogs_InvalidArgs(t *testing.T) {
 
 func TestAddPreimage_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -812,7 +812,7 @@ func TestAddPreimage_MissingArgs(t *testing.T) {
 
 func TestGetCommittedState_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -827,7 +827,7 @@ func TestGetCommittedState_MissingArgs(t *testing.T) {
 
 func TestSetTransientState_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 	key := common.HexToHash("0x2")
 
@@ -843,7 +843,7 @@ func TestSetTransientState_MissingArgs(t *testing.T) {
 
 func TestBeginTransaction_InvalidUint32(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []struct {
 		name  string
@@ -868,7 +868,7 @@ func TestBeginTransaction_InvalidUint32(t *testing.T) {
 
 func TestParseBool_ValidValues(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	testCases := []string{"true", "false", "TRUE", "FALSE", "True", "False", "1", "0"}
 
@@ -886,7 +886,7 @@ func TestParseBool_ValidValues(t *testing.T) {
 
 func TestParseBalanceReason_Variants(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	testCases := []struct {
@@ -917,7 +917,7 @@ func TestParseBalanceReason_Variants(t *testing.T) {
 
 func TestParseNonceReason_Variants(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	testCases := []struct {
@@ -946,7 +946,7 @@ func TestParseNonceReason_Variants(t *testing.T) {
 
 func TestGetStateAndCommittedState_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -961,7 +961,7 @@ func TestGetStateAndCommittedState_MissingArgs(t *testing.T) {
 
 func TestGetTransientState_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -976,7 +976,7 @@ func TestGetTransientState_MissingArgs(t *testing.T) {
 
 func TestSlotInAccessList_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -991,7 +991,7 @@ func TestSlotInAccessList_MissingArgs(t *testing.T) {
 
 func TestSubBalance_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	testCases := []struct {
@@ -1016,7 +1016,7 @@ func TestSubBalance_MissingArgs(t *testing.T) {
 
 func TestBeginSyncPeriod_InvalidArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1029,7 +1029,7 @@ func TestBeginSyncPeriod_InvalidArgs(t *testing.T) {
 
 func TestParseBool_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1043,7 +1043,7 @@ func TestParseBool_MissingArgs(t *testing.T) {
 
 func TestParseNonceReason_UnknownValue(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1058,7 +1058,7 @@ func TestParseNonceReason_UnknownValue(t *testing.T) {
 
 func TestParseBalanceReason_UnknownValue(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1073,7 +1073,7 @@ func TestParseBalanceReason_UnknownValue(t *testing.T) {
 
 func TestParseEnumNumber_HexFormat(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1088,7 +1088,7 @@ func TestParseEnumNumber_HexFormat(t *testing.T) {
 
 func TestParseEnumNumber_EmptyString(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1103,7 +1103,7 @@ func TestParseEnumNumber_EmptyString(t *testing.T) {
 
 func TestFinalise_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1117,7 +1117,7 @@ func TestFinalise_MissingArgs(t *testing.T) {
 
 func TestIntermediateRoot_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1131,7 +1131,7 @@ func TestIntermediateRoot_MissingArgs(t *testing.T) {
 
 func TestRevertToSnapshot_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1145,7 +1145,7 @@ func TestRevertToSnapshot_MissingArgs(t *testing.T) {
 
 func TestAddRefund_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1159,7 +1159,7 @@ func TestAddRefund_MissingArgs(t *testing.T) {
 
 func TestSubRefund_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1173,7 +1173,7 @@ func TestSubRefund_MissingArgs(t *testing.T) {
 
 func TestGetStorageRoot_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1187,7 +1187,7 @@ func TestGetStorageRoot_MissingArgs(t *testing.T) {
 
 func TestAddAddressToAccessList_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1201,7 +1201,7 @@ func TestAddAddressToAccessList_MissingArgs(t *testing.T) {
 
 func TestAddressInAccessList_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1215,7 +1215,7 @@ func TestAddressInAccessList_MissingArgs(t *testing.T) {
 
 func TestSelfDestruct_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1229,7 +1229,7 @@ func TestSelfDestruct_MissingArgs(t *testing.T) {
 
 func TestSelfDestruct6780_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1243,7 +1243,7 @@ func TestSelfDestruct6780_MissingArgs(t *testing.T) {
 
 func TestHasSelfDestructed_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1257,7 +1257,7 @@ func TestHasSelfDestructed_MissingArgs(t *testing.T) {
 
 func TestGetCode_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1271,7 +1271,7 @@ func TestGetCode_MissingArgs(t *testing.T) {
 
 func TestGetCodeHash_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1285,7 +1285,7 @@ func TestGetCodeHash_MissingArgs(t *testing.T) {
 
 func TestBeginSyncPeriod_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1299,7 +1299,7 @@ func TestBeginSyncPeriod_MissingArgs(t *testing.T) {
 
 func TestCreateContract_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1313,7 +1313,7 @@ func TestCreateContract_MissingArgs(t *testing.T) {
 
 func TestExist_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1327,7 +1327,7 @@ func TestExist_MissingArgs(t *testing.T) {
 
 func TestEmpty_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1341,7 +1341,7 @@ func TestEmpty_MissingArgs(t *testing.T) {
 
 func TestGetNonce_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1355,7 +1355,7 @@ func TestGetNonce_MissingArgs(t *testing.T) {
 
 func TestGetBalance_MissingArgs(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1369,7 +1369,7 @@ func TestGetBalance_MissingArgs(t *testing.T) {
 
 func TestSetNonce_MissingReasonArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1385,7 +1385,7 @@ func TestSetNonce_MissingReasonArg(t *testing.T) {
 
 func TestAddBalance_MissingReasonArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1401,7 +1401,7 @@ func TestAddBalance_MissingReasonArg(t *testing.T) {
 
 func TestSubBalance_MissingReasonArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1417,7 +1417,7 @@ func TestSubBalance_MissingReasonArg(t *testing.T) {
 
 func TestParseNonceReason_MissingArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1432,7 +1432,7 @@ func TestParseNonceReason_MissingArg(t *testing.T) {
 
 func TestParseBalanceReason_MissingArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1447,7 +1447,7 @@ func TestParseBalanceReason_MissingArg(t *testing.T) {
 
 func TestAddBalance_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1461,7 +1461,7 @@ func TestAddBalance_MissingAddressArg(t *testing.T) {
 
 func TestSubBalance_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1475,7 +1475,7 @@ func TestSubBalance_MissingAddressArg(t *testing.T) {
 
 func TestGetCommittedState_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1490,7 +1490,7 @@ func TestGetCommittedState_MissingHashArg(t *testing.T) {
 
 func TestGetStateAndCommittedState_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1505,7 +1505,7 @@ func TestGetStateAndCommittedState_MissingHashArg(t *testing.T) {
 
 func TestGetState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1519,7 +1519,7 @@ func TestGetState_MissingAddressArg(t *testing.T) {
 
 func TestSetState_MissingKeyArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1534,7 +1534,7 @@ func TestSetState_MissingKeyArg(t *testing.T) {
 
 func TestSetState_MissingValueArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 	key := common.HexToHash("0x2")
 
@@ -1550,7 +1550,7 @@ func TestSetState_MissingValueArg(t *testing.T) {
 
 func TestSetTransientState_MissingKeyArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1565,7 +1565,7 @@ func TestSetTransientState_MissingKeyArg(t *testing.T) {
 
 func TestSetTransientState_MissingValueArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 	key := common.HexToHash("0x2")
 
@@ -1581,7 +1581,7 @@ func TestSetTransientState_MissingValueArg(t *testing.T) {
 
 func TestGetTransientState_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1596,7 +1596,7 @@ func TestGetTransientState_MissingHashArg(t *testing.T) {
 
 func TestGetCodeSize_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1610,7 +1610,7 @@ func TestGetCodeSize_MissingAddressArg(t *testing.T) {
 
 func TestSetCode_MissingByteSliceArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1625,7 +1625,7 @@ func TestSetCode_MissingByteSliceArg(t *testing.T) {
 
 func TestAddSlotToAccessList_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1640,7 +1640,7 @@ func TestAddSlotToAccessList_MissingHashArg(t *testing.T) {
 
 func TestSlotInAccessList_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1655,7 +1655,7 @@ func TestSlotInAccessList_MissingHashArg(t *testing.T) {
 
 func TestGetLogs_MissingTimestampArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	txHash := common.HexToHash("0x1")
 	blockHash := common.HexToHash("0x2")
 
@@ -1671,7 +1671,7 @@ func TestGetLogs_MissingTimestampArg(t *testing.T) {
 
 func TestCommit_MissingBoolArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1685,7 +1685,7 @@ func TestCommit_MissingBoolArg(t *testing.T) {
 
 func TestAddPreimage_MissingByteSliceArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	hash := common.HexToHash("0x1")
 
 	ops := []TraceOp{
@@ -1700,7 +1700,7 @@ func TestAddPreimage_MissingByteSliceArg(t *testing.T) {
 
 func TestParseBalanceReason_LowercaseFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1715,7 +1715,7 @@ func TestParseBalanceReason_LowercaseFallback(t *testing.T) {
 
 func TestParseNonceReason_LowercaseFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1730,7 +1730,7 @@ func TestParseNonceReason_LowercaseFallback(t *testing.T) {
 
 func TestParseNonceReason_NumericFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1745,7 +1745,7 @@ func TestParseNonceReason_NumericFallback(t *testing.T) {
 
 func TestParseBalanceReason_NumericFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1760,7 +1760,7 @@ func TestParseBalanceReason_NumericFallback(t *testing.T) {
 
 func TestGetCommittedState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1774,7 +1774,7 @@ func TestGetCommittedState_MissingAddressArg(t *testing.T) {
 
 func TestGetStateAndCommittedState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1788,7 +1788,7 @@ func TestGetStateAndCommittedState_MissingAddressArg(t *testing.T) {
 
 func TestSetState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1802,7 +1802,7 @@ func TestSetState_MissingAddressArg(t *testing.T) {
 
 func TestSetTransientState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1816,7 +1816,7 @@ func TestSetTransientState_MissingAddressArg(t *testing.T) {
 
 func TestGetTransientState_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1830,7 +1830,7 @@ func TestGetTransientState_MissingAddressArg(t *testing.T) {
 
 func TestSetCode_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1844,7 +1844,7 @@ func TestSetCode_MissingAddressArg(t *testing.T) {
 
 func TestAddSlotToAccessList_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1858,7 +1858,7 @@ func TestAddSlotToAccessList_MissingAddressArg(t *testing.T) {
 
 func TestSlotInAccessList_MissingAddressArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1872,7 +1872,7 @@ func TestSlotInAccessList_MissingAddressArg(t *testing.T) {
 
 func TestGetLogs_MissingBlockHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	txHash := common.HexToHash("0x1")
 
 	ops := []TraceOp{
@@ -1887,7 +1887,7 @@ func TestGetLogs_MissingBlockHashArg(t *testing.T) {
 
 func TestAddPreimage_MissingHashArg(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
@@ -1901,7 +1901,7 @@ func TestAddPreimage_MissingHashArg(t *testing.T) {
 
 func TestParseBalanceReason_UppercaseFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1916,7 +1916,7 @@ func TestParseBalanceReason_UppercaseFallback(t *testing.T) {
 
 func TestParseNonceReason_UppercaseFallback(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{
@@ -1931,7 +1931,7 @@ func TestParseNonceReason_UppercaseFallback(t *testing.T) {
 
 func TestParseNonceReason_DirectMatch(t *testing.T) {
 	db := newTrackingStateDB(t)
-	replayer := NewStateReplayer(db)
+	replayer := newStateReplayer(db)
 	addr := common.HexToAddress("0x1")
 
 	ops := []TraceOp{

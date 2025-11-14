@@ -93,7 +93,7 @@ func TestFirstBlockNumber(t *testing.T) {
 		{Kind: "EndBlock", HasBlock: true, Block: 42},
 	}
 
-	block, found := FirstBlockNumber(ops)
+	block, found := firstBlockNumber(ops)
 	require.True(t, found)
 	require.Equal(t, uint64(42), block)
 }
@@ -104,7 +104,7 @@ func TestFirstBlockNumber_NoBlock(t *testing.T) {
 		{Kind: "EndTransaction", HasBlock: false},
 	}
 
-	_, found := FirstBlockNumber(ops)
+	_, found := firstBlockNumber(ops)
 	require.False(t, found)
 }
 

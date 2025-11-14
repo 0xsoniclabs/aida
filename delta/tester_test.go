@@ -72,7 +72,7 @@ func TestStateTester_PassingTrace(t *testing.T) {
 
 	outcome, err := tester(context.Background(), ops)
 	require.NoError(t, err)
-	require.Equal(t, OutcomePass, outcome)
+	require.Equal(t, outcomePass, outcome)
 }
 
 func TestStateTester_FailingTrace(t *testing.T) {
@@ -92,7 +92,7 @@ func TestStateTester_FailingTrace(t *testing.T) {
 
 	outcome, err := tester(context.Background(), ops)
 	require.NoError(t, err)
-	require.Equal(t, OutcomeFail, outcome)
+	require.Equal(t, outcomeFail, outcome)
 }
 
 func TestStateTester_UnsupportedOperation(t *testing.T) {
@@ -112,7 +112,7 @@ func TestStateTester_UnsupportedOperation(t *testing.T) {
 
 	outcome, err := tester(context.Background(), ops)
 	require.NoError(t, err)
-	require.Equal(t, OutcomeFail, outcome)
+	require.Equal(t, outcomeFail, outcome)
 }
 
 func TestStateTester_ContextCancellation(t *testing.T) {
@@ -135,7 +135,7 @@ func TestStateTester_ContextCancellation(t *testing.T) {
 
 	outcome, err := tester(ctx, ops)
 	require.Error(t, err)
-	require.Equal(t, OutcomeUnresolved, outcome)
+	require.Equal(t, outcomeUnresolved, outcome)
 }
 
 func TestStateTester_EmptyDbImpl(t *testing.T) {
@@ -177,5 +177,5 @@ func TestStateTester_ComplexTrace(t *testing.T) {
 
 	outcome, err := tester(context.Background(), ops)
 	require.NoError(t, err)
-	require.Equal(t, OutcomePass, outcome)
+	require.Equal(t, outcomePass, outcome)
 }

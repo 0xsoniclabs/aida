@@ -26,33 +26,33 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Outcome describes the observed result when executing a candidate trace.
-type Outcome int
+// outcome describes the observed result when executing a candidate trace.
+type outcome int
 
 const (
-	OutcomePass Outcome = iota
-	OutcomeFail
-	OutcomeUnresolved
+	outcomePass outcome = iota
+	outcomeFail
+	outcomeUnresolved
 )
 
-func (o Outcome) String() string {
+func (o outcome) String() string {
 	switch o {
-	case OutcomePass:
+	case outcomePass:
 		return "pass"
-	case OutcomeFail:
+	case outcomeFail:
 		return "fail"
-	case OutcomeUnresolved:
+	case outcomeUnresolved:
 		return "unresolved"
 	default:
 		return fmt.Sprintf("unknown(%d)", int(o))
 	}
 }
 
-// TestFunc evaluates a candidate trace and reports the observed outcome.
-type TestFunc func(ctx context.Context, ops []TraceOp) (Outcome, error)
+// testFunc evaluates a candidate trace and reports the observed outcome.
+type testFunc func(ctx context.Context, ops []TraceOp) (outcome, error)
 
-// OperationMeta captures properties needed for minimisation.
-type OperationMeta struct {
+// operationMeta captures properties needed for minimisation.
+type operationMeta struct {
 	Op          TraceOp
 	Kind        string
 	Mandatory   bool
@@ -77,7 +77,7 @@ type Minimizer struct {
 }
 
 // Minimize reduces the trace while maintaining the failure outcome.
-func (m *Minimizer) Minimize(ctx context.Context, ops []TraceOp, test TestFunc) ([]TraceOp, error) {
+func (m *Minimizer) Minimize(ctx context.Context, ops []TraceOp, test testFunc) ([]TraceOp, error) {
 	if test == nil {
 		return nil, fmt.Errorf("delta: test function must be provided")
 	}
@@ -102,17 +102,17 @@ func (m *Minimizer) Minimize(ctx context.Context, ops []TraceOp, test TestFunc) 
 	return addressReduced, nil
 }
 
-func (m *Minimizer) reducePrefix(ctx context.Context, meta []OperationMeta, test TestFunc) ([]TraceOp, []OperationMeta, error) {
+func (m *Minimizer) reducePrefix(ctx context.Context, meta []operationMeta, test testFunc) ([]TraceOp, []operationMeta, error) {
 	if len(meta) == 0 {
 		return nil, nil, fmt.Errorf("delta: empty metadata")
 	}
 
-	full := buildOperations(meta, func(OperationMeta) bool { return true })
-	outcome, err := test(ctx, full)
+	full := buildOperations(meta, func(operationMeta) bool { return true })
+	out, err := test(ctx, full)
 	if err != nil {
 		return nil, nil, err
 	}
-	if outcome != OutcomeFail {
+	if out != outcomeFail {
 		return nil, nil, ErrInputDoesNotFail
 	}
 
@@ -127,16 +127,16 @@ func (m *Minimizer) reducePrefix(ctx context.Context, meta []OperationMeta, test
 		}
 
 		mid := (lo + hi) / 2
-		candidate := buildOperations(meta, func(m OperationMeta) bool {
+		candidate := buildOperations(meta, func(m operationMeta) bool {
 			return m.Index >= mid
 		})
 
-		outcome, err := test(ctx, candidate)
+		out, err := test(ctx, candidate)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		if outcome == OutcomeFail {
+		if out == outcomeFail {
 			lo = mid
 			bestOps = candidate
 			bestMeta = collectMetadata(bestOps, m.cfg.MandatoryKinds)
@@ -153,9 +153,9 @@ func (m *Minimizer) reducePrefix(ctx context.Context, meta []OperationMeta, test
 func (m *Minimizer) reduceAddresses(
 	ctx context.Context,
 	ops []TraceOp,
-	meta []OperationMeta,
-	test TestFunc,
-) ([]TraceOp, []OperationMeta, error) {
+	meta []operationMeta,
+	test testFunc,
+) ([]TraceOp, []operationMeta, error) {
 	addresses := uniqueContracts(meta)
 	if len(addresses) <= 1 {
 		return ops, meta, nil
@@ -198,7 +198,7 @@ func (m *Minimizer) reduceAddresses(
 				excludeSet[addr] = struct{}{}
 			}
 
-			candidate := buildOperations(currentMeta, func(meta OperationMeta) bool {
+			candidate := buildOperations(currentMeta, func(meta operationMeta) bool {
 				if !meta.HasContract {
 					return true
 				}
@@ -206,12 +206,12 @@ func (m *Minimizer) reduceAddresses(
 				return !skip
 			})
 
-			outcome, err := test(ctx, candidate)
+			out, err := test(ctx, candidate)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			if outcome == OutcomeFail {
+			if out == outcomeFail {
 				currentOps = candidate
 				currentMeta = collectMetadata(currentOps, m.cfg.MandatoryKinds)
 				addresses = uniqueContracts(currentMeta)
@@ -257,12 +257,12 @@ type metaCollector struct {
 	mandatory    map[string]struct{}
 }
 
-func collectMetadata(ops []TraceOp, mandatoryKinds map[string]struct{}) []OperationMeta {
+func collectMetadata(ops []TraceOp, mandatoryKinds map[string]struct{}) []operationMeta {
 	collector := metaCollector{
 		prevContract: common.Address{},
 		mandatory:    mandatoryKinds,
 	}
-	meta := make([]OperationMeta, 0, len(ops))
+	meta := make([]operationMeta, 0, len(ops))
 	for idx, op := range ops {
 		entry := collector.collect(op)
 		entry.Index = idx
@@ -271,7 +271,7 @@ func collectMetadata(ops []TraceOp, mandatoryKinds map[string]struct{}) []Operat
 	return meta
 }
 
-func (c *metaCollector) collect(op TraceOp) OperationMeta {
+func (c *metaCollector) collect(op TraceOp) operationMeta {
 	mandatory := false
 	if c.mandatory != nil {
 		_, mandatory = c.mandatory[op.Kind]
@@ -282,7 +282,7 @@ func (c *metaCollector) collect(op TraceOp) OperationMeta {
 		c.prevContract = contract
 	}
 
-	return OperationMeta{
+	return operationMeta{
 		Op:          op,
 		Kind:        op.Kind,
 		Mandatory:   mandatory,
@@ -301,7 +301,7 @@ func (c *metaCollector) contractFor(op TraceOp) (common.Address, bool) {
 	return common.Address{}, false
 }
 
-func buildOperations(meta []OperationMeta, include func(OperationMeta) bool) []TraceOp {
+func buildOperations(meta []operationMeta, include func(operationMeta) bool) []TraceOp {
 	result := make([]TraceOp, 0, len(meta))
 	for _, m := range meta {
 		if include(m) || m.Mandatory {
@@ -311,7 +311,7 @@ func buildOperations(meta []OperationMeta, include func(OperationMeta) bool) []T
 	return result
 }
 
-func uniqueContracts(meta []OperationMeta) []common.Address {
+func uniqueContracts(meta []operationMeta) []common.Address {
 	set := make(map[common.Address]struct{})
 	for _, m := range meta {
 		if !m.HasContract {

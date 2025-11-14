@@ -36,8 +36,8 @@ type StateTesterConfig struct {
 	ChainID      int
 }
 
-// NewStateTester prepares a TestFunc that replays operations against a StateDB backend.
-func NewStateTester(cfg StateTesterConfig) (TestFunc, error) {
+// NewStateTester prepares a testFunc that replays operations against a StateDB backend.
+func NewStateTester(cfg StateTesterConfig) (testFunc, error) {
 	dbImpl := strings.TrimSpace(cfg.DbImpl)
 	if dbImpl == "" {
 		dbImpl = utils.StateDbImplementationFlag.Value
@@ -72,14 +72,14 @@ func NewStateTester(cfg StateTesterConfig) (TestFunc, error) {
 		ChainID:      utils.ChainID(chainID),
 	}
 
-	return func(ctx context.Context, ops []TraceOp) (Outcome, error) {
+	return func(ctx context.Context, ops []TraceOp) (outcome, error) {
 		localCfg := base
 		db, dbPath, err := utils.PrepareStateDB(&localCfg)
 		if err != nil {
-			return OutcomeUnresolved, fmt.Errorf("delta: prepare state-db: %w", err)
+			return outcomeUnresolved, fmt.Errorf("delta: prepare state-db: %w", err)
 		}
 
-		replayer := NewStateReplayer(db)
+		replayer := newStateReplayer(db)
 		var (
 			panicValue any
 			replayErr  error
@@ -101,11 +101,11 @@ func NewStateTester(cfg StateTesterConfig) (TestFunc, error) {
 			replayErr = replayer.Execute(ctx, ops)
 		}()
 
-		logFailure := func(err error) (Outcome, error) {
+		logFailure := func(err error) (outcome, error) {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "aida-delta-debugger: backend run failed: %v\n", err)
 			}
-			return OutcomeFail, nil
+			return outcomeFail, nil
 		}
 
 		if panicValue != nil {
@@ -121,7 +121,7 @@ func NewStateTester(cfg StateTesterConfig) (TestFunc, error) {
 
 		if replayErr != nil {
 			if errors.Is(replayErr, context.Canceled) || errors.Is(replayErr, context.DeadlineExceeded) {
-				return OutcomeUnresolved, errors.Join(replayErr, cleanupErr)
+				return outcomeUnresolved, errors.Join(replayErr, cleanupErr)
 			}
 			return logFailure(errors.Join(replayErr, cleanupErr))
 		}
@@ -130,6 +130,6 @@ func NewStateTester(cfg StateTesterConfig) (TestFunc, error) {
 			return logFailure(cleanupErr)
 		}
 
-		return OutcomePass, nil
+		return outcomePass, nil
 	}, nil
 }

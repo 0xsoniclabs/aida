@@ -30,19 +30,19 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// StateReplayer replays logger trace entries against a StateDB implementation.
-type StateReplayer struct {
+// stateReplayer replays logger trace entries against a StateDB implementation.
+type stateReplayer struct {
 	backend      state.StateDB
 	currentBlock uint64
 }
 
-// NewStateReplayer constructs a replayer for the provided StateDB.
-func NewStateReplayer(backend state.StateDB) *StateReplayer {
-	return &StateReplayer{backend: backend}
+// newStateReplayer constructs a replayer for the provided StateDB.
+func newStateReplayer(backend state.StateDB) *stateReplayer {
+	return &stateReplayer{backend: backend}
 }
 
 // Execute runs all trace operations until completion or failure.
-func (r *StateReplayer) Execute(ctx context.Context, ops []TraceOp) error {
+func (r *stateReplayer) Execute(ctx context.Context, ops []TraceOp) error {
 	for i, op := range ops {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -54,7 +54,7 @@ func (r *StateReplayer) Execute(ctx context.Context, ops []TraceOp) error {
 	return nil
 }
 
-func (r *StateReplayer) execute(op TraceOp) error {
+func (r *stateReplayer) execute(op TraceOp) error {
 	if op.Kind == "Bulk" {
 		return fmt.Errorf("bulk operations are not supported in logger traces")
 	}

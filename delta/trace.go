@@ -232,8 +232,8 @@ func WriteTrace(path string, ops []TraceOp) error {
 	return nil
 }
 
-// FirstBlockNumber returns the first block number present in operations.
-func FirstBlockNumber(ops []TraceOp) (uint64, bool) {
+// firstBlockNumber returns the first block number present in operations.
+func firstBlockNumber(ops []TraceOp) (uint64, bool) {
 	for _, op := range ops {
 		if op.Kind == "BeginBlock" && op.HasBlock {
 			return op.Block, true
