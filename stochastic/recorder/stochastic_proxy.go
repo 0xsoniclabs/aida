@@ -17,7 +17,6 @@
 package recorder
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/0xsoniclabs/aida/state"
@@ -416,7 +415,8 @@ func (p *StochasticProxy) Close() error {
 }
 
 func (p *StochasticProxy) StartBulkLoad(uint64) (state.BulkLoad, error) {
-	return nil, fmt.Errorf("StartBulkLoad not supported by EventProxy")
+	// This code should never be reachable under any circumstances
+	panic("StartBulkLoad not supported by EventProxy")
 }
 
 func (p *StochasticProxy) GetMemoryUsage() *state.MemoryUsage {

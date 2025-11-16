@@ -191,9 +191,9 @@ func TestEvmExecutor_sendEstimateGas(t *testing.T) {
 		blockId:  big.NewInt(1),
 		rules:    opera.DefaultEconomyRules(),
 	}
-
-	_, err := e.sendEstimateGas()
-	assert.Error(t, err)
+	assert.Panics(t, func() {
+		_, _ = e.sendEstimateGas()
+	})
 }
 
 func TestEvmExecutor_executable(t *testing.T) {
