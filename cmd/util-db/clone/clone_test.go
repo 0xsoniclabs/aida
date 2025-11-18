@@ -18,26 +18,23 @@ package clone
 
 import (
 	"fmt"
-
-	"github.com/0xsoniclabs/substate/substate"
-	"github.com/0xsoniclabs/substate/types"
-	"github.com/0xsoniclabs/substate/types/hash"
-	"github.com/holiman/uint256"
-
 	"math/big"
 	"os"
 	"strconv"
 	"testing"
 
-	"go.uber.org/mock/gomock"
-
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utildb"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
+	"github.com/0xsoniclabs/substate/substate"
+	"github.com/0xsoniclabs/substate/types"
+	"github.com/0xsoniclabs/substate/types/hash"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
+	"go.uber.org/mock/gomock"
 )
 
 func TestClone(t *testing.T) {
@@ -64,7 +61,9 @@ func TestClone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			aidaDb := utildb.GenerateTestAidaDb(t)
-			err := testClone(t, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), tt.cloningType, tt.name, tt.dbc)
+			substateDb, err := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+			assert.NoError(t, err)
+			err = testClone(t, substateDb, tt.cloningType, tt.name, tt.dbc)
 			if tt.wantErr != "" {
 				assert.Error(t, err, "Expected error but got none")
 				assert.Contains(t, err.Error(), tt.wantErr, "Error message does not match")
@@ -96,7 +95,8 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 	if dbc == "" || dbc == "all" || dbc == "substate" {
 		t.Run("Substates", func(t *testing.T) {
 			substateCount := 0
-			substateDb := db.MakeDefaultSubstateDBFromBaseDB(cloneDb)
+			substateDb, err := db.MakeDefaultSubstateDBFromBaseDB(cloneDb)
+			assert.NoError(t, err)
 			substateIter := substateDb.NewIterator([]byte(db.SubstateDBPrefix), nil)
 			for substateIter.Next() {
 				substateCount++
@@ -107,7 +107,8 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 
 	if dbc == "" || dbc == "all" || dbc == "update" {
 		t.Run("UpdateSets", func(t *testing.T) {
-			udb := db.MakeDefaultUpdateDBFromBaseDB(cloneDb)
+			udb, err := db.MakeDefaultUpdateDBFromBaseDB(cloneDb)
+			assert.NoError(t, err)
 			updateSetCount := 0
 			updateSetIter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
 			for updateSetIter.Next() {
@@ -244,7 +245,9 @@ func TestClone_BlockHashes(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CustomType)
+	substateDb, err := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
+	err = clone(cfg, substateDb, cloneDb, utils.CustomType)
 
 	assert.NoError(t, err)
 
@@ -270,7 +273,9 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 	cloneDb, err := db.NewDefaultSubstateDB(t.TempDir() + "/clonedb")
 	assert.NoError(t, err)
 
-	err = clone(cfg, db.MakeDefaultSubstateDBFromBaseDB(aidaDb), cloneDb, utils.CloneType)
+	substateDb, err := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
+	err = clone(cfg, substateDb, cloneDb, utils.CloneType)
 
 	assert.NoError(t, err)
 
@@ -305,7 +310,7 @@ func TestClone_OpenCloningDbs_Success(t *testing.T) {
 	targetDir := t.TempDir() + "/target"
 
 	// Create a source database
-	sourceDb, err := db.NewDefaultBaseDB(sourceDir)
+	sourceDb, err := db.NewDefaultSubstateDB(sourceDir)
 	assert.NoError(t, err)
 
 	err = sourceDb.Close()

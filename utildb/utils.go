@@ -53,7 +53,7 @@ func OpenSourceDatabases(sourceDbPaths []string) ([]db.BaseDB, error) {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("source database %s; doesn't exist", path)
 		}
-		db, err := db.NewReadOnlyBaseDB(path)
+		db, err := db.NewReadOnlySubstateDB(path)
 		if err != nil {
 			return nil, fmt.Errorf("source database %s; error: %v", path, err)
 		}
@@ -117,7 +117,7 @@ func GetDbSize(db db.BaseDB) uint64 {
 // PrintMetadata from given AidaDb
 func PrintMetadata(pathToDb string) error {
 	log := logger.NewLogger("INFO", "Print-Metadata")
-	base, err := db.NewReadOnlyBaseDB(pathToDb)
+	base, err := db.NewReadOnlySubstateDB(pathToDb)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func printDbType(m *utils.AidaDbMetadata) error {
 
 func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	tmpDir := t.TempDir() + "/testAidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -231,7 +231,8 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	assert.NoError(t, err)
 
 	// write substates to the database
-	substateDb := db.MakeDefaultSubstateDBFromBaseDB(database)
+	substateDb, err := db.MakeDefaultSubstateDBFromBaseDB(database)
+	require.NoError(t, err)
 	state := substate.Substate{
 		Block:       10,
 		Transaction: 7,
@@ -255,7 +256,8 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 		require.NoError(t, err)
 	}
 
-	udb := db.MakeDefaultUpdateDBFromBaseDB(database)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDB(database)
+	require.NoError(t, err)
 	// write update sets to the database
 	for i := 1; i <= 10; i++ {
 		updateSet := &updateset.UpdateSet{

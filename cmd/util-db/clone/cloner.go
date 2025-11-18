@@ -548,20 +548,28 @@ func (c *cloner) cloneCodes() error {
 		}
 
 		for _, acc := range ss.InputSubstate {
-			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+			accCodeHash, err := acc.CodeHash()
+			if err != nil {
+				return err
+			}
+			if _, ok := savedCodes[accCodeHash]; !ok {
 				if err := c.putCode(acc.Code); err != nil {
 					return fmt.Errorf("failed to put code from input substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 				}
-				savedCodes[acc.CodeHash()] = struct{}{}
+				savedCodes[accCodeHash] = struct{}{}
 			}
 		}
 
 		for _, acc := range ss.OutputSubstate {
-			if _, ok := savedCodes[acc.CodeHash()]; !ok {
+			accCodeHash, err := acc.CodeHash()
+			if err != nil {
+				return err
+			}
+			if _, ok := savedCodes[accCodeHash]; !ok {
 				if err := c.putCode(acc.Code); err != nil {
 					return fmt.Errorf("failed to put code from output substate blk: %d tx %d; %v", ss.Block, ss.Transaction, err)
 				}
-				savedCodes[acc.CodeHash()] = struct{}{}
+				savedCodes[accCodeHash] = struct{}{}
 			}
 		}
 

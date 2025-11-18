@@ -57,7 +57,8 @@ func TestEthTest_NewMockStateTestContext(t *testing.T) {
 		R:       common.Big1,
 		S:       common.Big1,
 	})
-	mockBytes := utils.Must(mockTx.MarshalBinary())
+	mockBytes, err := mockTx.MarshalBinary()
+	assert.NoError(t, err)
 	mockTxContext := NewStateTestContext(message, mockBlockEnv, mockBytes)
 	assert.Equal(t, mockBlockEnv, mockTxContext.env)
 	assert.Equal(t, message, mockTxContext.msg)

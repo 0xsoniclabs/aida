@@ -44,7 +44,7 @@ import (
 
 func TestTableHash_Empty(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestTableHash_Empty(t *testing.T) {
 
 func TestTableHash_Filled(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestTableHash_Filled(t *testing.T) {
 
 func TestTableHash_JustSubstate(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestTableHash_JustSubstate(t *testing.T) {
 
 func TestTableHash_JustDelete(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestTableHash_JustDelete(t *testing.T) {
 
 func TestTableHash_JustUpdate(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestTableHash_JustUpdate(t *testing.T) {
 
 func TestTableHash_JustStateHash(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func TestTableHash_JustStateHash(t *testing.T) {
 
 func TestTableHash_JustBlockHash(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +305,7 @@ func TestTableHash_JustBlockHash(t *testing.T) {
 
 func TestTableHash_InvalidSubstateEncoding(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,13 +378,13 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tmpDir := t.TempDir() + "/aidaDb"
-			database, err := db.NewDefaultBaseDB(tmpDir)
-			if err != nil {
-				t.Fatal(err)
-			}
+			database, err := db.NewDefaultSubstateDB(tmpDir)
+			assert.NoError(t, err)
 			defer func(database db.BaseDB) {
 				assert.NoError(t, database.Close())
 			}(database)
+			err = database.SetSubstateEncoding(db.RLPEncodingSchema)
+			assert.NoError(t, err)
 
 			tc.setup(t, database)
 
@@ -402,9 +402,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			)
 
 			err = TableHash(cfg, database, log)
-			if err == nil {
-				t.Fatalf("expected an error: %v, but got nil", tc.errWant)
-			}
+			assert.Error(t, err)
 			assert.Equal(t, tc.errWant, err.Error(), "error message mismatch")
 		})
 	}
@@ -412,7 +410,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 
 func TestTableHash_InvalidDbComponent(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +437,7 @@ func TestTableHash_InvalidDbComponent(t *testing.T) {
 
 func TestTableHash_JustException(t *testing.T) {
 	tmpDir := t.TempDir() + "/aidaDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -474,7 +472,8 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	// Seed the random number generator
 	rand.NewSource(time.Now().UnixNano())
 
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	sdb, err := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
 	// Generate a random number between 1 and 5
 	numSubstates := rand.Intn(5) + 1
 	acc := substate.NewAccount(1, uint256.NewInt(1), []byte{1})
@@ -503,7 +502,8 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		}
 	}
 
-	ddb := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+	ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
 
 	// Generate random number between 6-10
 	numDestroyedAccounts := rand.Intn(5) + 6
@@ -515,7 +515,8 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		}
 	}
 
-	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
 
 	// Generate random number between 11-15
 	numUpdates := rand.Intn(5) + 11

@@ -184,7 +184,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 					}
 
 					// open targetDB only after there is already first patch or any existing previous data
-					targetDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+					targetDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 					if err != nil {
 						return fmt.Errorf("can't open aidaDb; %v", err)
 					}
@@ -208,7 +208,7 @@ func mergePatch(cfg *utils.Config, decompressChan chan string, errChan chan erro
 				}
 
 				// merge newly extracted patch
-				patchDb, err = db.NewReadOnlyBaseDB(extractedPatchPath)
+				patchDb, err = db.NewReadOnlySubstateDB(extractedPatchPath)
 				if err != nil {
 					return fmt.Errorf("cannot open targetDb; %v", err)
 				}

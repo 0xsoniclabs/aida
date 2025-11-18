@@ -736,7 +736,7 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 	}
 
 	// read meta data
-	aidaDb, err := db.NewReadOnlyBaseDB(cc.cfg.AidaDb)
+	aidaDb, err := db.NewReadOnlySubstateDB(cc.cfg.AidaDb)
 	if err != nil {
 		cc.log.Warningf("Cannot open AidaDB; %v", err)
 		return defaultFirst, defaultLast, defaultLastPatch, nil
@@ -746,6 +746,11 @@ func (cc *configContext) getMdBlockRange() (uint64, uint64, uint64, error) {
 			cc.log.Warningf("Cannot close AidaDB; %v", err)
 		}
 	}()
+	err = aidaDb.SetSubstateEncoding(cc.cfg.SubstateEncoding)
+	if err != nil {
+		cc.log.Warningf("Cannot set substate encoding; %v", err)
+		return defaultFirst, defaultLast, defaultLastPatch, nil
+	}
 
 	md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 	err = md.getBlockRange()
@@ -799,7 +804,7 @@ func (cc *configContext) setChainId() error {
 		cc.log.Warningf("ChainID (--%v) was not set; looking for it in AidaDb", ChainIDFlag.Name)
 
 		// we check if AidaDb was set with err == nil
-		if aidaDb, err := db.OpenBaseDB(cc.cfg.AidaDb); err == nil {
+		if aidaDb, err := db.NewDefaultSubstateDB(cc.cfg.AidaDb); err == nil {
 			md := NewAidaDbMetadata(aidaDb, cc.cfg.LogLevel)
 
 			cc.cfg.ChainID = md.GetChainID()
