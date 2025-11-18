@@ -182,7 +182,11 @@ func getStochasticMatrix(e *recorder.StatsJSON) (*markov.Chain, int, error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve markov chain from estimation model: %w", err)
 	}
-	state, _ := mc.Find(operations.OpMnemo(operations.BeginSyncPeriodID))
+	opM, err := operations.OpMnemo(operations.BeginSyncPeriodID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve OpMnemo from estimation model: %w", err)
+	}
+	state, _ := mc.Find(opM)
 	if state < 0 {
 		return nil, 0, fmt.Errorf("getStochasticMatrix: cannot retrieve initial state. Error: not found")
 	}

@@ -234,7 +234,7 @@ func (s *gethStateDB) EndBlock() error {
 	//commit at the end of a block
 	s.stateRoot, err = s.Commit(s.block, true)
 	if err != nil {
-		panic("StateDB commit failed")
+		return fmt.Errorf("StateDB commit failed")
 	}
 	// if archival node, flush trie to disk after each block
 	if s.evmState != nil {
