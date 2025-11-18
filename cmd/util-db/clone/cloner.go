@@ -317,7 +317,7 @@ func (c *cloner) readStateHashes() error {
 	var errCounter uint64
 
 	for i := c.cfg.First; i <= c.cfg.Last; i++ {
-		key := []byte(utils.StateRootHashPrefix + hexutil.EncodeUint64(i))
+		key := []byte(db.StateRootHashPrefix + hexutil.EncodeUint64(i))
 		value, err := c.sourceDb.Get(key)
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
@@ -346,7 +346,7 @@ func (c *cloner) readStateHashes() error {
 // readBlockHashes from last updateSet before cfg.First until cfg.Last
 func (c *cloner) readBlockHashes() {
 	endCond := func(key []byte) (bool, error) {
-		block, err := utils.DecodeBlockHashDBKey(key)
+		block, err := db.DecodeBlockHashDBKey(key)
 		if err != nil {
 			return false, err
 		}
@@ -356,7 +356,7 @@ func (c *cloner) readBlockHashes() {
 		return false, nil
 	}
 
-	c.read([]byte(utils.BlockHashPrefix), c.cfg.First, endCond)
+	c.read([]byte(db.BlockHashPrefix), c.cfg.First, endCond)
 }
 
 // readExceptions reading exceptions from AidaDb

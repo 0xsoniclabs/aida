@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/0xsoniclabs/substate/db"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -46,7 +47,7 @@ func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext
 }
 
 type parentBlockHashProcessor struct {
-	hashProvider utils.HashProvider
+	hashProvider db.HashProvider
 	processor    iEvmProcessor
 	cfg          *utils.Config
 	extension.NilExtension[txcontext.TxContext]
@@ -83,7 +84,7 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	p.hashProvider = utils.MakeHashProvider(ctx.AidaDb)
+	p.hashProvider = db.MakeHashProvider(ctx.AidaDb)
 	return nil
 }
 
@@ -116,7 +117,7 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 	var hashError error
 	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
 	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
-	err = p.processor.ProcessParentBlockHash(prevBlockHash, evm, ctx.State)
+	err = p.processor.ProcessParentBlockHash(common.Hash(prevBlockHash), evm, ctx.State)
 	if err != nil {
 		return err
 	}
