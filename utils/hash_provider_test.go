@@ -291,7 +291,7 @@ func TestStateHash_GetLastBlockHash(t *testing.T) {
 
 func generateTestBlockHashDb(t *testing.T) db.BaseDB {
 	tmpDir := t.TempDir() + "/blockHashDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -334,7 +334,7 @@ func TestDecodeBlockHashDBKey_Errors(t *testing.T) {
 
 func TestGetLastBlockHash_EmptyDb(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
@@ -353,7 +353,7 @@ func TestGetLastBlockHash_EmptyDb(t *testing.T) {
 
 func TestGetLastBlockHash_InvalidKey(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashDb"
-	database, err := db.NewDefaultBaseDB(tmpDir)
+	database, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}

@@ -44,7 +44,7 @@ func generateDbHashAction(ctx *cli.Context) error {
 		return err
 	}
 
-	aidaDb, err := db.NewDefaultBaseDB(cfg.AidaDb)
+	aidaDb, err := db.NewDefaultSubstateDB(cfg.AidaDb)
 	if err != nil {
 		return fmt.Errorf("cannot open db; %v", err)
 	}

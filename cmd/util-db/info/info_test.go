@@ -124,7 +124,7 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeSubstateDeletedStateHash(t *test
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(0))
 	log.EXPECT().Noticef("Found %v exceptions", 0)
 
-	base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+	base, err := db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
 	}
@@ -156,7 +156,7 @@ func TestInfo_PrintCount_OnlyCalculateGivenRangeUpdateBlockHashException(t *test
 	log.EXPECT().Noticef("Found %v block-hashes", uint64(10))
 	log.EXPECT().Noticef("Found %v exceptions", 1)
 
-	base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+	base, err := db.NewReadOnlySubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
 	}
@@ -307,7 +307,7 @@ func TestInfo_PrintCount_LoggingEmpty(t *testing.T) {
 				}
 			}
 
-			base, err := db.NewReadOnlyBaseDB(aidaDbPath)
+			base, err := db.NewReadOnlySubstateDB(aidaDbPath)
 			if err != nil {
 				t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
 			}
@@ -351,19 +351,14 @@ func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
 
 	log.EXPECT().Noticef("Inspecting database between blocks %v-%v", uint64(0), uint64(0))
 	baseDb.EXPECT().GetBackend().Return(mockDb)
+	baseDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema)
 	errIter := errors.New("error getting iterator")
 	mockDb.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errIter).AnyTimes()
 
 	// Substate set
 	kv := &testutil.KeyValue{}
 	iter1 := iterator.NewArrayIterator(kv)
-	iter2 := iterator.NewArrayIterator(kv)
-	iter3 := iterator.NewArrayIterator(kv)
-	iter4 := iterator.NewArrayIterator(kv)
 	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter1)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter2)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter3)
-	mockDb.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter4)
 	log.EXPECT().Noticef("Found %v substates", uint64(0))
 
 	// Update set
@@ -446,7 +441,7 @@ func TestInfo_PrintRange(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create empty DB if needed
 			if !strings.Contains(tc.cfg.AidaDb, "non-existent-db") {
-				testDb, err := db.NewDefaultBaseDB(tc.cfg.AidaDb)
+				testDb, err := db.NewDefaultSubstateDB(tc.cfg.AidaDb)
 				assert.NoError(t, err)
 				err = testDb.Close()
 				assert.NoError(t, err)
@@ -651,7 +646,7 @@ func TestInfo_PrintStateHash_IntegrationTest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			aidaDbPath := t.TempDir() + "aida-db"
 
-			aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+			aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -721,7 +716,7 @@ func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			aidaDbPath := t.TempDir() + "aida-db"
 
-			aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+			aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -771,13 +766,13 @@ func TestInfo_PrintHash_EmptyDb(t *testing.T) {
 		}}
 	err := app.Run(args)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot open leveldb; stat "+aidaDbPath+": no such file or directory")
+	assert.Contains(t, err.Error(), "leveldb: not found")
 }
 
 func TestInfo_PrintHash_InvalidArg(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -808,7 +803,7 @@ func TestInfo_PrintHash_InvalidArg(t *testing.T) {
 func TestInfo_PrintHash_MissingArg(t *testing.T) {
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -838,7 +833,7 @@ func TestInfo_PrintHash_MissingArg(t *testing.T) {
 func generateTestAidaDb(t *testing.T) string {
 	aidaDbPath := t.TempDir() + "aida-db"
 
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -859,7 +854,8 @@ func generateTestAidaDb(t *testing.T) string {
 		OutputSubstate: substate.WorldState{},
 		Result:         &substate.Result{},
 	}
-	sdb := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	sdb, err := db.MakeDefaultSubstateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
 	err = sdb.SetSubstateEncoding("pb")
 	assert.NoError(t, err)
 	err = sdb.PutSubstate(&state)
@@ -876,7 +872,8 @@ func generateTestAidaDb(t *testing.T) string {
 	}
 
 	// insert update
-	udb := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	assert.NoError(t, err)
 	err = udb.PutUpdateSet(&us, us.DeletedAccounts)
 	assert.NoError(t, err)
 
@@ -934,7 +931,7 @@ func TestInfo_PrintHashForBlock_InvalidHashType(t *testing.T) {
 	}
 
 	// Create an empty database
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
 	}
@@ -1119,7 +1116,7 @@ func TestInfo_PrintExceptionForBlock_Empty(t *testing.T) {
 	}
 
 	// Create an empty database
-	aidaDb, err := db.NewDefaultBaseDB(aidaDbPath)
+	aidaDb, err := db.NewDefaultSubstateDB(aidaDbPath)
 	if err != nil {
 		t.Fatalf("error opening aida-db %s: %v", aidaDbPath, err)
 	}
@@ -1258,7 +1255,7 @@ func TestCommands(t *testing.T) {
 				strconv.FormatUint(ss.Block, 10),
 			},
 			setup: func() {
-				bdb, err := db.NewDefaultBaseDB(dbPath)
+				bdb, err := db.NewDefaultSubstateDB(dbPath)
 				require.NoError(t, err)
 				hex := strconv.FormatUint(ss.Block, 16)
 				err = bdb.Put([]byte(utils.StateRootHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())

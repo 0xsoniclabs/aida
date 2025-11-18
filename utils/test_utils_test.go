@@ -17,7 +17,6 @@
 package utils
 
 import (
-	"errors"
 	"os"
 	"testing"
 
@@ -29,24 +28,6 @@ import (
 func TestUtils_getTestSubstate(t *testing.T) {
 	ss := GetTestSubstate("default")
 	assert.NotNil(t, ss)
-}
-
-func TestUtils_Must(t *testing.T) {
-	// Test with a valid value
-	mockFn := func() ([]byte, error) {
-		return []byte{1, 2, 3}, nil
-	}
-	validValue := []byte{1, 2, 3}
-	result := Must(mockFn())
-	assert.Equal(t, validValue, result)
-
-	// Test with an error
-	mockFnWithError := func() ([]byte, error) {
-		return nil, errors.New("mock error")
-	}
-	assert.Panics(t, func() {
-		_ = Must(mockFnWithError())
-	})
 }
 
 func TestUtils_CreateTestSubstateDb(t *testing.T) {

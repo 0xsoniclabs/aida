@@ -207,6 +207,7 @@ func TestCmd_RunTraceReplaySubstateCommand(t *testing.T) {
 		Arg(TraceReplaySubstateCommand.Name).
 		Flag(utils.ChainIDFlag.Name, int(utils.OperaMainnetChainID)).
 		Flag(utils.AidaDbFlag.Name, aidaDbPath).
+		Flag(utils.SubstateEncodingFlag.Name, "rlp").
 		Flag(utils.TraceFileFlag.Name, traceFile).
 		Flag(utils.WorkersFlag.Name, 1).
 		Arg("1").

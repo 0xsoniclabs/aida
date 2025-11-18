@@ -58,7 +58,7 @@ func TestInfo_FindBlockRangeInBlockHash_Success(t *testing.T) {
 
 func TestInfo_FindBlockRangeInBlockHash_FirstError(t *testing.T) {
 	tmpDir := t.TempDir() + "/blockHashDbFirstError"
-	testDb, err := db.NewDefaultBaseDB(tmpDir)
+	testDb, err := db.NewDefaultSubstateDB(tmpDir)
 	if err != nil {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
