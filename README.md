@@ -4,7 +4,7 @@ Aida is a block-processing testing infrastructure for EVM-compatible chains.
 
 ## Building the source
 
-Building `aida` requires a Go (version 1.21 or later), plus submodules require either Docker or C compiler with bazel 5.2.3.
+Building `aida` requires a Go (version 1.25 or later), plus submodules require either Docker or C compiler with bazel 5.2.3.
 Once the dependencies are installed, run
 
 ```shell
