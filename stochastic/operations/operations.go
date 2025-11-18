@@ -227,11 +227,11 @@ var argId = map[byte]int{
 }
 
 // OpMnemo returns the mnemonic code for an operation.
-func OpMnemo(op int) string {
+func OpMnemo(op int) (string, error) {
 	if op < 0 || op >= NumOps {
-		panic("opcode is out of range")
+		return "", fmt.Errorf("opcode is out of range")
 	}
-	return opMnemo[op]
+	return opMnemo[op], nil
 }
 
 // checkArgOp checks whether op/argument combination is valid.

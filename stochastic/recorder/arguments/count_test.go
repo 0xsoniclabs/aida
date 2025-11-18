@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestArgCountSimple counts a single occurrence of an argument and checks whether it exists.
@@ -85,7 +87,8 @@ func TestArgCountSimple3(t *testing.T) {
 // It marshals the JSON output and unmarshals it again and checks whether
 // the original and unmarshaled JSON output are identical.
 func testArgStatJSON(stats count[int], t *testing.T) {
-	jsonX := stats.json()
+	jsonX, err := stats.json()
+	assert.NoError(t, err)
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
 		t.Fatalf("Marshalling failed to produce distribution")
@@ -128,7 +131,7 @@ func TestArgCountMarshalJSON(t *testing.T) {
 	if err := json.Unmarshal(payload, &decoded); err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	if !reflect.DeepEqual(decoded, stats.json()) {
-		t.Fatalf("MarshalJSON mismatch\nexpected: %+v\ngot: %+v", stats.json(), decoded)
-	}
+	value, err := stats.json()
+	assert.NoError(t, err)
+	assert.True(t, reflect.DeepEqual(decoded, value))
 }

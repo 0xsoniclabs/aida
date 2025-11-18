@@ -53,12 +53,12 @@ type ScalarStatsJSON struct {
 	ECDF [][2]float64 `json:"ecdf"`
 }
 
-func (s scalarStats) json() ScalarStatsJSON {
+func (s scalarStats) json() (ScalarStatsJSON, error) {
 	if len(s.freq) == 0 {
 		return ScalarStatsJSON{
 			Max:  0,
 			ECDF: [][2]float64{{0.0, 0.0}, {1.0, 1.0}},
-		}
+		}, nil
 	}
 	values := make([]int64, 0, len(s.freq))
 	var total uint64
@@ -81,11 +81,14 @@ func (s scalarStats) json() ScalarStatsJSON {
 		x := (float64(value) + 0.5) / domain
 		pdf = append(pdf, [2]float64{x, prob})
 	}
-	ecdf := continuous.PDFtoCDF(pdf)
+	ecdf, err := continuous.PDFtoCDF(pdf)
+	if err != nil {
+		return ScalarStatsJSON{}, err
+	}
 	return ScalarStatsJSON{
 		Max:  maxVal,
 		ECDF: ecdf,
-	}
+	}, nil
 }
 
 // Stats counts states and transitions for a Markov-Process
@@ -132,58 +135,66 @@ func NewStats() Stats {
 }
 
 // CountOp counts an operation with no arguments
-func (r *Stats) CountOp(op int) {
+func (r *Stats) CountOp(op int) error {
 	if err := r.updateFreq(
 		op,
 		stochastic.NoArgID,
 		stochastic.NoArgID,
 		stochastic.NoArgID,
 	); err != nil {
-		panic(fmt.Errorf("CountOp: %w", err))
+		return fmt.Errorf("CountOp: %w", err)
 	}
+	return nil
 }
 
 // CountSnapshot counts the delta between snapshot identifiers
 // and the operation RevertToSnapshot.
-func (r *Stats) CountSnapshot(delta int) {
-	r.CountOp(operations.RevertToSnapshotID)
+func (r *Stats) CountSnapshot(delta int) error {
+	err := r.CountOp(operations.RevertToSnapshotID)
+	if err != nil {
+		return err
+	}
 	r.snapshotFreq[delta]++
+	return nil
 }
 
 // CountAddressOp counts an operation with a contract-address argument
-func (r *Stats) CountAddressOp(op int, address *common.Address) {
+func (r *Stats) CountAddressOp(op int, address *common.Address) error {
 	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		stochastic.NoArgID,
 		stochastic.NoArgID,
 	); err != nil {
-		panic(fmt.Errorf("CountAddressOp: %w", err))
+		return fmt.Errorf("CountAddressOp: %w", err)
 	}
+	return nil
 }
 
 // CountKeyOp counts an operation with a contract-address and a storage-key arguments.
-func (r *Stats) CountKeyOp(op int, address *common.Address, key *common.Hash) {
+func (r *Stats) CountKeyOp(op int, address *common.Address, key *common.Hash) error {
 	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		r.keys.Classify(*key),
 		stochastic.NoArgID,
 	); err != nil {
-		panic(fmt.Errorf("CountKeyOp: %w", err))
+		return fmt.Errorf("CountKeyOp: %w", err)
 	}
+	return nil
 }
 
 // CountValueOp counts an operation with a contract-address, a storage-key and storage-value arguments.
-func (r *Stats) CountValueOp(op int, address *common.Address, key *common.Hash, value *common.Hash) {
+func (r *Stats) CountValueOp(op int, address *common.Address, key *common.Hash, value *common.Hash) error {
 	if err := r.updateFreq(
 		op,
 		r.contracts.Classify(*address),
 		r.keys.Classify(*key),
 		r.values.Classify(*value),
 	); err != nil {
-		panic(fmt.Errorf("CountValueOp: %w", err))
+		return fmt.Errorf("CountValueOp: %w", err)
 	}
+	return nil
 }
 
 // RecordBalance tracks the magnitude used in balance updates.
@@ -281,7 +292,7 @@ func (s *StatsJSON) UnmarshalJSON(data []byte) error {
 }
 
 // JSON produces the JSON struct for a recorded markov process
-func (r *Stats) JSON() StatsJSON {
+func (r *Stats) JSON() (StatsJSON, error) {
 	// generate labels for observable operations
 	label := []string{}
 	for argop := 0; argop < operations.NumArgOps; argop++ {
@@ -331,19 +342,46 @@ func (r *Stats) JSON() StatsJSON {
 		f := float64(r.snapshotFreq[arg]) / float64(total)
 		pdf = append(pdf, [2]float64{x, f})
 	}
-	ecdf := continuous.PDFtoCDF(pdf)
+	ecdf, err := continuous.PDFtoCDF(pdf)
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	contracts, err := r.contracts.JSON()
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	keys, err := r.keys.JSON()
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	values, err := r.values.JSON()
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	balance, err := r.balance.json()
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	nonce, err := r.nonce.json()
+	if err != nil {
+		return StatsJSON{}, err
+	}
+	code, err := r.code.json()
+	if err != nil {
+		return StatsJSON{}, err
+	}
 	return StatsJSON{
 		FileId:           "stats",
 		Operations:       label,
 		StochasticMatrix: A,
-		Contracts:        r.contracts.JSON(),
-		Keys:             r.keys.JSON(),
-		Values:           r.values.JSON(),
+		Contracts:        contracts,
+		Keys:             keys,
+		Values:           values,
 		SnapshotECDF:     ecdf,
-		Balance:          r.balance.json(),
-		Nonce:            r.nonce.json(),
-		CodeSize:         r.code.json(),
-	}
+		Balance:          balance,
+		Nonce:            nonce,
+		CodeSize:         code,
+	}, nil
 }
 
 // Read stats from a file in JSON format.
@@ -379,7 +417,11 @@ func (r *Stats) Write(filename string) (err error) {
 	defer func(f *os.File) {
 		err = errors.Join(err, f.Close())
 	}(f)
-	jOut, err := json.MarshalIndent(r.JSON(), "", "    ")
+	jsonValue, err := r.JSON()
+	if err != nil {
+		return err
+	}
+	jOut, err := json.MarshalIndent(jsonValue, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to convert JSON; %v", err)
 	}

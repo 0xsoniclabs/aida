@@ -439,6 +439,7 @@ func (r *RecorderProxy) Close() error {
 }
 
 func (r *RecorderProxy) StartBulkLoad(uint64) (state.BulkLoad, error) {
+	// This code should never be reachable under any circumstances
 	panic("StartBulkLoad not supported by RecorderProxy")
 }
 

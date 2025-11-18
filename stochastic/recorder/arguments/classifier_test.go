@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestArgClassifierSimple tests for classifying arguments based on previous updates
@@ -129,7 +130,8 @@ func TestArgClassifierJSONOutput(t *testing.T) {
 	}
 
 	// produce stats in JSON format
-	jsonX := x.JSON()
+	jsonX, err := x.JSON()
+	assert.NoError(t, err)
 	jOut, err := json.Marshal(jsonX)
 	if err != nil {
 		t.Fatalf("Marshalling failed to produce distribution")
@@ -156,7 +158,7 @@ func TestArgClassifierMarshalJSON(t *testing.T) {
 	if err := json.Unmarshal(payload, &decoded); err != nil {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
-	if !reflect.DeepEqual(decoded, c.JSON()) {
-		t.Fatalf("MarshalJSON mismatch\nexpected: %+v\ngot: %+v", c.JSON(), decoded)
-	}
+	value, err := c.JSON()
+	assert.NoError(t, err)
+	assert.True(t, reflect.DeepEqual(decoded, value))
 }

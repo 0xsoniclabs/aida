@@ -199,6 +199,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 // sendEstimateGas executes estimateGas method in the EvmExecutor
 // It calculates how much gas would transaction need if it was executed
 func (e *EvmExecutor) sendEstimateGas() (hexutil.Uint64, error) {
+	// This code should never be reachable under any circumstances
 	panic("not implemented")
 }
 
