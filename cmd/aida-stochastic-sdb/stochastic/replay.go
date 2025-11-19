@@ -17,10 +17,12 @@
 package stochastic
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
@@ -111,6 +113,45 @@ func stochasticReplayAction(ctx *cli.Context) error {
 		err = errors.Join(err, os.RemoveAll(path))
 	}(stateDbDir)
 
+	var loggerOutput chan string
+	var loggerWg sync.WaitGroup
+	var loggerFile *os.File
+	dbLoggingPath := ctx.Path(utils.StateDbLoggingFlag.Name)
+	if dbLoggingPath != "" {
+		var err error
+		loggerFile, err = os.Create(dbLoggingPath)
+		if err != nil {
+			return fmt.Errorf("cannot create db logging output file: %w", err)
+		}
+		defer func() {
+			if loggerFile != nil {
+				loggerFile.Close()
+			}
+		}()
+		loggerOutput = make(chan string, 1000)
+		loggerWg.Add(1)
+		go func() {
+			defer loggerWg.Done()
+			writer := bufio.NewWriter(loggerFile)
+			defer writer.Flush()
+			for line := range loggerOutput {
+				fmt.Fprintln(writer, line)
+			}
+		}()
+		log.Noticef("StateDB logging enabled: %s", dbLoggingPath)
+		db = proxy.NewLoggerProxy(db, log, loggerOutput, &loggerWg)
+	}
+
+	// Enable tracing if debug flag is set
+	if cfg.Trace {
+		rCtx, err := context.NewRecord(cfg.TraceFile, uint64(0))
+		if err != nil {
+			return err
+		}
+		defer rCtx.Close()
+		db = proxy.NewRecorderProxy(db, rCtx)
+	}
+
 	// run simulation.
 	log.Info("Run simulation")
 	runErr := replayer.RunStochasticReplay(db, simulation, simLength, cfg, logger.NewLogger(cfg.LogLevel, "Stochastic"))
@@ -130,6 +171,10 @@ func stochasticReplayAction(ctx *cli.Context) error {
 		log.Criticalf("Failed to close database; %v", err)
 	}
 	log.Infof("Closing DB took %v", time.Since(start))
+
+	if dbLoggingPath != "" {
+		log.Noticef("StateDB trace written to: %s", dbLoggingPath)
+	}
 
 	size, err := utils.GetDirectorySize(stateDbDir)
 	if err != nil {
