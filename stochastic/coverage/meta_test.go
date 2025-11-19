@@ -31,7 +31,7 @@ func TestParseMetaFile_ValidFile(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Write header
-	binary.Write(buf, binary.LittleEndian, metaFileHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, metaFileHeader{
 		Magic:        metaFileMagic,
 		Version:      1,
 		TotalLength:  0, // will be filled later
@@ -41,15 +41,15 @@ func TestParseMetaFile_ValidFile(t *testing.T) {
 		StrTabLength: 0,
 		CounterMode:  0,
 		CounterGran:  0,
-	})
+	}))
 
 	// Write package offsets and lengths
 	packageOffset := uint64(buf.Len() + 16) // after offsets and lengths
-	binary.Write(buf, binary.LittleEndian, packageOffset)
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, packageOffset))
 
 	packageData := buildTestPackage(t)
 	packageLength := uint64(len(packageData))
-	binary.Write(buf, binary.LittleEndian, packageLength)
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, packageLength))
 
 	// Write package data
 	buf.Write(packageData)
@@ -76,7 +76,7 @@ func TestParseMetaFile_Errors(t *testing.T) {
 			name: "invalid magic",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaFileHeader{
 					Magic: [4]byte{0x99, 0x99, 0x99, 0x99},
 				})
 				return buf.Bytes()
@@ -87,7 +87,7 @@ func TestParseMetaFile_Errors(t *testing.T) {
 			name: "truncated offsets",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaFileHeader{
 					Magic:   metaFileMagic,
 					Entries: 5,
 				})
@@ -100,12 +100,12 @@ func TestParseMetaFile_Errors(t *testing.T) {
 			name: "package out of range",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaFileHeader{
 					Magic:   metaFileMagic,
 					Entries: 1,
 				})
-				binary.Write(buf, binary.LittleEndian, uint64(10000)) // offset beyond file
-				binary.Write(buf, binary.LittleEndian, uint64(100))   // length
+				_ = binary.Write(buf, binary.LittleEndian, uint64(10000)) // offset beyond file
+				_ = binary.Write(buf, binary.LittleEndian, uint64(100))   // length
 				return buf.Bytes()
 			}(),
 			errMsg: "malformed package entry",
@@ -157,7 +157,7 @@ func TestParsePackage_Errors(t *testing.T) {
 			name: "truncated function offsets",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
 					NumFuncs: 10, // claim 10 functions
 				})
 				// But don't write any offsets
@@ -169,7 +169,7 @@ func TestParsePackage_Errors(t *testing.T) {
 			name: "invalid package path index",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
 					PkgPath:  999, // invalid index
 					NumFuncs: 0,
 				})
@@ -183,11 +183,11 @@ func TestParsePackage_Errors(t *testing.T) {
 			name: "function offset out of range",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
+				_ = binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
 					PkgPath:  0,
 					NumFuncs: 1,
 				})
-				binary.Write(buf, binary.LittleEndian, uint32(99999)) // offset beyond data
+				_ = binary.Write(buf, binary.LittleEndian, uint32(99999)) // offset beyond data
 				// Write string table with one entry
 				writeULEB128ToBuffer(buf, 1)
 				writeULEB128ToBuffer(buf, 3)
@@ -326,14 +326,14 @@ func buildTestPackage(t *testing.T) []byte {
 	buf := &bytes.Buffer{}
 
 	// Package header
-	binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, metaSymbolHeader{
 		PkgPath:  0,
 		NumFuncs: 1,
-	})
+	}))
 
 	// Function offset (points just after this offset array)
 	funcOffset := uint32(4) // one uint32 for the offset itself
-	binary.Write(buf, binary.LittleEndian, funcOffset)
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, funcOffset))
 
 	// String table (placed before function data in this simplified version)
 	stringTableStart := buf.Len()
@@ -365,11 +365,11 @@ func buildTestPackage(t *testing.T) []byte {
 
 	// Rebuild with correct offset
 	finalBuf := &bytes.Buffer{}
-	binary.Write(finalBuf, binary.LittleEndian, metaSymbolHeader{
+	require.NoError(t, binary.Write(finalBuf, binary.LittleEndian, metaSymbolHeader{
 		PkgPath:  0,
 		NumFuncs: 1,
-	})
-	binary.Write(finalBuf, binary.LittleEndian, actualFuncOffset)
+	}))
+	require.NoError(t, binary.Write(finalBuf, binary.LittleEndian, actualFuncOffset))
 	finalBuf.Write(strBuf.Bytes())
 	finalBuf.Write(funcBuf.Bytes())
 

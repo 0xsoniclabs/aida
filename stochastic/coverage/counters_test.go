@@ -30,41 +30,41 @@ func TestParseCounterFile_ValidFile(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Write header
-	binary.Write(buf, binary.LittleEndian, counterFileHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
 		Magic:     counterFileMagic,
 		Version:   1,
 		MetaHash:  hash,
 		Flavor:    1, // CtrRaw
 		BigEndian: false,
-	})
+	}))
 
 	// Write segment header
-	binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
 		FcnEntries: 2,
 		StrTabLen:  0,
 		ArgsLen:    0,
-	})
+	}))
 
 	// Write function 1: pkg=0, func=0, 3 counters
-	binary.Write(buf, binary.LittleEndian, uint32(3))  // numCounters
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // pkgIdx
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // funcIdx
-	binary.Write(buf, binary.LittleEndian, uint32(10)) // counter 0
-	binary.Write(buf, binary.LittleEndian, uint32(20)) // counter 1
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // counter 2
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(3)))  // numCounters
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // pkgIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // funcIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(10))) // counter 0
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(20))) // counter 1
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // counter 2
 
 	// Write function 2: pkg=0, func=1, 2 counters
-	binary.Write(buf, binary.LittleEndian, uint32(2))  // numCounters
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // pkgIdx
-	binary.Write(buf, binary.LittleEndian, uint32(1))  // funcIdx
-	binary.Write(buf, binary.LittleEndian, uint32(5))  // counter 0
-	binary.Write(buf, binary.LittleEndian, uint32(15)) // counter 1
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(2)))  // numCounters
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // pkgIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(1)))  // funcIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(5)))  // counter 0
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(15))) // counter 1
 
 	// Write footer
-	binary.Write(buf, binary.LittleEndian, counterFileFooter{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
 		Magic:       counterFileMagic,
 		NumSegments: 1,
-	})
+	}))
 
 	result, err := parseCounterFile(hash, buf.Bytes())
 	require.NoError(t, err)
@@ -83,20 +83,20 @@ func TestParseCounterFile_WithAlignment(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Write header
-	binary.Write(buf, binary.LittleEndian, counterFileHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
 		Magic:     counterFileMagic,
 		Version:   1,
 		MetaHash:  hash,
 		Flavor:    1,
 		BigEndian: false,
-	})
+	}))
 
 	// Write segment with string table (requires alignment)
-	binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
 		FcnEntries: 1,
 		StrTabLen:  7, // Odd number to test alignment
 		ArgsLen:    0,
-	})
+	}))
 
 	// Write dummy string table
 	buf.Write(make([]byte, 7))
@@ -105,16 +105,16 @@ func TestParseCounterFile_WithAlignment(t *testing.T) {
 	buf.Write([]byte{0})
 
 	// Write function data
-	binary.Write(buf, binary.LittleEndian, uint32(1))  // numCounters
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // pkgIdx
-	binary.Write(buf, binary.LittleEndian, uint32(0))  // funcIdx
-	binary.Write(buf, binary.LittleEndian, uint32(42)) // counter value
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(1)))  // numCounters
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // pkgIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(0)))  // funcIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(42))) // counter value
 
 	// Write footer
-	binary.Write(buf, binary.LittleEndian, counterFileFooter{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
 		Magic:       counterFileMagic,
 		NumSegments: 1,
-	})
+	}))
 
 	result, err := parseCounterFile(hash, buf.Bytes())
 	require.NoError(t, err)
@@ -127,20 +127,20 @@ func TestParseCounterFile_ULEB128Encoding(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Write header with ULEB128 flavor
-	binary.Write(buf, binary.LittleEndian, counterFileHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
 		Magic:     counterFileMagic,
 		Version:   1,
 		MetaHash:  hash,
 		Flavor:    2, // CtrULeb128
 		BigEndian: false,
-	})
+	}))
 
 	// Write segment header
-	binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
 		FcnEntries: 1,
 		StrTabLen:  0,
 		ArgsLen:    0,
-	})
+	}))
 
 	// Write function data with ULEB128 encoding
 	writeULEB128(buf, 2)   // numCounters
@@ -150,10 +150,10 @@ func TestParseCounterFile_ULEB128Encoding(t *testing.T) {
 	writeULEB128(buf, 200) // counter 1
 
 	// Write footer
-	binary.Write(buf, binary.LittleEndian, counterFileFooter{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
 		Magic:       counterFileMagic,
 		NumSegments: 1,
-	})
+	}))
 
 	result, err := parseCounterFile(hash, buf.Bytes())
 	require.NoError(t, err)
@@ -167,32 +167,32 @@ func TestParseCounterFile_BigEndian(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Write header (header is always little endian)
-	binary.Write(buf, binary.LittleEndian, counterFileHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
 		Magic:     counterFileMagic,
 		Version:   1,
 		MetaHash:  hash,
 		Flavor:    1,
 		BigEndian: true,
-	})
+	}))
 
 	// Write segment header
-	binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
 		FcnEntries: 1,
 		StrTabLen:  0,
 		ArgsLen:    0,
-	})
+	}))
 
 	// Write function data in big endian
-	binary.Write(buf, binary.BigEndian, uint32(1))   // numCounters
-	binary.Write(buf, binary.BigEndian, uint32(0))   // pkgIdx
-	binary.Write(buf, binary.BigEndian, uint32(0))   // funcIdx
-	binary.Write(buf, binary.BigEndian, uint32(123)) // counter value
+	require.NoError(t, binary.Write(buf, binary.BigEndian, uint32(1)))   // numCounters
+	require.NoError(t, binary.Write(buf, binary.BigEndian, uint32(0)))   // pkgIdx
+	require.NoError(t, binary.Write(buf, binary.BigEndian, uint32(0)))   // funcIdx
+	require.NoError(t, binary.Write(buf, binary.BigEndian, uint32(123))) // counter value
 
 	// Write footer
-	binary.Write(buf, binary.LittleEndian, counterFileFooter{
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
 		Magic:       counterFileMagic,
 		NumSegments: 1,
-	})
+	}))
 
 	result, err := parseCounterFile(hash, buf.Bytes())
 	require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestParseCounterFile_Errors(t *testing.T) {
 			name: "invalid magic",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, counterFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
 					Magic:    [4]byte{0x99, 0x99, 0x99, 0x99},
 					MetaHash: hash,
 				})
@@ -232,7 +232,7 @@ func TestParseCounterFile_Errors(t *testing.T) {
 			name: "hash mismatch",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, counterFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
 					Magic:    counterFileMagic,
 					MetaHash: wrongHash,
 				})
@@ -245,7 +245,7 @@ func TestParseCounterFile_Errors(t *testing.T) {
 			name: "truncated file",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, counterFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
 					Magic:    counterFileMagic,
 					MetaHash: hash,
 				})
@@ -259,11 +259,11 @@ func TestParseCounterFile_Errors(t *testing.T) {
 			name: "invalid footer magic",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, counterFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
 					Magic:    counterFileMagic,
 					MetaHash: hash,
 				})
-				binary.Write(buf, binary.LittleEndian, counterFileFooter{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileFooter{
 					Magic: [4]byte{0x88, 0x88, 0x88, 0x88},
 				})
 				return buf.Bytes()
@@ -275,15 +275,15 @@ func TestParseCounterFile_Errors(t *testing.T) {
 			name: "unknown flavor",
 			data: func() []byte {
 				buf := &bytes.Buffer{}
-				binary.Write(buf, binary.LittleEndian, counterFileHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
 					Magic:    counterFileMagic,
 					MetaHash: hash,
 					Flavor:   99, // unknown flavor
 				})
-				binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+				_ = binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
 					FcnEntries: 1,
 				})
-				binary.Write(buf, binary.LittleEndian, uint32(1)) // will try to read with unknown flavor
+				_ = binary.Write(buf, binary.LittleEndian, uint32(1)) // will try to read with unknown flavor
 				return buf.Bytes()
 			}(),
 			hash:   hash,
@@ -305,10 +305,11 @@ func TestAlignReader(t *testing.T) {
 	reader := bytes.NewReader(data)
 
 	// Read 1 byte, position is now 1
-	reader.ReadByte()
+	_, err := reader.ReadByte()
+	require.NoError(t, err)
 
 	// Align to 4 bytes should skip to position 4
-	err := alignReader(reader, 4)
+	err = alignReader(reader, 4)
 	require.NoError(t, err)
 
 	pos, _ := reader.Seek(0, 1) // Get current position

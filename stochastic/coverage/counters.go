@@ -71,11 +71,7 @@ func parseCounterFile(expectedHash [16]byte, data []byte) (map[CounterKey]uint32
 		return nil, fmt.Errorf("coverage: truncated counter file")
 	}
 
-	for {
-		if reader.Len() == counterFileFooterSize {
-			break
-		}
-
+	for reader.Len() != counterFileFooterSize {
 		var seg counterSegmentHeader
 		if err := binary.Read(reader, binary.LittleEndian, &seg); err != nil {
 			return nil, fmt.Errorf("coverage: read counter segment header: %w", err)
