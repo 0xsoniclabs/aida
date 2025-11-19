@@ -141,6 +141,8 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 		maxBlobTransactions = 6
 	case "prague":
 		maxBlobTransactions = 9
+	case "osaka":
+		maxBlobTransactions = 9
 	default:
 		return fmt.Errorf("unknown fork: %s", fork)
 	}
@@ -421,6 +423,12 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, int, tx int, st tx
 	if chainCfg.CancunTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.CancunTime {
 		revision = tosca.R13_Cancun
 	}
+	if chainCfg.PragueTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.PragueTime {
+		revision = tosca.R14_Prague
+	}
+	if chainCfg.OsakaTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.OsakaTime {
+		revision = tosca.R15_Osaka
+	}
 
 	randao := tosca.Hash(bigToValue(blockEnvironment.GetDifficulty()))
 	if revision >= tosca.R11_Paris {
@@ -661,10 +669,14 @@ func (a *toscaTxContext) GetLogs() []tosca.Log {
 func (a *toscaTxContext) SelfDestruct(addr tosca.Address, beneficiary tosca.Address) bool {
 	selfdestructed := !a.db.HasSelfDestructed(common.Address(addr))
 
-	if a.blockEnvironment.GetFork() == tosca.R13_Cancun.String() {
-		a.db.SelfDestruct6780(common.Address(addr))
-	} else {
+	if a.blockEnvironment.GetFork() == tosca.R07_Istanbul.String() ||
+		a.blockEnvironment.GetFork() == tosca.R09_Berlin.String() ||
+		a.blockEnvironment.GetFork() == tosca.R10_London.String() ||
+		a.blockEnvironment.GetFork() == tosca.R11_Paris.String() ||
+		a.blockEnvironment.GetFork() == tosca.R12_Shanghai.String() {
 		a.db.SelfDestruct(common.Address(addr))
+	} else {
+		a.db.SelfDestruct6780(common.Address(addr))
 	}
 	return selfdestructed
 }

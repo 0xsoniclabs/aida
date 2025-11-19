@@ -433,7 +433,7 @@ var (
 	}
 	ForkFlag = cli.StringFlag{
 		Name:  "fork",
-		Usage: "defines a fork to get executed by the eth-tests (\"all\", \"prague\", \"cancun\", \"shanghai\", \"paris\", \"bellatrix\", \"grayglacier\", \"arrowglacier\", \"altair\", \"london\", \"berlin\", \"istanbul\", \"muirglacier\")",
+		Usage: "defines a fork to get executed by the eth-tests (\"all\", \"osaka\", \"prague\", \"cancun\", \"shanghai\", \"paris\", \"bellatrix\", \"grayglacier\", \"arrowglacier\", \"altair\", \"london\", \"berlin\", \"istanbul\", \"muirglacier\")",
 		Value: "All",
 	}
 	DbComponentFlag = cli.StringFlag{
