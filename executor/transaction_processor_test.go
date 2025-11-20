@@ -885,24 +885,24 @@ func TestToscaTxContext_SelfDestruct(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			ctx := &toscaTxContext{
 				blockEnvironment: mockBlockEnv,
 				db:               mockStateDB,
 			}
 
-			mockBlockEnv.EXPECT().GetFork().Return(tt.fork)
-			mockStateDB.EXPECT().HasSelfDestructed(ethAddr).Return(tt.hasSelfDestructed)
+			mockBlockEnv.EXPECT().GetFork().Return(test.fork)
+			mockStateDB.EXPECT().HasSelfDestructed(ethAddr).Return(test.hasSelfDestructed)
 
-			if tt.fork == tosca.R13_Cancun.String() {
+			if test.fork == tosca.R13_Cancun.String() {
 				mockStateDB.EXPECT().SelfDestruct6780(ethAddr)
 			} else {
 				mockStateDB.EXPECT().SelfDestruct(ethAddr)
 			}
 
 			result := ctx.SelfDestruct(addr, beneficiary)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, test.expected, result)
 		})
 	}
 }
