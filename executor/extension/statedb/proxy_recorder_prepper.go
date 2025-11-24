@@ -22,8 +22,6 @@ import (
 	"github.com/0xsoniclabs/aida/executor"
 	"github.com/0xsoniclabs/aida/executor/extension"
 	"github.com/0xsoniclabs/aida/state/proxy"
-	"github.com/0xsoniclabs/aida/tracer/context"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils"
 )
 

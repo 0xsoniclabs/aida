@@ -19,8 +19,6 @@ package executor
 //go:generate mockgen -source operation_provider.go -destination operation_provider_mocks.go -package executor
 
 import (
-	"github.com/0xsoniclabs/aida/tracer"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/utils"
 )
 

@@ -18,7 +18,6 @@ package executor
 
 import (
 	"github.com/0xsoniclabs/aida/rpc"
-	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 )
 
