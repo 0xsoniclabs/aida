@@ -37,7 +37,7 @@ func TestSortForks_All(t *testing.T) {
 	log := logger.NewLogger("info", "test-sort-forks")
 	forks := sortForks(log, "all")
 	assert.ElementsMatch(t, forks, []string{
-		"Prague", "Cancun", "Shanghai", "Paris", "Bellatrix", "GrayGlacier", "ArrowGlacier", "Altair", "London", "Berlin", "Istanbul", "MuirGlacier", "TestNetwork",
+		"Osaka", "Prague", "Cancun", "Shanghai", "Paris", "Bellatrix", "GrayGlacier", "ArrowGlacier", "Altair", "London", "Berlin", "Istanbul", "MuirGlacier", "TestNetwork",
 	})
 }
 
