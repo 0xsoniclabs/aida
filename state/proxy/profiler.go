@@ -22,6 +22,7 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/state/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils/analytics"
 	"github.com/ethereum/go-ethereum/common"

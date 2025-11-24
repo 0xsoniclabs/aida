@@ -20,6 +20,7 @@ package executor
 
 import (
 	"github.com/0xsoniclabs/aida/utils"
+	"github.com/0xsoniclabs/aida/state/operation"
 )
 
 type operationProvider struct {
