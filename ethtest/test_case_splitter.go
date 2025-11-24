@@ -34,6 +34,7 @@ type Transaction struct {
 }
 
 var usableForks = map[string]struct{}{
+	"Osaka":        {},
 	"Prague":       {},
 	"Cancun":       {},
 	"Shanghai":     {},
