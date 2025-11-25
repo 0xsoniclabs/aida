@@ -41,6 +41,7 @@ type TraceOp struct {
 }
 
 // LoadOperations reads operations from textual trace files emitted by the logger proxy.
+// Memory-optimized: pre-allocates based on estimated line count to minimize allocations.
 func LoadOperations(files []string, firstBlock, lastBlock uint64) ([]TraceOp, error) {
 	if len(files) == 0 {
 		return nil, fmt.Errorf("delta: no trace files provided")
@@ -49,13 +50,14 @@ func LoadOperations(files []string, firstBlock, lastBlock uint64) ([]TraceOp, er
 		return nil, fmt.Errorf("delta: block filters are not supported for logger traces")
 	}
 
-	var ops []TraceOp
+	// Estimate total capacity to minimize slice reallocations
+	estimatedOps := estimateTotalOperations(files)
+	ops := make([]TraceOp, 0, estimatedOps)
+
 	for _, path := range files {
-		fileOps, err := readTraceFile(path)
-		if err != nil {
+		if err := readTraceFileAppend(path, &ops); err != nil {
 			return nil, err
 		}
-		ops = append(ops, fileOps...)
 	}
 
 	if len(ops) == 0 {
@@ -65,19 +67,44 @@ func LoadOperations(files []string, firstBlock, lastBlock uint64) ([]TraceOp, er
 	return ops, nil
 }
 
-func readTraceFile(path string) ([]TraceOp, error) {
+// estimateTotalOperations estimates the number of operations across all files
+// to enable pre-allocation and reduce memory reallocations.
+func estimateTotalOperations(files []string) int {
+	const avgBytesPerOp = 80 // Average bytes per operation line
+	totalBytes := int64(0)
+
+	for _, path := range files {
+		if stat, err := os.Stat(path); err == nil {
+			totalBytes += stat.Size()
+		}
+	}
+
+	if totalBytes == 0 {
+		return 1024 // Default capacity
+	}
+
+	return int(totalBytes / avgBytesPerOp)
+}
+
+// readTraceFileAppend reads a trace file and appends operations directly to the provided slice.
+// This avoids intermediate allocations and copies, making it memory-efficient for large files.
+func readTraceFileAppend(path string, ops *[]TraceOp) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("delta: open trace %s: %w", path, err)
+		return fmt.Errorf("delta: open trace %s: %w", path, err)
 	}
 	defer func() { _ = f.Close() }()
 
+	// Use a larger buffer for better I/O performance on large files
 	scanner := bufio.NewScanner(f)
-	buf := make([]byte, 0, 1024*1024)
-	scanner.Buffer(buf, 16*1024*1024)
+	const (
+		initialBufSize = 1024 * 1024      // 1MB initial buffer
+		maxBufSize     = 16 * 1024 * 1024 // 16MB max buffer
+	)
+	buf := make([]byte, initialBufSize)
+	scanner.Buffer(buf, maxBufSize)
 
 	var (
-		ops          []TraceOp
 		currentBlock uint64
 		hasBlockCtx  bool
 	)
@@ -92,7 +119,7 @@ func readTraceFile(path string) ([]TraceOp, error) {
 
 		op, err := parseTraceLine(line)
 		if err != nil {
-			return nil, fmt.Errorf("delta: parse %s:%d: %w", path, lineNo, err)
+			return fmt.Errorf("delta: parse %s:%d: %w", path, lineNo, err)
 		}
 
 		if op.Kind == "BeginBlock" && op.HasBlock {
@@ -105,14 +132,14 @@ func readTraceFile(path string) ([]TraceOp, error) {
 			op.Block = currentBlock
 		}
 
-		ops = append(ops, op)
+		*ops = append(*ops, op)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("delta: scan %s: %w", path, err)
+		return fmt.Errorf("delta: scan %s: %w", path, err)
 	}
 
-	return ops, nil
+	return nil
 }
 
 func parseTraceLine(line string) (TraceOp, error) {
