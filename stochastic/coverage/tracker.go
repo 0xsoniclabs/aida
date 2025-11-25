@@ -19,6 +19,7 @@ package coverage
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"sync"
 
 	runtimeCoverage "runtime/coverage"
@@ -64,15 +65,22 @@ func NewTracker() (*Tracker, error) {
 		return nil, err
 	}
 
+	carmenUnits := filterCarmenUnits(meta.unitDetails)
+	if len(carmenUnits) == 0 {
+		fmt.Fprintf(os.Stderr, "coverage: no valid Carmen packages found in metadata (expected prefix %q); rebuild with -coverpkg=github.com/0xsoniclabs/carmen/go/... to enable Carmen-only filtering\n", carmenModulePrefix)
+		carmenUnits = meta.unitDetails
+	}
+
 	initialCounts, err := snapshotCounters(meta.hash)
 	if err != nil {
 		return nil, err
 	}
+	initialCounts = filterCountersForUnits(initialCounts, carmenUnits)
 
 	tracker := &Tracker{
 		metaHash:        meta.hash,
-		units:           meta.unitDetails,
-		totalUnits:      meta.totalUnits,
+		units:           carmenUnits,
+		totalUnits:      len(carmenUnits),
 		lastSnapshot:    initialCounts,
 		coveredLineKeys: make(map[string]struct{}),
 	}
@@ -98,6 +106,7 @@ func (t *Tracker) Snapshot() (Delta, error) {
 	if err != nil {
 		return Delta{}, err
 	}
+	counts = filterCountersForUnits(counts, t.units)
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
