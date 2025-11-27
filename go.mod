@@ -1,8 +1,6 @@
 module github.com/0xsoniclabs/aida
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251014092906-75df60dc78cb
