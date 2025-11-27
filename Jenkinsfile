@@ -163,6 +163,31 @@ pipeline {
                     }
                 }
 
+                stage('aida-delta-debugger') {
+                    steps {
+                        sh "mkdir -p ${TRACEDIR}"
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
+                            sh """cat > ${TRACEDIR}/test-trace.txt << 'EOF'
+                                BeginBlock, 1000
+                                BeginTransaction, 0
+                                CreateAccount, 0x1234567890123456789012345678901234567890
+                                SetNonce, 0x1234567890123456789012345678901234567890, 1, NonceChangeUnspecified
+                                AddBalance, 0x1234567890123456789012345678901234567890, 1000000000000000000, 0, BalanceChangeUnspecified
+                                EndTransaction
+                                EndBlock
+                                EOF"""
+                            sh """build/aida-delta-debugger \\
+                                --trace-file ${TRACEDIR}/test-trace.txt \\
+                                --output ${TRACEDIR}/minimized-trace.txt \\
+                                ${STATEDB} \\
+                                ${TMPDB} \\
+                            """
+                            sh "build/aida-delta-debugger --help"
+                        }
+                        sh "rm -rf ${TRACEDIR}"
+                    }
+                }
+
                 stage('aida-vm-sdb live mode') {
                     steps {
                         catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
