@@ -655,7 +655,7 @@ func TestInfo_PrintStateHash_IntegrationTest(t *testing.T) {
 			}
 
 			// insert state hash
-			err = utils.SaveStateRoot(aidaDb, tc.insertKey, tc.insertValue)
+			err = db.SaveStateRoot(aidaDb, tc.insertKey, tc.insertValue)
 			assert.NoError(t, err)
 
 			err = aidaDb.Close()
@@ -725,7 +725,7 @@ func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 			}
 
 			// insert block hash
-			err = utils.SaveBlockHash(aidaDb, tc.insertKey, tc.insertValue)
+			err = db.SaveBlockHash(aidaDb, tc.insertKey, tc.insertValue)
 			assert.NoError(t, err)
 
 			err = aidaDb.Close()
@@ -888,7 +888,7 @@ func generateTestAidaDb(t *testing.T) string {
 	// write state hashes to the database
 	for i := 11; i <= 20; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveStateRoot(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = db.SaveStateRoot(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -897,7 +897,7 @@ func generateTestAidaDb(t *testing.T) string {
 	// write block hashes to the database
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = db.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1258,7 +1258,7 @@ func TestCommands(t *testing.T) {
 				bdb, err := db.NewDefaultSubstateDB(dbPath)
 				require.NoError(t, err)
 				hex := strconv.FormatUint(ss.Block, 16)
-				err = bdb.Put([]byte(utils.StateRootHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())
+				err = bdb.Put([]byte(db.StateRootHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())
 				require.NoError(t, err)
 				err = bdb.Close()
 				require.NoError(t, err)

@@ -39,16 +39,16 @@ import (
 
 func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockProvider := utils.NewMockHashProvider(ctrl)
+	mockProvider := db.NewMockHashProvider(ctrl)
 	mockState := state.NewMockStateDB(ctrl)
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
-	hash := common.Hash{123}
+	hash := types.Hash{123}
 	// Processor is called only once
 	gomock.InOrder(
 		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
-		mockProcessor.EXPECT().ProcessParentBlockHash(hash, gomock.Any(), gomock.Any()),
+		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash), gomock.Any(), gomock.Any()),
 	)
 
 	hashProcessor := parentBlockHashProcessor{
@@ -93,7 +93,7 @@ func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	aidaDb := db.NewMockSubstateDB(ctrl)
 
 	stateRoot := types.Hash{1}
-	aidaDb.EXPECT().Get([]byte(utils.StateRootHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
+	aidaDb.EXPECT().Get([]byte(db.StateRootHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
 
 	err := hp.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{AidaDb: aidaDb})
 	require.NoError(t, err, "PreBlock failed")
