@@ -178,7 +178,7 @@ func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashT
 		}
 	}()
 
-	provider := utils.MakeHashProvider(base)
+	provider := db.MakeHashProvider(base)
 	switch hashType {
 	case "state-hash":
 		bytes, err := provider.GetStateRootHash(blockNum)

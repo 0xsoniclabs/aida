@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251014092906-75df60dc78cb
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
-	github.com/0xsoniclabs/substate v0.0.0-20251113092044-f83bec23e451
+	github.com/0xsoniclabs/substate v0.0.0-20251118214143-ef0b309b9e24
 	github.com/0xsoniclabs/tosca v0.0.0-20251023131117-f542dea83f5b
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
@@ -25,7 +25,7 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/paulmach/orb v0.9.0
 	github.com/sigurn/crc8 v0.0.0-20220107193325-2243fe600f9f
-	github.com/status-im/keycard-go v0.3.2
+	github.com/status-im/keycard-go v0.3.3
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/urfave/cli/v2 v2.27.5

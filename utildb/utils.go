@@ -283,14 +283,14 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 	// write state hashes to the database
 	for i := 11; i <= 20; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveStateRoot(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = db.SaveStateRoot(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		require.NoError(t, err)
 	}
 
 	// write block hashes to the database
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = utils.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = db.SaveBlockHash(database, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		require.NoError(t, err)
 	}
 

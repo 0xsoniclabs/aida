@@ -344,7 +344,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			setup: func(t *testing.T, dbInst db.BaseDB) {
 				// must be bigger than 32 bytes
 				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
-				err := dbInst.Put([]byte(utils.StateRootHashPrefix+"0x1"), []byte(junkValue))
+				err := dbInst.Put([]byte(db.StateRootHashPrefix+"0x1"), []byte(junkValue))
 				assert.NoError(t, err)
 			},
 			dbComponent: dbcomponent.StateHash,
@@ -366,7 +366,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			name: "InvalidBlockHashKey",
 			setup: func(t *testing.T, dbInst db.BaseDB) {
 				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
-				err := dbInst.Put(utils.BlockHashDBKey(1), []byte(junkValue))
+				err := dbInst.Put(db.BlockHashDBKey(1), []byte(junkValue))
 				assert.NoError(t, err)
 			},
 			dbComponent: dbcomponent.BlockHash,
@@ -542,7 +542,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	numStateHashes := rand.Intn(5) + 16
 
 	for i := 0; i < numStateHashes; i++ {
-		err := utils.SaveStateRoot(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
+		err := db.SaveStateRoot(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
 		if err != nil {
 			t.Fatalf("error saving state root: %v", err)
 		}
@@ -551,7 +551,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	// Generate random number between 21-25
 	numBlockHashes := rand.Intn(5) + 21
 	for i := 0; i < numBlockHashes; i++ {
-		err := utils.SaveBlockHash(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
+		err := db.SaveBlockHash(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
 		if err != nil {
 			t.Fatalf("error saving block hash: %v", err)
 		}
