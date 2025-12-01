@@ -71,7 +71,7 @@ func NewTracker() (*Tracker, error) {
 		carmenUnits = meta.unitDetails
 	}
 
-	initialCounts, err := snapshotCounters(meta.hash)
+	initialCounts, err := snapshotCountersFn(meta.hash)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func NewTracker() (*Tracker, error) {
 
 // Snapshot captures the latest coverage counters and returns the delta against the previous snapshot.
 func (t *Tracker) Snapshot() (Delta, error) {
-	counts, err := snapshotCounters(t.metaHash)
+	counts, err := snapshotCountersFn(t.metaHash)
 	if err != nil {
 		return Delta{}, err
 	}
@@ -169,3 +169,6 @@ func snapshotCounters(expectedHash [16]byte) (map[CounterKey]uint32, error) {
 	}
 	return parseCounterFile(expectedHash, buf.Bytes())
 }
+
+// snapshotCountersFn allows tests to stub counter collection while leaving production code unchanged.
+var snapshotCountersFn = snapshotCounters
