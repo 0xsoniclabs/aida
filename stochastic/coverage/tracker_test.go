@@ -17,6 +17,7 @@
 package coverage
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -243,4 +244,54 @@ func TestDelta(t *testing.T) {
 	require.Equal(t, 10, delta.NewLines)
 	require.Equal(t, 0.05, delta.CoverageIncrease)
 	require.Equal(t, 0.15, delta.CoverageNow)
+}
+
+func TestTrackerSnapshot_UsesCounters(t *testing.T) {
+	defer func(prev func([16]byte) (map[CounterKey]uint32, error)) { snapshotCountersFn = prev }(snapshotCountersFn)
+
+	expectedHash := [16]byte{9, 9, 9, 9}
+	called := false
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		called = true
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{
+			{Pkg: 1, Func: 2, Unit: 3}: 1,
+			{Pkg: 9, Func: 9, Unit: 9}: 5, // should be ignored by filter
+		}, nil
+	}
+
+	tracker := &Tracker{
+		metaHash:   expectedHash,
+		units:      map[CounterKey]unitInfo{{Pkg: 1, Func: 2, Unit: 3}: {lineKeys: []string{"file.go:1"}}},
+		totalUnits: 1,
+		lastSnapshot: map[CounterKey]uint32{
+			{Pkg: 1, Func: 2, Unit: 3}: 0,
+		},
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	delta, err := tracker.Snapshot()
+	require.NoError(t, err)
+	require.True(t, called, "snapshotCountersFn should be invoked")
+	require.Equal(t, 1, delta.NewUnits)
+	require.Equal(t, 1, delta.NewLines)
+	require.InDelta(t, 1.0, delta.CoverageNow, 0.001)
+}
+
+func TestTrackerSnapshot_Error(t *testing.T) {
+	defer func(prev func([16]byte) (map[CounterKey]uint32, error)) { snapshotCountersFn = prev }(snapshotCountersFn)
+
+	snapshotCountersFn = func([16]byte) (map[CounterKey]uint32, error) {
+		return nil, fmt.Errorf("boom")
+	}
+
+	tracker := &Tracker{
+		metaHash:   [16]byte{},
+		units:      map[CounterKey]unitInfo{},
+		totalUnits: 0,
+	}
+
+	_, err := tracker.Snapshot()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "boom")
 }
