@@ -51,6 +51,10 @@ var StochasticReplayCommand = cli.Command{
 		&utils.StateDbVariantFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
+		&utils.TraceFileFlag,
+		&utils.TraceDebugFlag,
+		&utils.TraceFlag,
 		&utils.ShadowDbImplementationFlag,
 		&utils.ShadowDbVariantFlag,
 		&utils.ValidateStateHashesFlag,
@@ -116,31 +120,61 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	var loggerOutput chan string
 	var loggerWg sync.WaitGroup
 	var loggerFile *os.File
+	var deltaSink *proxy.DeltaLogSink
+
+	deltaLoggingPath := ctx.Path(utils.DeltaLoggingFlag.Name)
 	dbLoggingPath := ctx.Path(utils.StateDbLoggingFlag.Name)
-	if dbLoggingPath != "" {
+
+	if deltaLoggingPath != "" {
+		var err error
+		loggerFile, err = os.Create(deltaLoggingPath)
+		if err != nil {
+			return fmt.Errorf("cannot create delta logging output file: %w", err)
+		}
+		writer := bufio.NewWriter(loggerFile)
+		deltaSink = proxy.NewDeltaLogSink(log, writer, loggerFile)
+		db = proxy.NewDeltaLoggerProxy(db, deltaSink)
+		log.Noticef("Delta logging enabled: %s", deltaLoggingPath)
+	} else if dbLoggingPath != "" {
 		var err error
 		loggerFile, err = os.Create(dbLoggingPath)
 		if err != nil {
 			return fmt.Errorf("cannot create db logging output file: %w", err)
 		}
-		defer func() {
-			if loggerFile != nil {
-				loggerFile.Close()
-			}
-		}()
 		loggerOutput = make(chan string, 1000)
 		loggerWg.Add(1)
 		go func() {
 			defer loggerWg.Done()
 			writer := bufio.NewWriter(loggerFile)
-			defer writer.Flush()
+			defer func() {
+				if err := writer.Flush(); err != nil {
+					log.Errorf("cannot flush db-logging writer; %v", err)
+				}
+			}()
 			for line := range loggerOutput {
-				fmt.Fprintln(writer, line)
+				if _, err := fmt.Fprintln(writer, line); err != nil {
+					log.Errorf("cannot write db log line; %v", err)
+					return
+				}
 			}
 		}()
 		log.Noticef("StateDB logging enabled: %s", dbLoggingPath)
 		db = proxy.NewLoggerProxy(db, log, loggerOutput, &loggerWg)
 	}
+
+	defer func() {
+		if deltaSink != nil {
+			_ = deltaSink.Close()
+			loggerFile = nil
+		}
+		if loggerOutput != nil {
+			close(loggerOutput)
+			loggerWg.Wait()
+		}
+		if loggerFile != nil {
+			_ = loggerFile.Close()
+		}
+	}()
 
 	// Enable tracing if debug flag is set
 	if cfg.Trace {
@@ -172,7 +206,9 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	}
 	log.Infof("Closing DB took %v", time.Since(start))
 
-	if dbLoggingPath != "" {
+	if deltaLoggingPath != "" {
+		log.Noticef("Delta trace written to: %s", deltaLoggingPath)
+	} else if dbLoggingPath != "" {
 		log.Noticef("StateDB trace written to: %s", dbLoggingPath)
 	}
 

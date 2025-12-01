@@ -79,7 +79,9 @@ func TestCmd_RunStochasticReplayCommandWithDbLogging(t *testing.T) {
 
 	f, err := os.Open(dbLogFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		require.NoError(t, f.Close())
+	}()
 
 	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 0, 64*1024)
