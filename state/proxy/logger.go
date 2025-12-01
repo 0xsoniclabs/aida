@@ -98,14 +98,14 @@ func (s *LoggingStateDb) EndSyncPeriod() {
 }
 
 func (s *LoggingStateDb) GetHash() (common.Hash, error) {
-	s.writeLog("GetHash")
 	hash, err := s.state.GetHash()
+	s.writeLog("GetHash, %v", hash)
 	return hash, err
 }
 
 func (s *LoggingStateDb) Close() error {
-	s.writeLog("Close")
 	res := s.state.Close()
+	s.writeLog("Close")
 	// signal and await the close
 	close(s.output)
 	s.wg.Wait()
@@ -139,8 +139,8 @@ func (s *LoggingStateDb) GetArchiveState(block uint64) (state.NonCommittableStat
 }
 
 func (s *LoggingStateDb) GetArchiveBlockHeight() (uint64, bool, error) {
-	s.writeLog("GetArchiveBlockHeight")
 	res, empty, err := s.state.GetArchiveBlockHeight()
+	s.writeLog("GetArchiveBlockHeight, %v, %t, %v", res, empty, err)
 	return res, empty, err
 }
 
@@ -159,101 +159,101 @@ func (s *LoggingStateDb) Finalise(deleteEmptyObjects bool) {
 }
 
 func (s *LoggingStateDb) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	s.writeLog("IntermediateRoot, %v", deleteEmptyObjects)
 	res := s.state.IntermediateRoot(deleteEmptyObjects)
+	s.writeLog("IntermediateRoot, %v, %v", deleteEmptyObjects, res)
 	return res
 }
 
 func (s *LoggingStateDb) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, error) {
-	s.writeLog("Commit, %v, %v", block, deleteEmptyObjects)
 	hash, err := s.state.Commit(block, deleteEmptyObjects)
+	s.writeLog("Commit, %v, %v, %v", deleteEmptyObjects, hash, err)
 	return hash, err
 }
 
 func (s *LoggingStateDb) PrepareSubstate(substate txcontext.WorldState, block uint64) {
-	s.writeLog("PrepareSubstate, %v, %v", substate.String(), block)
 	s.state.PrepareSubstate(substate, block)
+	s.writeLog("PrepareSubstate, %v", substate.String())
 }
 
 func (s *loggingVmStateDb) CreateAccount(addr common.Address) {
-	s.writeLog("CreateAccount, %v", addr)
 	s.db.CreateAccount(addr)
+	s.writeLog("CreateAccount, %v", addr)
 }
 
 func (s *loggingVmStateDb) Exist(addr common.Address) bool {
-	s.writeLog("Exist, %v", addr)
 	res := s.db.Exist(addr)
+	s.writeLog("Exist, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) Empty(addr common.Address) bool {
-	s.writeLog("Empty, %v", addr)
 	res := s.db.Empty(addr)
+	s.writeLog("Empty, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
-	s.writeLog("SelfDestruct, %v", addr)
 	res := s.db.SelfDestruct(addr)
+	s.writeLog("SelfDestruct, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) HasSelfDestructed(addr common.Address) bool {
-	s.writeLog("HasSelfDestructed, %v", addr)
 	res := s.db.HasSelfDestructed(addr)
+	s.writeLog("HasSelfDestructed, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) GetBalance(addr common.Address) *uint256.Int {
-	s.writeLog("GetBalance, %v", addr)
 	res := s.db.GetBalance(addr)
+	s.writeLog("GetBalance, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) AddBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	s.writeLog("AddBalance, %v, %v", addr, value)
 	res := s.db.AddBalance(addr, value, reason)
+	s.writeLog("AddBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SubBalance(addr common.Address, value *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
-	s.writeLog("SubBalance, %v, %v", addr, value)
 	res := s.db.SubBalance(addr, value, reason)
+	s.writeLog("SubBalance, %v, %v, %v, %v, %v", addr, value, s.db.GetBalance(addr), reason, res)
 	return res
 }
 
 func (s *loggingVmStateDb) GetNonce(addr common.Address) uint64 {
-	s.writeLog("GetNonce, %v", addr)
 	res := s.db.GetNonce(addr)
+	s.writeLog("GetNonce, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SetNonce(addr common.Address, value uint64, reason tracing.NonceChangeReason) {
-	s.writeLog("SetNonce, %v, %v", addr, value)
 	s.db.SetNonce(addr, value, reason)
+	s.writeLog("SetNonce, %v, %v, %v", addr, value, reason)
 }
 
 func (s *loggingVmStateDb) GetCommittedState(addr common.Address, key common.Hash) common.Hash {
-	s.writeLog("GetCommittedState, %v, %v", addr, key)
 	res := s.db.GetCommittedState(addr, key)
+	s.writeLog("GetCommittedState, %v, %v, %v", addr, key, res)
 	return res
 }
 
 func (s *loggingVmStateDb) GetStateAndCommittedState(addr common.Address, key common.Hash) (common.Hash, common.Hash) {
-	s.writeLog("GetStateAndCommittedState, %s, %s", addr, key)
 	val, origin := s.db.GetStateAndCommittedState(addr, key)
+	s.writeLog("GetStateAndCommittedState, %s, %s, %s, %s", addr, key, val, origin)
 	return val, origin
 }
 
 func (s *loggingVmStateDb) GetState(addr common.Address, key common.Hash) common.Hash {
-	s.writeLog("GetState, %v, %v", addr, key)
 	res := s.db.GetState(addr, key)
+	s.writeLog("GetState, %v, %v, %v", addr, key, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SetState(addr common.Address, key common.Hash, value common.Hash) common.Hash {
-	s.writeLog("SetState, %v, %v, %v", addr, key, value)
 	res := s.db.SetState(addr, key, value)
+	s.writeLog("SetState, %v, %v, %v, %v", addr, key, value, res)
 	return res
 }
 
@@ -263,44 +263,44 @@ func (s *loggingVmStateDb) SetTransientState(addr common.Address, key common.Has
 }
 
 func (s *loggingVmStateDb) GetTransientState(addr common.Address, key common.Hash) common.Hash {
-	s.writeLog("GetTransientState, %v, %v", addr, key)
 	value := s.db.GetTransientState(addr, key)
+	s.writeLog("GetTransientState, %v, %v, %v", addr, key, value)
 	return value
 }
 
 func (s *loggingVmStateDb) GetCode(addr common.Address) []byte {
-	s.writeLog("GetCode, %v", addr)
 	res := s.db.GetCode(addr)
+	s.writeLog("GetCode, %v, %v", addr, hex.EncodeToString(res))
 	return res
 }
 
 func (s *loggingVmStateDb) GetCodeSize(addr common.Address) int {
-	s.writeLog("GetCodeSize, %v", addr)
 	res := s.db.GetCodeSize(addr)
+	s.writeLog("GetCodeSize, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) GetCodeHash(addr common.Address) common.Hash {
-	s.writeLog("GetCodeHash, %v", addr)
 	res := s.db.GetCodeHash(addr)
+	s.writeLog("GetCodeHash, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SetCode(addr common.Address, code []byte, reason tracing.CodeChangeReason) []byte {
-	s.writeLog("SetCode, %v, %v, %v", addr, hex.EncodeToString(code), reason)
 	res := s.db.SetCode(addr, code, reason)
+	s.writeLog("SetCode, %v, %v, %v, %v", addr, code, res, reason)
 	return res
 }
 
 func (s *loggingVmStateDb) Snapshot() int {
-	s.writeLog("Snapshot")
 	res := s.db.Snapshot()
+	s.writeLog("Snapshot, %v", res)
 	return res
 }
 
 func (s *loggingVmStateDb) RevertToSnapshot(id int) {
-	s.writeLog("RevertToSnapshot, %v", id)
 	s.db.RevertToSnapshot(id)
+	s.writeLog("RevertToSnapshot, %v", id)
 }
 
 func (s *loggingVmStateDb) BeginTransaction(tx uint32) error {
@@ -319,18 +319,18 @@ func (s *loggingVmStateDb) Finalise(deleteEmptyObjects bool) {
 }
 
 func (s *loggingVmStateDb) AddRefund(amount uint64) {
-	s.writeLog("AddRefund, %v", amount)
 	s.db.AddRefund(amount)
+	s.writeLog("AddRefund, %v, %v", amount, s.db.GetRefund())
 }
 
 func (s *loggingVmStateDb) SubRefund(amount uint64) {
-	s.writeLog("SubRefund, %v", amount)
 	s.db.SubRefund(amount)
+	s.writeLog("SubRefund, %v, %v", amount, s.db.GetRefund())
 }
 
 func (s *loggingVmStateDb) GetRefund() uint64 {
-	s.writeLog("GetRefund")
 	res := s.db.GetRefund()
+	s.writeLog("GetRefund, %v", res)
 	return res
 }
 
@@ -340,14 +340,14 @@ func (s *loggingVmStateDb) Prepare(rules params.Rules, sender, coinbase common.A
 }
 
 func (s *loggingVmStateDb) AddressInAccessList(addr common.Address) bool {
-	s.writeLog("AddressInAccessList, %v", addr)
 	res := s.db.AddressInAccessList(addr)
+	s.writeLog("AddressInAccessList, %v, %v", addr, res)
 	return res
 }
 
 func (s *loggingVmStateDb) SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool) {
-	s.writeLog("SlotInAccessList, %v, %v", addr, slot)
 	a, b := s.db.SlotInAccessList(addr, slot)
+	s.writeLog("SlotInAccessList, %v, %v, %v, %v", addr, slot, a, b)
 	return a, b
 }
 
@@ -367,44 +367,44 @@ func (s *loggingVmStateDb) AddLog(entry *types.Log) {
 }
 
 func (s *loggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
-	s.writeLog("GetLogs, %v, %v, %v, %v", hash, block, blockHash, blkTimestamp)
 	res := s.db.GetLogs(hash, block, blockHash, blkTimestamp)
+	s.writeLog("GetLogs, %v, %v, %v, %v, %v", hash, block, blockHash, blkTimestamp, res)
 	return res
 }
 
 // PointCache returns the point cache used in computations.
 func (s *loggingVmStateDb) PointCache() *utils.PointCache {
-	s.writeLog("PointCache")
 	res := s.db.PointCache()
+	s.writeLog("PointCache, %v", res)
 	return res
 }
 
 // Witness retrieves the current state witness.
 func (s *loggingVmStateDb) Witness() *stateless.Witness {
-	s.writeLog("Witness")
 	res := s.db.Witness()
+	s.writeLog("Witness, %v", res)
 	return res
 }
 
 func (s *loggingVmStateDb) SetTxContext(thash common.Hash, ti int) {
-	s.writeLog("SetTxContext, %v, %v", thash, ti)
 	s.db.SetTxContext(thash, ti)
+	s.writeLog("SetTxContext, %v, %v", thash, ti)
 }
 
 func (s *loggingVmStateDb) GetSubstatePostAlloc() txcontext.WorldState {
-	s.writeLog("GetSubstatePostAlloc")
 	res := s.db.GetSubstatePostAlloc()
+	s.writeLog("GetSubstatePostAlloc, %v", res.String())
 	return res
 }
 
 func (s *loggingVmStateDb) AddPreimage(hash common.Hash, data []byte) {
-	s.writeLog("AddPreimage, %v, %v", hash, hex.EncodeToString(data))
 	s.db.AddPreimage(hash, data)
+	s.writeLog("AddPreimage, %v, %v", hash, data)
 }
 
 func (s *loggingVmStateDb) AccessEvents() *geth.AccessEvents {
-	s.writeLog("AccessEvents")
 	res := s.db.AccessEvents()
+	s.writeLog("AccessEvents, %v", res)
 	return res
 }
 
@@ -414,14 +414,14 @@ func (s *loggingVmStateDb) CreateContract(addr common.Address) {
 }
 
 func (s *loggingVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	s.writeLog("SelfDestruct6780, %v", addr)
 	balance, success := s.db.SelfDestruct6780(addr)
+	s.writeLog("SelfDestruct6780, %v, %v, %v", addr, balance, success)
 	return balance, success
 }
 
 func (s *loggingVmStateDb) GetStorageRoot(addr common.Address) common.Hash {
-	s.writeLog("GetStorageRoot, %v", addr)
 	res := s.db.GetStorageRoot(addr)
+	s.writeLog("GetStorageRoot, %v, %v", res, addr)
 	return res
 }
 
@@ -432,10 +432,12 @@ func (s *loggingVmStateDb) writeLog(format string, a ...any) {
 }
 
 func (s *loggingNonCommittableStateDb) GetHash() (common.Hash, error) {
-	s.writeLog("GetHash")
 	hash, err := s.nonCommittableStateDB.GetHash()
 	if err != nil {
+		s.writeLog("GetHash, %v", err)
 		return common.Hash{}, err
+	} else {
+		s.writeLog("GetHash, %v", hash)
 	}
 	return hash, nil
 }
@@ -446,31 +448,31 @@ func (s *loggingNonCommittableStateDb) Release() error {
 }
 
 func (l *loggingBulkLoad) CreateAccount(addr common.Address) {
-	l.writeLog("Bulk, CreateAccount, %v", addr)
 	l.nested.CreateAccount(addr)
+	l.writeLog("Bulk, CreateAccount, %v", addr)
 }
 func (l *loggingBulkLoad) SetBalance(addr common.Address, balance *uint256.Int) {
-	l.writeLog("Bulk, SetBalance, %v, %v", addr, balance)
 	l.nested.SetBalance(addr, balance)
+	l.writeLog("Bulk, SetBalance, %v, %v", addr, balance)
 }
 
 func (l *loggingBulkLoad) SetNonce(addr common.Address, nonce uint64) {
-	l.writeLog("Bulk, SetNonce, %v, %v", addr, nonce)
 	l.nested.SetNonce(addr, nonce)
+	l.writeLog("Bulk, SetNonce, %v, %v", addr, nonce)
 }
 
 func (l *loggingBulkLoad) SetState(addr common.Address, key common.Hash, value common.Hash) {
-	l.writeLog("Bulk, SetState, %v, %v, %v", addr, key, value)
 	l.nested.SetState(addr, key, value)
+	l.writeLog("Bulk, SetState, %v, %v, %v", addr, key, value)
 }
 
 func (l *loggingBulkLoad) SetCode(addr common.Address, code []byte) {
-	l.writeLog("Bulk, SetCode, %v, %v", addr, hex.EncodeToString(code))
 	l.nested.SetCode(addr, code)
+	l.writeLog("Bulk, SetCode, %v, %v", addr, code)
 }
 
 func (l *loggingBulkLoad) Close() error {
-	l.writeLog("Bulk, Close")
 	res := l.nested.Close()
+	l.writeLog("Bulk, Close, %v", res)
 	return res
 }
