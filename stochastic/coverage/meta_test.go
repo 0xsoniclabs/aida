@@ -61,6 +61,31 @@ func TestParseMetaFile_ValidFile(t *testing.T) {
 	require.NotEmpty(t, meta.unitDetails)
 }
 
+func TestParseMetaFile_WithStringTableSkip(t *testing.T) {
+	hash := [16]byte{9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6}
+	pkg := buildTestPackage(t)
+
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, metaFileHeader{
+		Magic:        metaFileMagic,
+		Entries:      1,
+		MetaFileHash: hash,
+		StrTabLength: 4, // exercise string table skip path
+	}))
+
+	packageOffset := uint64(buf.Len() + 16 + 4) // offsets+lengths (16) + strtab (4)
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, packageOffset))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint64(len(pkg))))
+
+	buf.Write(make([]byte, 4)) // dummy string table
+	buf.Write(pkg)
+
+	meta, err := parseMetaFile(buf.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, hash, meta.hash)
+	require.NotEmpty(t, meta.unitDetails)
+}
+
 func TestParseMetaFile_Errors(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -95,6 +120,20 @@ func TestParseMetaFile_Errors(t *testing.T) {
 				return buf.Bytes()
 			}(),
 			errMsg: "read package offset",
+		},
+		{
+			name: "lengths read error",
+			data: func() []byte {
+				buf := &bytes.Buffer{}
+				_ = binary.Write(buf, binary.LittleEndian, metaFileHeader{
+					Magic:   metaFileMagic,
+					Entries: 1,
+				})
+				// Write only offsets, omit lengths to force error
+				_ = binary.Write(buf, binary.LittleEndian, uint64(0))
+				return buf.Bytes()
+			}(),
+			errMsg: "read package length",
 		},
 		{
 			name: "package out of range",
@@ -268,6 +307,18 @@ func TestParseFunction_Errors(t *testing.T) {
 		errMsg string
 	}{
 		{
+			name: "start line read error",
+			data: func() []byte {
+				buf := &bytes.Buffer{}
+				writeULEB128ToBuffer(buf, 1) // 1 unit
+				writeULEB128ToBuffer(buf, 0) // name index ok
+				writeULEB128ToBuffer(buf, 0) // file index ok
+				// missing unit data triggers start line read error
+				return buf.Bytes()
+			}(),
+			errMsg: "read unit start line",
+		},
+		{
 			name:   "truncated unit count",
 			data:   []byte{},
 			errMsg: "read func unit count",
@@ -305,6 +356,18 @@ func TestParseFunction_Errors(t *testing.T) {
 				return buf.Bytes()
 			}(),
 			errMsg: "read unit start column",
+		},
+		{
+			name: "literal flag error",
+			data: func() []byte {
+				buf := &bytes.Buffer{}
+				writeULEB128ToBuffer(buf, 0) // 0 units
+				writeULEB128ToBuffer(buf, 0) // name index
+				writeULEB128ToBuffer(buf, 0) // file index
+				// literal flag missing
+				return buf.Bytes()
+			}(),
+			errMsg: "read literal flag",
 		},
 	}
 

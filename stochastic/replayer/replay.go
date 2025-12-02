@@ -41,7 +41,14 @@ var (
 	randReadBytes          = func(rg *rand.Rand, buf []byte) (int, error) { return rg.Read(buf) }
 	mcLabel                = func(mc *markov.Chain, state int) (string, error) { return mc.Label(state) }
 	mcSample               = func(mc *markov.Chain, i int, u float64) (int, error) { return mc.Sample(i, u) }
+	newCoverageTracker     = func() (coverageTracker, error) { return coverage.NewTracker() }
+	newCoverageBiasFn      = newCoverageBias
 )
+
+type coverageTracker interface {
+	Snapshot() (coverage.Delta, error)
+	TotalUnits() int
+}
 
 // Parameterisable simulation constants
 // Simulation constants
@@ -243,7 +250,7 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 
 	// Initialize coverage-guided fuzzing if enabled
 	var (
-		tracker             *coverage.Tracker
+		tracker             coverageTracker
 		bias                *coverageBias
 		coverageOpCount     uint64
 		totalNewUnits       uint64
@@ -254,13 +261,13 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	if cfg.EnableCoverage {
 		log.Notice("Coverage-guided fuzzing enabled")
 		var trackerErr error
-		tracker, trackerErr = coverage.NewTracker()
+		tracker, trackerErr = newCoverageTracker()
 		if trackerErr != nil {
 			log.Warningf("Coverage tracking unavailable (binary may not be built with -cover): %v", trackerErr)
 			log.Warning("Falling back to standard replay mode")
 			cfg.EnableCoverage = false
 		} else {
-			bias, err = newCoverageBias(mc)
+			bias, err = newCoverageBiasFn(mc)
 			if err != nil {
 				return fmt.Errorf("RunStochasticReplay: failed to create coverage bias: %w", err)
 			}

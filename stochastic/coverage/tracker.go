@@ -53,14 +53,20 @@ type Tracker struct {
 	lastCoverage    float64
 }
 
+var (
+	writeMetaFn     = runtimeCoverage.WriteMeta
+	writeCountersFn = runtimeCoverage.WriteCounters
+	parseMetaFn     = parseMetaFile
+)
+
 // NewTracker constructs a tracker for the currently running instrumented program.
 func NewTracker() (*Tracker, error) {
 	var metaBuf bytes.Buffer
-	if err := runtimeCoverage.WriteMeta(&metaBuf); err != nil {
+	if err := writeMetaFn(&metaBuf); err != nil {
 		return nil, fmt.Errorf("coverage: metadata unavailable (build without -covermode=atomic?): %w", err)
 	}
 
-	meta, err := parseMetaFile(metaBuf.Bytes())
+	meta, err := parseMetaFn(metaBuf.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +170,7 @@ func (t *Tracker) applySnapshot(current map[CounterKey]uint32) Delta {
 
 func snapshotCounters(expectedHash [16]byte) (map[CounterKey]uint32, error) {
 	var buf bytes.Buffer
-	if err := runtimeCoverage.WriteCounters(&buf); err != nil {
+	if err := writeCountersFn(&buf); err != nil {
 		return nil, fmt.Errorf("coverage: counters unavailable (build without -covermode=atomic?): %w", err)
 	}
 	return parseCounterFile(expectedHash, buf.Bytes())

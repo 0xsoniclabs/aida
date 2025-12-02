@@ -25,6 +25,8 @@ import (
 
 var (
 	counterFileMagic = [4]byte{0x00, 0x63, 0x77, 0x6d}
+	alignReaderFn    = alignReader
+	readUint32Fn     = readUint32
 )
 
 const counterFileFooterSize = 16
@@ -88,25 +90,25 @@ func parseCounterFile(expectedHash [16]byte, data []byte) (map[CounterKey]uint32
 			}
 		}
 
-		if err := alignReader(reader, 4); err != nil {
+		if err := alignReaderFn(reader, 4); err != nil {
 			return nil, err
 		}
 
 		for funcEntry := uint64(0); funcEntry < seg.FcnEntries; funcEntry++ {
-			numCounters, err := readUint32(reader, hdr)
+			numCounters, err := readUint32Fn(reader, hdr)
 			if err != nil {
 				return nil, fmt.Errorf("coverage: read counter count: %w", err)
 			}
-			pkgIdx, err := readUint32(reader, hdr)
+			pkgIdx, err := readUint32Fn(reader, hdr)
 			if err != nil {
 				return nil, fmt.Errorf("coverage: read counter pkg idx: %w", err)
 			}
-			funcIdx, err := readUint32(reader, hdr)
+			funcIdx, err := readUint32Fn(reader, hdr)
 			if err != nil {
 				return nil, fmt.Errorf("coverage: read counter func idx: %w", err)
 			}
 			for unitIdx := uint32(0); unitIdx < numCounters; unitIdx++ {
-				value, err := readUint32(reader, hdr)
+				value, err := readUint32Fn(reader, hdr)
 				if err != nil {
 					return nil, fmt.Errorf("coverage: read counter value: %w", err)
 				}
@@ -126,7 +128,7 @@ func parseCounterFile(expectedHash [16]byte, data []byte) (map[CounterKey]uint32
 	return results, nil
 }
 
-func alignReader(r *bytes.Reader, alignment int64) error {
+func alignReader(r io.ReadSeeker, alignment int64) error {
 	pos, err := r.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return fmt.Errorf("coverage: query position: %w", err)
