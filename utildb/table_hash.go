@@ -263,7 +263,7 @@ func GetStateRootHashesHash(
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := db.MakeHashProvider(base)
+		shdb := db.MakeDefaultStateHashDBFromBaseDB(base)
 
 		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
@@ -272,7 +272,7 @@ func GetStateRootHashesHash(
 			default:
 			}
 
-			h, err := provider.GetStateRootHash(int(i))
+			h, err := shdb.GetStateHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue
@@ -305,7 +305,7 @@ func GetBlockHashesHash(
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		provider := db.MakeHashProvider(base)
+		bhdb := db.MakeDefaultBlockHashDBFromBaseDB(base)
 
 		for i := cfg.First; i <= cfg.Last; i++ {
 			select {
@@ -314,7 +314,7 @@ func GetBlockHashesHash(
 			default:
 			}
 
-			h, err := provider.GetBlockHash(int(i))
+			h, err := bhdb.GetBlockHash(int(i))
 			if err != nil {
 				if errors.Is(err, leveldb.ErrNotFound) {
 					continue

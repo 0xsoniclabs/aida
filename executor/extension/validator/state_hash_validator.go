@@ -52,7 +52,7 @@ type stateHashValidator[T any] struct {
 	log                     logger.Logger
 	nextArchiveBlockToCheck int
 	lastProcessedBlock      int
-	hashProvider            db.HashProvider
+	stateHashDB             db.StateHashDB
 	sdb                     db.SubstateDB // substate db pointer
 }
 
@@ -88,7 +88,7 @@ func (v *stateHashValidator[T]) PreRun(_ executor.State[T], ctx *executor.Contex
 		}
 	}
 
-	v.hashProvider = db.MakeHashProvider(ctx.AidaDb)
+	v.stateHashDB = db.MakeDefaultStateHashDBFromBaseDB(ctx.AidaDb)
 	return nil
 }
 
@@ -195,7 +195,7 @@ func (v *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 }
 
 func (v *stateHashValidator[T]) getStateHash(blockNumber int) (common.Hash, error) {
-	want, err := v.hashProvider.GetStateRootHash(blockNumber)
+	want, err := v.stateHashDB.GetStateHash(blockNumber)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
 			return common.Hash{}, fmt.Errorf("state hash for block %v is not present in the db", blockNumber)

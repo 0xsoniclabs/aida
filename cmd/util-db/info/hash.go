@@ -178,16 +178,17 @@ func printHashForBlock(cfg *utils.Config, log logger.Logger, blockNum int, hashT
 		}
 	}()
 
-	provider := db.MakeHashProvider(base)
 	switch hashType {
 	case "state-hash":
-		bytes, err := provider.GetStateRootHash(blockNum)
+		shdb := db.MakeDefaultStateHashDBFromBaseDB(base)
+		bytes, err := shdb.GetStateHash(blockNum)
 		if err != nil {
 			return fmt.Errorf("cannot get state hash for block %v; %v", blockNum, err)
 		}
 		log.Noticef("State hash for block %v is %v", blockNum, bytes)
 	case "block-hash":
-		bytesHash, err := provider.GetBlockHash(blockNum)
+		bhdb := db.MakeDefaultBlockHashDBFromBaseDB(base)
+		bytesHash, err := bhdb.GetBlockHash(blockNum)
 		if err != nil {
 			return fmt.Errorf("cannot get block hash for block %v; %v", blockNum, err)
 		}

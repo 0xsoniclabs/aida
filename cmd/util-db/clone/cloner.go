@@ -317,7 +317,7 @@ func (c *cloner) readStateHashes() error {
 	var errCounter uint64
 
 	for i := c.cfg.First; i <= c.cfg.Last; i++ {
-		key := []byte(db.StateRootHashPrefix + hexutil.EncodeUint64(i))
+		key := []byte(db.StateHashPrefix + hexutil.EncodeUint64(i))
 		value, err := c.sourceDb.Get(key)
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {

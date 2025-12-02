@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -58,35 +57,32 @@ func FindBlockRangeInDeleted(ddb db.DestroyedAccountDB) (uint64, uint64, error) 
 }
 
 // FindBlockRangeInStateHash finds the first and last block of block hashes within given AidaDb
-func FindBlockRangeInStateHash(bdb db.BaseDB, log logger.Logger) (uint64, uint64, error) {
+func FindBlockRangeInStateHash(shdb db.StateHashDB) (uint64, uint64, error) {
 	var firstStateHashBlock, lastStateHashBlock uint64
 	var err error
-	firstStateHashBlock, err = db.GetFirstStateHash(bdb)
+	firstStateHashBlock, err = shdb.GetFirstKey()
 	if err != nil {
 		return 0, 0, fmt.Errorf("cannot get first state hash; %w", err)
 	}
 
-	lastStateHashBlock, err = db.GetLastStateHash(bdb)
+	lastStateHashBlock, err = shdb.GetLastKey()
 	if err != nil {
-		log.Infof("Found first state hash at %v", firstStateHashBlock)
 		return 0, 0, fmt.Errorf("cannot get last state hash; %w", err)
 	}
 	return firstStateHashBlock, lastStateHashBlock, nil
 }
 
 // FindBlockRangeOfBlockHashes finds the first and last block in the block hash
-func FindBlockRangeOfBlockHashes(bdb db.BaseDB, log logger.Logger) (uint64, uint64, error) {
-	var firstBlock, lastBlock uint64
-	var err error
-
-	firstBlock, err = db.GetFirstBlockHash(bdb)
+func FindBlockRangeOfBlockHashes(bdb db.BlockHashDB) (uint64, uint64, error) {
+	firstBlock, err := bdb.GetFirstKey()
 	if err != nil {
-		return 0, 0, fmt.Errorf("cannot get first block hash; %w", err)
+		return 0, 0, fmt.Errorf("cannot get first blockHash; %w", err)
 	}
-	lastBlock, err = db.GetLastBlockHash(bdb)
+
+	// get last blockHash
+	lastBlock, err := bdb.GetLastKey()
 	if err != nil {
-		log.Infof("Found first block hash at %v", firstBlock)
-		return 0, 0, fmt.Errorf("cannot get last block hash; %w", err)
+		return 0, 0, fmt.Errorf("cannot get last blockHash; %w", err)
 	}
 	return firstBlock, lastBlock, nil
 }
@@ -170,9 +166,9 @@ func GetUpdateCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
-	hashProvider := db.MakeHashProvider(database)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(database)
 	for i := cfg.First; i <= cfg.Last; i++ {
-		_, err := hashProvider.GetStateRootHash(int(i))
+		_, err := shdb.GetStateHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				continue
@@ -189,9 +185,9 @@ func GetStateHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 func GetBlockHashCount(cfg *utils.Config, database db.BaseDB) (uint64, error) {
 	var count uint64
 
-	hashProvider := db.MakeHashProvider(database)
+	bhdb := db.MakeDefaultBlockHashDBFromBaseDB(database)
 	for i := cfg.First; i <= cfg.Last; i++ {
-		_, err := hashProvider.GetBlockHash(int(i))
+		_, err := bhdb.GetBlockHash(int(i))
 		if err != nil {
 			if errors.Is(err, leveldb.ErrNotFound) {
 				continue
