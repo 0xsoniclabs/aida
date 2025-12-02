@@ -48,8 +48,8 @@ func TestDeltaLogger_ProducesDeltaTraceFormat(t *testing.T) {
 
 	proxyDB := NewDeltaLoggerProxy(mockDB, sink)
 
-	expectedAddBalance := "AddBalance, 0x0000000000000000000000000000000000000001, 42, 0, BalanceChangeUnspecified, 42"
-	expectedSetNonce := "SetNonce, 0x0000000000000000000000000000000000000001, 7, NonceChangeAuthorization"
+	expectedAddBalance := "AddBalance, 0x0000000000000000000000000000000000000001, 42, 0, Unspecified, 42"
+	expectedSetNonce := "SetNonce, 0x0000000000000000000000000000000000000001, 7, Authorization"
 	expectedSetCode := "SetCode, 0x0000000000000000000000000000000000000001, 0xdead"
 	expectedCommit := "Commit, true"
 	expectedPreimage := "AddPreimage, 0x0000000000000000000000000000000000000000000000000000000000000003, 0xbeef"
