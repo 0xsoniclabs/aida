@@ -19,6 +19,8 @@ package coverage
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -119,6 +121,196 @@ func TestParseCounterFile_WithAlignment(t *testing.T) {
 	result, err := parseCounterFile(hash, buf.Bytes())
 	require.NoError(t, err)
 	require.Equal(t, uint32(42), result[CounterKey{Pkg: 0, Func: 0, Unit: 0}])
+}
+
+func TestParseCounterFile_WithArgsSection(t *testing.T) {
+	hash := [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   0, // cover raw flavor branch
+	}))
+
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+		ArgsLen:    4, // ensure ArgsLen skipping path executes
+	}))
+	buf.Write([]byte{0, 1, 2, 3}) // dummy args payload
+
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(1))) // numCounters
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(2))) // pkgIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(3))) // funcIdx
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, uint32(9))) // counter value
+
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	result, err := parseCounterFile(hash, buf.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, uint32(9), result[CounterKey{Pkg: 2, Func: 3, Unit: 0}])
+}
+
+func TestParseCounterFile_AlignReaderError(t *testing.T) {
+	defer func(prev func(io.ReadSeeker, int64) error) { alignReaderFn = prev }(alignReaderFn)
+	alignReaderFn = func(io.ReadSeeker, int64) error { return fmt.Errorf("bad align") }
+
+	hash := [16]byte{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 0,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	_, err := parseCounterFile(hash, buf.Bytes())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "bad align")
+}
+
+func TestParseCounterFile_ReadUint32Error(t *testing.T) {
+	defer func(prev func(*bytes.Reader, counterFileHeader) (uint32, error)) { readUint32Fn = prev }(readUint32Fn)
+	readUint32Fn = func(*bytes.Reader, counterFileHeader) (uint32, error) { return 0, fmt.Errorf("cannot read uint32") }
+
+	hash := [16]byte{6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6}
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	_, err := parseCounterFile(hash, buf.Bytes())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "read counter count")
+}
+
+func TestParseCounterFile_ReadPkgIdxError(t *testing.T) {
+	defer func(prev func(*bytes.Reader, counterFileHeader) (uint32, error)) { readUint32Fn = prev }(readUint32Fn)
+	call := 0
+	readUint32Fn = func(*bytes.Reader, counterFileHeader) (uint32, error) {
+		call++
+		switch call {
+		case 1:
+			return 1, nil // numCounters
+		case 2:
+			return 0, fmt.Errorf("pkg failure")
+		default:
+			return 0, nil
+		}
+	}
+
+	hash := [16]byte{7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7}
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	_, err := parseCounterFile(hash, buf.Bytes())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "pkg idx")
+}
+
+func TestParseCounterFile_ReadFuncIdxError(t *testing.T) {
+	defer func(prev func(*bytes.Reader, counterFileHeader) (uint32, error)) { readUint32Fn = prev }(readUint32Fn)
+	call := 0
+	readUint32Fn = func(*bytes.Reader, counterFileHeader) (uint32, error) {
+		call++
+		switch call {
+		case 1:
+			return 1, nil // numCounters
+		case 2:
+			return 0, nil // pkg idx ok
+		case 3:
+			return 0, fmt.Errorf("func failure")
+		default:
+			return 0, nil
+		}
+	}
+
+	hash := [16]byte{8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8}
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	_, err := parseCounterFile(hash, buf.Bytes())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "func idx")
+}
+
+func TestParseCounterFile_ReadCounterValueError(t *testing.T) {
+	defer func(prev func(*bytes.Reader, counterFileHeader) (uint32, error)) { readUint32Fn = prev }(readUint32Fn)
+	call := 0
+	readUint32Fn = func(*bytes.Reader, counterFileHeader) (uint32, error) {
+		call++
+		switch call {
+		case 1:
+			return 1, nil // numCounters
+		case 2:
+			return 0, nil // pkgIdx
+		case 3:
+			return 0, nil // funcIdx
+		case 4:
+			return 0, fmt.Errorf("value failure")
+		default:
+			return 0, nil
+		}
+	}
+
+	hash := [16]byte{9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}
+	buf := &bytes.Buffer{}
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	}))
+	require.NoError(t, binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	}))
+
+	_, err := parseCounterFile(hash, buf.Bytes())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "counter value")
 }
 
 func TestParseCounterFile_ULEB128Encoding(t *testing.T) {
@@ -321,6 +513,24 @@ func TestAlignReader(t *testing.T) {
 
 	pos, _ = reader.Seek(0, 1)
 	require.Equal(t, int64(4), pos)
+}
+
+type errSeekReader struct{ calls int }
+
+func (e *errSeekReader) Read([]byte) (int, error) { return 0, nil }
+func (e *errSeekReader) Seek(int64, int) (int64, error) {
+	e.calls++
+	if e.calls == 1 {
+		return 1, nil
+	}
+	return 0, fmt.Errorf("seek failure")
+}
+
+func TestAlignReader_SeekError(t *testing.T) {
+	reader := &errSeekReader{}
+	err := alignReader(reader, 4)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "seek failure")
 }
 
 func TestReadUint32Raw(t *testing.T) {

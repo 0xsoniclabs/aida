@@ -18,12 +18,14 @@ package replayer
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/coverage"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	recArgs "github.com/0xsoniclabs/aida/stochastic/recorder/arguments"
@@ -41,6 +43,23 @@ import (
 type stubSnapshots struct{ ret int }
 
 func (s *stubSnapshots) SampleSnapshot(n int) int { return s.ret }
+
+type stubCoverageTracker struct {
+	deltas []coverage.Delta
+	calls  int
+}
+
+func (s *stubCoverageTracker) Snapshot() (coverage.Delta, error) {
+	if s.calls < len(s.deltas) {
+		d := s.deltas[s.calls]
+		s.calls++
+		return d, nil
+	}
+	s.calls++
+	return coverage.Delta{}, nil
+}
+
+func (s *stubCoverageTracker) TotalUnits() int { return 10 }
 
 const (
 	testBalanceRange int64 = 100
@@ -859,6 +878,139 @@ func TestRunStochasticReplay_ProgressLogBranch(t *testing.T) {
 	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+}
+
+func TestRunStochasticReplay_CoverageGuidedBranch(t *testing.T) {
+	oldTracker := newCoverageTracker
+	oldBias := newCoverageBiasFn
+	defer func() {
+		newCoverageTracker = oldTracker
+		newCoverageBiasFn = oldBias
+	}()
+
+	tracker := &stubCoverageTracker{
+		deltas: []coverage.Delta{
+			{NewUnits: 1, NewLines: 2, CoverageIncrease: 0.1, CoverageNow: 0.2},
+		},
+	}
+	newCoverageTracker = func() (coverageTracker, error) { return tracker, nil }
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+
+	db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+	db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+	db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+	db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+	db.EXPECT().EndBlock().Return(nil).AnyTimes()
+	db.EXPECT().EndSyncPeriod().AnyTimes()
+	db.EXPECT().Error().Return(nil).AnyTimes()
+
+	labels := newLabels(t,
+		operations.BeginSyncPeriodID,
+		operations.EndBlockID,
+	)
+	A := [][]float64{{0, 1}, {1, 0}}
+	qpdf := make([]float64, stochastic.QueueLen)
+	qpdf[0] = 0.5
+	for i := 1; i < len(qpdf); i++ {
+		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
+	}
+	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10, EnableCoverage: true, CoverageSnapshotInterval: 1}
+
+	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	require.GreaterOrEqual(t, tracker.calls, 2) // one during loop, one final snapshot
+}
+
+func TestRunStochasticReplay_CoverageTrackerError(t *testing.T) {
+	oldTracker := newCoverageTracker
+	defer func() { newCoverageTracker = oldTracker }()
+	newCoverageTracker = func() (coverageTracker, error) { return nil, fmt.Errorf("tracker boom") }
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+	db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+	db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+	db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+	db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+	db.EXPECT().EndBlock().Return(nil).AnyTimes()
+	db.EXPECT().EndSyncPeriod().AnyTimes()
+	db.EXPECT().Error().Return(nil).AnyTimes()
+
+	labels := newLabels(t,
+		operations.BeginSyncPeriodID,
+		operations.EndBlockID,
+	)
+	A := [][]float64{{0, 1}, {1, 0}}
+	qpdf := make([]float64, stochastic.QueueLen)
+	qpdf[0] = 0.5
+	for i := 1; i < len(qpdf); i++ {
+		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
+	}
+	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10, EnableCoverage: true}
+
+	if err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test")); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	require.False(t, cfg.EnableCoverage, "coverage should be disabled after tracker error")
+}
+
+func TestRunStochasticReplay_CoverageBiasError(t *testing.T) {
+	oldTracker := newCoverageTracker
+	oldBias := newCoverageBiasFn
+	defer func() {
+		newCoverageTracker = oldTracker
+		newCoverageBiasFn = oldBias
+	}()
+
+	newCoverageTracker = func() (coverageTracker, error) { return &stubCoverageTracker{}, nil }
+	newCoverageBiasFn = func(*markov.Chain) (*coverageBias, error) { return nil, fmt.Errorf("bias boom") }
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := state.NewMockStateDB(ctrl)
+	db.EXPECT().GetShadowDB().Return(nil).AnyTimes()
+	db.EXPECT().BeginSyncPeriod(gomock.Any()).AnyTimes()
+	db.EXPECT().BeginBlock(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().BeginTransaction(gomock.Any()).Return(nil).AnyTimes()
+	db.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
+	db.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
+	db.EXPECT().EndTransaction().Return(nil).AnyTimes()
+	db.EXPECT().EndBlock().Return(nil).AnyTimes()
+	db.EXPECT().EndSyncPeriod().AnyTimes()
+	db.EXPECT().Error().Return(nil).AnyTimes()
+
+	labels := newLabels(t,
+		operations.BeginSyncPeriodID,
+		operations.EndBlockID,
+	)
+	A := [][]float64{{0, 1}, {1, 0}}
+	qpdf := make([]float64, stochastic.QueueLen)
+	qpdf[0] = 0.5
+	for i := 1; i < len(qpdf); i++ {
+		qpdf[i] = 0.5 / float64(stochastic.QueueLen-1)
+	}
+	cls := recArgs.ClassifierJSON{Counting: recArgs.ArgStatsJSON{N: 400, ECDF: [][2]float64{{0, 0}, {1, 1}}}, Queuing: recArgs.QueueStatsJSON{Distribution: qpdf}}
+	e := &recorder.StatsJSON{Operations: labels, StochasticMatrix: A, Contracts: cls, Keys: cls, Values: cls, SnapshotECDF: [][2]float64{{0, 0}, {1, 1}}}
+	cfg := &utils.Config{RandomSeed: 1, BalanceRange: 10, NonceRange: 10, EnableCoverage: true}
+
+	err := RunStochasticReplay(db, e, 1, cfg, logger.NewLogger("INFO", "test"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "coverage bias")
 }
 
 // TestRunStochasticReplay_LabelError forces label retrieval error via seam.

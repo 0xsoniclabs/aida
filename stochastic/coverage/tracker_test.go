@@ -17,7 +17,10 @@
 package coverage
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -294,4 +297,143 @@ func TestTrackerSnapshot_Error(t *testing.T) {
 	_, err := tracker.Snapshot()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "boom")
+}
+
+func TestNewTracker_UsesInjectedDependencies(t *testing.T) {
+	expectedHash := [16]byte{3, 3, 3, 3}
+	defer func(meta func(io.Writer) error, parse func([]byte) (*metaFile, error), snap func([16]byte) (map[CounterKey]uint32, error)) {
+		writeMetaFn = meta
+		parseMetaFn = parse
+		snapshotCountersFn = snap
+	}(writeMetaFn, parseMetaFn, snapshotCountersFn)
+
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+	parseMetaFn = func([]byte) (*metaFile, error) {
+		return &metaFile{
+			hash: expectedHash,
+			unitDetails: map[CounterKey]unitInfo{
+				{Pkg: 0, Func: 0, Unit: 0}: {PackagePath: carmenModulePrefix, lineKeys: []string{"file.go:1"}},
+			},
+		}, nil
+	}
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{
+			{Pkg: 0, Func: 0, Unit: 0}: 1,
+		}, nil
+	}
+
+	tracker, err := NewTracker()
+	require.NoError(t, err)
+	require.Equal(t, 1, tracker.coveredUnits)
+	require.Equal(t, 1, tracker.totalUnits)
+
+	delta, err := tracker.Snapshot()
+	require.NoError(t, err)
+	require.Equal(t, 0, delta.NewUnits)
+	require.InDelta(t, 1.0, delta.CoverageNow, 1e-9)
+}
+
+func TestNewTracker_WriteMetaError(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeMetaFn = prev }(writeMetaFn)
+	writeMetaFn = func(io.Writer) error { return fmt.Errorf("no meta") }
+
+	_, err := NewTracker()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "metadata unavailable")
+}
+
+func TestNewTracker_ParseMetaError(t *testing.T) {
+	defer func(meta func([]byte) (*metaFile, error), write func(io.Writer) error) {
+		parseMetaFn = meta
+		writeMetaFn = write
+	}(parseMetaFn, writeMetaFn)
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+	parseMetaFn = func([]byte) (*metaFile, error) { return nil, fmt.Errorf("meta boom") }
+
+	_, err := NewTracker()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "meta boom")
+}
+
+func TestNewTracker_NoCarmenUnitsFallback(t *testing.T) {
+	expectedHash := [16]byte{2, 2, 2, 2}
+	defer func(meta func([]byte) (*metaFile, error), snap func([16]byte) (map[CounterKey]uint32, error), write func(io.Writer) error) {
+		parseMetaFn = meta
+		snapshotCountersFn = snap
+		writeMetaFn = write
+	}(parseMetaFn, snapshotCountersFn, writeMetaFn)
+
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+
+	parseMetaFn = func([]byte) (*metaFile, error) {
+		return &metaFile{
+			hash: expectedHash,
+			unitDetails: map[CounterKey]unitInfo{
+				{Pkg: 1, Func: 1, Unit: 1}: {PackagePath: "github.com/notcarmen/module", lineKeys: []string{"x.go:1"}},
+			},
+		}, nil
+	}
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{{Pkg: 1, Func: 1, Unit: 1}: 0}, nil
+	}
+
+	tracker, err := NewTracker()
+	require.NoError(t, err)
+	require.Equal(t, 1, tracker.totalUnits)
+}
+
+func TestSnapshotCounters_WithStubbedWriter(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeCountersFn = prev }(writeCountersFn)
+
+	expectedHash := [16]byte{7, 7, 7, 7}
+	file := buildCounterFileForSnapshot(expectedHash, 7)
+	writeCountersFn = func(w io.Writer) error {
+		_, err := w.Write(file)
+		return err
+	}
+
+	counts, err := snapshotCounters(expectedHash)
+	require.NoError(t, err)
+	require.Equal(t, uint32(7), counts[CounterKey{Pkg: 1, Func: 2, Unit: 0}])
+}
+
+func TestSnapshotCounters_WriteError(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeCountersFn = prev }(writeCountersFn)
+	writeCountersFn = func(io.Writer) error { return fmt.Errorf("boom") }
+
+	_, err := snapshotCounters([16]byte{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "counters unavailable")
+}
+
+func buildCounterFileForSnapshot(hash [16]byte, value uint32) []byte {
+	buf := &bytes.Buffer{}
+	_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	})
+	_ = binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	})
+	_ = binary.Write(buf, binary.LittleEndian, uint32(1)) // numCounters
+	_ = binary.Write(buf, binary.LittleEndian, uint32(1)) // pkgIdx
+	_ = binary.Write(buf, binary.LittleEndian, uint32(2)) // funcIdx
+	_ = binary.Write(buf, binary.LittleEndian, value)     // counter value
+	_ = binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	})
+	return buf.Bytes()
 }
