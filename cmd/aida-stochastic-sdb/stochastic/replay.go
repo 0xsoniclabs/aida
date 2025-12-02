@@ -123,6 +123,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	var loggerWg sync.WaitGroup
 	var loggerFile *os.File
 	var deltaSink *proxy.DeltaLogSink
+	loggerManagedByProxy := false
 
 	deltaLoggingPath := ctx.Path(utils.DeltaLoggingFlag.Name)
 	dbLoggingPath := ctx.Path(utils.StateDbLoggingFlag.Name)
@@ -162,6 +163,7 @@ func stochasticReplayAction(ctx *cli.Context) error {
 		}()
 		log.Noticef("StateDB logging enabled: %s", dbLoggingPath)
 		db = proxy.NewLoggerProxy(db, log, loggerOutput, &loggerWg)
+		loggerManagedByProxy = true
 	}
 
 	defer func() {
@@ -170,7 +172,9 @@ func stochasticReplayAction(ctx *cli.Context) error {
 			loggerFile = nil
 		}
 		if loggerOutput != nil {
-			close(loggerOutput)
+			if !loggerManagedByProxy {
+				close(loggerOutput)
+			}
 			loggerWg.Wait()
 		}
 		if loggerFile != nil {
