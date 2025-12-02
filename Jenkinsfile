@@ -253,11 +253,9 @@ pipeline {
     }
     post {
         always {
-            steps {
-                sh "make clean"
-                sh "rm -rf *.dat ${TRACEDIR}"
-                sh "rm -rf /mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}"
-            }
+            sh "make clean"
+            sh "rm -rf *.dat ${TRACEDIR}"
+            sh "rm -rf /mnt/tmp-disk/state_db_carmen_go-file_${TOBLOCK}"
         }
     }
 }
