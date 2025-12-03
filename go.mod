@@ -37,6 +37,7 @@ require (
 )
 
 require (
+	github.com/0xsoniclabs/tracy v0.0.0-20251027125423-00a5ab7968fb // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect

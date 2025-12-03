@@ -46,6 +46,7 @@ func TestSdbReplaySubstate_AllDbEventsAreIssuedInOrder(t *testing.T) {
 	cfg := &utils.Config{}
 	cfg.DbImpl = "carmen"
 	cfg.KeepDb = false
+	cfg.CarmenSchema = 5
 
 	cfg.First = 0
 	cfg.Last = 0
