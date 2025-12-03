@@ -25,6 +25,6 @@ The tools documentation can be found on the [Wiki](https://github.com/0xsoniclab
 
 Aida-db, a test database, is required for testing. You can obtain a new aida-db update an existing aida-db using the following command:
 ```
-./build/util-db update --aida-db output/path --chain-id 250 --db-tmp path/to/tmp/direcotry
+./build/util-db update --aida-db output/path --chain-id 250 --db-tmp path/to/tmp/directory
 ```
 
