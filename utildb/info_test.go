@@ -20,7 +20,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/0xsoniclabs/substate/db"
 	"github.com/stretchr/testify/assert"
@@ -29,8 +28,8 @@ import (
 
 func TestInfo_Info_FindBlockRangeInStateHash_Success(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
-	_, _, err := FindBlockRangeInStateHash(testDb, log)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(testDb)
+	_, _, err := FindBlockRangeInStateHash(shdb)
 	if err == nil {
 		t.Fatal("Expected an error, but got nil")
 	}
@@ -39,8 +38,8 @@ func TestInfo_Info_FindBlockRangeInStateHash_Success(t *testing.T) {
 
 func TestInfo_FindBlockRangeInStateHash_FirstError(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
-	first, last, err := FindBlockRangeInStateHash(testDb, log)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(testDb)
+	first, last, err := FindBlockRangeInStateHash(shdb)
 	assert.Error(t, err)
 	assert.Equal(t, uint64(0), first)
 	assert.Equal(t, uint64(0), last)
@@ -49,8 +48,8 @@ func TestInfo_FindBlockRangeInStateHash_FirstError(t *testing.T) {
 
 func TestInfo_FindBlockRangeInBlockHash_Success(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
-	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
-	first, last, err := FindBlockRangeOfBlockHashes(testDb, log)
+	bhdb := db.MakeDefaultBlockHashDBFromBaseDB(testDb)
+	first, last, err := FindBlockRangeOfBlockHashes(bhdb)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(21), first)
 	assert.Equal(t, uint64(30), last)
@@ -63,10 +62,10 @@ func TestInfo_FindBlockRangeInBlockHash_FirstError(t *testing.T) {
 		t.Fatalf("error opening stateHash leveldb %s: %v", tmpDir, err)
 	}
 
-	log := logger.NewLogger("Warning", "TestFindBlockRangeInStateHash")
-	_, _, err = FindBlockRangeOfBlockHashes(testDb, log)
+	bhdb := db.MakeDefaultBlockHashDBFromBaseDB(testDb)
+	_, _, err = FindBlockRangeOfBlockHashes(bhdb)
 	assert.Error(t, err)
-	assert.Equal(t, "cannot get first block hash; no block hash found", err.Error())
+	assert.Equal(t, "cannot get first blockHash; no blockHash found", err.Error())
 }
 
 func TestInfo_GetStateHashCount_Success(t *testing.T) {
@@ -105,7 +104,7 @@ func TestInfo_GetBlockHashCount_Success(t *testing.T) {
 func TestInfo_GetBlockHashCount_Empty(t *testing.T) {
 	testDb := GenerateTestAidaDb(t)
 	cfg := &utils.Config{
-		First: 1, // Intentionally outside of block hash range
+		First: 1, // Intentionally outside of blockHash range
 		Last:  1,
 	}
 	count, err := GetBlockHashCount(cfg, testDb)
@@ -115,10 +114,12 @@ func TestInfo_GetBlockHashCount_Empty(t *testing.T) {
 
 func TestInfo_GetStateHashCount_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	mockDbAdapter := db.NewMockDbAdapter(ctrl)
 	testDb := db.NewMockBaseDB(ctrl)
+	testDb.EXPECT().GetBackend().Return(mockDbAdapter)
 
 	errWant := errors.New("test error")
-	testDb.EXPECT().Get(gomock.Any()).Return(nil, errWant).AnyTimes()
+	mockDbAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errWant).AnyTimes()
 
 	cfg := &utils.Config{
 		First: 100, // Intentionally outside of state hash range
@@ -130,13 +131,15 @@ func TestInfo_GetStateHashCount_Error(t *testing.T) {
 
 func TestInfo_GetBlockHashCount_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	mockDbAdapter := db.NewMockDbAdapter(ctrl)
 	testDb := db.NewMockBaseDB(ctrl)
+	testDb.EXPECT().GetBackend().Return(mockDbAdapter)
 
 	errWant := errors.New("test error")
-	testDb.EXPECT().Get(gomock.Any()).Return(nil, errWant).AnyTimes()
+	mockDbAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errWant).AnyTimes()
 
 	cfg := &utils.Config{
-		First: 100, // Intentionally outside of block hash range
+		First: 100, // Intentionally outside of blockHash range
 		Last:  100,
 	}
 	_, err := GetBlockHashCount(cfg, testDb)

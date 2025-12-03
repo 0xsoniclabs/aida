@@ -53,7 +53,7 @@ func TestGenerateDbHash_ComponentsAffectingHash(t *testing.T) {
 		{"AddSubstate", []byte(db.SubstateDBPrefix), "key1", []byte("value1")},
 		{"AddDeletion", []byte(db.DestroyedAccountPrefix), "del1", []byte("deleted")},
 		{"AddUpdate", []byte(db.UpdateDBPrefix), "upd1", []byte("update")},
-		{"AddStateHash", []byte(db.StateRootHashPrefix), "state1", []byte("statehash")},
+		{"AddStateHash", []byte(db.StateHashPrefix), "state1", []byte("statehash")},
 		{"AddBlockHash", []byte(db.BlockHashPrefix), "block1", []byte("blockhash")},
 	}
 
