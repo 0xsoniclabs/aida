@@ -45,6 +45,7 @@ var RunEthTestsCmd = cli.Command{
 		&utils.StateDbVariantFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
 
 		//// ShadowDb
 		&utils.ShadowDb,
@@ -129,6 +130,7 @@ func runEth(
 
 	extensionList = append(
 		extensionList,
+		logger.MakeDeltaLogger[txcontext.TxContext](cfg),
 		logger.MakeEthStateTestLogger(cfg, 0),
 		validator.MakeShadowDbValidator(cfg),
 		validator.MakeEthStateTestStateHashValidator(cfg),
