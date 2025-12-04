@@ -141,6 +141,8 @@ func (f *fakeSyncCloser) Close() error {
 func TestDeltaLogSink_LogfEdgeCases(t *testing.T) {
 	var nilSink *DeltaLogSink
 	require.NotPanics(t, func() { nilSink.Logf("ignored") })
+	require.NoError(t, nilSink.Flush())
+	require.NoError(t, nilSink.Close())
 
 	ctrl := gomock.NewController(t)
 	mockLog := logger.NewMockLogger(ctrl)
@@ -175,9 +177,21 @@ func TestDeltaLogSink_FlushAndClose(t *testing.T) {
 
 	err := sink.Close()
 	require.Error(t, err)
+	require.ErrorContains(t, err, "sync")
+	require.ErrorContains(t, err, "close")
 	require.True(t, syncCloser.syncCalled)
 	require.True(t, syncCloser.closeCalled)
 	require.Greater(t, errorLogged, 0)
+	require.Nil(t, sink.writer)
+	require.Nil(t, sink.closer)
+	require.NoError(t, sink.Close())
+}
+
+func TestNewDeltaLoggerProxy_NilSink(t *testing.T) {
+	db := &state.MockStateDB{}
+
+	res := NewDeltaLoggerProxy(db, nil)
+	require.Same(t, db, res)
 }
 
 func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
