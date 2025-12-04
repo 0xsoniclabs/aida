@@ -73,7 +73,7 @@ func TestStatedb_PrepareStateDB(t *testing.T) {
 				Variant:        cfg.DbVariant,
 				ArchiveMode:    cfg.ArchiveMode,
 				ArchiveVariant: cfg.ArchiveVariant,
-				Schema:         0,
+				Schema:         5,
 				Block:          cfg.Last,
 				RootHash:       common.Hash{},
 				GitCommit:      GitCommit,

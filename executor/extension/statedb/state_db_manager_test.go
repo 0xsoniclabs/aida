@@ -210,6 +210,7 @@ func TestStateDbManager_OverrideArchiveMode(t *testing.T) {
 	cfg.KeepDb = true
 	cfg.ChainID = utils.OperaMainnetChainID
 	cfg.ArchiveMode = false
+	cfg.CarmenSchema = 5
 
 	ext := MakeStateDbManager[any](cfg, "")
 	ctx := &executor.Context{}
@@ -293,6 +294,7 @@ func TestStateDbManager_OverrideArchiveVariant(t *testing.T) {
 	cfg.ChainID = utils.OperaMainnetChainID
 	cfg.ArchiveMode = true
 	cfg.ArchiveVariant = "ldb"
+	cfg.CarmenSchema = 5
 
 	ext := MakeStateDbManager[any](cfg, "")
 	ctx := &executor.Context{}
@@ -695,6 +697,7 @@ func TestStateDbManager_PreRunCreatesZeroStateDbInfo(t *testing.T) {
 	cfg.DbTmp = tmpDir
 	cfg.DbImpl = "carmen"
 	cfg.ChainID = utils.OperaMainnetChainID
+	cfg.CarmenSchema = 5
 
 	ext := MakeStateDbManager[any](cfg, "")
 
