@@ -19,13 +19,20 @@ package proxy
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
+	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
+	geth "github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -96,4 +103,231 @@ func TestDeltaLogger_ProducesDeltaTraceFormat(t *testing.T) {
 	}, "\n")
 
 	require.Equal(t, expected, got)
+}
+
+type fakeSyncCloser struct {
+	bytes.Buffer
+	syncCalled  bool
+	closeCalled bool
+	syncErr     error
+	closeErr    error
+	failWrite   bool
+}
+
+func (f *fakeSyncCloser) Write(p []byte) (int, error) {
+	if f.failWrite {
+		return 0, errors.New("write")
+	}
+	return f.Buffer.Write(p)
+}
+
+func (f *fakeSyncCloser) WriteString(s string) (int, error) {
+	if f.failWrite {
+		return 0, errors.New("write")
+	}
+	return f.Buffer.WriteString(s)
+}
+
+func (f *fakeSyncCloser) Sync() error {
+	f.syncCalled = true
+	return f.syncErr
+}
+
+func (f *fakeSyncCloser) Close() error {
+	f.closeCalled = true
+	return f.closeErr
+}
+
+func TestDeltaLogSink_LogfEdgeCases(t *testing.T) {
+	var nilSink *DeltaLogSink
+	require.NotPanics(t, func() { nilSink.Logf("ignored") })
+
+	ctrl := gomock.NewController(t)
+	mockLog := logger.NewMockLogger(ctrl)
+	mockLog.EXPECT().Debug("only-debug").Times(1)
+
+	sink := &DeltaLogSink{log: mockLog}
+	sink.Logf("only-debug\n")
+}
+
+func TestDeltaLogSink_FlushAndClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockLog := logger.NewMockLogger(ctrl)
+	errorLogged := 0
+	mockLog.EXPECT().Errorf(gomock.Any(), gomock.Any()).Do(func(string, ...any) {
+		errorLogged++
+	}).AnyTimes()
+	mockLog.EXPECT().Debug("content-fail").Times(1)
+	mockLog.EXPECT().Debug("content-ok").Times(1)
+
+	syncCloserFail := &fakeSyncCloser{failWrite: true}
+	failSink := NewDeltaLogSink(mockLog, bufio.NewWriterSize(syncCloserFail, 1), syncCloserFail)
+	failSink.Logf("content-fail")
+
+	syncCloser := &fakeSyncCloser{}
+	sink := NewDeltaLogSink(mockLog, bufio.NewWriterSize(syncCloser, 4), syncCloser)
+	sink.Logf("content-ok")
+	require.NoError(t, sink.Flush())
+	require.Contains(t, syncCloser.String(), "content-ok")
+
+	syncCloser.syncErr = errors.New("sync")
+	syncCloser.closeErr = errors.New("close")
+
+	err := sink.Close()
+	require.Error(t, err)
+	require.True(t, syncCloser.syncCalled)
+	require.True(t, syncCloser.closeCalled)
+	require.Greater(t, errorLogged, 0)
+}
+
+func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockLog := logger.NewMockLogger(ctrl)
+	mockLog.EXPECT().Debug(gomock.Any()).AnyTimes()
+
+	mockDB := state.NewMockStateDB(ctrl)
+	addr := common.HexToAddress("0x1")
+	key := common.HexToHash("0x2")
+	hash := common.HexToHash("0x3")
+	value := uint256.NewInt(9)
+
+	mockDB.EXPECT().Error().Return(errors.New("err"))
+	mockDB.EXPECT().BeginBlock(uint64(1)).Return(nil)
+	mockDB.EXPECT().EndBlock().Return(nil)
+	mockDB.EXPECT().BeginSyncPeriod(uint64(2))
+	mockDB.EXPECT().EndSyncPeriod()
+	mockDB.EXPECT().GetHash().Return(hash, nil)
+	mockDB.EXPECT().Close().Return(nil)
+	mockBulk := state.NewMockBulkLoad(ctrl)
+	mockDB.EXPECT().StartBulkLoad(uint64(3)).Return(mockBulk, nil)
+
+	archive := state.NewMockNonCommittableStateDB(ctrl)
+	archive.EXPECT().GetHash().Return(hash, nil)
+	archive.EXPECT().Release().Return(nil)
+	mockDB.EXPECT().GetArchiveState(uint64(4)).Return(archive, nil)
+	mockDB.EXPECT().GetArchiveBlockHeight().Return(uint64(5), true, nil)
+	mockDB.EXPECT().GetMemoryUsage().Return(&state.MemoryUsage{UsedBytes: 10})
+	mockDB.EXPECT().GetShadowDB().Return(nil)
+	mockDB.EXPECT().Finalise(true)
+	mockDB.EXPECT().IntermediateRoot(true).Return(hash)
+	mockDB.EXPECT().Commit(uint64(6), true).Return(hash, nil)
+	mockDB.EXPECT().PrepareSubstate(txcontext.WorldState(nil), uint64(7))
+
+	mockDB.EXPECT().CreateAccount(addr)
+	mockDB.EXPECT().CreateContract(addr)
+	mockDB.EXPECT().Exist(addr).Return(true)
+	mockDB.EXPECT().Empty(addr).Return(false)
+	mockDB.EXPECT().SelfDestruct(addr).Return(uint256.Int{})
+	mockDB.EXPECT().SelfDestruct6780(addr).Return(uint256.Int{}, true)
+	mockDB.EXPECT().HasSelfDestructed(addr).Return(true)
+	mockDB.EXPECT().GetBalance(addr).Return(value)
+	mockDB.EXPECT().AddBalance(addr, (*uint256.Int)(nil), tracing.BalanceChangeUnspecified).Return(uint256.Int{})
+	mockDB.EXPECT().SubBalance(addr, value, tracing.BalanceChangeUnspecified).Return(uint256.Int{})
+	mockDB.EXPECT().GetNonce(addr).Return(uint64(11))
+	mockDB.EXPECT().SetNonce(addr, uint64(12), tracing.NonceChangeAuthorization)
+	mockDB.EXPECT().GetCommittedState(addr, key).Return(hash)
+	mockDB.EXPECT().GetStateAndCommittedState(addr, key).Return(hash, hash)
+	mockDB.EXPECT().GetState(addr, key).Return(hash)
+	mockDB.EXPECT().SetState(addr, key, hash).Return(hash)
+	mockDB.EXPECT().SetTransientState(addr, key, hash)
+	mockDB.EXPECT().GetTransientState(addr, key).Return(hash)
+	mockDB.EXPECT().GetCodeHash(addr).Return(hash)
+	mockDB.EXPECT().GetCode(addr).Return([]byte{1, 2})
+	mockDB.EXPECT().SetCode(addr, gomock.Any(), tracing.CodeChangeUnspecified).Return([]byte{1})
+	mockDB.EXPECT().GetCodeSize(addr).Return(2)
+	mockDB.EXPECT().Snapshot().Return(1)
+	mockDB.EXPECT().RevertToSnapshot(1)
+	mockDB.EXPECT().BeginTransaction(uint32(13)).Return(nil)
+	mockDB.EXPECT().EndTransaction().Return(nil)
+	mockDB.EXPECT().Finalise(false)
+	mockDB.EXPECT().AddRefund(uint64(3))
+	mockDB.EXPECT().SubRefund(uint64(1))
+	mockDB.EXPECT().GetRefund().Return(uint64(2))
+	mockDB.EXPECT().Prepare(params.Rules{}, addr, addr, &addr, nil, types.AccessList{})
+	mockDB.EXPECT().AddressInAccessList(addr).Return(true)
+	mockDB.EXPECT().SlotInAccessList(addr, key).Return(true, false)
+	mockDB.EXPECT().AddAddressToAccessList(addr)
+	mockDB.EXPECT().AddSlotToAccessList(addr, key)
+	mockDB.EXPECT().AddLog(gomock.AssignableToTypeOf(&types.Log{}))
+	mockDB.EXPECT().GetLogs(hash, uint64(8), hash, uint64(9)).Return([]*types.Log{{Index: 1}})
+	mockDB.EXPECT().PointCache().Return((*utils.PointCache)(nil))
+	mockDB.EXPECT().Witness().Return((*stateless.Witness)(nil))
+	mockDB.EXPECT().SetTxContext(hash, 14)
+	mockDB.EXPECT().GetSubstatePostAlloc().Return(txcontext.WorldState(nil))
+	mockDB.EXPECT().AddPreimage(hash, []byte{0xaa})
+	mockDB.EXPECT().AccessEvents().Return(&geth.AccessEvents{})
+	mockDB.EXPECT().GetStorageRoot(addr).Return(hash)
+
+	proxyDB := NewDeltaLoggerProxy(mockDB, &DeltaLogSink{log: mockLog}).(*DeltaLoggingStateDB)
+
+	require.Error(t, proxyDB.Error())
+	require.NoError(t, proxyDB.BeginBlock(1))
+	proxyDB.BeginSyncPeriod(2)
+	proxyDB.EndSyncPeriod()
+	_, err := proxyDB.GetHash()
+	require.NoError(t, err)
+	require.NotNil(t, proxyDB.GetMemoryUsage())
+	require.Nil(t, proxyDB.GetShadowDB())
+	_, err = proxyDB.StartBulkLoad(3)
+	require.NoError(t, err)
+
+	archiveProxy, err := proxyDB.GetArchiveState(4)
+	require.NoError(t, err)
+	_, err = archiveProxy.GetHash()
+	require.NoError(t, err)
+	require.NoError(t, archiveProxy.Release())
+
+	_, _, err = proxyDB.GetArchiveBlockHeight()
+	require.NoError(t, err)
+	proxyDB.Finalise(true)
+	proxyDB.IntermediateRoot(true)
+	proxyDB.PrepareSubstate(txcontext.WorldState(nil), 7)
+	proxyDB.CreateAccount(addr)
+	proxyDB.CreateContract(addr)
+	require.True(t, proxyDB.Exist(addr))
+	require.False(t, proxyDB.Empty(addr))
+	proxyDB.SelfDestruct(addr)
+	proxyDB.SelfDestruct6780(addr)
+	require.True(t, proxyDB.HasSelfDestructed(addr))
+	require.Equal(t, value, proxyDB.GetBalance(addr))
+	proxyDB.AddBalance(addr, nil, tracing.BalanceChangeUnspecified)
+	proxyDB.SubBalance(addr, value, tracing.BalanceChangeUnspecified)
+	require.Equal(t, uint64(11), proxyDB.GetNonce(addr))
+	proxyDB.SetNonce(addr, 12, tracing.NonceChangeAuthorization)
+	require.Equal(t, hash, proxyDB.GetCommittedState(addr, key))
+	proxyDB.GetStateAndCommittedState(addr, key)
+	proxyDB.GetState(addr, key)
+	proxyDB.SetState(addr, key, hash)
+	proxyDB.SetTransientState(addr, key, hash)
+	proxyDB.GetTransientState(addr, key)
+	proxyDB.GetCodeHash(addr)
+	proxyDB.GetCode(addr)
+	proxyDB.SetCode(addr, []byte{0x1}, tracing.CodeChangeUnspecified)
+	proxyDB.GetCodeSize(addr)
+	snap := proxyDB.Snapshot()
+	proxyDB.RevertToSnapshot(snap)
+	require.NoError(t, proxyDB.BeginTransaction(13))
+	require.NoError(t, proxyDB.EndTransaction())
+	proxyDB.deltaLoggingVmStateDb.Finalise(false)
+	proxyDB.AddRefund(3)
+	proxyDB.SubRefund(1)
+	require.Equal(t, uint64(2), proxyDB.GetRefund())
+	proxyDB.Prepare(params.Rules{}, addr, addr, &addr, nil, types.AccessList{})
+	require.True(t, proxyDB.AddressInAccessList(addr))
+	proxyDB.SlotInAccessList(addr, key)
+	proxyDB.AddAddressToAccessList(addr)
+	proxyDB.AddSlotToAccessList(addr, key)
+	proxyDB.AddLog(&types.Log{})
+	proxyDB.GetLogs(hash, 8, hash, 9)
+	proxyDB.PointCache()
+	proxyDB.Witness()
+	proxyDB.SetTxContext(hash, 14)
+	proxyDB.GetSubstatePostAlloc()
+	proxyDB.AddPreimage(hash, []byte{0xaa})
+	proxyDB.AccessEvents()
+	proxyDB.GetStorageRoot(addr)
+	require.NoError(t, proxyDB.EndBlock())
+	_, err = proxyDB.Commit(6, true)
+	require.NoError(t, err)
+	require.NoError(t, proxyDB.Close())
 }
