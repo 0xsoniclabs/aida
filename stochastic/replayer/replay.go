@@ -25,6 +25,7 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic"
+	"github.com/0xsoniclabs/aida/stochastic/coverage"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/replayer/arguments"
@@ -40,7 +41,14 @@ var (
 	randReadBytes          = func(rg *rand.Rand, buf []byte) (int, error) { return rg.Read(buf) }
 	mcLabel                = func(mc *markov.Chain, state int) (string, error) { return mc.Label(state) }
 	mcSample               = func(mc *markov.Chain, i int, u float64) (int, error) { return mc.Sample(i, u) }
+	newCoverageTracker     = func() (coverageTracker, error) { return coverage.NewTracker() }
+	newCoverageBiasFn      = newCoverageBias
 )
+
+type coverageTracker interface {
+	Snapshot() (coverage.Delta, error)
+	TotalUnits() int
+}
 
 // Parameterisable simulation constants
 // Simulation constants
@@ -240,6 +248,34 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 		return fmt.Errorf("RunStochasticReplay: expected a markov chain: %w", mcErr)
 	}
 
+	// Initialize coverage-guided fuzzing if enabled
+	var (
+		tracker             coverageTracker
+		bias                *coverageBias
+		coverageOpCount     uint64
+		totalNewUnits       uint64
+		totalNewLines       uint64
+		totalCoverageBoosts uint64
+	)
+
+	if cfg.EnableCoverage {
+		log.Notice("Coverage-guided fuzzing enabled")
+		var trackerErr error
+		tracker, trackerErr = newCoverageTracker()
+		if trackerErr != nil {
+			log.Warningf("Coverage tracking unavailable (binary may not be built with -cover): %v", trackerErr)
+			log.Warning("Falling back to standard replay mode")
+			cfg.EnableCoverage = false
+		} else {
+			bias, err = newCoverageBiasFn(mc)
+			if err != nil {
+				return fmt.Errorf("RunStochasticReplay: failed to create coverage bias: %w", err)
+			}
+			log.Noticef("Coverage tracking initialized with %d total units", tracker.TotalUnits())
+			log.Noticef("Coverage snapshot interval: %d operations", cfg.CoverageSnapshotInterval)
+		}
+	}
+
 	// progress message setup
 	start := time.Now()
 	lastLog := start
@@ -273,6 +309,29 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 			return fmt.Errorf("RunStochasticReplay: %w", err)
 		}
 
+		// Take coverage snapshot if enabled
+		if cfg.EnableCoverage {
+			coverageOpCount++
+			if coverageOpCount%uint64(cfg.CoverageSnapshotInterval) == 0 {
+				delta, snapErr := tracker.Snapshot()
+				if snapErr != nil {
+					log.Warningf("Failed to take coverage snapshot: %v", snapErr)
+				} else if delta.NewUnits > 0 {
+					totalNewUnits += uint64(delta.NewUnits)
+					totalNewLines += uint64(delta.NewLines)
+					totalCoverageBoosts++
+
+					// Boost the weight for this state since it discovered new coverage
+					if boostErr := bias.boost(state, delta); boostErr != nil {
+						log.Warningf("Failed to boost coverage weight: %v", boostErr)
+					} else {
+						log.Debugf("Coverage boost at op %d: +%d units (+%d lines), total coverage: %.2f%%",
+							coverageOpCount, delta.NewUnits, delta.NewLines, delta.CoverageNow*100)
+					}
+				}
+			}
+		}
+
 		// check for end of simulation
 		if op == operations.EndBlockID {
 			block++
@@ -303,7 +362,11 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 
 		// transit to next state in Markovian process
 		u := rg.Float64()
-		state, err = mcSample(mc, state, u)
+		if cfg.EnableCoverage {
+			state, err = bias.sample(state, u)
+		} else {
+			state, err = mcSample(mc, state, u)
+		}
 		if err != nil {
 			return fmt.Errorf("RunStochasticReplay: failed sampling the next state: %w", err)
 		}
@@ -325,6 +388,31 @@ func RunStochasticReplay(db state.StateDB, e *recorder.StatsJSON, nBlocks int, c
 	for op := range operations.NumOps {
 		log.Noticef("\t%v: %v", operations.OpText[op], opFrequency[op])
 	}
+
+	// Print coverage statistics if coverage-guided fuzzing was enabled
+	if cfg.EnableCoverage {
+		log.Notice("Coverage Statistics:")
+		log.Noticef("\tTotal coverage snapshots: %v", coverageOpCount/uint64(cfg.CoverageSnapshotInterval))
+		log.Noticef("\tTotal new units discovered: %v", totalNewUnits)
+		log.Noticef("\tTotal new lines discovered: %v", totalNewLines)
+		log.Noticef("\tTotal coverage boosts applied: %v", totalCoverageBoosts)
+
+		// Get final coverage snapshot
+		finalDelta, snapErr := tracker.Snapshot()
+		if snapErr != nil {
+			log.Warningf("Failed to take final coverage snapshot: %v", snapErr)
+		} else {
+			log.Noticef("\tFinal coverage: %.2f%% (%d/%d units)", finalDelta.CoverageNow*100, tracker.TotalUnits()-int(float64(tracker.TotalUnits())*(1-finalDelta.CoverageNow)), tracker.TotalUnits())
+		}
+
+		// Get bias statistics
+		biasBoosts, biasUnits, biasLines := bias.stats()
+		log.Noticef("\tBias statistics:")
+		log.Noticef("\t\tTotal boosts: %v", biasBoosts)
+		log.Noticef("\t\tUnits from boosts: %v", biasUnits)
+		log.Noticef("\t\tLines from boosts: %v", biasLines)
+	}
+
 	if len(errList) == 0 {
 		return nil
 	}
