@@ -34,8 +34,12 @@ func TestMarkov_NewSimple(t *testing.T) {
 	}
 	if mc == nil {
 		t.Fatalf("Expected a markov chain. Got nil.")
+		return
 	}
-	if len(mc.a) != 2 || len(mc.a[0]) != 2 || len(mc.a[1]) != 2 {
+	if len(mc.a) != 2 {
+		t.Fatalf("Expected a 2x2 stochastic matrix. Got %vx%v.", len(mc.a), len(mc.a))
+	}
+	if len(mc.a[0]) != 2 || len(mc.a[1]) != 2 {
 		t.Fatalf("Expected a 2x2 stochastic matrix. Got %vx%v.", len(mc.a), len(mc.a[0]))
 	}
 	if mc.l[0] != "s1" || mc.l[1] != "s2" {
