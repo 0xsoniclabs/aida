@@ -89,6 +89,7 @@ func runTransactions(
 		// In this case, after StateDb is created.
 		// Any error that happen in extension above it will not be correctly recorded.
 		logger.MakeDbLogger[txcontext.TxContext](cfg),
+		logger.MakeDeltaLogger[txcontext.TxContext](cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
 		tracker.MakeBlockProgressTracker(cfg, cfg.TrackerGranularity),
