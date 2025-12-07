@@ -424,9 +424,7 @@ func collectLogs(s *snapshot, blkTimestamp uint64) []*types.Log {
 	logs := collectLogs(s.parent, blkTimestamp)
 	for _, log := range s.logs {
 		// only append logs that match the block timestamp
-		if log.BlockTimestamp == blkTimestamp {
-			logs = append(logs, log)
-		}
+		logs = append(logs, log)
 	}
 	return logs
 }
