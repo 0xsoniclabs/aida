@@ -82,7 +82,7 @@ func TestInMemoryStateDB_GetLogs_AddsLogsWithoutTimestampChecking(t *testing.T) 
 		logs: []*types.Log{{Index: 0}},
 	}}
 	logs := sdb.GetLogs(txHash, blkNumber, blkHash, blkTimestamp)
-	assert.Len(t, logs, 2) // No logs added yet
+	assert.Len(t, logs, 2)
 	assert.Equal(t, blkTimestamp, logs[0].BlockTimestamp)
 	assert.Equal(t, uint(1), logs[0].Index)
 }
