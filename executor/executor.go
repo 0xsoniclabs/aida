@@ -631,8 +631,7 @@ func signalPostTransaction[T any](state State[T], ctx *Context, extensions []Ext
 
 	}()
 	return forEachBackward(extensions, func(extension Extension[T]) error {
-		err := extension.PostTransaction(state, ctx)
-		return err
+		return extension.PostTransaction(state, ctx)
 	})
 }
 
