@@ -403,7 +403,7 @@ func TestRecordTransaction(t *testing.T) {
 		t.Errorf("invalid length of ctx.gasTransactions")
 	}
 
-	if len(ctx.txAddresses) == 2 && len(ctx.txAddresses[0]) == 3 && len(ctx.txAddresses[0]) == 3 {
+	if len(ctx.txAddresses) == 2 && len(ctx.txAddresses[0]) == 3 && len(ctx.txAddresses[1]) == 3 {
 		if !checkAddr(ctx.txAddresses[0]) {
 			t.Errorf("Unexpected addresses in first transaction")
 		}
