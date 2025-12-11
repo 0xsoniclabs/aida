@@ -17,44 +17,10 @@
 package state
 
 import (
-	"fmt"
-
 	"github.com/0xsoniclabs/aida/txcontext"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/triedb"
 )
-
-// NewOffTheChainStateDB returns an empty in-memory *state.StateDB without disk caches
-func NewOffTheChainStateDB() *state.StateDB {
-	db := rawdb.NewMemoryDatabase()
-	trieDb := triedb.NewDatabase(db, &triedb.Config{})
-	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(trieDb, nil))
-	return statedb
-}
 
 // MakeOffTheChainStateDB returns an in-memory *state.StateDB initialized with ws
 func MakeOffTheChainStateDB(alloc txcontext.WorldState, block uint64, chainConduit *ChainConduit) (StateDB, error) {
-	statedb := NewOffTheChainStateDB()
-	alloc.ForEachAccount(func(addr common.Address, acc txcontext.Account) {
-		code := acc.GetCode()
-		statedb.SetCode(addr, code, tracing.CodeChangeGenesis)
-		statedb.SetNonce(addr, acc.GetNonce(), tracing.NonceChangeGenesis)
-		statedb.SetBalance(addr, acc.GetBalance(), 0)
-		// DON'T USE SetStorage because it makes REVERT and dirtyStorage unavailble
-		acc.ForEachStorage(func(keyHash common.Hash, valueHash common.Hash) {
-			statedb.SetState(addr, keyHash, valueHash)
-		})
-	})
-
-	// Commit and re-open to start with a clean state.
-	_, err := statedb.Commit(block, false, false)
-	if err != nil {
-		return nil, fmt.Errorf("cannot commit offTheChainDb; %v", err)
-	}
-
-	return &gethStateDB{db: statedb, block: block, chainConduit: chainConduit}, nil
+	return MakeInMemoryStateDB(alloc, block), nil
 }
