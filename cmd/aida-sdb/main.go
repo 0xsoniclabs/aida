@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/0xsoniclabs/aida/cmd/aida-sdb/trace"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,8 +33,6 @@ func initTraceApp() *cli.App {
 		Flags:     []cli.Flag{},
 		Commands: []*cli.Command{
 			&RecordCommand,
-			&trace.TraceReplayCommand,
-			&trace.TraceReplaySubstateCommand,
 		},
 	}
 }
