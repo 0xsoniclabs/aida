@@ -1182,3 +1182,13 @@ func Test_GetChainConfig(t *testing.T) {
 	assert.NotNil(t, chainConfig)
 	assert.Equal(t, big.NewInt(250), chainConfig.ChainID) // Example value for MainnetChainID
 }
+
+func TestUtilsConfig_GetChainConfig_ReturnsEmptyFields_ForTestNet(t *testing.T) {
+
+	chainConfig, err := getChainConfig(OperaTestnetChainID, "fork string")
+	assert.NoError(t, err)
+	assert.NotNil(t, chainConfig.ShanghaiTime)
+	assert.NotNil(t, chainConfig.CancunTime)
+	assert.Nil(t, chainConfig.PragueTime)
+	assert.Nil(t, chainConfig.OsakaTime)
+}
