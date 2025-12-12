@@ -55,6 +55,7 @@ var runVmApp = &cli.App{
 		&utils.ErrorLoggingFlag,
 		&utils.StateDbImplementationFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
 		&utils.CacheFlag,
 		&utils.SubstateEncodingFlag,
 	},

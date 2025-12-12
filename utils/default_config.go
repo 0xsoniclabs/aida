@@ -52,6 +52,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		DbComponent:              getFlagValue(ctx, DbComponentFlag).(string),
 		DbImpl:                   getFlagValue(ctx, StateDbImplementationFlag).(string),
 		DbLogging:                getFlagValue(ctx, StateDbLoggingFlag).(string),
+		DeltaLogging:             getFlagValue(ctx, DeltaLoggingFlag).(string),
 		DbTmp:                    getFlagValue(ctx, DbTmpFlag).(string),
 		DbVariant:                getFlagValue(ctx, StateDbVariantFlag).(string),
 		Debug:                    getFlagValue(ctx, TraceDebugFlag).(bool),

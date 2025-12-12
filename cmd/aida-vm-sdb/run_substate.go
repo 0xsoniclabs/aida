@@ -93,6 +93,7 @@ func runSubstates(cfg *utils.Config, provider executor.Provider[txcontext.TxCont
 		return err
 	}
 
+	extensionList = append(extensionList, logger.MakeDeltaLogger[txcontext.TxContext](cfg))
 	extensionList = append(extensionList, extra...)
 
 	extensionList = append(extensionList, []executor.Extension[txcontext.TxContext]{
