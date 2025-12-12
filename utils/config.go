@@ -591,18 +591,21 @@ func getChainConfig(chainId ChainID, fork string) (*params.ChainConfig, error) {
 
 		chainConfig.BerlinBlock = new(big.Int).SetUint64(KeywordBlocks[chainId]["berlin"])
 		chainConfig.LondonBlock = new(big.Int).SetUint64(KeywordBlocks[chainId]["london"])
-		shanghaiTime := KeywordBlocks[chainId]["shanghai"]
-		chainConfig.ShanghaiTime = &shanghaiTime
-		cancunTime := KeywordBlocks[chainId]["cancun"]
-		chainConfig.CancunTime = &cancunTime
-		pragueTime := KeywordBlocks[chainId]["prague"]
-		chainConfig.PragueTime = &pragueTime
-		osakaTime := KeywordBlocks[chainId]["osaka"]
-		chainConfig.OsakaTime = &osakaTime
-		bp01Time := KeywordBlocks[chainId]["BPO1"]
-		chainConfig.BPO1Time = &bp01Time
-		bp02Time := KeywordBlocks[chainId]["BPO2"]
-		chainConfig.BPO2Time = &bp02Time
+
+		getTime := func(revision string) *uint64 {
+			if blockTime, exists := KeywordBlocks[chainId][revision]; exists {
+				return &blockTime
+			}
+			return nil
+		}
+
+		chainConfig.ShanghaiTime = getTime("shanghai")
+		chainConfig.CancunTime = getTime("cancun")
+		chainConfig.PragueTime = getTime("prague")
+		chainConfig.OsakaTime = getTime("osaka")
+		chainConfig.BPO1Time = getTime("BPO1")
+		chainConfig.BPO2Time = getTime("BPO2")
+
 		return &chainConfig, nil
 	}
 }
