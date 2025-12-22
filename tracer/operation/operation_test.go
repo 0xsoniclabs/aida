@@ -18,20 +18,16 @@ package operation
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
 	geth "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
@@ -371,77 +367,5 @@ func areEqual(v1 any, v2 any) bool {
 		return c2.Cmp(c1) == 0
 	default:
 		return v1 == v2
-	}
-}
-
-func getRandomAddress(t *testing.T) common.Address {
-	// generate account public key
-	pk, err := crypto.GenerateKey()
-	if err != nil {
-		t.Fatalf("failed test data build; could not create random keys; %s", err.Error())
-	}
-	// generate account address
-	return crypto.PubkeyToAddress(pk.PublicKey)
-}
-
-func getRandomHash(t *testing.T) common.Hash {
-	// generate hash from public key
-	pk, err := crypto.GenerateKey()
-	if err != nil {
-		t.Fatalf("failed test data build; could not create random keys; %s", err.Error())
-	}
-	pubBytes := crypto.FromECDSAPub(&pk.PublicKey)
-	return crypto.Keccak256Hash(pubBytes[:])
-}
-
-func testOperationReadWrite(t *testing.T, op1 Operation, opRead func(f io.Reader) (Operation, error)) {
-	opBuffer := bytes.NewBufferString("")
-	err := op1.Write(opBuffer)
-	if err != nil {
-		t.Fatalf("error operation write %v", err)
-	}
-
-	// read object from buffer
-	op2, err := opRead(opBuffer)
-	if err != nil {
-		t.Fatalf("failed to read operation. Error: %v", err)
-	}
-	if op2 == nil {
-		t.Fatalf("failed to create newly read operation from buffer")
-	}
-	// check equivalence
-	if !reflect.DeepEqual(op1, op2) {
-		t.Fatalf("operations are not the same")
-	}
-}
-
-func testOperationDebug(t *testing.T, ctx *context.Replay, op Operation, args string) {
-	// divert stdout to a buffer
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	// print debug message
-	Debug(&ctx.Context, op)
-
-	// restore stdout
-	err := w.Close()
-	if err != nil {
-		t.Fatalf("cannot close writer pipe; %v", err)
-	}
-	os.Stdout = old
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	if err != nil {
-		t.Fatalf("cannot read from reader pipe; %v", err)
-	}
-
-	// check debug message
-	label := GetLabel(op.GetId())
-
-	expected := "\t" + label + ": " + args + "\n"
-
-	if buf.String() != expected {
-		t.Fatalf("wrong debug message: %s vs %s; length of strings: %d vs %d", buf.String(), expected, len(buf.String()), len(expected))
 	}
 }
