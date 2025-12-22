@@ -17,7 +17,6 @@
 package operation
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -98,16 +97,6 @@ func TestGetLabel(t *testing.T) {
 			assert.Equal(t, tt.expected, result, "GetLabel(%d) should return %s", tt.id, tt.expected)
 		})
 	}
-}
-
-func TestReadPanic(t *testing.T) {
-	// Test with empty reader
-	reader := bytes.NewReader([]byte{})
-	op, err := ReadPanic(reader)
-
-	assert.Error(t, err, "ReadPanic() should return an error")
-	assert.EqualError(t, err, "operation not implemented", "ReadPanic() should return specific error message")
-	assert.Nil(t, op, "ReadPanic() should return nil operation")
 }
 
 func TestCreateIdLabelMap(t *testing.T) {

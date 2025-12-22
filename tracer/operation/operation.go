@@ -17,8 +17,6 @@
 package operation
 
 import (
-	"fmt"
-	"io"
 	"log"
 )
 
@@ -100,76 +98,75 @@ const (
 
 // OperationDictionary data structure contains a Label and a read function for an operation
 type OperationDictionary struct {
-	label    string                             // operation's Label
-	readfunc func(io.Reader) (Operation, error) // operation's read-function
+	label string // operation's Label
 }
 
 // opDict relates an operation's id with its label and read-function.
 var opDict = map[byte]OperationDictionary{
-	AddBalanceID:                    {label: "AddBalance", readfunc: ReadPanic},
-	BeginBlockID:                    {label: "BeginBlock", readfunc: ReadPanic},
-	BeginSyncPeriodID:               {label: "BeginSyncPeriod", readfunc: ReadPanic},
-	BeginTransactionID:              {label: "BeginTransaction", readfunc: ReadPanic},
-	CommitID:                        {label: "Commit", readfunc: ReadPanic},
-	CreateAccountID:                 {label: "CreateAccount", readfunc: ReadPanic},
-	EmptyID:                         {label: "Empty", readfunc: ReadPanic},
-	EndBlockID:                      {label: "EndBlock", readfunc: ReadPanic},
-	EndSyncPeriodID:                 {label: "EndSyncPeriod", readfunc: ReadPanic},
-	EndTransactionID:                {label: "EndTransaction", readfunc: ReadPanic},
-	ExistID:                         {label: "Exist", readfunc: ReadPanic},
-	FinaliseID:                      {label: "Finalise", readfunc: ReadPanic},
-	GetBalanceID:                    {label: "GetBalance", readfunc: ReadPanic},
-	GetCodeHashID:                   {label: "GetCodeHash", readfunc: ReadPanic},
-	GetCodeHashLcID:                 {label: "GetCodeLcHash", readfunc: ReadPanic},
-	GetCodeID:                       {label: "GetCode", readfunc: ReadPanic},
-	GetCodeSizeID:                   {label: "GetCodeSize", readfunc: ReadPanic},
-	GetCommittedStateID:             {label: "GetCommittedState", readfunc: ReadPanic},
-	GetCommittedStateLclsID:         {label: "GetCommittedStateLcls", readfunc: ReadPanic},
-	GetStateAndCommittedStateID:     {label: "GetStateAndCommittedState", readfunc: ReadPanic},
-	GetStateAndCommittedStateLclsID: {label: "GetStateAndCommittedStateLcls", readfunc: ReadPanic},
-	GetNonceID:                      {label: "GetNonce", readfunc: ReadPanic},
-	GetStateID:                      {label: "GetState", readfunc: ReadPanic},
-	GetStateLcID:                    {label: "GetStateLc", readfunc: ReadPanic},
-	GetStateLccsID:                  {label: "GetStateLccs", readfunc: ReadPanic},
-	GetStateLclsID:                  {label: "GetStateLcls", readfunc: ReadPanic},
-	HasSelfDestructedID:             {label: "HasSelfDestructed", readfunc: ReadPanic},
-	RevertToSnapshotID:              {label: "RevertToSnapshot", readfunc: ReadPanic},
-	SetCodeID:                       {label: "SetCode", readfunc: ReadPanic},
-	SetNonceID:                      {label: "SetNonce", readfunc: ReadPanic},
-	SetStateID:                      {label: "SetState", readfunc: ReadPanic},
-	SetStateLclsID:                  {label: "SetStateLcls", readfunc: ReadPanic},
-	SnapshotID:                      {label: "Snapshot", readfunc: ReadPanic},
-	SubBalanceID:                    {label: "SubBalance", readfunc: ReadPanic},
-	SelfDestructID:                  {label: "SelfDestruct", readfunc: ReadPanic},
-	SelfDestruct6780ID:              {label: "SelfDestruct", readfunc: ReadPanic},
-	CreateContractID:                {label: "CreateContract", readfunc: ReadPanic},
-	GetStorageRootID:                {label: "GetStorageRoot", readfunc: ReadPanic},
+	AddBalanceID:                    {label: "AddBalance"},
+	BeginBlockID:                    {label: "BeginBlock"},
+	BeginSyncPeriodID:               {label: "BeginSyncPeriod"},
+	BeginTransactionID:              {label: "BeginTransaction"},
+	CommitID:                        {label: "Commit"},
+	CreateAccountID:                 {label: "CreateAccount"},
+	EmptyID:                         {label: "Empty"},
+	EndBlockID:                      {label: "EndBlock"},
+	EndSyncPeriodID:                 {label: "EndSyncPeriod"},
+	EndTransactionID:                {label: "EndTransaction"},
+	ExistID:                         {label: "Exist"},
+	FinaliseID:                      {label: "Finalise"},
+	GetBalanceID:                    {label: "GetBalance"},
+	GetCodeHashID:                   {label: "GetCodeHash"},
+	GetCodeHashLcID:                 {label: "GetCodeLcHash"},
+	GetCodeID:                       {label: "GetCode"},
+	GetCodeSizeID:                   {label: "GetCodeSize"},
+	GetCommittedStateID:             {label: "GetCommittedState"},
+	GetCommittedStateLclsID:         {label: "GetCommittedStateLcls"},
+	GetStateAndCommittedStateID:     {label: "GetStateAndCommittedState"},
+	GetStateAndCommittedStateLclsID: {label: "GetStateAndCommittedStateLcls"},
+	GetNonceID:                      {label: "GetNonce"},
+	GetStateID:                      {label: "GetState"},
+	GetStateLcID:                    {label: "GetStateLc"},
+	GetStateLccsID:                  {label: "GetStateLccs"},
+	GetStateLclsID:                  {label: "GetStateLcls"},
+	HasSelfDestructedID:             {label: "HasSelfDestructed"},
+	RevertToSnapshotID:              {label: "RevertToSnapshot"},
+	SetCodeID:                       {label: "SetCode"},
+	SetNonceID:                      {label: "SetNonce"},
+	SetStateID:                      {label: "SetState"},
+	SetStateLclsID:                  {label: "SetStateLcls"},
+	SnapshotID:                      {label: "Snapshot"},
+	SubBalanceID:                    {label: "SubBalance"},
+	SelfDestructID:                  {label: "SelfDestruct"},
+	SelfDestruct6780ID:              {label: "SelfDestruct"},
+	CreateContractID:                {label: "CreateContract"},
+	GetStorageRootID:                {label: "GetStorageRoot"},
 
 	// for testing
-	AddAddressToAccessListID: {label: "AddAddressToAccessList", readfunc: ReadPanic},
-	AddLogID:                 {label: "AddLog", readfunc: ReadPanic},
-	AddPreimageID:            {label: "AddPreimage", readfunc: ReadPanic},
-	AddRefundID:              {label: "AddRefund", readfunc: ReadPanic},
-	AddressInAccessListID:    {label: "AddressInAccessList", readfunc: ReadPanic},
-	AddSlotToAccessListID:    {label: "AddSlotToAccessList", readfunc: ReadPanic},
-	CloseID:                  {label: "Close", readfunc: ReadPanic},
-	GetLogsID:                {label: "GetLogs", readfunc: ReadPanic},
-	GetRefundID:              {label: "GetRefund", readfunc: ReadPanic},
-	IntermediateRootID:       {label: "IntermediateRoot", readfunc: ReadPanic},
-	PrepareID:                {label: "Prepare", readfunc: ReadPanic},
-	SetTxContextID:           {label: "SetTxContext", readfunc: ReadPanic},
-	SlotInAccessListID:       {label: "SlotInAccessList", readfunc: ReadPanic},
-	SubRefundID:              {label: "SubRefund", readfunc: ReadPanic},
-	PointCacheID:             {label: "PointCache", readfunc: ReadPanic},
-	WitnessID:                {label: "Witness", readfunc: ReadPanic},
+	AddAddressToAccessListID: {label: "AddAddressToAccessList"},
+	AddLogID:                 {label: "AddLog"},
+	AddPreimageID:            {label: "AddPreimage"},
+	AddRefundID:              {label: "AddRefund"},
+	AddressInAccessListID:    {label: "AddressInAccessList"},
+	AddSlotToAccessListID:    {label: "AddSlotToAccessList"},
+	CloseID:                  {label: "Close"},
+	GetLogsID:                {label: "GetLogs"},
+	GetRefundID:              {label: "GetRefund"},
+	IntermediateRootID:       {label: "IntermediateRoot"},
+	PrepareID:                {label: "Prepare"},
+	SetTxContextID:           {label: "SetTxContext"},
+	SlotInAccessListID:       {label: "SlotInAccessList"},
+	SubRefundID:              {label: "SubRefund"},
+	PointCacheID:             {label: "PointCache"},
+	WitnessID:                {label: "Witness"},
 
 	// Transient Storage
-	GetTransientStateID:     {label: "GetTransientState", readfunc: ReadPanic},
-	GetTransientStateLcID:   {label: "GetTransientStateLc", readfunc: ReadPanic},
-	GetTransientStateLccsID: {label: "GetTransientStateLccs", readfunc: ReadPanic},
-	GetTransientStateLclsID: {label: "GetTransientStateLcls", readfunc: ReadPanic},
-	SetTransientStateID:     {label: "SetTransientState", readfunc: ReadPanic},
-	SetTransientStateLclsID: {label: "SetTransientStateLcls", readfunc: ReadPanic},
+	GetTransientStateID:     {label: "GetTransientState"},
+	GetTransientStateLcID:   {label: "GetTransientStateLc"},
+	GetTransientStateLccsID: {label: "GetTransientStateLccs"},
+	GetTransientStateLclsID: {label: "GetTransientStateLcls"},
+	SetTransientStateID:     {label: "SetTransientState"},
+	SetTransientStateLclsID: {label: "SetTransientStateLcls"},
 }
 
 // GetLabel retrieves a label of a state operation.
@@ -179,16 +176,6 @@ func GetLabel(i byte) string {
 	}
 
 	return opDict[i].label
-}
-
-// Operation interface.
-type Operation interface {
-	GetId() byte           // get operation identifier
-	Write(io.Writer) error // write operation to a file
-}
-
-func ReadPanic(f io.Reader) (Operation, error) {
-	return nil, fmt.Errorf("operation not implemented")
 }
 
 // CreateIdLabelMap returns a map of opcode ID and opcode name
