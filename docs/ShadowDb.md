@@ -3,8 +3,8 @@
 ShadowDb is a wrapper for any StateDb operations. It runs all operations on two StateDbs simultaneously hence slowing down the command itself.
 
 ## Using ShadowDb without existing StateDb
-To run for example `runvm` with ShadowDb we need to specify we want to use it with flag `--shadow-db` then we specify implementation with `db-shadow-impl` (carmen, geth...) and variant with `--db-shadow-variant` (go-file, cpp-file...).
-Using `--keep-db` will keep both prime and shadow StateDb in structure `path/to/state/db/tmp/prime` and `path/to/state/db/tmp/shadow`.
+To run, for example, `aida-vm-sdb` with ShadowDb, we need to specify usage with the flag `--shadow-db`. Then, we specify the implementation with `--db-shadow-impl` (carmen, geth...) and the variant with `--db-shadow-variant` (go-file, cpp-file...).
+Using `--keep-db` will keep both prime and shadow StateDb in the structure `path/to/state/db/tmp/prime` and `path/to/state/db/tmp/shadow`.
 
 ## Using ShadowDb with existing StateDb
-To run for example `apireplay` with ShadowDb we need to respect expected structure. First we specify using ShadowDb with `--shadow-db`. Then we specify path to StateDb and ShadowDb with `--db-src` in which we have to have two StateDbs directories. One named **prime** other named **shadow**. Implementation and Variant are both read from `statedb_info.json`.
+To run, for example, `aida-rpc` with ShadowDb, we need to respect the expected structure. First, we specify using ShadowDb with `--shadow-db`. Then we specify the path to StateDb and ShadowDb with `--db-src`, in which we must have two StateDb directories: one named **prime** and the other named **shadow**. Implementation and Variant are both read from `statedb_info.json`.
