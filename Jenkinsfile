@@ -141,28 +141,6 @@ pipeline {
                     }
                 }
 
-                stage('aida-sdb record') {
-                    steps {
-                        sh "mkdir -p ${TRACEDIR}"
-                        sh "rm -rf ${TRACEDIR}/*"
-                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            // use fixed ranges to control the priming time
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-0.dat --trace-file ${TRACEDIR}/trace-0.dat ${AIDADB} 1000 1500"
-                            sh "build/aida-sdb record --cpu-profile cpu-profile-1.dat --trace-file ${TRACEDIR}/trace-1.dat ${AIDADB} 1501 2000"
-                        }
-                    }
-                }
-
-                stage('aida-sdb replay') {
-                    steps {
-                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE', message: 'Test Suite had a failure') {
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --shadow-db --db-shadow-impl geth --trace-file ${TRACEDIR}/trace-0.dat 1000 1500"
-                            sh "build/aida-sdb replay ${VM} ${STATEDB} ${TMPDB} ${AIDADB} ${PRIME} ${PROFILE} --trace-dir ${TRACEDIR} 1000 2000"
-                        }
-                        sh "rm -rf ${TRACEDIR}"
-                    }
-                }
-
                 stage('aida-delta-debugger') {
                     steps {
                         sh "mkdir -p ${TRACEDIR}"

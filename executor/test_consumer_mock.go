@@ -13,7 +13,6 @@ import (
 	reflect "reflect"
 
 	rpc "github.com/0xsoniclabs/aida/rpc"
-	operation "github.com/0xsoniclabs/aida/tracer/operation"
 	txcontext "github.com/0xsoniclabs/aida/txcontext"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -92,42 +91,4 @@ func (m *MockRPCReqConsumer) Consume(block, transaction int, req *rpc.RequestAnd
 func (mr *MockRPCReqConsumerMockRecorder) Consume(block, transaction, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consume", reflect.TypeOf((*MockRPCReqConsumer)(nil).Consume), block, transaction, req)
-}
-
-// MockOperationConsumer is a mock of OperationConsumer interface.
-type MockOperationConsumer struct {
-	ctrl     *gomock.Controller
-	recorder *MockOperationConsumerMockRecorder
-	isgomock struct{}
-}
-
-// MockOperationConsumerMockRecorder is the mock recorder for MockOperationConsumer.
-type MockOperationConsumerMockRecorder struct {
-	mock *MockOperationConsumer
-}
-
-// NewMockOperationConsumer creates a new mock instance.
-func NewMockOperationConsumer(ctrl *gomock.Controller) *MockOperationConsumer {
-	mock := &MockOperationConsumer{ctrl: ctrl}
-	mock.recorder = &MockOperationConsumerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockOperationConsumer) EXPECT() *MockOperationConsumerMockRecorder {
-	return m.recorder
-}
-
-// Consume mocks base method.
-func (m *MockOperationConsumer) Consume(block, transaction int, operations []operation.Operation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Consume", block, transaction, operations)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Consume indicates an expected call of Consume.
-func (mr *MockOperationConsumerMockRecorder) Consume(block, transaction, operations any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consume", reflect.TypeOf((*MockOperationConsumer)(nil).Consume), block, transaction, operations)
 }
