@@ -1,5 +1,8 @@
 name: Documentation
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
@@ -18,4 +21,3 @@ jobs:
           path: "docs"
         env:
           GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-
