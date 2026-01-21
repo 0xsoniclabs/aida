@@ -13,7 +13,6 @@ various key/value stores and files. After observing the execution with the recor
 with additional data. For this purpose, we have various generative tools. After the testDB is constructed, the block processing can be isolated via replayers.
 
 Here is the list of tools performing tests and obtaining metrics: 
- - [`aida-sdb`](Aida-Sdb) **Aida Storage Trace Manager** - Captures, records, and replays StateDB operations.
  - [`aida-profile`](Aida-Profile) **Aida Storage Profile Manager** - Profiles the world-state.
  - [`aida-vm`](Aida-Vm) **EVM Evaluation Tool** - Tests world-state evolution of a VM and its StateDB.
  - [`aida-vm-adb`](Aida-Vm-Adb) **Aida Archive Evaluation Tool** - Runs transactions on historic states derived from an archive DB.
