@@ -77,7 +77,7 @@ func TestTableHash_Empty(t *testing.T) {
 		// state hash count
 		log.EXPECT().Info(gomock.Any()),
 		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(0)),
-		// block hash count
+		// blockHash count
 		log.EXPECT().Info(gomock.Any()),
 		log.EXPECT().Infof(gomock.Any(), gomock.Any(), uint64(0)),
 		// exception count
@@ -344,7 +344,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			setup: func(t *testing.T, dbInst db.BaseDB) {
 				// must be bigger than 32 bytes
 				junkValue := "asffsafasfassafsafkjlasffasklsfaklasfjagqeiojgqeiogewiogewjogieweowvniboiewgioewjgfewiofewijofewjeiqoqwfio"
-				err := dbInst.Put([]byte(db.StateRootHashPrefix+"0x1"), []byte(junkValue))
+				err := dbInst.Put([]byte(db.StateHashPrefix+"0x1"), []byte(junkValue))
 				assert.NoError(t, err)
 			},
 			dbComponent: dbcomponent.StateHash,
@@ -371,7 +371,7 @@ func TestTableHash_InvalidKeys(t *testing.T) {
 			},
 			dbComponent: dbcomponent.BlockHash,
 			logMsg:      "Generating Block-Hashes hash...",
-			errWant:     "invalid block hash length for block 1: expected 32 bytes, got 106 bytes",
+			errWant:     "invalid blockHash length for block 1: expected 32 bytes, got 106 bytes",
 		},
 	}
 
@@ -541,8 +541,9 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 	// Generate random number between 16-20
 	numStateHashes := rand.Intn(5) + 16
 
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(aidaDb)
 	for i := 0; i < numStateHashes; i++ {
-		err := db.SaveStateRoot(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
+		err := shdb.PutStateHashString(fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
 		if err != nil {
 			t.Fatalf("error saving state root: %v", err)
 		}
@@ -550,10 +551,11 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 
 	// Generate random number between 21-25
 	numBlockHashes := rand.Intn(5) + 21
+	bhdb := db.MakeDefaultBlockHashDBFromBaseDB(aidaDb)
 	for i := 0; i < numBlockHashes; i++ {
-		err := db.SaveBlockHash(aidaDb, fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
+		err := bhdb.PutBlockHashString(fmt.Sprintf("0x%x", i), strings.Repeat("0", 64))
 		if err != nil {
-			t.Fatalf("error saving block hash: %v", err)
+			t.Fatalf("error saving blockHash: %v", err)
 		}
 	}
 
@@ -608,18 +610,20 @@ func TestTableHash_GetHashesHash_Ticker(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			log := logger.NewMockLogger(ctrl)
+			mockDbAdapter := db.NewMockDbAdapter(ctrl)
 			aidaDb := db.NewMockBaseDB(ctrl)
+			aidaDb.EXPECT().GetBackend().Return(mockDbAdapter)
 
 			cfg := &utils.Config{
 				First: 0,
 				Last:  1,
 			}
 
-			aidaDb.EXPECT().Get(gomock.Any()).DoAndReturn(func(key []byte) ([]byte, error) {
+			mockDbAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(key []byte, _ any) ([]byte, error) {
 				time.Sleep(2 * time.Millisecond) // Simulate a delay
 				return []byte("12345678123456781234567812345678"), nil
 			})
-			aidaDb.EXPECT().Get(gomock.Any()).Return([]byte("12345678123456781234567812345678"), nil)
+			mockDbAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]byte("12345678123456781234567812345678"), nil)
 			log.EXPECT().Infof(tc.logMsg, uint64(1), uint64(1))
 
 			_, count, err := tc.getHashFunc(cfg, aidaDb, time.Millisecond, log)

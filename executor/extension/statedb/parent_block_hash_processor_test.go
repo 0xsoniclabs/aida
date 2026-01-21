@@ -31,7 +31,6 @@ import (
 	"github.com/0xsoniclabs/substate/substate"
 	"github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -39,21 +38,26 @@ import (
 
 func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockProvider := db.NewMockHashProvider(ctrl)
+
+	mockDbAdapter := db.NewMockDbAdapter(ctrl)
+	mockDb := db.NewMockCodeDB(ctrl)
+	mockDb.EXPECT().GetBackend().Return(mockDbAdapter)
+	blockHash := db.MakeDefaultBlockHashDBFromBaseDB(mockDb)
+
 	mockState := state.NewMockStateDB(ctrl)
 	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
 	hash := types.Hash{123}
 	// Processor is called only once
 	gomock.InOrder(
-		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
+		mockDbAdapter.EXPECT().Get(db.BlockHashDBKey(2), gomock.Any()).Return(hash.Bytes(), nil),
 		// Parent hash must be processed in a separate transaction!
 		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
 		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash), gomock.Any(), gomock.Any()),
 	)
 
 	hashProcessor := parentBlockHashProcessor{
-		hashProvider: mockProvider,
-		processor:    mockProcessor,
+		blockHashDB: blockHash,
+		processor:   mockProcessor,
 		// At the time of implementation, Sonic does not have Prague time yet
 		cfg:          utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
 		NilExtension: extension.NilExtension[txcontext.TxContext]{},
@@ -90,16 +94,18 @@ func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	cfg := utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague")
 	hp := NewParentBlockHashProcessor(cfg)
 	ctrl := gomock.NewController(t)
-	aidaDb := db.NewMockSubstateDB(ctrl)
+	mockAidaDb := db.NewMockSubstateDB(ctrl)
+	mockDbAdapter := db.NewMockDbAdapter(ctrl)
+	mockAidaDb.EXPECT().GetBackend().Return(mockDbAdapter)
 
 	stateRoot := types.Hash{1}
-	aidaDb.EXPECT().Get([]byte(db.StateRootHashPrefix+hexutil.EncodeUint64(10))).Return(stateRoot.Bytes(), nil)
+	mockDbAdapter.EXPECT().Get(db.BlockHashDBKey(10), gomock.Any()).Return(stateRoot.Bytes(), nil)
 
-	err := hp.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{AidaDb: aidaDb})
+	err := hp.PreRun(executor.State[txcontext.TxContext]{}, &executor.Context{AidaDb: mockAidaDb})
 	require.NoError(t, err, "PreBlock failed")
 
-	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateRootHash(10)
-	require.NoError(t, err, "hashProvider.GetStateRootHash failed")
+	hash, err := hp.(*parentBlockHashProcessor).blockHashDB.GetBlockHash(10)
+	require.NoError(t, err, "blockHashDB.GetStateRootHash failed")
 	require.Equal(t, stateRoot.Bytes(), hash.Bytes())
 }
 
