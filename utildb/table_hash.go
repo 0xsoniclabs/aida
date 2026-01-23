@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -224,7 +225,7 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 	feeder := func(feederChan chan any, errChan chan error) {
 		defer close(feederChan)
 
-		udb, err := db.MakeDefaultUpdateDBFromBaseDB(base)
+		udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(base, db.RLPEncodingSchema)
 		if err != nil {
 			errChan <- err
 			return
@@ -246,6 +247,10 @@ func GetUpdateDbHash(cfg *utils.Config, base db.BaseDB, log logger.Logger) ([]by
 				return
 			case feederChan <- value:
 			}
+		}
+
+		if iter.Error() != nil {
+			errChan <- fmt.Errorf("failed to iterate update-set: %v", iter.Error())
 		}
 	}
 	return parallelHashComputing(feeder)

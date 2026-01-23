@@ -872,7 +872,7 @@ func generateTestAidaDb(t *testing.T) string {
 	}
 
 	// insert update
-	udb, err := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 	assert.NoError(t, err)
 	err = udb.PutUpdateSet(&us, us.DeletedAccounts)
 	assert.NoError(t, err)

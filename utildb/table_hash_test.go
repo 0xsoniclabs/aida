@@ -515,7 +515,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		}
 	}
 
-	udb, err := db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(aidaDb)
 	assert.NoError(t, err)
 
 	// Generate random number between 11-15

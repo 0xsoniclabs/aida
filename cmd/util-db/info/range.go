@@ -83,7 +83,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print update range
 	if dbComponent == dbcomponent.Update || dbComponent == dbcomponent.All {
-		udb, err := db.MakeDefaultUpdateDBFromBaseDB(baseDb)
+		udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(baseDb, db.RLPEncodingSchema)
 		if err != nil {
 			return err
 		}
