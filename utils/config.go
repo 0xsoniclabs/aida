@@ -819,7 +819,7 @@ func (cc *configContext) setChainId() error {
 
 		if cc.cfg.ChainID == 0 {
 			cc.log.Warningf("ChainID was neither specified with flag (--%v) nor was found in AidaDb (%v); setting default value for mainnet", ChainIDFlag.Name, cc.cfg.AidaDb)
-			cc.cfg.ChainID = SonicMainnetChainID // default chain ID
+			cc.cfg.ChainID = OperaMainnetChainID // default chain ID
 		} else {
 			cc.log.Noticef("Found chainId (%v) in AidaDb", cc.cfg.ChainID)
 		}
