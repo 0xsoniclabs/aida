@@ -24,10 +24,8 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
-	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/replayer"
-	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/urfave/cli/v2"
 )
@@ -53,9 +51,6 @@ var StochasticReplayCommand = cli.Command{
 		&utils.StateDbVariantFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
-		&utils.TraceFileFlag,
-		&utils.TraceDebugFlag,
-		&utils.TraceFlag,
 		&utils.ShadowDbImplementationFlag,
 		&utils.ShadowDbVariantFlag,
 		&utils.ValidateStateHashesFlag,
@@ -117,16 +112,6 @@ func stochasticReplayAction(ctx *cli.Context) error {
 	defer func(path string) {
 		err = errors.Join(err, os.RemoveAll(path))
 	}(stateDbDir)
-
-	// Enable tracing if debug flag is set
-	if cfg.Trace {
-		rCtx, err := context.NewRecord(cfg.TraceFile, uint64(0))
-		if err != nil {
-			return err
-		}
-		defer rCtx.Close()
-		db = proxy.NewRecorderProxy(db, rCtx)
-	}
 
 	// run simulation.
 	log.Info("Run simulation")

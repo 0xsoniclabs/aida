@@ -22,7 +22,6 @@ import (
 
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/context"
 	"github.com/0xsoniclabs/aida/tracer/operation"
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils/analytics"
@@ -55,10 +54,6 @@ func getAllProxyImpls(t *testing.T, base state.StateDB) map[string]state.StateDB
 	wg := new(sync.WaitGroup)
 	proxies["Logger"] = NewLoggerProxy(base, logger.NewLogger("CRITICAL", "Proxy Logger"), logChan, wg)
 	proxies["Profiler"] = NewProfilerProxy(base, analytics.NewIncrementalAnalytics(len(operation.CreateIdLabelMap())), "info")
-	traceFile := t.TempDir() + "trace"
-	recordCtx, err := context.NewRecord(traceFile, 0)
-	assert.NoError(t, err, "failed to create record context")
-	proxies["Recorder"] = NewRecorderProxy(base, recordCtx)
 	proxies["Shadow"] = NewShadowProxy(base, base, true)
 	return proxies
 }

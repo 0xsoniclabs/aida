@@ -20,28 +20,21 @@ import (
 	"flag"
 	"os"
 	"path"
-	"path/filepath"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
 func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 	// given
-	tempDir := t.TempDir()
-	traceFile := filepath.Join(tempDir, "trace.bin")
-
 	app := cli.NewApp()
 	app.Commands = []*cli.Command{&StochasticReplayCommand}
 	args := utils.NewArgs("test").
 		Arg(StochasticReplayCommand.Name).
 		Flag(utils.BalanceRangeFlag.Name, 100).
 		Flag(utils.NonceRangeFlag.Name, 100).
-		Flag(utils.TraceFlag.Name, true).
-		Flag(utils.TraceFileFlag.Name, traceFile).
 		Flag(utils.MemoryBreakdownFlag.Name, true).
 		Flag(utils.ShadowDbImplementationFlag.Name, "geth").
 		Flag(utils.StateDbImplementationFlag.Name, "carmen").
@@ -55,9 +48,6 @@ func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
-	stat, err := os.Stat(traceFile)
-	require.NoError(t, err)
-	assert.NotZero(t, stat.Size())
 }
 
 func TestStochasticReplayCommand_ArgumentValidation(t *testing.T) {

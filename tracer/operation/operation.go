@@ -17,14 +17,7 @@
 package operation
 
 import (
-	"encoding/binary"
-	"fmt"
-	"io"
 	"log"
-	"time"
-
-	"github.com/0xsoniclabs/aida/state"
-	"github.com/0xsoniclabs/aida/tracer/context"
 )
 
 //go:generate mockgen -source operation.go -destination operation_mock.go -package operation
@@ -105,76 +98,75 @@ const (
 
 // OperationDictionary data structure contains a Label and a read function for an operation
 type OperationDictionary struct {
-	label    string                             // operation's Label
-	readfunc func(io.Reader) (Operation, error) // operation's read-function
+	label string // operation's Label
 }
 
 // opDict relates an operation's id with its label and read-function.
 var opDict = map[byte]OperationDictionary{
-	AddBalanceID:                    {label: "AddBalance", readfunc: ReadAddBalance},
-	BeginBlockID:                    {label: "BeginBlock", readfunc: ReadBeginBlock},
-	BeginSyncPeriodID:               {label: "BeginSyncPeriod", readfunc: ReadBeginSyncPeriod},
-	BeginTransactionID:              {label: "BeginTransaction", readfunc: ReadBeginTransaction},
-	CommitID:                        {label: "Commit", readfunc: ReadPanic},
-	CreateAccountID:                 {label: "CreateAccount", readfunc: ReadCreateAccount},
-	EmptyID:                         {label: "Empty", readfunc: ReadEmpty},
-	EndBlockID:                      {label: "EndBlock", readfunc: ReadEndBlock},
-	EndSyncPeriodID:                 {label: "EndSyncPeriod", readfunc: ReadEndSyncPeriod},
-	EndTransactionID:                {label: "EndTransaction", readfunc: ReadEndTransaction},
-	ExistID:                         {label: "Exist", readfunc: ReadExist},
-	FinaliseID:                      {label: "Finalise", readfunc: ReadFinalise},
-	GetBalanceID:                    {label: "GetBalance", readfunc: ReadGetBalance},
-	GetCodeHashID:                   {label: "GetCodeHash", readfunc: ReadGetCodeHash},
-	GetCodeHashLcID:                 {label: "GetCodeLcHash", readfunc: ReadGetCodeHashLc},
-	GetCodeID:                       {label: "GetCode", readfunc: ReadGetCode},
-	GetCodeSizeID:                   {label: "GetCodeSize", readfunc: ReadGetCodeSize},
-	GetCommittedStateID:             {label: "GetCommittedState", readfunc: ReadGetCommittedState},
-	GetCommittedStateLclsID:         {label: "GetCommittedStateLcls", readfunc: ReadGetCommittedStateLcls},
-	GetStateAndCommittedStateID:     {label: "GetStateAndCommittedState", readfunc: ReadGetStateAndCommittedState},
-	GetStateAndCommittedStateLclsID: {label: "GetStateAndCommittedStateLcls", readfunc: ReadGetStateAndCommittedStateLcls},
-	GetNonceID:                      {label: "GetNonce", readfunc: ReadGetNonce},
-	GetStateID:                      {label: "GetState", readfunc: ReadGetState},
-	GetStateLcID:                    {label: "GetStateLc", readfunc: ReadGetStateLc},
-	GetStateLccsID:                  {label: "GetStateLccs", readfunc: ReadGetStateLccs},
-	GetStateLclsID:                  {label: "GetStateLcls", readfunc: ReadGetStateLcls},
-	HasSelfDestructedID:             {label: "HasSelfDestructed", readfunc: ReadHasSelfDestructed},
-	RevertToSnapshotID:              {label: "RevertToSnapshot", readfunc: ReadRevertToSnapshot},
-	SetCodeID:                       {label: "SetCode", readfunc: ReadSetCode},
-	SetNonceID:                      {label: "SetNonce", readfunc: ReadSetNonce},
-	SetStateID:                      {label: "SetState", readfunc: ReadSetState},
-	SetStateLclsID:                  {label: "SetStateLcls", readfunc: ReadSetStateLcls},
-	SnapshotID:                      {label: "Snapshot", readfunc: ReadSnapshot},
-	SubBalanceID:                    {label: "SubBalance", readfunc: ReadSubBalance},
-	SelfDestructID:                  {label: "SelfDestruct", readfunc: ReadSelfDestruct},
-	SelfDestruct6780ID:              {label: "SelfDestruct", readfunc: ReadSelfDestruct6780},
-	CreateContractID:                {label: "CreateContract", readfunc: ReadCreateContract},
-	GetStorageRootID:                {label: "GetStorageRoot", readfunc: ReadGetStorageRoot},
+	AddBalanceID:                    {label: "AddBalance"},
+	BeginBlockID:                    {label: "BeginBlock"},
+	BeginSyncPeriodID:               {label: "BeginSyncPeriod"},
+	BeginTransactionID:              {label: "BeginTransaction"},
+	CommitID:                        {label: "Commit"},
+	CreateAccountID:                 {label: "CreateAccount"},
+	EmptyID:                         {label: "Empty"},
+	EndBlockID:                      {label: "EndBlock"},
+	EndSyncPeriodID:                 {label: "EndSyncPeriod"},
+	EndTransactionID:                {label: "EndTransaction"},
+	ExistID:                         {label: "Exist"},
+	FinaliseID:                      {label: "Finalise"},
+	GetBalanceID:                    {label: "GetBalance"},
+	GetCodeHashID:                   {label: "GetCodeHash"},
+	GetCodeHashLcID:                 {label: "GetCodeLcHash"},
+	GetCodeID:                       {label: "GetCode"},
+	GetCodeSizeID:                   {label: "GetCodeSize"},
+	GetCommittedStateID:             {label: "GetCommittedState"},
+	GetCommittedStateLclsID:         {label: "GetCommittedStateLcls"},
+	GetStateAndCommittedStateID:     {label: "GetStateAndCommittedState"},
+	GetStateAndCommittedStateLclsID: {label: "GetStateAndCommittedStateLcls"},
+	GetNonceID:                      {label: "GetNonce"},
+	GetStateID:                      {label: "GetState"},
+	GetStateLcID:                    {label: "GetStateLc"},
+	GetStateLccsID:                  {label: "GetStateLccs"},
+	GetStateLclsID:                  {label: "GetStateLcls"},
+	HasSelfDestructedID:             {label: "HasSelfDestructed"},
+	RevertToSnapshotID:              {label: "RevertToSnapshot"},
+	SetCodeID:                       {label: "SetCode"},
+	SetNonceID:                      {label: "SetNonce"},
+	SetStateID:                      {label: "SetState"},
+	SetStateLclsID:                  {label: "SetStateLcls"},
+	SnapshotID:                      {label: "Snapshot"},
+	SubBalanceID:                    {label: "SubBalance"},
+	SelfDestructID:                  {label: "SelfDestruct"},
+	SelfDestruct6780ID:              {label: "SelfDestruct"},
+	CreateContractID:                {label: "CreateContract"},
+	GetStorageRootID:                {label: "GetStorageRoot"},
 
 	// for testing
-	AddAddressToAccessListID: {label: "AddAddressToAccessList", readfunc: ReadPanic},
-	AddLogID:                 {label: "AddLog", readfunc: ReadPanic},
-	AddPreimageID:            {label: "AddPreimage", readfunc: ReadPanic},
-	AddRefundID:              {label: "AddRefund", readfunc: ReadPanic},
-	AddressInAccessListID:    {label: "AddressInAccessList", readfunc: ReadPanic},
-	AddSlotToAccessListID:    {label: "AddSlotToAccessList", readfunc: ReadPanic},
-	CloseID:                  {label: "Close", readfunc: ReadPanic},
-	GetLogsID:                {label: "GetLogs", readfunc: ReadPanic},
-	GetRefundID:              {label: "GetRefund", readfunc: ReadPanic},
-	IntermediateRootID:       {label: "IntermediateRoot", readfunc: ReadPanic},
-	PrepareID:                {label: "Prepare", readfunc: ReadPanic},
-	SetTxContextID:           {label: "SetTxContext", readfunc: ReadPanic},
-	SlotInAccessListID:       {label: "SlotInAccessList", readfunc: ReadPanic},
-	SubRefundID:              {label: "SubRefund", readfunc: ReadPanic},
-	PointCacheID:             {label: "PointCache", readfunc: ReadPanic},
-	WitnessID:                {label: "Witness", readfunc: ReadPanic},
+	AddAddressToAccessListID: {label: "AddAddressToAccessList"},
+	AddLogID:                 {label: "AddLog"},
+	AddPreimageID:            {label: "AddPreimage"},
+	AddRefundID:              {label: "AddRefund"},
+	AddressInAccessListID:    {label: "AddressInAccessList"},
+	AddSlotToAccessListID:    {label: "AddSlotToAccessList"},
+	CloseID:                  {label: "Close"},
+	GetLogsID:                {label: "GetLogs"},
+	GetRefundID:              {label: "GetRefund"},
+	IntermediateRootID:       {label: "IntermediateRoot"},
+	PrepareID:                {label: "Prepare"},
+	SetTxContextID:           {label: "SetTxContext"},
+	SlotInAccessListID:       {label: "SlotInAccessList"},
+	SubRefundID:              {label: "SubRefund"},
+	PointCacheID:             {label: "PointCache"},
+	WitnessID:                {label: "Witness"},
 
 	// Transient Storage
-	GetTransientStateID:     {label: "GetTransientState", readfunc: ReadGetTransientState},
-	GetTransientStateLcID:   {label: "GetTransientStateLc", readfunc: ReadGetTransientStateLc},
-	GetTransientStateLccsID: {label: "GetTransientStateLccs", readfunc: ReadGetTransientStateLccs},
-	GetTransientStateLclsID: {label: "GetTransientStateLcls", readfunc: ReadGetTransientStateLcls},
-	SetTransientStateID:     {label: "SetTransientState", readfunc: ReadSetTransientState},
-	SetTransientStateLclsID: {label: "SetTransientStateLcls", readfunc: ReadSetTransientStateLcls},
+	GetTransientStateID:     {label: "GetTransientState"},
+	GetTransientStateLcID:   {label: "GetTransientStateLc"},
+	GetTransientStateLccsID: {label: "GetTransientStateLccs"},
+	GetTransientStateLclsID: {label: "GetTransientStateLcls"},
+	SetTransientStateID:     {label: "SetTransientState"},
+	SetTransientStateLclsID: {label: "SetTransientStateLcls"},
 }
 
 // GetLabel retrieves a label of a state operation.
@@ -184,88 +176,6 @@ func GetLabel(i byte) string {
 	}
 
 	return opDict[i].label
-}
-
-// Operation interface.
-type Operation interface {
-	GetId() byte                                                   // get operation identifier
-	Write(io.Writer) error                                         // write operation to a file
-	Execute(state.StateDB, *context.Replay) (time.Duration, error) // execute operation on a stateDB instance
-	Debug(*context.Context)                                        // print debug message for operation
-}
-
-// Read an operation from file.
-func Read(f io.Reader) (Operation, error) {
-	var (
-		op Operation
-		ID byte
-	)
-
-	// read ID from file
-	err := binary.Read(f, binary.LittleEndian, &ID)
-	if err == io.EOF {
-		return nil, err
-	} else if err != nil {
-		return nil, fmt.Errorf("cannot read ID from file; %v", err)
-	}
-	if ID >= NumOperations {
-		return nil, fmt.Errorf("operaiton ID out of range %v", ID)
-	}
-
-	// read state operation
-	op, err = opDict[ID].readfunc(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read operation %v; %v", GetLabel(ID), err)
-	}
-	if op.GetId() != ID {
-		return nil, fmt.Errorf("generated object of type %v has wrong ID (%v)", GetLabel(op.GetId()), GetLabel(ID))
-	}
-	return op, err
-}
-
-func ReadPanic(f io.Reader) (Operation, error) {
-	return nil, fmt.Errorf("operation not implemented")
-}
-
-// Write an operation to file.
-func Write(f io.Writer, op Operation) {
-	// write ID to file
-	ID := op.GetId()
-	if err := binary.Write(f, binary.LittleEndian, &ID); err != nil {
-		log.Fatalf("Failed to write ID for operation %v. Error: %v", GetLabel(ID), err)
-	}
-
-	// write details of operation to file
-	if err := op.Write(f); err != nil {
-		log.Fatalf("Failed to write operation %v. Error: %v", GetLabel(ID), err)
-	}
-}
-
-// Execute an operation and profile it.
-func Execute(op Operation, db state.StateDB, ctx *context.Replay) error {
-	elapsed, err := op.Execute(db, ctx)
-	if err != nil {
-		return err
-	}
-	if ctx.Profile {
-		ctx.Stats.Profile(op.GetId(), elapsed)
-	}
-	return nil
-}
-
-// Debug prints debug information of an operation.
-func Debug(ctx *context.Context, op Operation) {
-	fmt.Printf("\t%s: ", GetLabel(op.GetId()))
-	op.Debug(ctx)
-	fmt.Println()
-}
-
-// writeOperation writes operation to file.
-func WriteOp(ctx *context.Record, op Operation) {
-	Write(ctx.ZFile, op)
-	if ctx.Debug {
-		Debug(&ctx.Context, op)
-	}
 }
 
 // CreateIdLabelMap returns a map of opcode ID and opcode name
