@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/replayer"
 	"github.com/0xsoniclabs/aida/utils"
@@ -179,16 +180,6 @@ func stochasticReplayAction(ctx *cli.Context) error {
 			_ = loggerFile.Close()
 		}
 	}()
-
-	// Enable tracing if debug flag is set
-	if cfg.Trace {
-		rCtx, err := context.NewRecord(cfg.TraceFile, uint64(0))
-		if err != nil {
-			return err
-		}
-		defer rCtx.Close()
-		db = proxy.NewRecorderProxy(db, rCtx)
-	}
 
 	// run simulation.
 	log.Info("Run simulation")
