@@ -17,11 +17,13 @@
 package stochastic
 
 import (
+	"flag"
 	"path"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
@@ -46,4 +48,28 @@ func TestCmd_RunStochasticReplayCommand(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
+}
+
+func TestStochasticReplayCommand_ArgumentValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{name: "missing args", args: []string{}, wantErr: "missing simulation file"},
+		{name: "non integer length", args: []string{"not-a-number", "stats.json"}, wantErr: "simulation length is not an integer"},
+		{name: "non positive length", args: []string{"0", "stats.json"}, wantErr: "simulation length must be greater than zero"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			require.NoError(t, fs.Parse(tt.args))
+
+			ctx := cli.NewContext(cli.NewApp(), fs, nil)
+			err := stochasticReplayAction(ctx)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
 }

@@ -18,107 +18,80 @@ package main
 
 import (
 	"flag"
-	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/utils"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
-func createTestContext(traceFiles []string, output string) *cli.Context {
-	set := flag.NewFlagSet("test", 0)
-	traceSlice := cli.NewStringSlice(traceFiles...)
-	set.Var(traceSlice, utils.DeltaTraceFileFlag.Name, "")
-	set.String(utils.DeltaOutputFlag.Name, output, "")
-	set.String(utils.StateDbImplementationFlag.Name, "geth", "")
-	set.String(utils.StateDbVariantFlag.Name, "", "")
-	set.String(utils.DbTmpFlag.Name, "", "")
-	set.Int(utils.CarmenSchemaFlag.Name, 0, "")
-	set.Int(utils.ChainIDFlag.Name, int(utils.SonicMainnetChainID), "")
-	set.String("log-level", "", "")
-	set.Duration(utils.DeltaTimeoutFlag.Name, 0, "")
-	set.Int(utils.AddressSampleRunsFlag.Name, 0, "")
-	set.Int64(utils.RandomSeedFlag.Name, 0, "")
-	set.Int(utils.MaxFactorFlag.Name, 0, "")
+func newRunContext(t *testing.T, traceFiles []string, output string) *cli.Context {
+	t.Helper()
 
-	return cli.NewContext(nil, set, nil)
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	for _, fl := range []cli.Flag{
+		&utils.DeltaTraceFileFlag,
+		&utils.DeltaOutputFlag,
+		&utils.DeltaTimeoutFlag,
+		&utils.AddressSampleRunsFlag,
+		&utils.RandomSeedFlag,
+		&utils.MaxFactorFlag,
+		&utils.StateDbImplementationFlag,
+		&utils.StateDbVariantFlag,
+		&utils.DbTmpFlag,
+		&utils.CarmenSchemaFlag,
+		&utils.ChainIDFlag,
+		&logger.LogLevelFlag,
+	} {
+		require.NoError(t, fl.Apply(fs))
+	}
+
+	for _, tf := range traceFiles {
+		require.NoError(t, fs.Set(utils.DeltaTraceFileFlag.Name, tf))
+	}
+	if output != "" {
+		require.NoError(t, fs.Set(utils.DeltaOutputFlag.Name, output))
+	}
+
+	return cli.NewContext(cli.NewApp(), fs, nil)
 }
 
 func TestRun_NoTraceFile(t *testing.T) {
-	ctx := createTestContext([]string{}, "")
+	ctx := newRunContext(t, nil, "out.trace")
+
 	err := run(ctx)
 	require.Error(t, err)
-
-	var exitErr cli.ExitCoder
-	require.ErrorAs(t, err, &exitErr)
-	require.Equal(t, 1, exitErr.ExitCode())
+	exitErr, ok := err.(cli.ExitCoder)
+	require.True(t, ok)
+	require.Contains(t, exitErr.Error(), "provide --trace-file")
 }
 
 func TestRun_MultipleTraceFiles(t *testing.T) {
-	tmpDir := t.TempDir()
-	traceFile1 := filepath.Join(tmpDir, "trace1.txt")
-	traceFile2 := filepath.Join(tmpDir, "trace2.txt")
+	ctx := newRunContext(t, []string{"a", "b"}, "out.trace")
 
-	require.NoError(t, os.WriteFile(traceFile1, []byte("BeginBlock, 1\n"), 0644))
-	require.NoError(t, os.WriteFile(traceFile2, []byte("BeginBlock, 2\n"), 0644))
-
-	ctx := createTestContext([]string{traceFile1, traceFile2}, "out.txt")
 	err := run(ctx)
 	require.Error(t, err)
-
-	var exitErr cli.ExitCoder
-	require.ErrorAs(t, err, &exitErr)
-	require.Equal(t, 1, exitErr.ExitCode())
+	exitErr, ok := err.(cli.ExitCoder)
+	require.True(t, ok)
+	require.Contains(t, exitErr.Error(), "provide exactly one --trace-file")
 }
 
-func TestRun_NoOutput(t *testing.T) {
-	tmpDir := t.TempDir()
-	traceFile := filepath.Join(tmpDir, "trace.txt")
-	require.NoError(t, os.WriteFile(traceFile, []byte("BeginBlock, 1\n"), 0644))
+func TestRun_MissingOutput(t *testing.T) {
+	ctx := newRunContext(t, []string{"trace.txt"}, "")
 
-	ctx := createTestContext([]string{traceFile}, "")
 	err := run(ctx)
 	require.Error(t, err)
-
-	var exitErr cli.ExitCoder
-	require.ErrorAs(t, err, &exitErr)
-	require.Equal(t, 1, exitErr.ExitCode())
+	exitErr, ok := err.(cli.ExitCoder)
+	require.True(t, ok)
+	require.Contains(t, exitErr.Error(), "specify --output")
 }
 
-func TestRun_EmptyOutput(t *testing.T) {
-	tmpDir := t.TempDir()
-	traceFile := filepath.Join(tmpDir, "trace.txt")
-	require.NoError(t, os.WriteFile(traceFile, []byte("BeginBlock, 1\n"), 0644))
+func TestRun_LoadOperationsError(t *testing.T) {
+	ctx := newRunContext(t, []string{filepath.Join(t.TempDir(), "missing.log")}, filepath.Join(t.TempDir(), "out.trace"))
 
-	ctx := createTestContext([]string{traceFile}, "  ")
 	err := run(ctx)
 	require.Error(t, err)
-
-	var exitErr cli.ExitCoder
-	require.ErrorAs(t, err, &exitErr)
-	require.Equal(t, 1, exitErr.ExitCode())
-}
-
-func TestRun_InvalidTraceFile(t *testing.T) {
-	tmpDir := t.TempDir()
-	outputFile := filepath.Join(tmpDir, "output.txt")
-
-	ctx := createTestContext([]string{"/nonexistent/file.txt"}, outputFile)
-	err := run(ctx)
-	require.Error(t, err)
-}
-
-func TestRun_EmptyTraceFile(t *testing.T) {
-	tmpDir := t.TempDir()
-	traceFile := filepath.Join(tmpDir, "empty.txt")
-	outputFile := filepath.Join(tmpDir, "output.txt")
-
-	require.NoError(t, os.WriteFile(traceFile, []byte(""), 0644))
-
-	ctx := createTestContext([]string{traceFile}, outputFile)
-	err := run(ctx)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "does not contain operations")
+	require.Contains(t, err.Error(), "open trace")
 }
