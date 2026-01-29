@@ -17,13 +17,16 @@
 package stochastic
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0xsoniclabs/aida/logger"
+	"github.com/0xsoniclabs/aida/state/proxy"
 	"github.com/0xsoniclabs/aida/stochastic/recorder"
 	"github.com/0xsoniclabs/aida/stochastic/replayer"
 	"github.com/0xsoniclabs/aida/utils"
@@ -49,6 +52,10 @@ var StochasticReplayCommand = cli.Command{
 		&utils.StateDbVariantFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
+		&utils.TraceFileFlag,
+		&utils.TraceDebugFlag,
+		&utils.TraceFlag,
 		&utils.ShadowDbImplementationFlag,
 		&utils.ShadowDbVariantFlag,
 		&utils.ValidateStateHashesFlag,
@@ -111,6 +118,69 @@ func stochasticReplayAction(ctx *cli.Context) error {
 		err = errors.Join(err, os.RemoveAll(path))
 	}(stateDbDir)
 
+	var loggerOutput chan string
+	var loggerWg sync.WaitGroup
+	var loggerFile *os.File
+	var deltaSink *proxy.DeltaLogSink
+	loggerManagedByProxy := false
+
+	deltaLoggingPath := ctx.Path(utils.DeltaLoggingFlag.Name)
+	dbLoggingPath := ctx.Path(utils.StateDbLoggingFlag.Name)
+
+	if deltaLoggingPath != "" {
+		var err error
+		loggerFile, err = os.Create(deltaLoggingPath)
+		if err != nil {
+			return fmt.Errorf("cannot create delta logging output file: %w", err)
+		}
+		writer := bufio.NewWriter(loggerFile)
+		deltaSink = proxy.NewDeltaLogSink(log, writer, loggerFile)
+		db = proxy.NewDeltaLoggerProxy(db, deltaSink)
+		log.Noticef("Delta logging enabled: %s", deltaLoggingPath)
+	} else if dbLoggingPath != "" {
+		var err error
+		loggerFile, err = os.Create(dbLoggingPath)
+		if err != nil {
+			return fmt.Errorf("cannot create db logging output file: %w", err)
+		}
+		loggerOutput = make(chan string, 1000)
+		loggerWg.Add(1)
+		go func() {
+			defer loggerWg.Done()
+			writer := bufio.NewWriter(loggerFile)
+			defer func() {
+				if err := writer.Flush(); err != nil {
+					log.Errorf("cannot flush db-logging writer; %v", err)
+				}
+			}()
+			for line := range loggerOutput {
+				if _, err := fmt.Fprintln(writer, line); err != nil {
+					log.Errorf("cannot write db log line; %v", err)
+					return
+				}
+			}
+		}()
+		log.Noticef("StateDB logging enabled: %s", dbLoggingPath)
+		db = proxy.NewLoggerProxy(db, log, loggerOutput, &loggerWg)
+		loggerManagedByProxy = true
+	}
+
+	defer func() {
+		if deltaSink != nil {
+			_ = deltaSink.Close()
+			loggerFile = nil
+		}
+		if loggerOutput != nil {
+			if !loggerManagedByProxy {
+				close(loggerOutput)
+			}
+			loggerWg.Wait()
+		}
+		if loggerFile != nil {
+			_ = loggerFile.Close()
+		}
+	}()
+
 	// run simulation.
 	log.Info("Run simulation")
 	runErr := replayer.RunStochasticReplay(db, simulation, simLength, cfg, logger.NewLogger(cfg.LogLevel, "Stochastic"))
@@ -130,6 +200,12 @@ func stochasticReplayAction(ctx *cli.Context) error {
 		log.Criticalf("Failed to close database; %v", err)
 	}
 	log.Infof("Closing DB took %v", time.Since(start))
+
+	if deltaLoggingPath != "" {
+		log.Noticef("Delta trace written to: %s", deltaLoggingPath)
+	} else if dbLoggingPath != "" {
+		log.Noticef("StateDB trace written to: %s", dbLoggingPath)
+	}
 
 	size, err := utils.GetDirectorySize(stateDbDir)
 	if err != nil {
