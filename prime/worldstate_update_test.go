@@ -109,7 +109,7 @@ func TestStatedb_DeleteDestroyedAccountsFromWorldState(t *testing.T) {
 			}
 
 			// Creating new destroyed accounts DB
-			daDB, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(daBackend)
+			daDB, err := db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(daBackend, db.RLPEncodingSchema)
 			assert.NoError(t, err)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB
@@ -163,7 +163,7 @@ func TestStatedb_DeleteDestroyedAccountsFromStateDB(t *testing.T) {
 			}
 
 			// Creating new destroyed accounts DB
-			ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+			ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 			assert.NoError(t, err)
 
 			// Storing two picked accounts from destroyedAccounts slice to destroyed accounts DB

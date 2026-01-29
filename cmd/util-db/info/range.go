@@ -97,7 +97,7 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print deleted range
 	if dbComponent == dbcomponent.Delete || dbComponent == dbcomponent.All {
-		ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(baseDb)
+		ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(baseDb, db.RLPEncodingSchema)
 		if err != nil {
 			return err
 		}

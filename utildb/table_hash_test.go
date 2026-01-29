@@ -502,7 +502,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		}
 	}
 
-	ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+	ddb, err := db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 	assert.NoError(t, err)
 
 	// Generate random number between 6-10
@@ -515,7 +515,7 @@ func fillFakeAidaDb(t *testing.T, aidaDb db.BaseDB) (int, int, int, int, int, in
 		}
 	}
 
-	udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(aidaDb)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 	assert.NoError(t, err)
 
 	// Generate random number between 11-15

@@ -55,7 +55,7 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 		if err != nil {
 			return nil, err
 		}
-		p.ddb, err = db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+		p.ddb, err = db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 		if err != nil {
 			return nil, err
 		}

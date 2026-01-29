@@ -164,7 +164,7 @@ func GetDeletionHash(
 	ticker := time.NewTicker(progressLoggerFrequency)
 	defer ticker.Stop()
 
-	dDb, err := db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+	dDb, err := db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 	if err != nil {
 		return nil, 0, err
 	}
