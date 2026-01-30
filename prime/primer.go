@@ -51,11 +51,11 @@ func newPrimer(cfg *utils.Config, state state.StateDB, aidaDb db.BaseDB, log log
 		if err != nil {
 			return nil, err
 		}
-		p.udb, err = db.MakeDefaultUpdateDBFromBaseDB(aidaDb)
+		p.udb, err = db.MakeDefaultUpdateDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 		if err != nil {
 			return nil, err
 		}
-		p.ddb, err = db.MakeDefaultDestroyedAccountDBFromBaseDB(aidaDb)
+		p.ddb, err = db.MakeDefaultDestroyedAccountDBFromBaseDBWithEncoding(aidaDb, db.RLPEncodingSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -164,6 +164,10 @@ func (p *primer) mayPrimeFromUpdateSet() error {
 			incrementalSize/1_000_000)
 		// advance next primable block after merge update set
 		p.block++
+	}
+
+	if updateIter.Error() != nil {
+		return fmt.Errorf("cannot iterate update-set; %v", updateIter.Error())
 	}
 
 	if len(update) > 0 {

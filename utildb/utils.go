@@ -256,7 +256,7 @@ func GenerateTestAidaDb(t *testing.T) db.BaseDB {
 		require.NoError(t, err)
 	}
 
-	udb, err := db.MakeDefaultUpdateDBFromBaseDB(database)
+	udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(database, db.RLPEncodingSchema)
 	require.NoError(t, err)
 	// write update sets to the database
 	for i := 1; i <= 10; i++ {
