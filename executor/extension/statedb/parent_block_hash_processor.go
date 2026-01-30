@@ -47,9 +47,9 @@ func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext
 }
 
 type parentBlockHashProcessor struct {
-	hashProvider db.HashProvider
-	processor    iEvmProcessor
-	cfg          *utils.Config
+	blockHashDB db.BlockHashDB
+	processor   iEvmProcessor
+	cfg         *utils.Config
 	extension.NilExtension[txcontext.TxContext]
 }
 
@@ -84,7 +84,10 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 }
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
-	p.hashProvider = db.MakeHashProvider(ctx.AidaDb)
+	// required for testing
+	if ctx.AidaDb != nil {
+		p.blockHashDB = db.MakeDefaultBlockHashDBFromBaseDB(ctx.AidaDb)
+	}
 	return nil
 }
 
@@ -106,7 +109,7 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return nil
 	}
 
-	prevBlockHash, err := p.hashProvider.GetBlockHash(state.Block - 1)
+	prevBlockHash, err := p.blockHashDB.GetBlockHash(state.Block - 1)
 	if err != nil {
 		return fmt.Errorf("cannot get previous block hash: %w", err)
 	}
