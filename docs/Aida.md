@@ -13,13 +13,11 @@ various key/value stores and files. After observing the execution with the recor
 with additional data. For this purpose, we have various generative tools. After the testDB is constructed, the block processing can be isolated via replayers.
 
 Here is the list of tools performing tests and obtaining metrics: 
- - [`aida-substate`](Aida-Substate) A profiling/replay tools using the SubstateDB
- - [`aida-trace`](Aida-Trace) A profiling/replay system for tracing StateDB operations and executing the traces on a StateDB database in isoloation.
- - [`aida-runvm`](Aida-RunVM) A tool that tests the world-state evolution of a virtual and its StateDB database.
- - [`aida-runarchive`](Aida-RunArchive) A tool that tests the world-state evolution for an ArchiveDB.  
- - [`aida-stochastic`](Aida-Stochastic) A tool that uses statistical methods for mimicking real-world workloads for extrapolation and fuzzing.
+ - [`aida-profile`](Aida-Profile) **Aida Storage Profile Manager** - Profiles the world-state.
+ - [`aida-vm`](Aida-Vm) **EVM Evaluation Tool** - Tests world-state evolution of a VM and its StateDB.
+ - [`aida-vm-adb`](Aida-Vm-Adb) **Aida Archive Evaluation Tool** - Runs transactions on historic states derived from an archive DB.
+ - [`aida-stochastic-sdb`](Aida-Stochastic-Sdb) **Aida Stochastic-Test Manager** - Generates, records, and replays stochastic tests.
 
 Here is the list of generator tools producing the TestDB:
- - [`aida-dbmerger`](Aida-DB) A tool for generating the TestDB. 
- - [`aida-worldstate`](Aida-Worldstate) A tool for generating the world-state for the first 4.5M blocks (legacy issues due to old Lachesis client and lack of block-processing of the first 4.5M blocks)
- - [`aida-updateset`](Aida-Updateset) A tool for generating the update sets for priming the world state at any arbitrary height.
+ - [`util-db`](Util-Db) A tool for managing Aida databases (cloning, merging, compacting, validating).
+ - [`util-updateset`](Util-Updateset) A tool for generating the update sets for priming the world state at any arbitrary height.
