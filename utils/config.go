@@ -351,6 +351,8 @@ type Config struct {
 	ProfileSqlite3           string                    // output profiling results to sqlite3 DB
 	ProfilingDbName          string                    // set a database name for storing micro-profiling results
 	RandomSeed               int64                     // set random seed for stochastic testing
+	EnableCoverage           bool                      // enable coverage-guided fuzzing
+	CoverageSnapshotInterval int                       // number of operations between coverage snapshots
 	RegisterRun              string                    // register run to the provided connection string
 	RpcRecordingPath         string                    // path to source file (or dir with files) with recorded RPC requests
 	ShadowDb                 bool                      // defines we want to open an existing db as shadow
