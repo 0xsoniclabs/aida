@@ -17,8 +17,12 @@
 package stochastic
 
 import (
+	"bufio"
 	"flag"
+	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/0xsoniclabs/aida/utils"
@@ -72,4 +76,69 @@ func TestStochasticReplayCommand_ArgumentValidation(t *testing.T) {
 			require.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
+}
+
+func TestCmd_RunStochasticReplayCommandWithDbLogging(t *testing.T) {
+	tempDir := t.TempDir()
+	dbLogFile := filepath.Join(tempDir, "db-trace.txt")
+
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{&StochasticReplayCommand}
+	args := utils.NewArgs("test").
+		Arg(StochasticReplayCommand.Name).
+		Flag(utils.BalanceRangeFlag.Name, 100).
+		Flag(utils.NonceRangeFlag.Name, 100).
+		Flag(utils.StateDbLoggingFlag.Name, dbLogFile).
+		Flag(utils.MemoryBreakdownFlag.Name, true).
+		Flag(utils.StateDbImplementationFlag.Name, "geth").
+		Arg(10).
+		Arg(path.Join(testDataDir, "stats.json")).
+		Build()
+
+	err := app.Run(args)
+
+	assert.NoError(t, err)
+
+	traceStat, err := os.Stat(dbLogFile)
+	require.NoError(t, err)
+	assert.NotZero(t, traceStat.Size())
+
+	f, err := os.Open(dbLogFile)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, f.Close())
+	}()
+
+	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	foundBeginBlock := false
+	foundEndBlock := false
+	foundBeginSyncPeriod := false
+	foundEndSyncPeriod := false
+	lineCount := 0
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineCount++
+		if strings.HasPrefix(line, "BeginBlock") {
+			foundBeginBlock = true
+		}
+		if strings.HasPrefix(line, "EndBlock") {
+			foundEndBlock = true
+		}
+		if strings.HasPrefix(line, "BeginSyncPeriod") {
+			foundBeginSyncPeriod = true
+		}
+		if strings.HasPrefix(line, "EndSyncPeriod") {
+			foundEndSyncPeriod = true
+		}
+	}
+	require.NoError(t, scanner.Err())
+
+	assert.True(t, foundBeginBlock, "Trace should contain BeginBlock operation")
+	assert.True(t, foundEndBlock, "Trace should contain EndBlock operation")
+	assert.True(t, foundBeginSyncPeriod, "Trace should contain BeginSyncPeriod operation")
+	assert.True(t, foundEndSyncPeriod, "Trace should contain EndSyncPeriod operation")
+	assert.Greater(t, lineCount, 0, "Trace file should not be empty")
 }

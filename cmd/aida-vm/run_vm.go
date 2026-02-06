@@ -91,6 +91,7 @@ func run(
 
 	extensions = append(
 		extensions,
+		logger.MakeDeltaLogger[txcontext.TxContext](cfg),
 		logger.MakeErrorLogger[txcontext.TxContext](cfg),
 		logger.MakeProgressLogger[txcontext.TxContext](cfg, 15*time.Second),
 		validator.MakeLiveDbValidator(cfg, validator.ValidateTxTarget{WorldState: true, Receipt: true}),

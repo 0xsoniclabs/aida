@@ -236,6 +236,10 @@ var (
 		Name:  "db-logging",
 		Usage: "sets path to file for db-logging output",
 	}
+	DeltaLoggingFlag = cli.PathFlag{
+		Name:  "delta-log",
+		Usage: "sets path to file for delta-debugger compatible DB logs",
+	}
 	ShadowDb = cli.BoolFlag{
 		Name:  "shadow-db",
 		Usage: "use this flag when using an existing ShadowDb",

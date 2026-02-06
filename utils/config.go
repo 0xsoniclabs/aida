@@ -308,6 +308,7 @@ type Config struct {
 	DbComponent              string                    // options for util-db info are 'all', 'substate', 'delete', 'update', 'state-hash', 'exception'
 	DbImpl                   string                    // storage implementation
 	DbLogging                string                    // set to true if all DB operations should be logged
+	DeltaLogging             string                    // path to delta-debugger formatted DB log file
 	DbTmp                    string                    // path to temporary database
 	DbVariant                string                    // database variant
 	Debug                    bool                      // enable trace debug flag
@@ -993,6 +994,9 @@ func (cc *configContext) reportNewConfig() {
 	}
 	if cfg.DbLogging != "" {
 		log.Warning("Db logging enabled, reducing Tx throughput")
+	}
+	if cfg.DeltaLogging != "" {
+		log.Warning("Delta logging enabled, reducing Tx throughput")
 	}
 }
 

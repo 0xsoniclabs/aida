@@ -61,6 +61,7 @@ var RunSubstateCmd = cli.Command{
 		&utils.StateDbSrcOverwriteFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
 		&utils.ValidateStateHashesFlag,
 
 		// ArchiveDb
@@ -144,6 +145,7 @@ var RunTxGeneratorCmd = cli.Command{
 		&utils.StateDbSrcOverwriteFlag,
 		&utils.DbTmpFlag,
 		&utils.StateDbLoggingFlag,
+		&utils.DeltaLoggingFlag,
 		&utils.ValidateStateHashesFlag,
 
 		// ShadowDb
