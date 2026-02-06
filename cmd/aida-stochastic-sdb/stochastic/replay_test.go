@@ -19,6 +19,7 @@ package stochastic
 import (
 	"bufio"
 	"flag"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
