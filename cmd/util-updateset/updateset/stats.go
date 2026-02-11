@@ -68,5 +68,9 @@ func reportUpdateSetStats(ctx *cli.Context) error {
 		}
 		fmt.Printf("%v\n", storage)
 	}
+
+	if iter.Error() != nil {
+		err = errors.Join(err, fmt.Errorf("failed to iterate update-set: %v", iter.Error()))
+	}
 	return err
 }

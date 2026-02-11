@@ -107,7 +107,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 
 	if dbc == "" || dbc == "all" || dbc == "update" {
 		t.Run("UpdateSets", func(t *testing.T) {
-			udb, err := db.MakeDefaultUpdateDBFromBaseDB(cloneDb)
+			udb, err := db.MakeDefaultUpdateDBFromBaseDBWithEncoding(cloneDb, db.RLPEncodingSchema)
 			assert.NoError(t, err)
 			updateSetCount := 0
 			updateSetIter := udb.NewUpdateSetIterator(cfg.First, cfg.Last)
