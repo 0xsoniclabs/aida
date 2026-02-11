@@ -29,3 +29,23 @@ Executes transactions from block `<blockNumFirst>` to `<blockNumLast>` using the
     --substate-db       sets directory containing substate database
     --log               level of the logging of the app action ("critical", "error", "warning", "notice", "info", "debug")
 ```
+
+## Execution Flow
+
+Uses the standard [Provider](../architecture/Providers.md) → [Processor](../architecture/Processors.md) → [Extensions](../architecture/extensions/README.md) pipeline.
+
+- **Provider:** SubstateProvider
+- **Processor:** ArchiveDbTxProcessor
+- **Parallelism:** BlockLevel, configurable workers (parallel capable via `--workers`)
+
+**Extensions (in registration order):**
+
+1. CpuProfiler
+2. ArchivePrepper
+3. ParentBlockHashProcessor
+4. ProgressLogger
+5. ErrorLogger
+6. ArchiveDbValidator (WorldState + Receipt) — uses `MakeArchiveDbValidator`, not `MakeLiveDbValidator`
+7. StateDbManager *(if no external stateDb)*
+8. ArchiveBlockChecker *(if no external stateDb)*
+9. DbLogger *(if no external stateDb)*

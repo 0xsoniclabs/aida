@@ -93,3 +93,12 @@ Produces a graphical view of the stats for the Markovian process.
 ```
     --port, -v            enable visualization on `PORT` 
 ```
+
+## Execution Flow
+
+> **Architectural Note:** Unlike most Aida commands, `aida-stochastic-sdb` does **not** use the standard executor pipeline ([Providers](../architecture/Providers.md) → [Processors](../architecture/Processors.md) → [Extensions](../architecture/extensions/README.md)). None of its subcommands wire up an executor with registered extensions.
+
+- **`record`** — Manually iterates over substates and calls `processor.ProcessTransaction()` directly, wrapping the StateDB in a recorder proxy to capture Markovian statistics. There is no Provider/Processor/Extensions registration.
+- **`replay`** — Drives a Markovian simulation of StateDB operations directly, without an executor.
+- **`generate`** — Produces a uniform stats file; no block processing involved.
+- **`visualize`** — Renders stats graphically; no block processing involved.

@@ -52,3 +52,23 @@ GLOBAL:
     --trace-debug           enable debug output for tracing
 ```
 
+## Execution Flow
+
+Uses the standard [Provider](../architecture/Providers.md) → [Processor](../architecture/Processors.md) → [Extensions](../architecture/extensions/README.md) pipeline.
+
+- **Provider:** RpcRequestProvider
+- **Processor:** rpcProcessor (custom processor that calls `rpc.Execute()`)
+- **Parallelism:** BlockLevel, configurable workers
+
+**Extensions (in registration order):**
+
+1. RegisterRequestProgress (OnPreBlock)
+2. CpuProfiler
+3. ProgressLogger (15s)
+4. ErrorLogger
+5. RequestProgressTracker
+6. TemporaryArchivePrepper
+7. RpcComparator
+8. StateDbManager *(if no external stateDb)*
+9. ArchiveBlockChecker *(if no external stateDb)*
+10. DbLogger *(if no external stateDb)*
