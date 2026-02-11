@@ -148,3 +148,89 @@ To execute standard Ethereum tests against the configured VM:
 ```shell
 ./build/aida-vm-sdb ethereum-test --vm-impl geth --ethtest-type GeneralStateTests
 ```
+
+## Execution Flow
+
+This command has three subcommands, each with a distinct [Provider](../architecture/Providers.md) → [Processor](../architecture/Processors.md) → [Extensions](../architecture/extensions/README.md) pipeline.
+
+### Substate Replay (`substate`)
+
+- **Provider:** SubstateProvider
+- **Processor:** LiveDbTxProcessor
+- **Parallelism:** BlockLevel, 1 worker (sequential only)
+
+**Extensions (in registration order):**
+
+1. CpuProfiler
+2. DiagnosticServer
+3. StateDbManager *(if no external stateDb)*
+4. LiveDbBlockChecker *(if no external stateDb)*
+5. ShadowDbValidator *(if no external stateDb)*
+6. DbLogger *(if no external stateDb)*
+7. ArchiveInquirer
+8. DeltaLogger
+9. RegisterProgress (OnPreBlock)
+10. ThreadLocker
+11. VirtualMachineStatisticsPrinter
+12. ProgressLogger (15s interval)
+13. ErrorLogger
+14. BlockProgressTracker
+15. StateDbPrimer
+16. MemoryUsagePrinter
+17. MemoryProfiler
+18. StateDbPrepper
+19. ArchiveInquirer
+20. StateHashValidator
+21. BlockEventEmitter
+22. ParentBlockHashProcessor
+23. TransactionEventEmitter
+24. EthereumDbPreTransactionUpdater
+25. StateDbCorrector
+26. LiveDbValidator (WorldState + Receipt)
+27. EthereumDbPostTransactionUpdater
+28. OperationProfiler
+29. BlockRuntimeAndGasCollector *(always last)*
+
+### Ethereum State Tests (`ethereum-test`)
+
+- **Provider:** EthTestProvider
+- **Processor:** EthTestProcessor
+- **Parallelism:** BlockLevel, 1 worker
+
+**Extensions (in registration order):**
+
+1. CpuProfiler
+2. DiagnosticServer
+3. ErrorLogger
+4. EthStateTestDbPrepper *(if no external stateDb)*
+5. LiveDbBlockChecker *(if no external stateDb)*
+6. DbLogger *(if no external stateDb)*
+7. EthStateTestDbPrimer *(if no external stateDb)*
+8. DeltaLogger
+9. EthStateTestLogger
+10. ShadowDbValidator
+11. EthStateTestStateHashValidator
+12. EthStateScopeTestEventEmitter
+13. EthStateTestErrorValidator
+14. EthStateTestLogHashValidator
+
+### Transaction Generator (`tx-generator`)
+
+- **Provider:** NormaTxProvider
+- **Processor:** LiveDbTxProcessor
+- **Parallelism:** TransactionLevel (parallel)
+
+**Extensions (in registration order):**
+
+1. VirtualMachineStatisticsPrinter
+2. StateDbManager
+3. RegisterProgress (OnPreTransaction)
+4. DbLogger
+5. DeltaLogger
+6. ProgressLogger (15s)
+7. ErrorLogger
+8. BlockProgressTracker
+9. MemoryUsagePrinter
+10. MemoryProfiler
+11. ShadowDbValidator
+12. TxGeneratorBlockEventEmitter
