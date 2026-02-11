@@ -5,13 +5,12 @@ go 1.25.0
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251014092906-75df60dc78cb
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
-	github.com/0xsoniclabs/substate v0.0.0-20251118214143-ef0b309b9e24
+	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
 	github.com/0xsoniclabs/tosca v0.0.0-20251023131117-f542dea83f5b
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
 	github.com/cockroachdb/errors v1.11.3
-	github.com/dsnet/compress v0.0.1
 	github.com/ethereum/go-ethereum v1.16.5
 	github.com/go-echarts/go-echarts/v2 v2.2.5
 	github.com/goccy/go-graphviz v0.1.0
@@ -37,7 +36,6 @@ require (
 )
 
 require (
-	github.com/0xsoniclabs/tracy v0.0.0-20251027125423-00a5ab7968fb // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
