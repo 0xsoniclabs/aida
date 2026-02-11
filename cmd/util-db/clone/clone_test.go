@@ -132,7 +132,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 	if dbc == "" || dbc == "all" || dbc == "state-hash" {
 		t.Run("StateHashes", func(t *testing.T) {
 			stateHashCount := 0
-			stateHashIter := cloneDb.NewIterator([]byte(db.StateRootHashPrefix), nil)
+			stateHashIter := cloneDb.NewIterator([]byte(db.StateHashPrefix), nil)
 			for stateHashIter.Next() {
 				stateHashCount++
 			}
@@ -147,7 +147,7 @@ func testClone(t *testing.T, aidaDb db.SubstateDB, cloningType utils.AidaDbType,
 			for blockHashIter.Next() {
 				blockHashCount++
 			}
-			assert.Equal(t, 10, blockHashCount, "Expected 10 block hashes in the cloned database")
+			assert.Equal(t, 10, blockHashCount, "Expected 10 blockHashes in the cloned database")
 		})
 	}
 
@@ -194,7 +194,7 @@ func TestClone_InvalidDbKeys(t *testing.T) {
 			name:        "BlockHashInvalidDbKey",
 			keyPrefix:   db.BlockHashPrefix,
 			dbComponent: "block-hash",
-			expectedErr: "clone failed for BlockHashInvalidDbKey: condition emit error; invalid length of block hash key, expected at least 10, got 5",
+			expectedErr: "clone failed for BlockHashInvalidDbKey: condition emit error; invalid length of blockHash key, expected at least 10, got 5",
 		},
 		{
 			name:        "ExceptionInvalidDbKey",
@@ -258,7 +258,7 @@ func TestClone_BlockHashes(t *testing.T) {
 		blockHashCount++
 	}
 
-	assert.Equal(t, 10, blockHashCount, "Expected 10 block hashes in the cloned database")
+	assert.Equal(t, 10, blockHashCount, "Expected 10 blockHashes in the cloned database")
 }
 
 func TestClone_LastUpdateBeforeRange(t *testing.T) {
@@ -279,14 +279,14 @@ func TestClone_LastUpdateBeforeRange(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	// Verify that the cloned database has the expected block hashes
+	// Verify that the cloned database has the expected blockHashes
 	blockHashCount := 0
 	blockHashIter := cloneDb.NewIterator([]byte(db.BlockHashPrefix), nil)
 	for blockHashIter.Next() {
 		blockHashCount++
 	}
 
-	assert.Equal(t, 10, blockHashCount, "Expected 10 block hashes in the cloned database")
+	assert.Equal(t, 10, blockHashCount, "Expected 10 blockHashes in the cloned database")
 }
 
 func TestClone_OpenCloningDbs_SourceDbNotExist(t *testing.T) {

@@ -377,12 +377,16 @@ func TestInfo_PrintCount_IncorrectBaseDbFails(t *testing.T) {
 
 	// State Hash
 	errStateHashWant := errors.New("error getting state hash count")
-	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errStateHashWant)
+	mockSHAdapter := db.NewMockDbAdapter(ctrl)
+	baseDb.EXPECT().GetBackend().Return(mockSHAdapter)
+	mockSHAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errStateHashWant)
 	log.EXPECT().Warningf("cannot print state hash count; %w", errStateHashWant)
 
 	// Block Hash
 	errBlockHashWant := errors.New("error getting block hash count")
-	baseDb.EXPECT().Get(gomock.Any()).Return(nil, errBlockHashWant)
+	mockBHAdapter := db.NewMockDbAdapter(ctrl)
+	baseDb.EXPECT().GetBackend().Return(mockBHAdapter)
+	mockBHAdapter.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, errBlockHashWant)
 	log.EXPECT().Warningf("cannot print block hash count; %w", errBlockHashWant)
 
 	// Exception
@@ -655,7 +659,8 @@ func TestInfo_PrintStateHash_IntegrationTest(t *testing.T) {
 			}
 
 			// insert state hash
-			err = db.SaveStateRoot(aidaDb, tc.insertKey, tc.insertValue)
+			shdb := db.MakeDefaultStateHashDBFromBaseDB(aidaDb)
+			err = shdb.PutStateHashString(tc.insertKey, tc.insertValue)
 			assert.NoError(t, err)
 
 			err = aidaDb.Close()
@@ -725,7 +730,8 @@ func TestInfo_PrintBlockHash_IntegrationTest(t *testing.T) {
 			}
 
 			// insert block hash
-			err = db.SaveBlockHash(aidaDb, tc.insertKey, tc.insertValue)
+			bhdb := db.MakeDefaultBlockHashDBFromBaseDB(aidaDb)
+			err = bhdb.PutBlockHashString(tc.insertKey, tc.insertValue)
 			assert.NoError(t, err)
 
 			err = aidaDb.Close()
@@ -886,18 +892,20 @@ func generateTestAidaDb(t *testing.T) string {
 	}
 
 	// write state hashes to the database
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(aidaDb)
 	for i := 11; i <= 20; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = db.SaveStateRoot(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = shdb.PutStateHashString(key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	// write block hashes to the database
+	blockHashDb := db.MakeDefaultBlockHashDBFromBaseDB(aidaDb)
 	for i := 21; i <= 30; i++ {
 		key := "0x" + strconv.FormatInt(int64(i), 16)
-		err = db.SaveBlockHash(aidaDb, key, "0x1234567812345678123456781234567812345678123456781234567812345678")
+		err = blockHashDb.PutBlockHashString(key, "0x1234567812345678123456781234567812345678123456781234567812345678")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1258,7 +1266,7 @@ func TestCommands(t *testing.T) {
 				bdb, err := db.NewDefaultSubstateDB(dbPath)
 				require.NoError(t, err)
 				hex := strconv.FormatUint(ss.Block, 16)
-				err = bdb.Put([]byte(db.StateRootHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())
+				err = bdb.Put([]byte(db.StateHashPrefix+"0x"+hex), types.Hash{0x1, 0x12}.Bytes())
 				require.NoError(t, err)
 				err = bdb.Close()
 				require.NoError(t, err)

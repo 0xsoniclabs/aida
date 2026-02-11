@@ -196,7 +196,7 @@ func (v *validator) iterate() {
 	now = time.Now()
 
 	v.log.Notice("Iterating over State Hashes...")
-	v.doIterate(db.StateRootHashPrefix)
+	v.doIterate(db.StateHashPrefix)
 
 	v.log.Infof("State Hashes took %v.", time.Since(now).Round(1*time.Second))
 

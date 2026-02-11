@@ -111,7 +111,8 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print state hash range
 	if dbComponent == dbcomponent.StateHash || dbComponent == dbcomponent.All {
-		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(baseDb, log)
+		shdb := db.MakeDefaultStateHashDBFromBaseDB(baseDb)
+		firstStateHashBlock, lastStateHashBlock, err := utildb.FindBlockRangeInStateHash(shdb)
 		if err != nil {
 			log.Warningf("cannot find state hash range; %w", err)
 		} else {
@@ -121,7 +122,8 @@ func printRange(cfg *utils.Config, log logger.Logger) error {
 
 	// print block hash range
 	if dbComponent == dbcomponent.BlockHash || dbComponent == dbcomponent.All {
-		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(baseDb, log)
+		bhbd := db.MakeDefaultBlockHashDBFromBaseDB(baseDb)
+		firstBlockHashBlock, lastBlockHashBlock, err := utildb.FindBlockRangeOfBlockHashes(bhbd)
 		if err != nil {
 			log.Warningf("cannot find block hash range; %w", err)
 		} else {

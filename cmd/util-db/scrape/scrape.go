@@ -29,6 +29,13 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+//go:generate mockgen -source scrape.go -destination scrape_mock.go -package scrape
+
+// ClientInterface defines the methods that an RPC client must implement.
+type IRpcClient interface {
+	Call(result interface{}, method string, args ...interface{}) error
+}
+
 var Command = cli.Command{
 	Action:    scrapeAction,
 	Name:      "scrape",
@@ -79,10 +86,13 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 
 	var i = firstBlock
 
+	bhdb := db.MakeDefaultBlockHashDBFromBaseDB(bdb)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(bdb)
+
 	// If firstBlock is 0, we need to get the state root for block 1 and save it as the state root for block 0
 	// this is because the correct state root for block 0 is not available from the rpc node (at least in fantom mainnet and testnet)
 	if firstBlock == 0 {
-		block, err := db.GetBlockByNumber(client, "0x1")
+		block, err := getBlockByNumber(client, "0x1")
 		if err != nil {
 			return err
 		}
@@ -91,11 +101,11 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 			return fmt.Errorf("block 1 not found")
 		}
 
-		err = db.SaveStateRoot(bdb, "0x0", block["stateRoot"].(string))
+		err = shdb.PutStateHashString("0x0", block["stateRoot"].(string))
 		if err != nil {
 			return err
 		}
-		err = db.SaveBlockHash(bdb, "0x1", block["hash"].(string))
+		err = bhdb.PutBlockHashString("0x1", block["hash"].(string))
 		if err != nil {
 			return err
 		}
@@ -104,7 +114,7 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 
 	for ; i <= lastBlock; i++ {
 		blockNumber := fmt.Sprintf("0x%x", i)
-		block, err := db.GetBlockByNumber(client, blockNumber)
+		block, err := getBlockByNumber(client, blockNumber)
 		if err != nil {
 			return err
 		}
@@ -113,11 +123,11 @@ func StateAndBlockHashScraper(ctx context.Context, chainId utils.ChainID, client
 			return fmt.Errorf("block %d not found", i)
 		}
 
-		err = db.SaveStateRoot(bdb, blockNumber, block["stateRoot"].(string))
+		err = shdb.PutStateHashString(blockNumber, block["stateRoot"].(string))
 		if err != nil {
 			return err
 		}
-		err = db.SaveBlockHash(bdb, blockNumber, block["hash"].(string))
+		err = bhdb.PutBlockHashString(blockNumber, block["hash"].(string))
 		if err != nil {
 			return err
 		}
@@ -165,4 +175,14 @@ func getClient(ctx context.Context, chainId utils.ChainID, clientDb string, log 
 	}
 	log.Infof("Connected to RPC at %s", provider)
 	return client, nil
+}
+
+// getBlockByNumber get block from the rpc node
+func getBlockByNumber(client IRpcClient, blockNumber string) (map[string]interface{}, error) {
+	var block map[string]interface{}
+	err := client.Call(&block, "eth_getBlockByNumber", blockNumber, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block %s: %v", blockNumber, err)
+	}
+	return block, nil
 }

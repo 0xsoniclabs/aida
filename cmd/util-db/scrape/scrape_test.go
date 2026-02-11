@@ -18,6 +18,7 @@ package scrape
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -86,14 +87,14 @@ func TestStateHash_ZeroHasSameStateHashAsOne(t *testing.T) {
 		}
 	}(database)
 
-	shp := db.MakeHashProvider(database)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(database)
 
-	hashZero, err := shp.GetStateRootHash(0)
+	hashZero, err := shdb.GetStateHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashOne, err := shp.GetStateRootHash(1)
+	hashOne, err := shdb.GetStateHash(1)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 1: %v", err)
 	}
@@ -151,14 +152,14 @@ func TestStateHash_ZeroHasDifferentStateHashAfterHundredBlocks(t *testing.T) {
 		}
 	}(database)
 
-	shp := db.MakeHashProvider(database)
+	shdb := db.MakeDefaultStateHashDBFromBaseDB(database)
 
-	hashZero, err := shp.GetStateRootHash(0)
+	hashZero, err := shdb.GetStateHash(0)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 0: %v", err)
 	}
 
-	hashHundred, err := shp.GetStateRootHash(100)
+	hashHundred, err := shdb.GetStateHash(100)
 	if err != nil {
 		t.Fatalf("error getting state hash for block 100: %v", err)
 	}
@@ -215,4 +216,24 @@ func TestStateHash_GetClientIpcFail(t *testing.T) {
 		t.Fatalf("expected error when trying to connect to ipc file %s, but got nil", tmpIpcPath)
 	}
 	assert.Equal(t, fmt.Sprintf("failed to connect to IPC at %v/geth.ipc: dial unix %v/geth.ipc: connect: connection refused", tmpIpcPath, tmpIpcPath), err.Error())
+}
+
+func TestScrape_getBlockByNumber(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// case success
+	client := NewMockIRpcClient(ctrl)
+	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(nil)
+	output, err := getBlockByNumber(client, "0x1234")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}(nil), output)
+
+	// case error
+	mockErr := errors.New("error")
+	client = NewMockIRpcClient(ctrl)
+	client.EXPECT().Call(gomock.Any(), "eth_getBlockByNumber", "0x1234", false).Return(mockErr)
+	output, err = getBlockByNumber(client, "0x1234")
+	assert.Error(t, err)
+	assert.Nil(t, output)
 }
