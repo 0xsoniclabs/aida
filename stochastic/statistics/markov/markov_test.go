@@ -475,3 +475,37 @@ func TestMarkov_LabelBasic(t *testing.T) {
 		t.Fatalf("Expected an error for an invalid state number")
 	}
 }
+
+func TestMarkov_WeightedSample(t *testing.T) {
+	mc, err := New(
+		[][]float64{
+			{0.5, 0.5},
+			{0.5, 0.5},
+		},
+		[]string{"A", "B"},
+	)
+	if err != nil {
+		t.Fatalf("Expected a markov chain. Error: %v", err)
+	}
+
+	next, err := mc.WeightedSample(0, 0.1, []float64{0.0, 1.0})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if next != 1 {
+		t.Fatalf("expected transition to weighted state, got %d", next)
+	}
+
+	if _, err := mc.WeightedSample(0, 0.5, []float64{0.0, 0.0}); err == nil {
+		t.Fatalf("expected error when all weights zero")
+	}
+	if _, err := mc.WeightedSample(0, 0.5, []float64{1.0}); err == nil {
+		t.Fatalf("expected error on weight length mismatch")
+	}
+	if _, err := mc.WeightedSample(-1, 0.5, []float64{1.0, 1.0}); err == nil {
+		t.Fatalf("expected error on invalid state index")
+	}
+	if _, err := mc.WeightedSample(0, 1.2, []float64{1.0, 1.0}); err == nil {
+		t.Fatalf("expected error on invalid probability argument")
+	}
+}

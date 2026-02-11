@@ -1,0 +1,439 @@
+// Copyright 2025 Sonic Labs
+// This file is part of Aida Testing Infrastructure for Sonic
+//
+// Aida is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Aida is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Aida. If not, see <http://www.gnu.org/licenses/>.
+
+package coverage
+
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"io"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestTracker_ApplySnapshot(t *testing.T) {
+	hash := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+
+	tracker := &Tracker{
+		metaHash:   hash,
+		totalUnits: 100,
+		units: map[CounterKey]unitInfo{
+			{Pkg: 0, Func: 0, Unit: 0}: {
+				PackagePath: "github.com/test/pkg",
+				FuncName:    "TestFunc",
+				File:        "test.go",
+				StartLine:   10,
+				EndLine:     15,
+				lineKeys:    []string{"test.go:10", "test.go:11", "test.go:12", "test.go:13", "test.go:14", "test.go:15"},
+			},
+			{Pkg: 0, Func: 0, Unit: 1}: {
+				PackagePath: "github.com/test/pkg",
+				FuncName:    "TestFunc",
+				File:        "test.go",
+				StartLine:   20,
+				EndLine:     22,
+				lineKeys:    []string{"test.go:20", "test.go:21", "test.go:22"},
+			},
+			{Pkg: 0, Func: 1, Unit: 0}: {
+				PackagePath: "github.com/test/pkg",
+				FuncName:    "AnotherFunc",
+				File:        "other.go",
+				StartLine:   5,
+				EndLine:     8,
+				lineKeys:    []string{"other.go:5", "other.go:6", "other.go:7", "other.go:8"},
+			},
+		},
+		lastSnapshot:    make(map[CounterKey]uint32),
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	// Initial snapshot - all zeros
+	current := map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 0,
+		{Pkg: 0, Func: 0, Unit: 1}: 0,
+		{Pkg: 0, Func: 1, Unit: 0}: 0,
+	}
+
+	delta := tracker.applySnapshot(current)
+	require.Equal(t, 0, delta.NewUnits)
+	require.Equal(t, 0, delta.NewLines)
+	require.Equal(t, 0.0, delta.CoverageIncrease)
+	require.Equal(t, 0.0, delta.CoverageNow)
+
+	// Second snapshot - one unit becomes non-zero
+	current = map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 5, // now covered!
+		{Pkg: 0, Func: 0, Unit: 1}: 0,
+		{Pkg: 0, Func: 1, Unit: 0}: 0,
+	}
+
+	delta = tracker.applySnapshot(current)
+	require.Equal(t, 1, delta.NewUnits)
+	require.Equal(t, 6, delta.NewLines)                     // lines 10-15
+	require.InDelta(t, 0.01, delta.CoverageIncrease, 0.001) // 1/100 = 0.01
+	require.InDelta(t, 0.01, delta.CoverageNow, 0.001)
+
+	// Third snapshot - two more units covered
+	current = map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 10, // increased
+		{Pkg: 0, Func: 0, Unit: 1}: 1,  // newly covered
+		{Pkg: 0, Func: 1, Unit: 0}: 3,  // newly covered
+	}
+
+	delta = tracker.applySnapshot(current)
+	require.Equal(t, 2, delta.NewUnits)                     // units 1 and 2 are new
+	require.Equal(t, 7, delta.NewLines)                     // 3 lines from unit 1 + 4 lines from unit 2
+	require.InDelta(t, 0.02, delta.CoverageIncrease, 0.001) // went from 1/100 to 3/100
+	require.InDelta(t, 0.03, delta.CoverageNow, 0.001)
+
+	// Fourth snapshot - no new coverage (just counter increases)
+	current = map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 15, // just increased
+		{Pkg: 0, Func: 0, Unit: 1}: 2,  // just increased
+		{Pkg: 0, Func: 1, Unit: 0}: 5,  // just increased
+	}
+
+	delta = tracker.applySnapshot(current)
+	require.Equal(t, 0, delta.NewUnits)
+	require.Equal(t, 0, delta.NewLines)
+	require.Equal(t, 0.0, delta.CoverageIncrease)
+	require.InDelta(t, 0.03, delta.CoverageNow, 0.001)
+}
+
+func TestTracker_ApplySnapshot_DuplicateLines(t *testing.T) {
+	// Test that duplicate line keys across units don't get counted multiple times
+	hash := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+
+	tracker := &Tracker{
+		metaHash:   hash,
+		totalUnits: 10,
+		units: map[CounterKey]unitInfo{
+			{Pkg: 0, Func: 0, Unit: 0}: {
+				File:     "test.go",
+				lineKeys: []string{"test.go:10", "test.go:11", "test.go:12"},
+			},
+			{Pkg: 0, Func: 0, Unit: 1}: {
+				File:     "test.go",
+				lineKeys: []string{"test.go:11", "test.go:12", "test.go:13"}, // overlap with unit 0
+			},
+		},
+		lastSnapshot:    make(map[CounterKey]uint32),
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	// Cover unit 0
+	current := map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 1,
+		{Pkg: 0, Func: 0, Unit: 1}: 0,
+	}
+
+	delta := tracker.applySnapshot(current)
+	require.Equal(t, 1, delta.NewUnits)
+	require.Equal(t, 3, delta.NewLines) // 10, 11, 12
+
+	// Cover unit 1 - should only count line 13 as new (11 and 12 already covered)
+	current = map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 1,
+		{Pkg: 0, Func: 0, Unit: 1}: 1,
+	}
+
+	delta = tracker.applySnapshot(current)
+	require.Equal(t, 1, delta.NewUnits)
+	require.Equal(t, 1, delta.NewLines) // only line 13 is new
+}
+
+func TestTracker_ApplySnapshot_EmptyLineKeys(t *testing.T) {
+	// Test units with no line keys (edge case)
+	tracker := &Tracker{
+		totalUnits: 5,
+		units: map[CounterKey]unitInfo{
+			{Pkg: 0, Func: 0, Unit: 0}: {
+				File:     "",
+				lineKeys: nil,
+			},
+			{Pkg: 0, Func: 0, Unit: 1}: {
+				File:     "test.go",
+				lineKeys: []string{""}, // empty string
+			},
+		},
+		lastSnapshot:    make(map[CounterKey]uint32),
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	current := map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}: 1,
+		{Pkg: 0, Func: 0, Unit: 1}: 1,
+	}
+
+	delta := tracker.applySnapshot(current)
+	require.Equal(t, 2, delta.NewUnits)
+	require.Equal(t, 0, delta.NewLines) // no valid line keys
+}
+
+func TestTracker_ApplySnapshot_UnknownUnit(t *testing.T) {
+	// Test that unknown units in counter data don't crash
+	tracker := &Tracker{
+		totalUnits: 10,
+		units: map[CounterKey]unitInfo{
+			{Pkg: 0, Func: 0, Unit: 0}: {
+				lineKeys: []string{"test.go:10"},
+			},
+		},
+		lastSnapshot:    make(map[CounterKey]uint32),
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	current := map[CounterKey]uint32{
+		{Pkg: 0, Func: 0, Unit: 0}:    1,
+		{Pkg: 99, Func: 99, Unit: 99}: 1, // unknown unit
+	}
+
+	delta := tracker.applySnapshot(current)
+	require.Equal(t, 2, delta.NewUnits) // both counted as new units
+	require.Equal(t, 1, delta.NewLines) // only the known unit contributes lines
+}
+
+func TestTracker_TotalUnits(t *testing.T) {
+	tracker := &Tracker{
+		totalUnits: 42,
+	}
+
+	require.Equal(t, 42, tracker.TotalUnits())
+}
+
+func TestCounterKey(t *testing.T) {
+	// Test that CounterKey can be used as map key
+	m := make(map[CounterKey]int)
+
+	key1 := CounterKey{Pkg: 1, Func: 2, Unit: 3}
+	key2 := CounterKey{Pkg: 1, Func: 2, Unit: 3}
+	key3 := CounterKey{Pkg: 1, Func: 2, Unit: 4}
+
+	m[key1] = 100
+	m[key2] = 200 // should overwrite key1
+	m[key3] = 300
+
+	require.Equal(t, 200, m[key1])
+	require.Equal(t, 200, m[key2])
+	require.Equal(t, 300, m[key3])
+	require.Len(t, m, 2)
+}
+
+func TestDelta(t *testing.T) {
+	// Test Delta structure
+	delta := Delta{
+		NewUnits:         5,
+		NewLines:         10,
+		CoverageIncrease: 0.05,
+		CoverageNow:      0.15,
+	}
+
+	require.Equal(t, 5, delta.NewUnits)
+	require.Equal(t, 10, delta.NewLines)
+	require.Equal(t, 0.05, delta.CoverageIncrease)
+	require.Equal(t, 0.15, delta.CoverageNow)
+}
+
+func TestTrackerSnapshot_UsesCounters(t *testing.T) {
+	defer func(prev func([16]byte) (map[CounterKey]uint32, error)) { snapshotCountersFn = prev }(snapshotCountersFn)
+
+	expectedHash := [16]byte{9, 9, 9, 9}
+	called := false
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		called = true
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{
+			{Pkg: 1, Func: 2, Unit: 3}: 1,
+			{Pkg: 9, Func: 9, Unit: 9}: 5, // should be ignored by filter
+		}, nil
+	}
+
+	tracker := &Tracker{
+		metaHash:   expectedHash,
+		units:      map[CounterKey]unitInfo{{Pkg: 1, Func: 2, Unit: 3}: {lineKeys: []string{"file.go:1"}}},
+		totalUnits: 1,
+		lastSnapshot: map[CounterKey]uint32{
+			{Pkg: 1, Func: 2, Unit: 3}: 0,
+		},
+		coveredLineKeys: make(map[string]struct{}),
+	}
+
+	delta, err := tracker.Snapshot()
+	require.NoError(t, err)
+	require.True(t, called, "snapshotCountersFn should be invoked")
+	require.Equal(t, 1, delta.NewUnits)
+	require.Equal(t, 1, delta.NewLines)
+	require.InDelta(t, 1.0, delta.CoverageNow, 0.001)
+}
+
+func TestTrackerSnapshot_Error(t *testing.T) {
+	defer func(prev func([16]byte) (map[CounterKey]uint32, error)) { snapshotCountersFn = prev }(snapshotCountersFn)
+
+	snapshotCountersFn = func([16]byte) (map[CounterKey]uint32, error) {
+		return nil, fmt.Errorf("boom")
+	}
+
+	tracker := &Tracker{
+		metaHash:   [16]byte{},
+		units:      map[CounterKey]unitInfo{},
+		totalUnits: 0,
+	}
+
+	_, err := tracker.Snapshot()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "boom")
+}
+
+func TestNewTracker_UsesInjectedDependencies(t *testing.T) {
+	expectedHash := [16]byte{3, 3, 3, 3}
+	defer func(meta func(io.Writer) error, parse func([]byte) (*metaFile, error), snap func([16]byte) (map[CounterKey]uint32, error)) {
+		writeMetaFn = meta
+		parseMetaFn = parse
+		snapshotCountersFn = snap
+	}(writeMetaFn, parseMetaFn, snapshotCountersFn)
+
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+	parseMetaFn = func([]byte) (*metaFile, error) {
+		return &metaFile{
+			hash: expectedHash,
+			unitDetails: map[CounterKey]unitInfo{
+				{Pkg: 0, Func: 0, Unit: 0}: {PackagePath: carmenModulePrefix, lineKeys: []string{"file.go:1"}},
+			},
+		}, nil
+	}
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{
+			{Pkg: 0, Func: 0, Unit: 0}: 1,
+		}, nil
+	}
+
+	tracker, err := NewTracker()
+	require.NoError(t, err)
+	require.Equal(t, 1, tracker.coveredUnits)
+	require.Equal(t, 1, tracker.totalUnits)
+
+	delta, err := tracker.Snapshot()
+	require.NoError(t, err)
+	require.Equal(t, 0, delta.NewUnits)
+	require.InDelta(t, 1.0, delta.CoverageNow, 1e-9)
+}
+
+func TestNewTracker_WriteMetaError(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeMetaFn = prev }(writeMetaFn)
+	writeMetaFn = func(io.Writer) error { return fmt.Errorf("no meta") }
+
+	_, err := NewTracker()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "metadata unavailable")
+}
+
+func TestNewTracker_ParseMetaError(t *testing.T) {
+	defer func(meta func([]byte) (*metaFile, error), write func(io.Writer) error) {
+		parseMetaFn = meta
+		writeMetaFn = write
+	}(parseMetaFn, writeMetaFn)
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+	parseMetaFn = func([]byte) (*metaFile, error) { return nil, fmt.Errorf("meta boom") }
+
+	_, err := NewTracker()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "meta boom")
+}
+
+func TestNewTracker_NoCarmenUnitsFallback(t *testing.T) {
+	expectedHash := [16]byte{2, 2, 2, 2}
+	defer func(meta func([]byte) (*metaFile, error), snap func([16]byte) (map[CounterKey]uint32, error), write func(io.Writer) error) {
+		parseMetaFn = meta
+		snapshotCountersFn = snap
+		writeMetaFn = write
+	}(parseMetaFn, snapshotCountersFn, writeMetaFn)
+
+	writeMetaFn = func(w io.Writer) error {
+		_, err := w.Write([]byte("meta"))
+		return err
+	}
+
+	parseMetaFn = func([]byte) (*metaFile, error) {
+		return &metaFile{
+			hash: expectedHash,
+			unitDetails: map[CounterKey]unitInfo{
+				{Pkg: 1, Func: 1, Unit: 1}: {PackagePath: "github.com/notcarmen/module", lineKeys: []string{"x.go:1"}},
+			},
+		}, nil
+	}
+	snapshotCountersFn = func(hash [16]byte) (map[CounterKey]uint32, error) {
+		require.Equal(t, expectedHash, hash)
+		return map[CounterKey]uint32{{Pkg: 1, Func: 1, Unit: 1}: 0}, nil
+	}
+
+	tracker, err := NewTracker()
+	require.NoError(t, err)
+	require.Equal(t, 1, tracker.totalUnits)
+}
+
+func TestSnapshotCounters_WithStubbedWriter(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeCountersFn = prev }(writeCountersFn)
+
+	expectedHash := [16]byte{7, 7, 7, 7}
+	file := buildCounterFileForSnapshot(expectedHash, 7)
+	writeCountersFn = func(w io.Writer) error {
+		_, err := w.Write(file)
+		return err
+	}
+
+	counts, err := snapshotCounters(expectedHash)
+	require.NoError(t, err)
+	require.Equal(t, uint32(7), counts[CounterKey{Pkg: 1, Func: 2, Unit: 0}])
+}
+
+func TestSnapshotCounters_WriteError(t *testing.T) {
+	defer func(prev func(io.Writer) error) { writeCountersFn = prev }(writeCountersFn)
+	writeCountersFn = func(io.Writer) error { return fmt.Errorf("boom") }
+
+	_, err := snapshotCounters([16]byte{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "counters unavailable")
+}
+
+func buildCounterFileForSnapshot(hash [16]byte, value uint32) []byte {
+	buf := &bytes.Buffer{}
+	_ = binary.Write(buf, binary.LittleEndian, counterFileHeader{
+		Magic:    counterFileMagic,
+		MetaHash: hash,
+		Flavor:   1,
+	})
+	_ = binary.Write(buf, binary.LittleEndian, counterSegmentHeader{
+		FcnEntries: 1,
+	})
+	_ = binary.Write(buf, binary.LittleEndian, uint32(1)) // numCounters
+	_ = binary.Write(buf, binary.LittleEndian, uint32(1)) // pkgIdx
+	_ = binary.Write(buf, binary.LittleEndian, uint32(2)) // funcIdx
+	_ = binary.Write(buf, binary.LittleEndian, value)     // counter value
+	_ = binary.Write(buf, binary.LittleEndian, counterFileFooter{
+		Magic:       counterFileMagic,
+		NumSegments: 1,
+	})
+	return buf.Bytes()
+}
