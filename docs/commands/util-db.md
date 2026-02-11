@@ -1,7 +1,19 @@
 # Aida Database Utility (util-db)
 
 ## Overview
-`util-db` is the Aida Database Utility. It acts as a comprehensive toolkit for managing Aida DBs, providing essential functions for cloning, merging, compacting, auditing, and validating database integrity.
+`util-db` is the Aida Database Utility — the toolkit for managing AidaDb lifecycle. While the other Aida tools (`aida-vm-sdb`, `aida-rpc`, etc.) consume AidaDb for testing, `util-db` is responsible for **creating, maintaining, and inspecting** the database itself.
+
+### What is AidaDb?
+AidaDb is the central filesystem-based database containing [substates](../Terminology.md), update-sets, deleted accounts, state hashes, and metadata. It's built from real-world blockchain data and serves as the primary data source for all offline testing and replay tools.
+
+### Command Categories
+
+| Category | Commands | Purpose |
+|----------|----------|---------|
+| **Build** | `generate`, `scrape`, `update` | Create or extend AidaDb content |
+| **Transform** | `clone`, `merge`, `compact` | Reshape, combine, or optimize databases |
+| **Inspect** | `info`, `validate`, `metadata` | Query and verify database integrity |
+| **Prepare** | `priming` | Fast-forward a StateDB to a target block height |
 
 ## Build
 To build the `util-db` application, run:
@@ -219,3 +231,26 @@ To run a full validation check on an existing database:
 ```shell
 ./build/util-db validate --aida-db /path/to/aida_db --validate
 ```
+
+## Execution Flow
+
+Most `util-db` commands operate directly on the database without the executor pipeline. The exception is the **priming** command, which uses `executor.RunUtilPrimer` with extensions:
+
+### Priming
+
+Uses a simplified executor flow — no Provider or Processor, only `PreRun`/`PostRun` hooks:
+
+- **Pipeline:** `RunUtilPrimer` (no transaction iteration)
+- **Parallelism:** BlockLevel, 1 worker
+- **Extensions (in order):**
+  1. [DbLogger](../architecture/extensions/logger.md) — logs database statistics
+  2. [StateDbManager](../architecture/extensions/statedb.md) — opens/creates the target StateDB
+  3. [StateDbPrimer](../architecture/extensions/primer.md) — applies update-sets from AidaDb to fast-forward the StateDB
+
+This is the only `util-db` command that uses the extension system. All other commands interact with the database directly via LevelDB operations.
+
+## See Also
+
+- [Terminology](../Terminology.md) — AidaDb, Substate, UpdateSet definitions
+- [Providers](../architecture/Providers.md) — how AidaDb data is consumed by other tools
+- [Extensions: Primer](../architecture/extensions/primer.md) — StateDbPrimer details

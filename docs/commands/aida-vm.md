@@ -56,3 +56,25 @@ This command performs block processing of the specified block range (inclusive).
     --erigonbatchsize          batch size for the execution stage
     --log                      level of the logging of the app action ("critical", "error", "warning", "notice", "info", "debug")
 ```
+
+## Execution Flow
+
+Uses the standard [Provider](../architecture/Providers.md) → [Processor](../architecture/Processors.md) → [Extensions](../architecture/extensions/README.md) pipeline.
+
+- **Provider:** SubstateProvider
+- **Processor:** LiveDbTxProcessor
+- **Parallelism:** BlockLevel, configurable workers (parallel capable via `--workers`)
+
+**Extensions (in registration order):**
+
+1. CpuProfiler
+2. DiagnosticServer
+3. VirtualMachineStatisticsPrinter
+4. TemporaryStatePrepper *(if no external stateDb)*
+5. DbLogger *(if no external stateDb)*
+6. DeltaLogger
+7. ErrorLogger
+8. ProgressLogger (15s)
+9. LiveDbValidator (WorldState + Receipt)
+10. EthereumDbPostTransactionUpdater
+11. TransactionEventEmitter
