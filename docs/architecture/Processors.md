@@ -1,6 +1,7 @@
 # Processors
 
-Processors execute transactions against a StateDB. They sit between [Providers](Providers.md) (data source) and [Extensions](extensions/README.md) (pre/post hooks) in the executor pipeline.
+Processors execute transactions against a StateDB. They sit between [Providers](Providers.md) (data
+source) and [Extensions](extensions/README.md) (pre/post hooks) in the executor pipeline.
 
 ## Processor Interface
 
@@ -10,7 +11,8 @@ type Processor[T any] interface {
 }
 ```
 
-`Process` receives immutable transaction state and a mutable context (containing the StateDB) and applies the transaction.
+`Process` receives immutable transaction state and a mutable context (containing the StateDB) and
+applies the transaction.
 
 ## Implementations
 
@@ -22,32 +24,44 @@ type Processor[T any] interface {
 
 ### LiveDbTxProcessor
 
-Processes transactions against the **live** (current) StateDB via `ctx.State`. This is the default processor for most Aida workflows.
+Processes transactions against the **live** (current) StateDB via `ctx.State`. This is the default
+processor for most Aida workflows.
 
 ### ArchiveDbTxProcessor
 
-Processes transactions against the **archive** StateDB via `ctx.Archive`. Used for validating that archive states produce correct results when replaying historical transactions.
+Processes transactions against the **archive** StateDB via `ctx.Archive`. Used for validating that
+archive states produce correct results when replaying historical transactions.
 
 ### EthTestProcessor
 
-Processes Ethereum reference test transactions. Before execution, validates:
-- Blob gas parameters
-- Transaction byte encoding
-- Sender recovery
+Processes [Ethereum reference state tests](https://github.com/ethereum/tests). Unlike the other
+processors, EthTestProcessor **pre-filters invalid transactions** before calling the EVM — because
+invalid transactions would update the sender's nonce and corrupt the expected state hash.
 
-Before execution, validates fork-specific blob gas limits — the maximum number of blob transactions per block differs by fork: **Cancun = 6**, **Prague/Osaka = 9** (pre-Cancun forks allow 0). Processing errors are not treated as fatal — the [validators](extensions/validator.md) decide whether results are acceptable.
+Pre-execution checks:
+- **Blob gas limit** — must not exceed the fork's per-block maximum (Cancun = 6 blobs,
+  Prague/Osaka = 9, pre-Cancun = 0)
+- **Transaction encoding** — raw bytes must unmarshal as a valid transaction
+- **Sender recovery** — the sender address must be recoverable from the signature
+
+If any check fails, the result is recorded as an error but execution continues — the
+[validators](extensions/validator.md) decide whether the test passed or failed.
 
 ## TxProcessor (Shared Base)
 
-All processors delegate to a shared `TxProcessor` created by the `MakeTxProcessor(cfg)` factory. The factory selects the backend based on `cfg.EvmImpl`: values `""`, `"opera"`, or `"ethereum"` produce an `aidaProcessor`; any other value creates a `toscaProcessor` with the specified interpreter.
+All processors delegate to a shared `TxProcessor` created by the `MakeTxProcessor(cfg)` factory. The
+factory selects the backend based on `cfg.EvmImpl`: values `""`, `"opera"`, or `"ethereum"` produce
+an `aidaProcessor`; any other value creates a `toscaProcessor` with the specified interpreter.
 
 ### Error Handling
 
 Each processor uses `isErrFatal()` to decide whether an error should halt execution:
 
 - If `ContinueOnFailure` is **false** (default), all errors are fatal.
-- If `ContinueOnFailure` is **true**, errors are sent to the `ErrorInput` channel (collected by [ErrorLogger](extensions/logger.md)) and execution continues.
-- `MaxNumErrors` sets an upper bound — once reached, subsequent errors become fatal again. A value of `0` means unlimited.
+- If `ContinueOnFailure` is **true**, errors are sent to the `ErrorInput` channel (collected by
+  [ErrorLogger](extensions/logger.md)) and execution continues.
+- `MaxNumErrors` sets an upper bound — once reached, subsequent errors become fatal again. A value
+  of `0` means unlimited.
 
 The error counter is atomic, making it safe for parallel execution.
 
@@ -57,12 +71,13 @@ The TxProcessor supports two backends:
 
 #### aidaProcessor
 
-Uses go-ethereum's `core.ApplyMessage` with the standard EVM implementation. This is the default backend.
+Uses go-ethereum's `core.ApplyMessage` with the standard EVM implementation. This is the default
+backend.
 
 #### toscaProcessor
 
-Uses Tosca's processor with a configurable interpreter. Supported interpreters include:
-- `floria`
+Uses [Tosca's](../Terminology.md#tosca) processor with a configurable interpreter. Supported interpreters include:
+- `floria` (an experimental block processor)
 - `geth`
 - `opera`
 - and others
@@ -75,8 +90,3 @@ The TxProcessor also handles special pseudo-transactions that don't go through t
 - **SFC** (Special Function Contract) calls
 - **Genesis** state initialization
 - **Lachesis-Opera transition** state changes
-
-## See Also
-
-- [Providers](Providers.md) — data sources feeding the processor
-- [Extensions](extensions/README.md) — hooks around processing
