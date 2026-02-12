@@ -1,6 +1,7 @@
 # Architecture Overview
 
-Aida's core execution engine follows a **Decorator Pipeline** pattern. Three components work together to process blockchain transactions in isolation:
+Aida's core execution engine follows a **Decorator Pipeline** pattern. Three components work
+together to process blockchain transactions in isolation:
 
 ```
 Provider ──▶ Executor ──▶ Processor
@@ -11,11 +12,11 @@ Provider ──▶ Executor ──▶ Processor
 
 ## Components
 
-| Component | Role | Docs |
-|-----------|------|------|
-| [**Provider**](Providers.md) | Supplies transaction data (substates, RPC recordings, Ethereum tests, or synthetic txs) | [Providers.md](Providers.md) |
-| [**Processor**](Processors.md) | Executes transactions against a StateDB using an EVM backend (go-ethereum or Tosca) | [Processors.md](Processors.md) |
-| [**Extension**](extensions/README.md) | Decorates execution with lifecycle hooks — manages StateDB, validates results, profiles performance, logs progress | [extensions/](extensions/README.md) |
+| Component | Role |
+|-----------|------|
+| [**Provider**](Providers.md) | Supplies transaction data (substates, RPC recordings, Ethereum tests, or synthetic txs) |
+| [**Processor**](Processors.md) | Executes transactions against a StateDB using an EVM backend (go-ethereum or [Tosca](../Terminology.md#tosca)) |
+| [**Extension**](extensions/README.md) | Decorates execution with lifecycle hooks — manages StateDB, validates results, profiles performance, logs progress |
 
 ## Execution Pipeline
 
@@ -47,26 +48,13 @@ PostRun()
 
 ## Data Flow
 
-```
-                ┌─────────────┐
-                │   AidaDb    │  (substates, update-sets, state hashes)
-                └──────┬──────┘
-                       │
-              ┌────────▼────────┐
-              │    Provider     │  (reads & streams transactions)
-              └────────┬────────┘
-                       │
-    ┌──────────────────▼──────────────────┐
-    │             Executor                │
-    │  ┌───────────┐  ┌───────────────┐   │
-    │  │ Extensions │  │   Processor   │   │
-    │  │ (hooks)    │  │ (EVM/Tosca)   │   │
-    │  └───────────┘  └───────────────┘   │
-    └──────────────────┬──────────────────┘
-                       │
-              ┌────────▼────────┐
-              │    StateDB      │  (Carmen, Geth, in-memory)
-              └─────────────────┘
+```mermaid
+graph LR
+    AidaDb[(AidaDb)] --> Provider --> Executor --> StateDB[(StateDB)]
+    subgraph Executor
+        Extensions
+        Processor
+    end
 ```
 
 ## Extension Categories
@@ -80,8 +68,3 @@ PostRun()
 | [Tracker](extensions/tracker.md) | 3 | Progress tracking to console |
 | [Primer](extensions/primer.md) | 3 | State initialization and fast-forward |
 | [Register](extensions/register.md) | 2 | Progress reporting via filesystem IPC |
-
-## See Also
-
-- [Aida Overview](../Aida.md) — project introduction and tool listing
-- [Command Reference](../commands/) — per-tool documentation with execution flows

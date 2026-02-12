@@ -1,6 +1,7 @@
 # Extension System
 
-Extensions add behavior around transaction processing via lifecycle hooks. They handle everything from StateDB management to validation, profiling, and logging.
+Extensions add behavior around transaction processing via lifecycle hooks. They handle everything
+from StateDB management to validation, profiling, and logging.
 
 ## Extension Interface
 
@@ -17,14 +18,21 @@ type Extension[T any] interface {
 }
 ```
 
-**`NilExtension[T]`** (defined in `executor/extension/nil_extension.go`) provides a base implementation where all hooks return `nil`. Extensions embed `NilExtension` and override only the hooks they need. When creating a new extension, embedding `NilExtension` is the recommended starting point.
+**`NilExtension[T]`** (defined in `executor/extension/nil_extension.go`) provides a base
+implementation where all hooks return `nil`. Extensions embed `NilExtension` and override only the
+hooks they need. When creating a new extension, embedding `NilExtension` is the recommended starting
+point.
 
 ## Execution Order
 
-**PreXXX** hooks fire in **forward** order (first registered → first called).
-**PostXXX** hooks fire in **reverse** order (last registered → first called).
+**Pre(scope)** hooks fire in **forward** order (first registered → first called).
+**Post(scope)** hooks fire in **reverse** order (last registered → first called).
 
-This **symmetry rule** ensures proper setup/teardown — e.g., the StateDB is opened first in PreRun and closed last in PostRun. A typical extension chain might register: StateDbManager → Primer → Processor → Validator. In Pre hooks they fire in that order; in Post hooks they fire in reverse (Validator → Processor → Primer → StateDbManager), guaranteeing each extension cleans up in the opposite order it was initialized.
+This **symmetry rule** ensures proper setup/teardown — e.g., the StateDB is opened first in PreRun
+and closed last in PostRun. A typical extension chain might register: StateDbManager → Primer →
+Processor → Validator. In Pre hooks they fire in that order; in Post hooks they fire in reverse
+(Validator → Processor → Primer → StateDbManager), guaranteeing each extension cleans up in the
+opposite order it was initialized.
 
 ## Execution Flow
 
@@ -65,19 +73,20 @@ sequenceDiagram
 | Parallel (TransactionLevel) | N | PreRun/PostRun + PreTransaction/PostTransaction | Per-worker |
 | Parallel (BlockLevel) | N | All 6 hooks | Per-worker |
 
-In parallel modes, PreRun/PostRun are called once globally, while per-block/per-transaction hooks run within each worker's context.
+In parallel modes, PreRun/PostRun are called once globally, while per-block/per-transaction hooks
+run within each worker's context.
 
 ## Extension Categories
 
-| Category | Count | Description | Docs |
-|----------|-------|-------------|------|
-| [StateDB](statedb.md) | 16 | DB lifecycle, event emission, state preparation | [statedb.md](statedb.md) |
-| [Validator](validator.md) | 10 | Output validation and correctness checking | [validator.md](validator.md) |
-| [Profiler](profiler.md) | 8 | CPU/memory profiling, diagnostics, gas tracking | [profiler.md](profiler.md) |
-| [Logger](logger.md) | 5 | Progress, error, and debug logging | [logger.md](logger.md) |
-| [Tracker](tracker.md) | 3 | Progress tracking and reporting | [tracker.md](tracker.md) |
-| [Primer](primer.md) | 3 | State priming and initialization | [primer.md](primer.md) |
-| [Register](register.md) | 2 | External progress monitoring | [register.md](register.md) |
+| Category | Count | Description |
+|----------|-------|-------------|
+| [StateDB](statedb.md) | 16 | DB lifecycle, event emission, state preparation |
+| [Validator](validator.md) | 10 | Output validation and correctness checking |
+| [Profiler](profiler.md) | 8 | CPU/memory profiling, diagnostics, gas tracking |
+| [Logger](logger.md) | 5 | Progress, error, and debug logging |
+| [Tracker](tracker.md) | 3 | Progress tracking and reporting |
+| [Primer](primer.md) | 3 | State priming and initialization |
+| [Register](register.md) | 2 | External progress monitoring |
 
 ## Creating an Extension
 
@@ -104,9 +113,6 @@ func (m *MyValidator[T]) PostTransaction(state executor.State[T], ctx *executor.
 
 ## Parallel Safety
 
-When running in parallel, the `Context` is **shallow-copied** per worker. Shared resources (maps, file handles) must be protected with mutexes or atomic operations. `PreRun`/`PostRun` are always single-threaded.
-
-## See Also
-
-- [Providers](../Providers.md) — data sources
-- [Processors](../Processors.md) — transaction execution
+When running in parallel, the `Context` is **shallow-copied** per worker. Shared resources (maps,
+file handles) must be protected with mutexes or atomic operations. `PreRun`/`PostRun` are always
+single-threaded.
