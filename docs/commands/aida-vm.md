@@ -1,9 +1,13 @@
 # Aida EVM Evaluation Tool (aida-vm)
 
 ## Overview
-`aida-vm` is a tool for simulating block processing with experimental StateDB implementations and/or Virtual Machines. It provides a flexible environment for benchmarking and validating different VM and StateDB configurations.
+
+`aida-vm` is a tool for simulating block processing with experimental StateDB implementations and/or
+Virtual Machines. It provides a flexible environment for benchmarking and validating different VM
+and StateDB configurations.
 
 ## Build
+
 To build the `aida-vm` application, run:
 ```shell
 make aida-vm
@@ -11,14 +15,18 @@ make aida-vm
 The executable will be located at `build/aida-vm`.
 
 ## Run
+
 ```shell
 ./build/aida-vm --aida-db path/to/aida-db --db-impl <geth/carmen/memory/flat> --vm-impl <geth, lfvm> <blockNumFirst> <blockNumLast>
 ```
-This command performs block processing of the specified block range (inclusive). The initial StateDB is primed using substate from `--aida-db`. During block processing, a transaction calls a virtual machine which issues a series of StateDB operations to a selected storage system.
+This command performs block processing of the specified block range (inclusive). The initial StateDB
+is primed using substate from `--aida-db`. During block processing, a transaction calls a virtual
+machine which issues a series of StateDB operations to a selected storage system.
 
 ### Options
+
 ```
-    --aida-db                  set [aida-db](Terminology) directory (substate, updateset, deleted accounts)
+    --aida-db                  set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
     --deletion-db              sets the directory containing deleted accounts database
     --update-db                set update-set database directory
     --substate-db              data directory for substate recorder/replayer
@@ -30,7 +38,7 @@ This command performs block processing of the specified block range (inclusive).
     --db-logging               enable logging of all DB operations
     --archive                  set node type to archival mode. If set, the node keep all the EVM state history; otherwise the state history will be pruned.
     --archive-variant          set the archive implementation variant for the selected DB implementation, ignored if not running in archive mode
-    --shadow-db                use this flag when using an existing [ShadowDb](Terminology)
+    --shadow-db                use this flag when using an existing [ShadowDb](../Terminology.md)
     --db-shadow-impl           select state DB implementation to shadow the prime DB implementation
     --db-shadow-variant        select a state DB variant to shadow the prime DB implementation
     --vm-impl                  select VM implementation
