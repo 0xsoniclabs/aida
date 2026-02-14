@@ -63,17 +63,37 @@ type operationMeta struct {
 
 // MinimizerConfig customizes the minimisation process.
 type MinimizerConfig struct {
-	AddressSampleRuns int   // number of attempts per factor when sampling addresses
+	AddressSampleRuns int   // number of attempts when sampling addresses for elimination
 	RandSeed          int64 // RNG seed (<=0 uses time-based seed)
-	MaxFactor         int   // upper bound for sampling factor, 0 defaults to len(addresses)
+	MaxFactor         int   // optional upper bound for sampled address-set size
 	MandatoryKinds    map[string]struct{}
 	Logger            func(format string, args ...any)
 }
 
-// Minimizer orchestrates range and address reduction for traces.
+// Minimizer orchestrates multi-strategy trace minimisation.
 type Minimizer struct {
 	cfg  MinimizerConfig
 	rand *rand.Rand
+}
+
+type scopeNode struct {
+	kind     string
+	start    int
+	end      int
+	children []*scopeNode
+	leaves   []int
+}
+
+var scopeBeginToEnd = map[string]string{
+	"BeginSyncPeriod":  "EndSyncPeriod",
+	"BeginBlock":       "EndBlock",
+	"BeginTransaction": "EndTransaction",
+}
+
+var scopeEndToBegin = map[string]string{
+	"EndSyncPeriod":  "BeginSyncPeriod",
+	"EndBlock":       "BeginBlock",
+	"EndTransaction": "BeginTransaction",
 }
 
 // Minimize reduces the trace while maintaining the failure outcome.
@@ -84,27 +104,501 @@ func (m *Minimizer) Minimize(ctx context.Context, ops []TraceOp, test testFunc) 
 	if len(ops) == 0 {
 		return nil, fmt.Errorf("delta: trace is empty")
 	}
-
-	meta := collectMetadata(ops, m.cfg.MandatoryKinds)
-
-	// strip leading operations using binary search.
-	reducedOps, reducedMeta, err := m.reducePrefix(ctx, meta, test)
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	// probabilistic address-based reduction.
-	addressReduced, _, err := m.reduceAddresses(ctx, reducedOps, reducedMeta, test)
+	guards := newGuardVector(len(ops))
+	fails, err := m.reproducesFailure(ctx, ops, guards, test)
 	if err != nil {
 		return nil, err
 	}
+	if !fails {
+		return nil, ErrInputDoesNotFail
+	}
 
-	return addressReduced, nil
+	scopeForest := buildScopeForest(ops)
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		startCount := countOnes(guards)
+
+		guards, err = m.structuralHalvening(ctx, ops, guards, test)
+		if err != nil {
+			return nil, err
+		}
+
+		guards, err = m.addressElimination(ctx, ops, guards, test)
+		if err != nil {
+			return nil, err
+		}
+
+		guards, err = m.emptyStructureElimination(ctx, ops, scopeForest, guards, test)
+		if err != nil {
+			return nil, err
+		}
+
+		if countOnes(guards) == startCount {
+			break
+		}
+	}
+
+	return operationsForGuards(ops, guards), nil
+}
+
+func (m *Minimizer) structuralHalvening(
+	ctx context.Context,
+	ops []TraceOp,
+	guards []bool,
+	test testFunc,
+) ([]bool, error) {
+	current := copyGuards(guards)
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		activeNonStructural := enabledNonStructuralIndices(ops, current)
+		if len(activeNonStructural) == 0 {
+			break
+		}
+
+		lo := 0
+		hi := len(activeNonStructural) + 1
+		best := 0
+
+		for hi-lo > 1 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+
+			mid := (lo + hi) / 2
+			candidate := removeNonStructuralPrefix(current, activeNonStructural, mid)
+			if !isSubset(candidate, current) {
+				return nil, fmt.Errorf("delta: structural halvening produced a non-subset candidate")
+			}
+
+			fails, err := m.reproducesFailure(ctx, ops, candidate, test)
+			if err != nil {
+				return nil, err
+			}
+
+			if fails {
+				best = mid
+				lo = mid
+			} else {
+				hi = mid
+			}
+		}
+
+		if best == 0 {
+			break
+		}
+
+		next := removeNonStructuralPrefix(current, activeNonStructural, best)
+		removed := countOnes(current) - countOnes(next)
+		if removed <= 0 {
+			break
+		}
+		if !isSubset(next, current) {
+			return nil, fmt.Errorf("delta: structural halvening produced a non-subset candidate")
+		}
+
+		current = next
+		m.log("structural halvening accepted: removed=%d", removed)
+	}
+
+	return current, nil
+}
+
+func (m *Minimizer) addressElimination(
+	ctx context.Context,
+	ops []TraceOp,
+	guards []bool,
+	test testFunc,
+) ([]bool, error) {
+	current := copyGuards(guards)
+	sampleSize := 0
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		meta := collectActiveMetadata(ops, current, m.cfg.MandatoryKinds)
+		addresses := activeContracts(meta, current)
+		if len(addresses) <= 1 {
+			break
+		}
+
+		if sampleSize <= 0 {
+			sampleSize = m.initialAddressSampleSize(len(addresses))
+		}
+		if sampleSize >= len(addresses) {
+			sampleSize = len(addresses) - 1
+		}
+		if sampleSize <= 0 {
+			break
+		}
+
+		startCount := countOnes(current)
+		reduced := false
+
+		for attempt := 0; attempt < m.cfg.AddressSampleRuns; attempt++ {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+
+			excluded := m.sampleAddresses(addresses, sampleSize)
+			if len(excluded) == 0 {
+				continue
+			}
+
+			excludedSet := make(map[common.Address]struct{}, len(excluded))
+			for _, addr := range excluded {
+				excludedSet[addr] = struct{}{}
+			}
+
+			candidate := disableContracts(current, meta, excludedSet)
+			if !isSubset(candidate, current) {
+				return nil, fmt.Errorf("delta: address elimination produced a non-subset candidate")
+			}
+
+			fails, err := m.reproducesFailure(ctx, ops, candidate, test)
+			if err != nil {
+				return nil, err
+			}
+			if !fails {
+				continue
+			}
+
+			current = candidate
+			reduced = true
+			m.log(
+				"address elimination accepted: sampled=%d removed=%d",
+				sampleSize,
+				startCount-countOnes(current),
+			)
+			break
+		}
+
+		if reduced {
+			continue
+		}
+
+		if sampleSize == 1 {
+			break
+		}
+		sampleSize = max(1, sampleSize/2)
+		m.log("address elimination reducing sample size to %d", sampleSize)
+	}
+
+	return current, nil
+}
+
+func (m *Minimizer) emptyStructureElimination(
+	ctx context.Context,
+	ops []TraceOp,
+	scopeForest []*scopeNode,
+	guards []bool,
+	test testFunc,
+) ([]bool, error) {
+	current := copyGuards(guards)
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		startCount := countOnes(current)
+		candidate := removeEmptyStructureGuards(current, scopeForest)
+		if !isSubset(candidate, current) {
+			return nil, fmt.Errorf("delta: empty structure elimination produced a non-subset candidate")
+		}
+		if countOnes(candidate) == startCount {
+			break
+		}
+
+		fails, err := m.reproducesFailure(ctx, ops, candidate, test)
+		if err != nil {
+			return nil, err
+		}
+		if !fails {
+			break
+		}
+
+		current = candidate
+		m.log("empty structure elimination accepted: removed=%d", startCount-countOnes(current))
+	}
+
+	return current, nil
+}
+
+func (m *Minimizer) initialAddressSampleSize(addressCount int) int {
+	if addressCount <= 1 {
+		return 0
+	}
+	if m.cfg.MaxFactor > 0 {
+		return min(addressCount-1, m.cfg.MaxFactor)
+	}
+	return max(1, addressCount/2)
+}
+
+func (m *Minimizer) reproducesFailure(
+	ctx context.Context,
+	ops []TraceOp,
+	guards []bool,
+	test testFunc,
+) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	candidate := operationsForGuards(ops, guards)
+	out, err := test(ctx, candidate)
+	if err != nil {
+		return false, err
+	}
+	return out == outcomeFail, nil
+}
+
+func buildScopeForest(ops []TraceOp) []*scopeNode {
+	roots := make([]*scopeNode, 0)
+	stack := make([]*scopeNode, 0)
+
+	for idx, op := range ops {
+		if _, ok := scopeBeginToEnd[op.Kind]; ok {
+			node := &scopeNode{
+				kind:  op.Kind,
+				start: idx,
+				end:   -1,
+			}
+			if len(stack) == 0 {
+				roots = append(roots, node)
+			} else {
+				parent := stack[len(stack)-1]
+				parent.children = append(parent.children, node)
+			}
+			stack = append(stack, node)
+			continue
+		}
+
+		beginKind, isEnd := scopeEndToBegin[op.Kind]
+		if isEnd {
+			for len(stack) > 0 {
+				top := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				if top.kind == beginKind {
+					top.end = idx
+					break
+				}
+			}
+			continue
+		}
+
+		if len(stack) > 0 {
+			parent := stack[len(stack)-1]
+			parent.leaves = append(parent.leaves, idx)
+		}
+	}
+
+	return filterValidScopeRoots(roots)
+}
+
+func filterValidScopeRoots(roots []*scopeNode) []*scopeNode {
+	result := make([]*scopeNode, 0, len(roots))
+	for _, root := range roots {
+		if filterValidScopeNode(root) {
+			result = append(result, root)
+		}
+	}
+	return result
+}
+
+func filterValidScopeNode(node *scopeNode) bool {
+	filtered := make([]*scopeNode, 0, len(node.children))
+	for _, child := range node.children {
+		if filterValidScopeNode(child) {
+			filtered = append(filtered, child)
+		}
+	}
+	node.children = filtered
+	return node.end >= node.start
+}
+
+func removeEmptyStructureGuards(current []bool, scopeForest []*scopeNode) []bool {
+	candidate := copyGuards(current)
+	for _, root := range scopeForest {
+		markEmptyScopes(root, current, candidate)
+	}
+	return candidate
+}
+
+func markEmptyScopes(node *scopeNode, baseline []bool, candidate []bool) int {
+	active := 0
+	for _, idx := range node.leaves {
+		if idx >= 0 && idx < len(baseline) && baseline[idx] {
+			active++
+		}
+	}
+	for _, child := range node.children {
+		active += markEmptyScopes(child, baseline, candidate)
+	}
+	if active == 0 {
+		if node.start >= 0 && node.start < len(candidate) {
+			candidate[node.start] = false
+		}
+		if node.end >= 0 && node.end < len(candidate) {
+			candidate[node.end] = false
+		}
+	}
+	return active
+}
+
+func enabledNonStructuralIndices(ops []TraceOp, guards []bool) []int {
+	indices := make([]int, 0)
+	for idx, enabled := range guards {
+		if !enabled {
+			continue
+		}
+		if isStructuralKind(ops[idx].Kind) {
+			continue
+		}
+		indices = append(indices, idx)
+	}
+	return indices
+}
+
+func removeNonStructuralPrefix(guards []bool, sparse []int, remove int) []bool {
+	candidate := copyGuards(guards)
+	if remove > len(sparse) {
+		remove = len(sparse)
+	}
+	for i := 0; i < remove; i++ {
+		candidate[sparse[i]] = false
+	}
+	return candidate
+}
+
+func collectActiveMetadata(ops []TraceOp, guards []bool, mandatoryKinds map[string]struct{}) []operationMeta {
+	collector := metaCollector{
+		prevContract: common.Address{},
+		mandatory:    mandatoryKinds,
+	}
+
+	meta := make([]operationMeta, len(ops))
+	for idx, op := range ops {
+		if !guards[idx] {
+			continue
+		}
+		entry := collector.collect(op)
+		entry.Index = idx
+		meta[idx] = entry
+	}
+	return meta
+}
+
+func activeContracts(meta []operationMeta, guards []bool) []common.Address {
+	set := make(map[common.Address]struct{})
+	for idx, entry := range meta {
+		if !guards[idx] {
+			continue
+		}
+		if !entry.HasContract {
+			continue
+		}
+		set[entry.Contract] = struct{}{}
+	}
+	addrs := make([]common.Address, 0, len(set))
+	for addr := range set {
+		addrs = append(addrs, addr)
+	}
+	sort.Slice(addrs, func(i, j int) bool { return addrs[i].Hex() < addrs[j].Hex() })
+	return addrs
+}
+
+func disableContracts(
+	guards []bool,
+	meta []operationMeta,
+	excluded map[common.Address]struct{},
+) []bool {
+	candidate := copyGuards(guards)
+	for idx, enabled := range guards {
+		if !enabled {
+			continue
+		}
+		entry := meta[idx]
+		if !entry.HasContract {
+			continue
+		}
+		if _, ok := excluded[entry.Contract]; ok {
+			candidate[idx] = false
+		}
+	}
+	return candidate
+}
+
+func operationsForGuards(ops []TraceOp, guards []bool) []TraceOp {
+	result := make([]TraceOp, 0, countOnes(guards))
+	for idx, enabled := range guards {
+		if enabled {
+			result = append(result, ops[idx])
+		}
+	}
+	return result
+}
+
+func newGuardVector(size int) []bool {
+	guards := make([]bool, size)
+	for idx := range guards {
+		guards[idx] = true
+	}
+	return guards
+}
+
+func copyGuards(guards []bool) []bool {
+	out := make([]bool, len(guards))
+	copy(out, guards)
+	return out
+}
+
+func countOnes(guards []bool) int {
+	count := 0
+	for _, enabled := range guards {
+		if enabled {
+			count++
+		}
+	}
+	return count
+}
+
+func isSubset(candidate []bool, current []bool) bool {
+	if len(candidate) != len(current) {
+		return false
+	}
+	for idx := range candidate {
+		if candidate[idx] && !current[idx] {
+			return false
+		}
+	}
+	return true
+}
+
+func isStructuralKind(kind string) bool {
+	if _, ok := scopeBeginToEnd[kind]; ok {
+		return true
+	}
+	if _, ok := scopeEndToBegin[kind]; ok {
+		return true
+	}
+	return false
 }
 
 // reducePrefix removes leading operations from the trace using binary search.
-// It finds the earliest starting point where the trace still fails, effectively
-// eliminating operations at the beginning that are not necessary to reproduce the failure.
+// It is preserved as an internal compatibility helper for tests.
 func (m *Minimizer) reducePrefix(ctx context.Context, meta []operationMeta, test testFunc) ([]TraceOp, []operationMeta, error) {
 	if len(meta) == 0 {
 		return nil, nil, fmt.Errorf("delta: empty metadata")
@@ -153,10 +647,8 @@ func (m *Minimizer) reducePrefix(ctx context.Context, meta []operationMeta, test
 	return bestOps, bestMeta, nil
 }
 
-// reduceAddresses attempts to remove operations associated with specific contract addresses.
-// It uses probabilistic sampling to identify and exclude contracts that are not essential
-// for reproducing the failure. The reduction proceeds by trying to exclude groups of contracts
-// at various sampling factors until no further reduction is possible.
+// reduceAddresses removes operations by sampled contract groups.
+// It is preserved as an internal compatibility helper for tests.
 func (m *Minimizer) reduceAddresses(
 	ctx context.Context,
 	ops []TraceOp,
