@@ -632,3 +632,154 @@ func TestReduceAddresses_SampleSizeZeroDuringIteration(t *testing.T) {
 	require.Equal(t, ops, result)
 	require.NotEmpty(t, logged)
 }
+
+func TestMinimize_EmptyStructureElimination(t *testing.T) {
+	addrA := common.HexToAddress("0xa")
+	addrB := common.HexToAddress("0xb")
+
+	ops := []TraceOp{
+		{Raw: "BeginSyncPeriod, 1", Kind: "BeginSyncPeriod"},
+		{Raw: "BeginBlock, 1", Kind: "BeginBlock", HasBlock: true, Block: 1},
+		{Raw: "BeginTransaction, 0", Kind: "BeginTransaction", HasBlock: true, Block: 1},
+		{
+			Raw:         fmt.Sprintf("SetState, %s, 0x0, 0x0", addrA.Hex()),
+			Kind:        "SetState",
+			HasContract: true,
+			Contract:    addrA,
+			HasBlock:    true,
+			Block:       1,
+		},
+		{Raw: "EndTransaction", Kind: "EndTransaction", HasBlock: true, Block: 1},
+		{Raw: "BeginTransaction, 1", Kind: "BeginTransaction", HasBlock: true, Block: 1},
+		{
+			Raw:         fmt.Sprintf("GetBalance, %s, 0", addrB.Hex()),
+			Kind:        "GetBalance",
+			HasContract: true,
+			Contract:    addrB,
+			HasBlock:    true,
+			Block:       1,
+		},
+		{Raw: "EndTransaction", Kind: "EndTransaction", HasBlock: true, Block: 1},
+		{Raw: "EndBlock", Kind: "EndBlock", HasBlock: true, Block: 1},
+		{Raw: "EndSyncPeriod", Kind: "EndSyncPeriod"},
+	}
+
+	test := func(_ context.Context, candidate []TraceOp) (outcome, error) {
+		for _, op := range candidate {
+			if op.Kind == "SetState" && op.Contract == addrA {
+				return outcomeFail, nil
+			}
+		}
+		return outcomePass, nil
+	}
+
+	m := NewMinimizer(MinimizerConfig{
+		AddressSampleRuns: 5,
+		RandSeed:          1,
+	})
+
+	result, err := m.Minimize(context.Background(), ops, test)
+	require.NoError(t, err)
+
+	var beginTx int
+	var endTx int
+	var hasSetState bool
+	var hasAddrB bool
+	for _, op := range result {
+		if op.Kind == "BeginTransaction" {
+			beginTx++
+		}
+		if op.Kind == "EndTransaction" {
+			endTx++
+		}
+		if op.Kind == "SetState" && op.Contract == addrA {
+			hasSetState = true
+		}
+		if op.HasContract && op.Contract == addrB {
+			hasAddrB = true
+		}
+	}
+
+	require.Equal(t, 1, beginTx, "empty transaction scope should be removed")
+	require.Equal(t, 1, endTx, "empty transaction scope should be removed")
+	require.True(t, hasSetState, "failure-inducing operation must remain")
+	require.False(t, hasAddrB, "address elimination should remove unrelated address")
+}
+
+func TestMinimize_InputDoesNotFail(t *testing.T) {
+	ops := []TraceOp{
+		{Raw: "BeginBlock, 1", Kind: "BeginBlock", HasBlock: true, Block: 1},
+		{Raw: "EndBlock", Kind: "EndBlock", HasBlock: true, Block: 1},
+	}
+
+	test := func(_ context.Context, _ []TraceOp) (outcome, error) {
+		return outcomePass, nil
+	}
+
+	m := NewMinimizer(MinimizerConfig{RandSeed: 1})
+	_, err := m.Minimize(context.Background(), ops, test)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInputDoesNotFail)
+}
+
+func TestMinimize_EmptyStructureEliminationRejected(t *testing.T) {
+	addrA := common.HexToAddress("0xc")
+
+	ops := []TraceOp{
+		{Raw: "BeginBlock, 1", Kind: "BeginBlock", HasBlock: true, Block: 1},
+		{Raw: "BeginTransaction, 0", Kind: "BeginTransaction", HasBlock: true, Block: 1},
+		{
+			Raw:         fmt.Sprintf("SetState, %s, 0x0, 0x0", addrA.Hex()),
+			Kind:        "SetState",
+			HasContract: true,
+			Contract:    addrA,
+			HasBlock:    true,
+			Block:       1,
+		},
+		{Raw: "EndTransaction", Kind: "EndTransaction", HasBlock: true, Block: 1},
+		{Raw: "BeginTransaction, 1", Kind: "BeginTransaction", HasBlock: true, Block: 1},
+		{Raw: "EndTransaction", Kind: "EndTransaction", HasBlock: true, Block: 1},
+		{Raw: "EndBlock", Kind: "EndBlock", HasBlock: true, Block: 1},
+	}
+
+	// This failure depends on having both transaction scopes present.
+	test := func(_ context.Context, candidate []TraceOp) (outcome, error) {
+		var beginTx int
+		for _, op := range candidate {
+			if op.Kind == "BeginTransaction" {
+				beginTx++
+			}
+		}
+		if beginTx >= 2 {
+			return outcomeFail, nil
+		}
+		return outcomePass, nil
+	}
+
+	m := NewMinimizer(MinimizerConfig{
+		AddressSampleRuns: 5,
+		RandSeed:          1,
+	})
+
+	result, err := m.Minimize(context.Background(), ops, test)
+	require.NoError(t, err)
+
+	var beginTx int
+	var endTx int
+	var hasSetState bool
+	for _, op := range result {
+		if op.Kind == "BeginTransaction" {
+			beginTx++
+		}
+		if op.Kind == "EndTransaction" {
+			endTx++
+		}
+		if op.Kind == "SetState" && op.Contract == addrA {
+			hasSetState = true
+		}
+	}
+
+	require.Equal(t, 2, beginTx, "empty-structure elimination should be rejected")
+	require.Equal(t, 2, endTx, "empty-structure elimination should be rejected")
+	require.False(t, hasSetState, "structural halvening should remove unrelated non-structural ops")
+}
