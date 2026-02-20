@@ -52,6 +52,9 @@ func TestCarmenState_MakeCarmenStateDBInvalid(t *testing.T) {
 func TestCarmenState_InitCloseCarmenDB(t *testing.T) {
 	for _, tc := range GetAllCarmenConfigurations() {
 		t.Run(tc.String(), func(t *testing.T) {
+			if tc.Schema == 6 && tc.Archive == "file" && tc.Variant != "file" {
+				t.Skip("carmen schema 6 only supports archive type file if the variant is also file")
+			}
 			csDB, err := MakeDefaultCarmenStateDB(t.TempDir(), tc.Variant, tc.Schema, tc.Archive)
 			if errors.Is(err, carmen.UnsupportedConfiguration) {
 				t.Skip("unsupported configuration")
