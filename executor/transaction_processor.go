@@ -521,23 +521,39 @@ func messageToTransaction(message *core.Message) tosca.Transaction {
 		}
 	}
 
+	var authorizationList []tosca.SetCodeAuthorization
+	if message.SetCodeAuthorizations != nil {
+		authorizationList = make([]tosca.SetCodeAuthorization, len(message.SetCodeAuthorizations))
+		for i, authorization := range message.SetCodeAuthorizations {
+			authorizationList[i] = tosca.SetCodeAuthorization{
+				ChainID: authorization.ChainID.Bytes32(),
+				Address: tosca.Address(authorization.Address),
+				Nonce:   authorization.Nonce,
+				V:       authorization.V,
+				R:       authorization.R.Bytes32(),
+				S:       authorization.S.Bytes32(),
+			}
+		}
+	}
+
 	var recipient *tosca.Address
 	if message.To != nil {
 		recipient = (*tosca.Address)(message.To)
 	}
 
 	transaction := tosca.Transaction{
-		Sender:        tosca.Address(message.From),
-		Recipient:     recipient,
-		Nonce:         message.Nonce,
-		Input:         message.Data,
-		Value:         bigToValue(message.Value),
-		GasFeeCap:     bigToValue(gasFeeCap),
-		GasTipCap:     bigToValue(gasTipCap),
-		GasLimit:      tosca.Gas(message.GasLimit),
-		BlobGasFeeCap: bigToValue(message.BlobGasFeeCap),
-		BlobHashes:    blobHashes,
-		AccessList:    accessList,
+		Sender:            tosca.Address(message.From),
+		Recipient:         recipient,
+		Nonce:             message.Nonce,
+		Input:             message.Data,
+		Value:             bigToValue(message.Value),
+		GasFeeCap:         bigToValue(gasFeeCap),
+		GasTipCap:         bigToValue(gasTipCap),
+		GasLimit:          tosca.Gas(message.GasLimit),
+		BlobGasFeeCap:     bigToValue(message.BlobGasFeeCap),
+		BlobHashes:        blobHashes,
+		AccessList:        accessList,
+		AuthorizationList: authorizationList,
 	}
 
 	return transaction
@@ -673,7 +689,7 @@ func (a *toscaTxContext) SelfDestruct(addr tosca.Address, beneficiary tosca.Addr
 	if fork == tosca.R07_Istanbul.String() ||
 		fork == tosca.R09_Berlin.String() ||
 		fork == tosca.R10_London.String() ||
-		fork == tosca.R11_Paris.String() ||
+		fork == tosca.R11_Paris.String() || fork == "Merge" || // there are two names for the Paris revisions
 		fork == tosca.R12_Shanghai.String() {
 		a.db.SelfDestruct(common.Address(addr))
 	} else {
