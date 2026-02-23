@@ -47,9 +47,9 @@ func NewParentBlockHashProcessor(cfg *utils.Config) executor.Extension[txcontext
 }
 
 type parentBlockHashProcessor struct {
-	hashProvider db.HashProvider
-	processor    iEvmProcessor
-	cfg          *utils.Config
+	hashProvider       db.HashProvider
+	processor          iEvmProcessor
+	cfg                *utils.Config
 	lastProcessedBlock uint64 // Substate may skip blocks, so we need to track the last processed block to fill the gaps
 	extension.NilExtension[txcontext.TxContext]
 }
@@ -90,7 +90,7 @@ func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext],
 	p.hashProvider = db.MakeHashProvider(ctx.AidaDb)
 	// initialized the last processed block
 	if p.cfg.First > 0 {
-		p.lastProcessedBlock = utils.KeywordBlocks[p.cfg.ChainID]["first"]
+		p.lastProcessedBlock = p.cfg.First - 1
 	}
 	return nil
 }
