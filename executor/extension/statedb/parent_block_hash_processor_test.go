@@ -86,6 +86,47 @@ func TestParentBlockHashProcessor_PreBlock(t *testing.T) {
 	require.NoError(t, err, "PreBlock failed")
 }
 
+func TestParentBlockHashProcessor_PreBlock_FillsGapsForSkippedBlocks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	hash4 := types.Hash{4}
+	hash5 := types.Hash{5}
+	hash6 := types.Hash{6}
+
+	// Blocks 4, 5, and 6 must be processed in order to fill the gap
+	gomock.InOrder(
+		mockProvider.EXPECT().GetBlockHash(3).Return(hash4, nil),
+		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash4), gomock.Any(), gomock.Any()),
+
+		mockProvider.EXPECT().GetBlockHash(4).Return(hash5, nil),
+		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash5), gomock.Any(), gomock.Any()),
+
+		mockProvider.EXPECT().GetBlockHash(5).Return(hash6, nil),
+		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash6), gomock.Any(), gomock.Any()),
+	)
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		lastProcessedBlock: 3, // Simulate that block 3 was the last processed block
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	// Jump from block 3 to block 6 — blocks 4, 5 were skipped in substate
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 6, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 6,
+	})}, &executor.Context{State: mockState})
+	require.NoError(t, err, "PreBlock failed")
+}
+
 func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	cfg := utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague")
 	hp := NewParentBlockHashProcessor(cfg)

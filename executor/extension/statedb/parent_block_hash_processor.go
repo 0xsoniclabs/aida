@@ -50,6 +50,7 @@ type parentBlockHashProcessor struct {
 	hashProvider db.HashProvider
 	processor    iEvmProcessor
 	cfg          *utils.Config
+	lastProcessedBlock uint64 // Substate may skip blocks, so we need to track the last processed block to fill the gaps
 	extension.NilExtension[txcontext.TxContext]
 }
 
@@ -62,6 +63,8 @@ type iEvmProcessor interface {
 // evmProcessor is a wrapper around evmcore.ProcessParentBlockHash.
 type evmProcessor struct{}
 
+// ProcessParentBlockHash saves prevHash in the blockchain by calling the history storage contract.
+// Copied from sonic codebase.
 func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, state state.StateDB) error {
 	msg := &core.Message{
 		From:      params.SystemAddress,
@@ -85,14 +88,24 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 
 func (p *parentBlockHashProcessor) PreRun(_ executor.State[txcontext.TxContext], ctx *executor.Context) error {
 	p.hashProvider = db.MakeHashProvider(ctx.AidaDb)
+	// initialized the last processed block
+	if p.cfg.First > 0 {
+		p.lastProcessedBlock = utils.KeywordBlocks[p.cfg.ChainID]["first"]
+	}
 	return nil
 }
 
-// PreBlock processes parent block hash.
+// PreBlock processes parent block hash. It loops from the previous processed
+// block to the current block to fill any gaps caused by skipped blocks in substate.
 func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxContext], ctx *executor.Context) error {
+	defer func() {
+		p.lastProcessedBlock = uint64(state.Block)
+	}()
+
 	// We are saving historic block hashes, first block must be skipped because
 	// there is no history at this point
-	if uint64(state.Block) == utils.KeywordBlocks[p.cfg.ChainID]["first"] {
+	firstBlock := utils.KeywordBlocks[p.cfg.ChainID]["first"]
+	if uint64(state.Block) <= firstBlock {
 		return nil
 	}
 
@@ -106,23 +119,30 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return nil
 	}
 
-	prevBlockHash, err := p.hashProvider.GetBlockHash(state.Block - 1)
-	if err != nil {
-		return fmt.Errorf("cannot get previous block hash: %w", err)
+	startBlock := int(p.lastProcessedBlock) + 1
+
+	for b := startBlock; b <= state.Block; b++ {
+		prevBlockHash, err := p.hashProvider.GetBlockHash(b - 1)
+		if err != nil {
+			return fmt.Errorf("cannot get block hash for block %d: %w", b-1, err)
+		}
+
+		if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
+			return fmt.Errorf("cannot begin transaction: %w", err)
+		}
+
+		var hashError error
+		blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
+		blockCtx.BlockNumber = new(big.Int).SetUint64(uint64(b))
+		evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
+		err = p.processor.ProcessParentBlockHash(common.Hash(prevBlockHash), evm, ctx.State)
+		if err != nil {
+			return err
+		}
+		if hashError != nil {
+			return fmt.Errorf("hash error while processing parent block hash for block %d: %v", b, hashError)
+		}
 	}
 
-	if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
-		return fmt.Errorf("cannot begin transaction: %w", err)
-	}
-	var hashError error
-	blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
-	evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
-	err = p.processor.ProcessParentBlockHash(common.Hash(prevBlockHash), evm, ctx.State)
-	if err != nil {
-		return err
-	}
-	if hashError != nil {
-		return fmt.Errorf("hash error while processing parent block hash: %v", err)
-	}
 	return nil
 }
