@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251024091706-e1c5a32d4310
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
-	github.com/0xsoniclabs/substate v0.0.0-20251118214143-ef0b309b9e24
+	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
 	github.com/0xsoniclabs/tosca v0.0.0-20260223084600-d2ea7c5c23ff
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4

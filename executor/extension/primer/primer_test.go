@@ -76,7 +76,7 @@ func TestStateDbPrimerExtension_PrimingDoesTriggerForExistingStateDb(t *testing.
 
 	// start priming
 	mockAidaDb.EXPECT().GetBackend().Return(mockAdapter).AnyTimes()
-	mockAidaDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema).Times(3)
+	mockAidaDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema).Times(1)
 	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter).AnyTimes()
 	// loadExistingAccountsIntoCache is executed only if an existing db is used
 	mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
