@@ -51,7 +51,7 @@ func TestPrime_NewPrimer(t *testing.T) {
 
 	mockAidaDb.EXPECT().GetBackend().Return(mockAdapter).AnyTimes()
 	mockAdapter.EXPECT().NewIterator(gomock.Any(), gomock.Any()).Return(iter).AnyTimes()
-	mockAidaDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema).Times(3)
+	mockAidaDb.EXPECT().GetSubstateEncoding().Return(db.DefaultEncodingSchema).Times(1)
 
 	p, err := newPrimer(cfg, mockStateDb, mockAidaDb, log)
 
