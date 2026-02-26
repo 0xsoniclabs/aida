@@ -141,8 +141,6 @@ func (p *ethTestProcessor) Process(state State[txcontext.TxContext], ctx *Contex
 		maxBlobTransactions = 6
 	case "prague":
 		maxBlobTransactions = 9
-	case "osaka":
-		maxBlobTransactions = 9
 	default:
 		return fmt.Errorf("unknown fork: %s", fork)
 	}
@@ -425,9 +423,6 @@ func (t *toscaProcessor) processRegularTx(db state.VmStateDB, int, tx int, st tx
 	}
 	if chainCfg.PragueTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.PragueTime {
 		revision = tosca.R14_Prague
-	}
-	if chainCfg.OsakaTime != nil && st.GetBlockEnvironment().GetTimestamp() >= *chainCfg.OsakaTime {
-		revision = tosca.R15_Osaka
 	}
 
 	randao := tosca.Hash(bigToValue(blockEnvironment.GetDifficulty()))
