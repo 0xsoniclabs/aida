@@ -6,7 +6,7 @@ require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20251024091706-e1c5a32d4310
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
-	github.com/0xsoniclabs/tosca v0.0.0-20260223084600-d2ea7c5c23ff
+	github.com/0xsoniclabs/tosca v0.0.0-20260224095910-31d2f9b784f0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
@@ -36,7 +36,6 @@ require (
 )
 
 require (
-	github.com/0xsoniclabs/tracy v0.0.0-20251027125423-00a5ab7968fb // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
@@ -108,7 +107,7 @@ require (
 	github.com/prometheus/common v0.59.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/supranational/blst v0.3.16-0.20250831170142-f48500c1fdbe // indirect
