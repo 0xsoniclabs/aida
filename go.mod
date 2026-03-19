@@ -3,7 +3,7 @@ module github.com/0xsoniclabs/aida
 go 1.25.0
 
 require (
-	github.com/0xsoniclabs/carmen/go v0.0.0-20251024091706-e1c5a32d4310
+	github.com/0xsoniclabs/carmen/go v0.0.0-20260223152719-2b3b9e285151
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
 	github.com/0xsoniclabs/tosca v0.0.0-20260223084600-d2ea7c5c23ff
@@ -141,7 +141,7 @@ replace github.com/0xsoniclabs/tosca => ./tosca
 
 replace github.com/ethereum/evmc/v11 => ./tosca/third_party/evmc
 
-replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20260220094642-cad493048916
+replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20260226121708-94eae637e0f2
 
 replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundation/lachesis-base-sonic v0.0.0-20250701061954-44075d09185c
 
