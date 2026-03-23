@@ -19,7 +19,6 @@ import (
 	tracing "github.com/ethereum/go-ethereum/core/tracing"
 	types "github.com/ethereum/go-ethereum/core/types"
 	params "github.com/ethereum/go-ethereum/params"
-	utils "github.com/ethereum/go-ethereum/trie/utils"
 	uint256 "github.com/holiman/uint256"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -439,18 +438,18 @@ func (mr *MockVmStateDBMockRecorder) HasSelfDestructed(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasSelfDestructed", reflect.TypeOf((*MockVmStateDB)(nil).HasSelfDestructed), arg0)
 }
 
-// PointCache mocks base method.
-func (m *MockVmStateDB) PointCache() *utils.PointCache {
+// IsNewContract mocks base method.
+func (m *MockVmStateDB) IsNewContract(arg0 common.Address) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PointCache")
-	ret0, _ := ret[0].(*utils.PointCache)
+	ret := m.ctrl.Call(m, "IsNewContract", arg0)
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// PointCache indicates an expected call of PointCache.
-func (mr *MockVmStateDBMockRecorder) PointCache() *gomock.Call {
+// IsNewContract indicates an expected call of IsNewContract.
+func (mr *MockVmStateDBMockRecorder) IsNewContract(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PointCache", reflect.TypeOf((*MockVmStateDB)(nil).PointCache))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewContract", reflect.TypeOf((*MockVmStateDB)(nil).IsNewContract), arg0)
 }
 
 // Prepare mocks base method.
@@ -478,32 +477,15 @@ func (mr *MockVmStateDBMockRecorder) RevertToSnapshot(arg0 any) *gomock.Call {
 }
 
 // SelfDestruct mocks base method.
-func (m *MockVmStateDB) SelfDestruct(arg0 common.Address) uint256.Int {
+func (m *MockVmStateDB) SelfDestruct(arg0 common.Address) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	return ret0
+	m.ctrl.Call(m, "SelfDestruct", arg0)
 }
 
 // SelfDestruct indicates an expected call of SelfDestruct.
 func (mr *MockVmStateDBMockRecorder) SelfDestruct(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct", reflect.TypeOf((*MockVmStateDB)(nil).SelfDestruct), arg0)
-}
-
-// SelfDestruct6780 mocks base method.
-func (m *MockVmStateDB) SelfDestruct6780(arg0 common.Address) (uint256.Int, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct6780", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// SelfDestruct6780 indicates an expected call of SelfDestruct6780.
-func (mr *MockVmStateDBMockRecorder) SelfDestruct6780(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct6780", reflect.TypeOf((*MockVmStateDB)(nil).SelfDestruct6780), arg0)
 }
 
 // SetCode mocks base method.
@@ -1069,18 +1051,18 @@ func (mr *MockNonCommittableStateDBMockRecorder) HasSelfDestructed(arg0 any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasSelfDestructed", reflect.TypeOf((*MockNonCommittableStateDB)(nil).HasSelfDestructed), arg0)
 }
 
-// PointCache mocks base method.
-func (m *MockNonCommittableStateDB) PointCache() *utils.PointCache {
+// IsNewContract mocks base method.
+func (m *MockNonCommittableStateDB) IsNewContract(arg0 common.Address) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PointCache")
-	ret0, _ := ret[0].(*utils.PointCache)
+	ret := m.ctrl.Call(m, "IsNewContract", arg0)
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// PointCache indicates an expected call of PointCache.
-func (mr *MockNonCommittableStateDBMockRecorder) PointCache() *gomock.Call {
+// IsNewContract indicates an expected call of IsNewContract.
+func (mr *MockNonCommittableStateDBMockRecorder) IsNewContract(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PointCache", reflect.TypeOf((*MockNonCommittableStateDB)(nil).PointCache))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewContract", reflect.TypeOf((*MockNonCommittableStateDB)(nil).IsNewContract), arg0)
 }
 
 // Prepare mocks base method.
@@ -1122,32 +1104,15 @@ func (mr *MockNonCommittableStateDBMockRecorder) RevertToSnapshot(arg0 any) *gom
 }
 
 // SelfDestruct mocks base method.
-func (m *MockNonCommittableStateDB) SelfDestruct(arg0 common.Address) uint256.Int {
+func (m *MockNonCommittableStateDB) SelfDestruct(arg0 common.Address) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	return ret0
+	m.ctrl.Call(m, "SelfDestruct", arg0)
 }
 
 // SelfDestruct indicates an expected call of SelfDestruct.
 func (mr *MockNonCommittableStateDBMockRecorder) SelfDestruct(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct", reflect.TypeOf((*MockNonCommittableStateDB)(nil).SelfDestruct), arg0)
-}
-
-// SelfDestruct6780 mocks base method.
-func (m *MockNonCommittableStateDB) SelfDestruct6780(arg0 common.Address) (uint256.Int, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct6780", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// SelfDestruct6780 indicates an expected call of SelfDestruct6780.
-func (mr *MockNonCommittableStateDBMockRecorder) SelfDestruct6780(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct6780", reflect.TypeOf((*MockNonCommittableStateDB)(nil).SelfDestruct6780), arg0)
 }
 
 // SetCode mocks base method.
@@ -1881,18 +1846,18 @@ func (mr *MockStateDBMockRecorder) IntermediateRoot(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IntermediateRoot", reflect.TypeOf((*MockStateDB)(nil).IntermediateRoot), arg0)
 }
 
-// PointCache mocks base method.
-func (m *MockStateDB) PointCache() *utils.PointCache {
+// IsNewContract mocks base method.
+func (m *MockStateDB) IsNewContract(arg0 common.Address) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PointCache")
-	ret0, _ := ret[0].(*utils.PointCache)
+	ret := m.ctrl.Call(m, "IsNewContract", arg0)
+	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// PointCache indicates an expected call of PointCache.
-func (mr *MockStateDBMockRecorder) PointCache() *gomock.Call {
+// IsNewContract indicates an expected call of IsNewContract.
+func (mr *MockStateDBMockRecorder) IsNewContract(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PointCache", reflect.TypeOf((*MockStateDB)(nil).PointCache))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewContract", reflect.TypeOf((*MockStateDB)(nil).IsNewContract), arg0)
 }
 
 // Prepare mocks base method.
@@ -1932,32 +1897,15 @@ func (mr *MockStateDBMockRecorder) RevertToSnapshot(arg0 any) *gomock.Call {
 }
 
 // SelfDestruct mocks base method.
-func (m *MockStateDB) SelfDestruct(arg0 common.Address) uint256.Int {
+func (m *MockStateDB) SelfDestruct(arg0 common.Address) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	return ret0
+	m.ctrl.Call(m, "SelfDestruct", arg0)
 }
 
 // SelfDestruct indicates an expected call of SelfDestruct.
 func (mr *MockStateDBMockRecorder) SelfDestruct(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct", reflect.TypeOf((*MockStateDB)(nil).SelfDestruct), arg0)
-}
-
-// SelfDestruct6780 mocks base method.
-func (m *MockStateDB) SelfDestruct6780(arg0 common.Address) (uint256.Int, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelfDestruct6780", arg0)
-	ret0, _ := ret[0].(uint256.Int)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// SelfDestruct6780 indicates an expected call of SelfDestruct6780.
-func (mr *MockStateDBMockRecorder) SelfDestruct6780(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelfDestruct6780", reflect.TypeOf((*MockStateDB)(nil).SelfDestruct6780), arg0)
 }
 
 // SetCode mocks base method.

@@ -33,6 +33,7 @@ const (
 	BeginTransactionID
 	CreateAccountID
 	CreateContractID
+	IsNewContractID
 	EmptyID
 	EndBlockID
 	EndSyncPeriodID
@@ -51,7 +52,6 @@ const (
 	HasSelfDestructedID
 	RevertToSnapshotID
 	SelfDestructID
-	SelfDestruct6780ID
 	SetCodeID
 	SetNonceID
 	SetStateID
@@ -75,6 +75,7 @@ var OpText = map[int]string{
 	BeginTransactionID:          "BeginTransaction",
 	CreateAccountID:             "CreateAccount",
 	CreateContractID:            "CreateContract",
+	IsNewContractID:             "IsNewContract",
 	EmptyID:                     "Empty",
 	EndBlockID:                  "EndBlock",
 	EndSyncPeriodID:             "EndSyncPeriod",
@@ -93,7 +94,6 @@ var OpText = map[int]string{
 	HasSelfDestructedID:         "HasSelfDestructed",
 	RevertToSnapshotID:          "RevertToSnapshot",
 	SelfDestructID:              "SelfDestruct",
-	SelfDestruct6780ID:          "SelfDestruct6780",
 	SetCodeID:                   "SetCode",
 	SetNonceID:                  "SetNonce",
 	SetStateID:                  "SetState",
@@ -111,6 +111,7 @@ var opMnemo = map[int]string{
 	CreateAccountID:             "CA",
 	CreateContractID:            "CC",
 	EmptyID:                     "EM",
+	IsNewContractID:             "NC",
 	EndBlockID:                  "EB",
 	EndSyncPeriodID:             "ES",
 	EndTransactionID:            "ET",
@@ -128,7 +129,6 @@ var opMnemo = map[int]string{
 	HasSelfDestructedID:         "HS",
 	RevertToSnapshotID:          "RS",
 	SelfDestructID:              "SU",
-	SelfDestruct6780ID:          "S6",
 	SetCodeID:                   "SC",
 	SetNonceID:                  "SO",
 	SetStateID:                  "SS",
@@ -146,6 +146,7 @@ var OpNumArgs = map[int]int{
 	CreateAccountID:             1,
 	CreateContractID:            1,
 	EmptyID:                     1,
+	IsNewContractID:             1,
 	EndBlockID:                  0,
 	EndSyncPeriodID:             0,
 	EndTransactionID:            0,
@@ -163,7 +164,6 @@ var OpNumArgs = map[int]int{
 	HasSelfDestructedID:         1,
 	RevertToSnapshotID:          0,
 	SelfDestructID:              1,
-	SelfDestruct6780ID:          1,
 	SetCodeID:                   1,
 	SetNonceID:                  1,
 	SetStateID:                  3,
@@ -180,6 +180,7 @@ var opId = map[string]int{
 	"BT": BeginTransactionID,
 	"CA": CreateAccountID,
 	"CC": CreateContractID,
+	"NC": IsNewContractID,
 	"CS": GetStateAndCommittedStateID,
 	"EM": EmptyID,
 	"EB": EndBlockID,
@@ -198,7 +199,6 @@ var opId = map[string]int{
 	"HS": HasSelfDestructedID,
 	"RS": RevertToSnapshotID,
 	"SU": SelfDestructID,
-	"S6": SelfDestruct6780ID,
 	"SC": SetCodeID,
 	"SO": SetNonceID,
 	"SS": SetStateID,

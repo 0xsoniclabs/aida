@@ -318,6 +318,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 	return []func(){
 		func() { db.CreateAccount(mockAddress) },
 		func() { db.CreateContract(mockAddress) },
+		func() { db.IsNewContract(mockAddress) },
 		func() { db.SubBalance(mockAddress, uint256.NewInt(0), tracing.BalanceChangeUnspecified) },
 		func() { db.AddBalance(mockAddress, uint256.NewInt(0), tracing.BalanceChangeUnspecified) },
 		func() { db.GetBalance(mockAddress) },
@@ -338,7 +339,6 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.SetState(mockAddress, mockHash, mockHash) },
 		func() { db.SetTransientState(mockAddress, mockHash, mockHash) },
 		func() { db.SelfDestruct(mockAddress) },
-		func() { db.SelfDestruct6780(mockAddress) },
 		func() { db.HasSelfDestructed(mockAddress) },
 		func() { db.Exist(mockAddress) },
 		func() { db.Empty(mockAddress) },
@@ -366,7 +366,6 @@ func getStateDbFuncs(db state.StateDB) []func() {
 		func() { db.EndSyncPeriod() },
 		func() { db.AddLog(nil) },
 		func() { db.GetLogs(mockHash, uint64(0), mockHash, mockTimestamp) },
-		func() { db.PointCache() },
 		func() { db.Witness() },
 		func() { db.AddPreimage(mockHash, []byte{0}) },
 		func() { db.SetTxContext(mockHash, 0) },
@@ -382,6 +381,7 @@ func getStateDbFuncs(db state.StateDB) []func() {
 func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().CreateAccount(gomock.Any()).AnyTimes()
 	m.EXPECT().CreateContract(gomock.Any()).AnyTimes()
+	m.EXPECT().IsNewContract(gomock.Any()).AnyTimes()
 	m.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().GetBalance(gomock.Any()).AnyTimes()
@@ -402,7 +402,6 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SetTransientState(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
-	m.EXPECT().SelfDestruct6780(gomock.Any()).AnyTimes()
 	m.EXPECT().HasSelfDestructed(gomock.Any()).AnyTimes()
 	m.EXPECT().Exist(gomock.Any()).AnyTimes()
 	m.EXPECT().Empty(gomock.Any()).AnyTimes()
@@ -421,7 +420,6 @@ func prepareMockStateDb(m *state.MockStateDB) {
 	m.EXPECT().EndSyncPeriod().AnyTimes()
 	m.EXPECT().AddLog(gomock.Any()).AnyTimes()
 	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	m.EXPECT().PointCache().AnyTimes()
 	m.EXPECT().Witness().AnyTimes()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any()).AnyTimes()
 	m.EXPECT().SetTxContext(gomock.Any(), gomock.Any()).AnyTimes()
@@ -436,6 +434,7 @@ func prepareMockStateDb(m *state.MockStateDB) {
 func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().CreateAccount(gomock.Any())
 	m.EXPECT().CreateContract(gomock.Any())
+	m.EXPECT().IsNewContract(gomock.Any())
 	m.EXPECT().SubBalance(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().AddBalance(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().GetBalance(gomock.Any())
@@ -456,7 +455,6 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().SetTransientState(gomock.Any(), gomock.Any(), gomock.Any())
 	m.EXPECT().SelfDestruct(gomock.Any())
-	m.EXPECT().SelfDestruct6780(gomock.Any())
 	m.EXPECT().HasSelfDestructed(gomock.Any())
 	m.EXPECT().Exist(gomock.Any())
 	m.EXPECT().Empty(gomock.Any())
@@ -475,7 +473,6 @@ func prepareMockStateDbOnce(m *state.MockStateDB) {
 	m.EXPECT().EndSyncPeriod()
 	m.EXPECT().AddLog(gomock.Any())
 	m.EXPECT().GetLogs(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-	m.EXPECT().PointCache()
 	m.EXPECT().Witness()
 	m.EXPECT().AddPreimage(gomock.Any(), gomock.Any())
 	m.EXPECT().SetTxContext(gomock.Any(), gomock.Any())

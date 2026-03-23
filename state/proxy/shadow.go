@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -102,6 +101,12 @@ func (s *shadowVmStateDb) CreateAccount(addr common.Address) {
 	}
 }
 
+func (s *shadowVmStateDb) IsNewContract(addr common.Address) bool {
+	return s.getBool("IsNewContract", func(s state.VmStateDB) bool {
+		return s.IsNewContract(addr)
+	}, addr)
+}
+
 func (s *shadowVmStateDb) Exist(addr common.Address) bool {
 	return s.getBool("Exist", func(s state.VmStateDB) bool { return s.Exist(addr) }, addr)
 }
@@ -110,9 +115,10 @@ func (s *shadowVmStateDb) Empty(addr common.Address) bool {
 	return s.getBool("Empty", func(s state.VmStateDB) bool { return s.Empty(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
-	return s.getUint256("SelfDestruct", func(s state.VmStateDB) uint256.Int {
-		return s.SelfDestruct(addr)
+func (s *shadowVmStateDb) SelfDestruct(addr common.Address) {
+	s.run("SelfDestruct", func(s state.VmStateDB) error {
+		s.SelfDestruct(addr)
+		return nil
 	})
 }
 
@@ -441,16 +447,6 @@ func (s *shadowVmStateDb) CreateContract(addr common.Address) {
 	if err != nil {
 		s.log.Errorf("failed: %v", err)
 	}
-}
-
-func (s *shadowVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	return s.getUint256Bool("SelfDestruct6780", func(s state.VmStateDB) (uint256.Int, bool) {
-		return s.SelfDestruct6780(addr)
-	})
-}
-
-func (s *shadowVmStateDb) PointCache() *utils.PointCache {
-	return s.prime.PointCache()
 }
 
 func (s *shadowVmStateDb) Witness() *stateless.Witness {

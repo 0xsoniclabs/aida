@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -231,8 +230,7 @@ func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
 	mockDB.EXPECT().CreateContract(addr)
 	mockDB.EXPECT().Exist(addr).Return(true)
 	mockDB.EXPECT().Empty(addr).Return(false)
-	mockDB.EXPECT().SelfDestruct(addr).Return(uint256.Int{})
-	mockDB.EXPECT().SelfDestruct6780(addr).Return(uint256.Int{}, true)
+	mockDB.EXPECT().SelfDestruct(addr)
 	mockDB.EXPECT().HasSelfDestructed(addr).Return(true)
 	mockDB.EXPECT().GetBalance(addr).Return(value)
 	mockDB.EXPECT().AddBalance(addr, (*uint256.Int)(nil), tracing.BalanceChangeUnspecified).Return(uint256.Int{})
@@ -264,7 +262,6 @@ func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
 	mockDB.EXPECT().AddSlotToAccessList(addr, key)
 	mockDB.EXPECT().AddLog(gomock.AssignableToTypeOf(&types.Log{}))
 	mockDB.EXPECT().GetLogs(hash, uint64(8), hash, uint64(9)).Return([]*types.Log{{Index: 1}})
-	mockDB.EXPECT().PointCache().Return((*utils.PointCache)(nil))
 	mockDB.EXPECT().Witness().Return((*stateless.Witness)(nil))
 	mockDB.EXPECT().SetTxContext(hash, 14)
 	mockDB.EXPECT().GetSubstatePostAlloc().Return(txcontext.WorldState(nil))
@@ -301,7 +298,6 @@ func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
 	require.True(t, proxyDB.Exist(addr))
 	require.False(t, proxyDB.Empty(addr))
 	proxyDB.SelfDestruct(addr)
-	proxyDB.SelfDestruct6780(addr)
 	require.True(t, proxyDB.HasSelfDestructed(addr))
 	require.Equal(t, value, proxyDB.GetBalance(addr))
 	proxyDB.AddBalance(addr, nil, tracing.BalanceChangeUnspecified)
@@ -333,7 +329,6 @@ func TestDeltaLoggingStateDB_DelegatesMethods(t *testing.T) {
 	proxyDB.AddSlotToAccessList(addr, key)
 	proxyDB.AddLog(&types.Log{})
 	proxyDB.GetLogs(hash, 8, hash, 9)
-	proxyDB.PointCache()
 	proxyDB.Witness()
 	proxyDB.SetTxContext(hash, 14)
 	proxyDB.GetSubstatePostAlloc()

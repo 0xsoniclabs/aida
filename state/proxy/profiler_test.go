@@ -775,24 +775,6 @@ func TestProfilerProxy_GetLogs(t *testing.T) {
 	assert.Equal(t, expectedLogs, logs)
 }
 
-func TestProfilerProxy_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
-	mockLogger := logger.NewLogger("info", "test")
-	p := &ProfilerProxy{
-		db:   mockDb,
-		anlt: mockAnalytics,
-		log:  mockLogger,
-	}
-
-	mockDb.EXPECT().PointCache().Return(nil)
-	cache := p.PointCache()
-	assert.Nil(t, cache)
-}
-
 func TestProfilerProxy_Witness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1082,22 +1064,6 @@ func TestProfilerProxy_CreateContract(t *testing.T) {
 	expectedAddr := common.HexToAddress("0x1234")
 	mockDb.EXPECT().CreateContract(expectedAddr)
 	p.CreateContract(expectedAddr)
-}
-func TestProfilerProxy_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockAnalytics := analytics.NewIncrementalAnalytics(operation.NumOperations)
-	mockLogger := logger.NewLogger("info", "test")
-	p := &ProfilerProxy{
-		db:   mockDb,
-		anlt: mockAnalytics,
-		log:  mockLogger,
-	}
-	expectedAddr := common.HexToAddress("0x1234")
-	mockDb.EXPECT().SelfDestruct6780(expectedAddr)
-	p.SelfDestruct6780(expectedAddr)
 }
 func TestProfilerProxy_GetStorageRoot(t *testing.T) {
 	ctrl := gomock.NewController(t)

@@ -86,8 +86,6 @@ func TestGetLabel(t *testing.T) {
 		{"GetTransientStateLcls", GetTransientStateLclsID, "GetTransientStateLcls"},
 		{"SetTransientState", SetTransientStateID, "SetTransientState"},
 		{"SetTransientStateLcls", SetTransientStateLclsID, "SetTransientStateLcls"},
-		{"SelfDestruct6780", SelfDestruct6780ID, "SelfDestruct"},
-		{"PointCache", PointCacheID, "PointCache"},
 		{"Witness", WitnessID, "Witness"},
 	}
 
@@ -119,8 +117,6 @@ func TestCreateIdLabelMap(t *testing.T) {
 		{AddLogID, "AddLog"},
 		{GetTransientStateID, "GetTransientState"},
 		{SetTransientStateID, "SetTransientState"},
-		{SelfDestruct6780ID, "SelfDestruct"},
-		{PointCacheID, "PointCache"},
 		{WitnessID, "Witness"},
 	}
 

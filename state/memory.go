@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -45,10 +44,9 @@ func MakeEmptyGethInMemoryStateDB(variant string) (StateDB, error) {
 // captured by the provided Substate allocation.
 func MakeInMemoryStateDB(ws txcontext.WorldState, block uint64) StateDB {
 	return &inMemoryStateDB{
-		ws:           ws,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     block,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       ws,
+		state:    makeSnapshot(nil, 0),
+		blockNum: block,
 	}
 }
 
@@ -126,6 +124,15 @@ func (db *inMemoryStateDB) CreateAccount(addr common.Address) {
 	if db.blockNum > 46051750 {
 		db.state.createdAccounts[addr] = 0
 	}
+}
+
+func (db *inMemoryStateDB) IsNewContract(addr common.Address) bool {
+	for state := db.state; state != nil; state = state.parent {
+		if _, exists := state.createdContracts[addr]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 func (db *inMemoryStateDB) CreateContract(addr common.Address) {
@@ -276,11 +283,9 @@ func (db *inMemoryStateDB) GetStorageRoot(addr common.Address) common.Hash {
 	return empty
 }
 
-func (db *inMemoryStateDB) SelfDestruct(addr common.Address) uint256.Int {
-	before := *db.GetBalance(addr)
+func (db *inMemoryStateDB) SelfDestruct(addr common.Address) {
 	db.state.suicided[addr] = 0
 	db.state.balances[addr] = new(uint256.Int) // Apparently when you die all your money is gone.
-	return before
 }
 
 func (db *inMemoryStateDB) hasBeenCreatedInThisTransaction(addr common.Address) bool {
@@ -290,13 +295,6 @@ func (db *inMemoryStateDB) hasBeenCreatedInThisTransaction(addr common.Address) 
 		}
 	}
 	return false
-}
-
-func (db *inMemoryStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	if db.hasBeenCreatedInThisTransaction(addr) {
-		return db.SelfDestruct(addr), true
-	}
-	return *db.GetBalance(addr), false
 }
 
 func (db *inMemoryStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -438,11 +436,6 @@ func (db *inMemoryStateDB) GetLogs(_ common.Hash, _ uint64, _ common.Hash, blkTi
 	// snapshots).
 	logs := collectLogs(db.state, blkTimestamp)
 	return logs
-}
-
-func (db *inMemoryStateDB) PointCache() *utils.PointCache {
-	// this should not be relevant for revisions up to Cancun
-	panic("PointCache not implemented")
 }
 
 // Witness retrieves the current state witness being collected.

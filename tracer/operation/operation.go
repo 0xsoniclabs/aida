@@ -78,6 +78,7 @@ const (
 
 	// statedb operatioans from Altair to Cancun
 	CreateContractID
+	IsNewContractID
 	GetStorageRootID
 	GetTransientStateID
 	GetTransientStateLccsID
@@ -85,8 +86,6 @@ const (
 	GetTransientStateLclsID
 	SetTransientStateID
 	SetTransientStateLclsID
-	SelfDestruct6780ID
-	PointCacheID
 	WitnessID
 
 	// WARNING: New IDs should be added here. Any change in the order of the
@@ -138,8 +137,8 @@ var opDict = map[byte]OperationDictionary{
 	SnapshotID:                      {label: "Snapshot"},
 	SubBalanceID:                    {label: "SubBalance"},
 	SelfDestructID:                  {label: "SelfDestruct"},
-	SelfDestruct6780ID:              {label: "SelfDestruct"},
 	CreateContractID:                {label: "CreateContract"},
+	IsNewContractID:                 {label: "IsNewContract"},
 	GetStorageRootID:                {label: "GetStorageRoot"},
 
 	// for testing
@@ -157,7 +156,6 @@ var opDict = map[byte]OperationDictionary{
 	SetTxContextID:           {label: "SetTxContext"},
 	SlotInAccessListID:       {label: "SlotInAccessList"},
 	SubRefundID:              {label: "SubRefund"},
-	PointCacheID:             {label: "PointCache"},
 	WitnessID:                {label: "Witness"},
 
 	// Transient Storage

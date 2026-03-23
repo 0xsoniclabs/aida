@@ -549,11 +549,15 @@ type toscaTxContext struct {
 	db               state.VmStateDB
 }
 
-func (a *toscaTxContext) CreateAccount(addr tosca.Address) {
+func (a *toscaTxContext) CreateContract(addr tosca.Address) {
 	if !a.db.Exist(common.Address(addr)) {
 		a.db.CreateAccount(common.Address(addr))
 	}
 	a.db.CreateContract(common.Address(addr))
+}
+
+func (a *toscaTxContext) IsNewContract(addr tosca.Address) bool {
+	return a.db.IsNewContract(common.Address(addr))
 }
 
 func (a *toscaTxContext) HasEmptyStorage(addr tosca.Address) bool {
@@ -668,17 +672,7 @@ func (a *toscaTxContext) GetLogs() []tosca.Log {
 
 func (a *toscaTxContext) SelfDestruct(addr tosca.Address, beneficiary tosca.Address) bool {
 	selfdestructed := !a.db.HasSelfDestructed(common.Address(addr))
-
-	fork := a.blockEnvironment.GetFork()
-	if fork == tosca.R07_Istanbul.String() ||
-		fork == tosca.R09_Berlin.String() ||
-		fork == tosca.R10_London.String() ||
-		fork == tosca.R11_Paris.String() ||
-		fork == tosca.R12_Shanghai.String() {
-		a.db.SelfDestruct(common.Address(addr))
-	} else {
-		a.db.SelfDestruct6780(common.Address(addr))
-	}
+	a.db.SelfDestruct(common.Address(addr))
 	return selfdestructed
 }
 

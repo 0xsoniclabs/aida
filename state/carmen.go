@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -103,8 +102,7 @@ func MakeCarmenStateDB(
 
 	return &carmenHeadState{
 		carmenStateDB: carmenStateDB{
-			db:           db,
-			accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+			db: db,
 		},
 	}, nil
 }
@@ -134,6 +132,10 @@ func (s *carmenStateDB) CreateContract(addr common.Address) {
 	s.txCtx.CreateContract(carmen.Address(addr))
 }
 
+func (s *carmenStateDB) IsNewContract(addr common.Address) bool {
+	return s.txCtx.IsNewContract(carmen.Address(addr))
+}
+
 func (s *carmenStateDB) Exist(addr common.Address) bool {
 	return s.txCtx.Exist(carmen.Address(addr))
 }
@@ -142,15 +144,8 @@ func (s *carmenStateDB) Empty(addr common.Address) bool {
 	return s.txCtx.Empty(carmen.Address(addr))
 }
 
-func (s *carmenStateDB) SelfDestruct(addr common.Address) uint256.Int {
-	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
+func (s *carmenStateDB) SelfDestruct(addr common.Address) {
 	s.txCtx.SelfDestruct(carmen.Address(addr))
-	return before
-}
-
-func (s *carmenStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	before := s.txCtx.GetBalance(carmen.Address(addr)).Uint256()
-	return before, s.txCtx.SelfDestruct6780(carmen.Address(addr))
 }
 
 func (s *carmenStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -343,11 +338,6 @@ func (s *carmenStateDB) GetLogs(common.Hash, uint64, common.Hash, uint64) []*typ
 
 	}
 	return res
-}
-
-func (s *carmenStateDB) PointCache() *utils.PointCache {
-	// this should not be relevant for revisions up to Cancun
-	panic("PointCache not implemented")
 }
 
 func (s *carmenStateDB) Witness() *stateless.Witness {

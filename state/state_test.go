@@ -204,13 +204,16 @@ func runSelfDestruct6780AndReincarnationTest(t *testing.T, state StateDB) {
 			// At this point, the account storage is not empty.
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 			require.Equal(t, uint64(1), state.GetNonce(address))
-			state.SelfDestruct6780(address)
 
-			// The self-destruct6780 operation should have no effect on the
+			// Rather than calling selfdestruct6780 and expecting no changes,
+			// the new interface enforces that selfdestruct is only called if changes are expected.
+			//state.SelfDestruct(address)
+
+			// The self-destruct operation should have no effect on the
 			// storage root, as the account was not created in this transaction.
 			require.False(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 
-			// Also, the nonce should not be affected by the self-destruct6780.
+			// Also, the nonce should not be affected by the self-destruct.
 			require.Equal(t, uint64(1), state.GetNonce(address))
 
 		}
@@ -298,9 +301,9 @@ func runSelfDestruct6780InSameTransactionTest(t *testing.T, state StateDB) {
 			// transaction, it should still be empty.
 			require.True(t, isEmptyStorageRoot(state.GetStorageRoot(address)))
 
-			// The self-destruct6780 operation should mark the account for
+			// The self-destruct operation should mark the account for
 			// deletion at the end of the transaction.
-			state.SelfDestruct6780(address)
+			state.SelfDestruct(address)
 
 			// But until the ned of the transaction, the account should still
 			// be considered to be present.

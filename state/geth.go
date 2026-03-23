@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
 )
@@ -71,7 +70,6 @@ func MakeGethStateDB(directory, variant string, rootHash common.Hash, isArchiveM
 		isArchiveMode: isArchiveMode,
 		chainConduit:  chainConduit,
 		backend:       ldb,
-		accessEvents:  geth.NewAccessEvents(utils.NewPointCache(4096)),
 	}, nil
 }
 
@@ -107,6 +105,10 @@ func (s *gethStateDB) CreateContract(addr common.Address) {
 	}
 }
 
+func (s *gethStateDB) IsNewContract(addr common.Address) bool {
+	return s.db.IsNewContract(addr)
+}
+
 func (s *gethStateDB) Exist(addr common.Address) bool {
 	return s.db.Exist(addr)
 }
@@ -115,12 +117,8 @@ func (s *gethStateDB) Empty(addr common.Address) bool {
 	return s.db.Empty(addr)
 }
 
-func (s *gethStateDB) SelfDestruct(addr common.Address) uint256.Int {
-	return s.db.SelfDestruct(addr)
-}
-
-func (s *gethStateDB) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	return s.db.SelfDestruct6780(addr)
+func (s *gethStateDB) SelfDestruct(addr common.Address) {
+	s.db.SelfDestruct(addr)
 }
 
 func (s *gethStateDB) HasSelfDestructed(addr common.Address) bool {
@@ -383,10 +381,6 @@ func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.H
 		return db.GetLogs(hash, block, blockHash, blkTimestamp)
 	}
 	return []*types.Log{}
-}
-
-func (s *gethStateDB) PointCache() *utils.PointCache {
-	return s.db.PointCache()
 }
 
 func (s *gethStateDB) Witness() *stateless.Witness {

@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -180,6 +179,12 @@ func (s *loggingVmStateDb) CreateAccount(addr common.Address) {
 	s.writeLog("CreateAccount, %v", addr)
 }
 
+func (s *loggingVmStateDb) IsNewContract(addr common.Address) bool {
+	res := s.db.IsNewContract(addr)
+	s.writeLog("IsNewContract, %v, %v", addr, res)
+	return res
+}
+
 func (s *loggingVmStateDb) Exist(addr common.Address) bool {
 	res := s.db.Exist(addr)
 	s.writeLog("Exist, %v, %v", addr, res)
@@ -192,10 +197,9 @@ func (s *loggingVmStateDb) Empty(addr common.Address) bool {
 	return res
 }
 
-func (s *loggingVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
-	res := s.db.SelfDestruct(addr)
-	s.writeLog("SelfDestruct, %v, %v", addr, res)
-	return res
+func (s *loggingVmStateDb) SelfDestruct(addr common.Address) {
+	s.db.SelfDestruct(addr)
+	s.writeLog("SelfDestruct, %v", addr)
 }
 
 func (s *loggingVmStateDb) HasSelfDestructed(addr common.Address) bool {
@@ -372,13 +376,6 @@ func (s *loggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash com
 	return res
 }
 
-// PointCache returns the point cache used in computations.
-func (s *loggingVmStateDb) PointCache() *utils.PointCache {
-	res := s.db.PointCache()
-	s.writeLog("PointCache, %v", res)
-	return res
-}
-
 // Witness retrieves the current state witness.
 func (s *loggingVmStateDb) Witness() *stateless.Witness {
 	res := s.db.Witness()
@@ -411,12 +408,6 @@ func (s *loggingVmStateDb) AccessEvents() *geth.AccessEvents {
 func (s *loggingVmStateDb) CreateContract(addr common.Address) {
 	s.writeLog("CreateContract, %v", addr)
 	s.db.CreateContract(addr)
-}
-
-func (s *loggingVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	balance, success := s.db.SelfDestruct6780(addr)
-	s.writeLog("SelfDestruct6780, %v, %v, %v", addr, balance, success)
-	return balance, success
 }
 
 func (s *loggingVmStateDb) GetStorageRoot(addr common.Address) common.Hash {

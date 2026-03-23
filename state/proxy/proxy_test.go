@@ -140,14 +140,6 @@ func TestProxies_AllCalls(t *testing.T) {
 		})
 	}
 
-	// SelfDestruct6780
-	base.EXPECT().SelfDestruct6780(addr).Times(len(proxies) + 1)
-	for name, proxy := range proxies {
-		t.Run(name+"_SelfDestruct6780", func(t *testing.T) {
-			proxy.SelfDestruct6780(addr)
-		})
-	}
-
 	// HasSelfDestructed
 	base.EXPECT().HasSelfDestructed(addr).Times(len(proxies) + 1)
 	for name, proxy := range proxies {
@@ -385,15 +377,6 @@ func TestProxies_AllCalls(t *testing.T) {
 	for name, proxy := range proxies {
 		t.Run(name+"_RevertToSnapshot", func(t *testing.T) {
 			proxy.RevertToSnapshot(intVal)
-		})
-	}
-
-	// PointCache
-	// ShadowProxy calls this only on Prime todo is this correct?
-	base.EXPECT().PointCache().Times(len(proxies))
-	for name, proxy := range proxies {
-		t.Run(name+"_PointCache", func(t *testing.T) {
-			proxy.PointCache()
 		})
 	}
 

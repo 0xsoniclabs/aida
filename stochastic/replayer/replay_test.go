@@ -208,8 +208,7 @@ func TestExecute_AllOps(t *testing.T) {
 	db.EXPECT().GetTransientState(gomock.Any(), gomock.Any()).Return(common.Hash{}).AnyTimes()
 	db.EXPECT().HasSelfDestructed(gomock.Any()).Return(false).AnyTimes()
 	db.EXPECT().RevertToSnapshot(gomock.Any()).AnyTimes()
-	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0)).AnyTimes()
-	db.EXPECT().SelfDestruct6780(gomock.Any()).Return(*uint256.NewInt(0), false).AnyTimes()
+	db.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
 	db.EXPECT().SetCode(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	db.EXPECT().SetNonce(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	db.EXPECT().SetState(gomock.Any(), gomock.Any(), gomock.Any()).Return(common.Hash{}).AnyTimes()
@@ -265,7 +264,6 @@ func TestExecute_AllOps(t *testing.T) {
 
 	// Self-destruct path and removal during EndBlock
 	_ = ss.execute(operations.SelfDestructID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
-	_ = ss.execute(operations.SelfDestruct6780ID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
 	assert.NoError(t, ss.execute(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID))
 
 	// Snapshot and revert
@@ -707,7 +705,7 @@ func TestExecute_EndBlock_RemoveError(t *testing.T) {
 	// Self-destructed will contain 1, expect Remove to return error
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	contracts.EXPECT().Remove(int64(1)).Return(assert.AnError)
-	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0))
+	db.EXPECT().SelfDestruct(gomock.Any())
 	db.EXPECT().EndBlock().Return(nil)
 	rg := rand.New(rand.NewSource(2))
 	ss := newReplayContext(rg, db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)

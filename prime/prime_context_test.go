@@ -29,7 +29,6 @@ import (
 	"github.com/0xsoniclabs/aida/utils"
 	substatetypes "github.com/0xsoniclabs/substate/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -305,7 +304,7 @@ func TestPrimeContext_SelfDestructAccountsSuccess(t *testing.T) {
 	mockStateDb.EXPECT().EndBlock().Return(nil)
 	mockStateDb.EXPECT().EndSyncPeriod().Return()
 	mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-	mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+	mockStateDb.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Debugf(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Infof(gomock.Any(), gomock.Any()).AnyTimes()
 	err := p.selfDestructAccounts([]substatetypes.Address{
@@ -347,7 +346,7 @@ func TestPrimeContext_SelfDestructAccountsReturnsErrors(t *testing.T) {
 				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
 				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
 				mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
 				mockStateDb.EXPECT().EndTransaction().Return(mockError)
 			},
 		},
@@ -358,7 +357,7 @@ func TestPrimeContext_SelfDestructAccountsReturnsErrors(t *testing.T) {
 				mockStateDb.EXPECT().BeginBlock(gomock.Any()).Return(nil)
 				mockStateDb.EXPECT().BeginTransaction(gomock.Any()).Return(nil)
 				mockStateDb.EXPECT().Exist(gomock.Any()).Return(true).AnyTimes()
-				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(99)).AnyTimes()
+				mockStateDb.EXPECT().SelfDestruct(gomock.Any()).AnyTimes()
 				mockStateDb.EXPECT().EndTransaction().Return(nil)
 				mockStateDb.EXPECT().EndBlock().Return(mockError)
 			},

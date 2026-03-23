@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -213,12 +212,10 @@ func (p *ProfilerProxy) GetTransientState(addr common.Address, key common.Hash) 
 // SelfDestruct marks the given account as self destructed. This clears the account balance.
 // The account is still available until the state is committed;
 // return a non-nil account after SelfDestruct.
-func (p *ProfilerProxy) SelfDestruct(addr common.Address) uint256.Int {
-	var res uint256.Int
+func (p *ProfilerProxy) SelfDestruct(addr common.Address) {
 	p.do(operation.SelfDestructID, func() {
-		res = p.db.SelfDestruct(addr)
+		p.db.SelfDestruct(addr)
 	})
-	return res
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -389,15 +386,6 @@ func (p *ProfilerProxy) GetLogs(hash common.Hash, block uint64, blockHash common
 	return logs
 }
 
-// PointCache returns the point cache used in computations.
-func (p *ProfilerProxy) PointCache() *utils.PointCache {
-	var res *utils.PointCache
-	p.do(operation.PointCacheID, func() {
-		res = p.db.PointCache()
-	})
-	return res
-}
-
 // Witness retrieves the current state witness.
 func (p *ProfilerProxy) Witness() *stateless.Witness {
 	var res *stateless.Witness
@@ -496,13 +484,12 @@ func (p *ProfilerProxy) CreateContract(addr common.Address) {
 	})
 }
 
-func (p *ProfilerProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	var balance uint256.Int
-	var deleted bool
-	p.do(operation.SelfDestruct6780ID, func() {
-		balance, deleted = p.db.SelfDestruct6780(addr)
+func (p *ProfilerProxy) IsNewContract(addr common.Address) bool {
+	var res bool
+	p.do(operation.IsNewContractID, func() {
+		res = p.db.IsNewContract(addr)
 	})
-	return balance, deleted
+	return res
 }
 
 func (p *ProfilerProxy) GetStorageRoot(addr common.Address) common.Hash {
