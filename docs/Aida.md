@@ -17,9 +17,9 @@ performing integration tests/systems tests with the client, which contains block
 graph LR
     Mainnet([Mainnet]) --> Client[Client<br><i>modified</i>]
     RPC([RPC API Requests]) --> Client
-    Client --> AidaDB[(AidaDB)]
-    AidaDB --> Tools
-    AidaDB --> Utils
+    Client --> AidaDb[(AidaDb)]
+    AidaDb --> Tools
+    AidaDb --> Utils
 
     subgraph Tools["Aida Testing Tools"]
         prof[aida-profile]
@@ -37,7 +37,7 @@ graph LR
 ```
 
 The testing is performed with various tools and data sets. At the centre is the
-[AidaDB](Terminology.md#aidadb), which stores recorded substates — the minimal slice of world-state
+[AidaDb](Terminology.md#aidadb), which stores recorded substates — the minimal slice of world-state
 needed to execute each transaction in isolation (involved accounts, storage key/value pairs, contract
 code, etc.). The substate concept originates from
 [research at Yonsei University](https://www.usenix.org/conference/atc21/presentation/kim-yeonsoo).
@@ -50,8 +50,8 @@ whether the **full world-state stays consistent** across millions of blocks. For
 Aida's tooling falls into three categories:
 
 - **Recorders** — modified clients that capture test data (substates, state hashes)
-  into the AidaDB during block processing.
-- **Generators** — utilities that produce additional data for the AidaDB (update-sets, merged
+  into the AidaDb during block processing.
+- **Generators** — utilities that produce additional data for the AidaDb (update-sets, merged
   databases).
 - **Replayers** — tools that replay recorded data against a StateDB or VM in isolation, enabling
   targeted testing without a full node.
