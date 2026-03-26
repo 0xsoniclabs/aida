@@ -92,8 +92,10 @@ produce correct results when queried or replayed.
 
 ### Block Range
 
-Specified as `[from, to]` — inclusive start, inclusive end. Most Aida tools accept `<blockNumFirst>
-<blockNumLast>` as arguments.
+User-facing block ranges (CLI flags, config files, docs) are specified as `[from, to]` — inclusive
+start, inclusive end. Most Aida tools accept `<blockNumFirst> <blockNumLast>` as arguments and
+interpret them this way. Internally, Provider interfaces iterate using half-open intervals
+`[from, to)` — inclusive start, exclusive end — where `to` equals `<blockNumLast> + 1`.
 
 ### Pseudo-Transaction
 

@@ -68,7 +68,7 @@ Handles irregular state transitions from historical hard forks or consensus bugs
 ### EthereumPostTransactionUpdater
 
 Applies known Ethereum mainnet exception fixes **after** transaction processing. This is a workaround
-for correting any unknow changes outside a transaction.
+for correcting any unknown changes outside a transaction.
 
 ### Shared Utilities (`utils.go`)
 

@@ -72,7 +72,7 @@ The `aida-rpc` executable application will be created in `build/` folder.
 ## Run
 
 ```
-./build/aida-rpc --api-recording path/to/api-recording --db-src path/to/statedb/with/archive --substate-db path/to/substate <blockNumFirst> <blockNumLast>
+./build/aida-rpc --rpc-recording path/to/api-recording --db-src path/to/statedb/with/archive --substate-db path/to/substate <blockNumFirst> <blockNumLast>
 ```
 
 Executes recorded requests into StateDB with block range between `blockNumFirst`–`blockNumLast` and

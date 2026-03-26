@@ -44,7 +44,7 @@ etc.).
 
 ### EthTestProvider
 
-A test case in Ethereum test file may contains various input/output pairs. This provider loads
+A test case in an Ethereum test file may contain various input/output pairs. This provider loads
 Ethereum reference state tests and splits them into individual test cases via `TestCaseSplitter`.
 Each test case is assigned to a synthetic block number. The `from` and `to` parameters are
 explicitly ignored (the `Run` signature accepts them but discards both values) —
