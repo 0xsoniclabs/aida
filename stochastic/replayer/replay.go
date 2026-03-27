@@ -675,7 +675,7 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		ss.selfDestructed[addrIdx] = struct{}{}
 
 	case operations.SelfDestruct6780ID:
-		db.SelfDestruct6780(addr)
+		db.SelfDestruct(addr)
 		ss.selfDestructed[addrIdx] = struct{}{}
 
 	case operations.SetCodeID:

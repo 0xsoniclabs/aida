@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -345,22 +344,7 @@ func TestStochasticProxy_SelfDestruct(t *testing.T) {
 	proxy := NewStochasticProxy(base, &reg)
 	addr := common.HexToAddress("0x1234")
 	base.EXPECT().SelfDestruct(addr)
-	out := proxy.SelfDestruct(addr)
-	assert.Equal(t, uint256.Int{0x0, 0x0, 0x0, 0x0}, out)
-}
-
-// TestStochasticProxy_SelfDestruct6780 tests the SelfDestruct6780 method of StochasticProxy.
-func TestStochasticProxy_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	base := state.NewMockStateDB(ctrl)
-	reg := NewStats()
-	proxy := NewStochasticProxy(base, &reg)
-	addr := common.HexToAddress("0x1234")
-	base.EXPECT().SelfDestruct6780(addr).Return(uint256.Int{}, true)
-	val, ok := proxy.SelfDestruct6780(addr)
-	assert.Equal(t, uint256.Int{}, val)
-	assert.True(t, ok)
+	proxy.SelfDestruct(addr)
 }
 
 // TestStochasticProxy_CancelSelfDestruct tests the CancelSelfDestruct method of StochasticProxy.
@@ -540,19 +524,6 @@ func TestStochasticProxy_GetLogs(t *testing.T) {
 	blkTimestamp := uint64(13)
 	base.EXPECT().GetLogs(hash, blk, blkHash, blkTimestamp)
 	proxy.GetLogs(hash, blk, blkHash, blkTimestamp)
-}
-
-// TestStochasticProxy_PointCache tests the PointCache method of StochasticProxy.
-func TestStochasticProxy_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	base := state.NewMockStateDB(ctrl)
-	reg := NewStats()
-	proxy := NewStochasticProxy(base, &reg)
-	expected := utils.PointCache{}
-	base.EXPECT().PointCache().Return(&expected)
-	out := proxy.PointCache()
-	assert.Equal(t, &expected, out)
 }
 
 // TestStochasticProxy_Witness tests the Witness method of StochasticProxy.

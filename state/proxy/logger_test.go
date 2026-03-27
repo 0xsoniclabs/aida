@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -1327,28 +1326,6 @@ func TestLoggingVmStateDb_GetLogs(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestLoggingVmStateDb_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockLogger := logger.NewLogger("info", "test")
-	mockChan := make(chan string, 1)
-	mockWg := &sync.WaitGroup{}
-
-	proxy := &loggingVmStateDb{
-		db:     mockDb,
-		log:    mockLogger,
-		output: mockChan,
-		wg:     mockWg,
-	}
-	expected := &utils.PointCache{}
-	mockDb.EXPECT().PointCache().Return(expected)
-
-	res := proxy.PointCache()
-	assert.Equal(t, expected, res)
-}
-
 func TestLoggingVmStateDb_Witness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1479,30 +1456,6 @@ func TestLoggingVmStateDb_CreateContract(t *testing.T) {
 	mockDb.EXPECT().CreateContract(addr)
 
 	proxy.CreateContract(addr)
-}
-
-func TestLoggingVmStateDb_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockLogger := logger.NewLogger("info", "test")
-	mockChan := make(chan string, 1)
-	mockWg := &sync.WaitGroup{}
-
-	proxy := &loggingVmStateDb{
-		db:     mockDb,
-		log:    mockLogger,
-		output: mockChan,
-		wg:     mockWg,
-	}
-	addr := common.HexToAddress("0x1234")
-	expectedBalance := uint256.NewInt(999)
-	mockDb.EXPECT().SelfDestruct6780(addr).Return(*expectedBalance, true)
-
-	balance, success := proxy.SelfDestruct6780(addr)
-	assert.Equal(t, *expectedBalance, balance)
-	assert.True(t, success)
 }
 
 func TestLoggingVmStateDb_GetStorageRoot(t *testing.T) {

@@ -26,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -156,10 +155,9 @@ func (r *DeletionProxy) GetTransientState(addr common.Address, key common.Hash) 
 // SelfDestruct marks the given account as suicided. This clears the account balance.
 // The account is still available until the state is committed;
 // return a non-nil account after SelfDestruct.
-func (r *DeletionProxy) SelfDestruct(addr common.Address) uint256.Int {
-	res := r.db.SelfDestruct(addr)
+func (r *DeletionProxy) SelfDestruct(addr common.Address) {
+	r.db.SelfDestruct(addr)
 	r.ch <- ContractLiveliness{Addr: addr, IsDeleted: true}
-	return res
 }
 
 // HasSelfDestructed checks whether a contract has been suicided.
@@ -235,11 +233,6 @@ func (r *DeletionProxy) AddLog(log *types.Log) {
 // GetLogs retrieves log entries.
 func (r *DeletionProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	return r.db.GetLogs(hash, block, blockHash, blkTimestamp)
-}
-
-// PointCache returns the point cache used in computations.
-func (r *DeletionProxy) PointCache() *utils.PointCache {
-	return r.db.PointCache()
 }
 
 // Witness retrieves the current state witness.
@@ -347,8 +340,8 @@ func (r *DeletionProxy) CreateContract(addr common.Address) {
 	r.db.CreateContract(addr)
 }
 
-func (r *DeletionProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	return r.db.SelfDestruct6780(addr)
+func (r *DeletionProxy) IsNewContract(addr common.Address) bool {
+	return r.db.IsNewContract(addr)
 }
 
 func (r *DeletionProxy) GetStorageRoot(addr common.Address) common.Hash {

@@ -22,13 +22,13 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/carmen/go/database/vt/utils"
 	"github.com/ethereum/go-ethereum/common"
 	geth_state "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -72,6 +72,10 @@ func (p *StochasticProxy) CreateContract(addr common.Address) {
 		panic(err)
 	}
 	p.db.CreateContract(addr)
+}
+
+func (p *StochasticProxy) IsNewContract(addr common.Address) bool {
+	return p.db.IsNewContract(addr)
 }
 
 func (p *StochasticProxy) SubBalance(address common.Address, amount *uint256.Int, reason tracing.BalanceChangeReason) uint256.Int {
@@ -218,20 +222,20 @@ func (p *StochasticProxy) SetTransientState(addr common.Address, key common.Hash
 	p.db.SetTransientState(addr, key, value)
 }
 
-func (p *StochasticProxy) SelfDestruct(address common.Address) uint256.Int {
+func (p *StochasticProxy) SelfDestruct(address common.Address) {
 	err := p.stats.CountAddressOp(operations.SelfDestructID, &address)
 	if err != nil {
 		panic(err)
 	}
-	return p.db.SelfDestruct(address)
+	p.db.SelfDestruct(address)
 }
 
-func (p *StochasticProxy) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
+func (p *StochasticProxy) SelfDestruct6780(addr common.Address) {
 	err := p.stats.CountAddressOp(operations.SelfDestruct6780ID, &addr)
 	if err != nil {
 		panic(err)
 	}
-	return p.db.SelfDestruct6780(addr)
+	p.db.SelfDestruct(addr)
 }
 
 func (p *StochasticProxy) HasSelfDestructed(address common.Address) bool {
@@ -311,7 +315,7 @@ func (p *StochasticProxy) GetLogs(hash common.Hash, block uint64, blockHash comm
 }
 
 func (p *StochasticProxy) PointCache() *utils.PointCache {
-	return p.db.PointCache()
+	return nil // p.db.PointCache()
 }
 
 func (p *StochasticProxy) Witness() *stateless.Witness {

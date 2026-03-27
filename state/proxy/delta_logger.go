@@ -35,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -263,6 +262,11 @@ func (s *deltaLoggingVmStateDb) CreateContract(addr common.Address) {
 	s.db.CreateContract(addr)
 }
 
+func (s *deltaLoggingVmStateDb) IsNewContract(addr common.Address) bool {
+	s.logf("IsNewContract, %s", addr.Hex())
+	return s.db.IsNewContract(addr)
+}
+
 func (s *deltaLoggingVmStateDb) Exist(addr common.Address) bool {
 	s.logf("Exist, %s", addr.Hex())
 	return s.db.Exist(addr)
@@ -273,14 +277,9 @@ func (s *deltaLoggingVmStateDb) Empty(addr common.Address) bool {
 	return s.db.Empty(addr)
 }
 
-func (s *deltaLoggingVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
+func (s *deltaLoggingVmStateDb) SelfDestruct(addr common.Address) {
 	s.logf("SelfDestruct, %s", addr.Hex())
-	return s.db.SelfDestruct(addr)
-}
-
-func (s *deltaLoggingVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	s.logf("SelfDestruct6780, %s", addr.Hex())
-	return s.db.SelfDestruct6780(addr)
+	s.db.SelfDestruct(addr)
 }
 
 func (s *deltaLoggingVmStateDb) HasSelfDestructed(addr common.Address) bool {
@@ -438,11 +437,6 @@ func (s *deltaLoggingVmStateDb) AddLog(entry *types.Log) {
 func (s *deltaLoggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	s.logf("GetLogs, %s, %s, %s, %s", hash.Hex(), formatUint64(block), blockHash.Hex(), formatUint64(blkTimestamp))
 	return s.db.GetLogs(hash, block, blockHash, blkTimestamp)
-}
-
-func (s *deltaLoggingVmStateDb) PointCache() *utils.PointCache {
-	s.logf("PointCache")
-	return s.db.PointCache()
 }
 
 func (s *deltaLoggingVmStateDb) Witness() *stateless.Witness {

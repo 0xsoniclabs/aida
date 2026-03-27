@@ -109,12 +109,6 @@ func (r *stateReplayer) execute(op TraceOp) error {
 			return err
 		}
 		r.backend.SelfDestruct(addr)
-	case "SelfDestruct6780":
-		addr, err := parseAddress(op.Args, 0)
-		if err != nil {
-			return err
-		}
-		r.backend.SelfDestruct6780(addr)
 	case "HasSelfDestructed":
 		addr, err := parseAddress(op.Args, 0)
 		if err != nil {
@@ -404,8 +398,6 @@ func (r *stateReplayer) execute(op TraceOp) error {
 		r.backend.AddPreimage(hash, data)
 	case "AccessEvents":
 		r.backend.AccessEvents()
-	case "PointCache":
-		r.backend.PointCache()
 	case "Witness":
 		r.backend.Witness()
 	case "GetSubstatePostAlloc":

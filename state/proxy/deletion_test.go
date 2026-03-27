@@ -22,7 +22,6 @@ import (
 	"github.com/0xsoniclabs/aida/logger"
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -61,12 +60,9 @@ func TestDeletionProxy_SelfDestruct(t *testing.T) {
 	proxy := NewDeletionProxy(mockDb, mockChan, "info")
 
 	address := common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678")
-	expectedRefund := uint256.NewInt(100)
+	mockDb.EXPECT().SelfDestruct(address).Times(1)
 
-	mockDb.EXPECT().SelfDestruct(address).Return(*expectedRefund).Times(1)
-
-	refund := proxy.SelfDestruct(address)
-	assert.Equal(t, *expectedRefund, refund)
+	proxy.SelfDestruct(address)
 }
 
 func TestDeletionProxy_StartBulkLoad(t *testing.T) {

@@ -922,27 +922,8 @@ func TestCarmenStateDB_SelfDestruct(t *testing.T) {
 		txCtx: mockTxCtx,
 	}
 	addr := common.HexToAddress("0x1234")
-	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.Amount{})
 	mockTxCtx.EXPECT().SelfDestruct(carmen.Address(addr))
-	a := c.SelfDestruct(addr)
-	assert.Equal(t, uint256.Int{}, a)
-}
-
-func TestCarmenStateDB_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	c := &carmenStateDB{
-		db:    mockDb,
-		txCtx: mockTxCtx,
-	}
-	addr := common.HexToAddress("0x1234")
-	mockTxCtx.EXPECT().GetBalance(carmen.Address(addr)).Return(carmen.Amount{})
-	mockTxCtx.EXPECT().SelfDestruct6780(carmen.Address(addr)).Return(true)
-	a, value := c.SelfDestruct6780(addr)
-	assert.Equal(t, uint256.Int{}, a)
-	assert.Equal(t, true, value)
+	c.SelfDestruct(addr)
 }
 
 func TestCarmenStateDB_HasSelfDestructed(t *testing.T) {
@@ -1436,20 +1417,6 @@ func TestCarmenStateDB_GetLogs(t *testing.T) {
 	mockTxCtx.EXPECT().GetLogs().Return([]*carmen.Log{})
 	logs := c.GetLogs(addr, uint64(0), addr, uint64(0))
 	assert.Equal(t, []*types.Log{}, logs)
-}
-
-func TestCarmenStateDB_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	c := &carmenStateDB{
-		db:    mockDb,
-		txCtx: mockTxCtx,
-	}
-	assert.Panics(t, func() {
-		c.PointCache()
-	})
 }
 
 func TestCarmenStateDB_Witness(t *testing.T) {

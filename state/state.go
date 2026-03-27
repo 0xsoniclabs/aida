@@ -28,7 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -38,10 +37,10 @@ type VmStateDB interface {
 	// Account management
 	CreateAccount(common.Address)
 	CreateContract(common.Address)
+	IsNewContract(common.Address) bool
 	Exist(common.Address) bool
 	Empty(common.Address) bool
-	SelfDestruct(common.Address) uint256.Int
-	SelfDestruct6780(common.Address) (uint256.Int, bool)
+	SelfDestruct(common.Address)
 	HasSelfDestructed(common.Address) bool
 
 	// Balance
@@ -85,9 +84,6 @@ type VmStateDB interface {
 	// Logging
 	AddLog(*types.Log)
 	GetLogs(common.Hash, uint64, common.Hash, uint64) []*types.Log
-
-	// PointCache returns the point cache used in computations
-	PointCache() *utils.PointCache
 
 	// Witness retrieves the current state witness
 	Witness() *stateless.Witness

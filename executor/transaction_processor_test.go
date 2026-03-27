@@ -209,8 +209,8 @@ func TestMessageResult(t *testing.T) {
 	require.ErrorIs(t, res.GetError(), e)
 }
 
-// TestToscaTxContext_CreateAccount tests the CreateAccount method of toscaTxContext
-func TestToscaTxContext_CreateAccount(t *testing.T) {
+// TestToscaTxContext_CreateContract tests the CreateContract method of toscaTxContext
+func TestToscaTxContext_CreateContract(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -230,13 +230,13 @@ func TestToscaTxContext_CreateAccount(t *testing.T) {
 		db:               mockStateDB,
 	}
 
-	ctx.CreateAccount(addr)
+	ctx.CreateContract(addr)
 
 	// Test case 2: Account already exists
 	mockStateDB.EXPECT().Exist(ethAddr).Return(true)
 	mockStateDB.EXPECT().CreateContract(ethAddr)
 
-	ctx.CreateAccount(addr)
+	ctx.CreateContract(addr)
 }
 
 // TestToscaTxContext_HasEmptyStorage tests the HasEmptyStorage method of toscaTxContext
@@ -892,14 +892,8 @@ func TestToscaTxContext_SelfDestruct(t *testing.T) {
 				db:               mockStateDB,
 			}
 
-			mockBlockEnv.EXPECT().GetFork().Return(test.fork)
 			mockStateDB.EXPECT().HasSelfDestructed(ethAddr).Return(test.hasSelfDestructed)
-
-			if test.fork == tosca.R13_Cancun.String() {
-				mockStateDB.EXPECT().SelfDestruct6780(ethAddr)
-			} else {
-				mockStateDB.EXPECT().SelfDestruct(ethAddr)
-			}
+			mockStateDB.EXPECT().SelfDestruct(ethAddr)
 
 			result := ctx.SelfDestruct(addr, beneficiary)
 			assert.Equal(t, test.expected, result)

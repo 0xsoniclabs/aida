@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 )
 
@@ -102,6 +101,12 @@ func (s *shadowVmStateDb) CreateAccount(addr common.Address) {
 	}
 }
 
+func (s *shadowVmStateDb) IsNewContract(addr common.Address) bool {
+	return s.getBool("IsNewContract", func(s state.VmStateDB) bool {
+		return s.IsNewContract(addr)
+	}, addr)
+}
+
 func (s *shadowVmStateDb) Exist(addr common.Address) bool {
 	return s.getBool("Exist", func(s state.VmStateDB) bool { return s.Exist(addr) }, addr)
 }
@@ -110,10 +115,14 @@ func (s *shadowVmStateDb) Empty(addr common.Address) bool {
 	return s.getBool("Empty", func(s state.VmStateDB) bool { return s.Empty(addr) }, addr)
 }
 
-func (s *shadowVmStateDb) SelfDestruct(addr common.Address) uint256.Int {
-	return s.getUint256("SelfDestruct", func(s state.VmStateDB) uint256.Int {
-		return s.SelfDestruct(addr)
+func (s *shadowVmStateDb) SelfDestruct(addr common.Address) {
+	err := s.run("SelfDestruct", func(s state.VmStateDB) error {
+		s.SelfDestruct(addr)
+		return nil
 	})
+	if err != nil {
+		s.log.Errorf("failed: %v", err)
+	}
 }
 
 func (s *shadowVmStateDb) HasSelfDestructed(addr common.Address) bool {
@@ -441,16 +450,6 @@ func (s *shadowVmStateDb) CreateContract(addr common.Address) {
 	if err != nil {
 		s.log.Errorf("failed: %v", err)
 	}
-}
-
-func (s *shadowVmStateDb) SelfDestruct6780(addr common.Address) (uint256.Int, bool) {
-	return s.getUint256Bool("SelfDestruct6780", func(s state.VmStateDB) (uint256.Int, bool) {
-		return s.SelfDestruct6780(addr)
-	})
-}
-
-func (s *shadowVmStateDb) PointCache() *utils.PointCache {
-	return s.prime.PointCache()
 }
 
 func (s *shadowVmStateDb) Witness() *stateless.Witness {
@@ -821,16 +820,6 @@ func (s *shadowVmStateDb) getUint256(opName string, op func(s state.VmStateDB) u
 		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
 	}
 	return resP
-}
-
-func (s *shadowVmStateDb) getUint256Bool(opName string, op func(s state.VmStateDB) (uint256.Int, bool), args ...any) (uint256.Int, bool) {
-	aP, bP := op(s.prime)
-	aS, bS := op(s.shadow)
-	if bP != bS || aP.Cmp(&aS) != 0 {
-		s.logIssue(opName, fmt.Sprintf("(%v,%t)", aP, bP), fmt.Sprintf("(%v,%t)", aS, bS), args)
-		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
-	}
-	return aP, bP
 }
 
 func (s *shadowVmStateDb) getBytes(opName string, op func(s state.VmStateDB) []byte, args ...any) []byte {

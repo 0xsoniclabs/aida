@@ -434,7 +434,6 @@ func TestStateReplayer_MoreOperations(t *testing.T) {
 		{Kind: "SetTransientState", Args: []string{addr.Hex(), key.Hex(), key.Hex()}},
 		{Kind: "GetTransientState", Args: []string{addr.Hex(), key.Hex()}},
 		{Kind: "SelfDestruct", Args: []string{addr.Hex()}},
-		{Kind: "SelfDestruct6780", Args: []string{addr.Hex()}},
 		{Kind: "HasSelfDestructed", Args: []string{addr.Hex()}},
 		{Kind: "AddRefund", Args: []string{"100"}},
 		{Kind: "SubRefund", Args: []string{"50"}},
@@ -448,7 +447,6 @@ func TestStateReplayer_MoreOperations(t *testing.T) {
 		{Kind: "GetLogs", Args: []string{key.Hex(), "100", key.Hex(), "1000"}},
 		{Kind: "AddPreimage", Args: []string{key.Hex(), "0xabcd"}},
 		{Kind: "AccessEvents"},
-		{Kind: "PointCache"},
 		{Kind: "Witness"},
 		{Kind: "GetSubstatePostAlloc"},
 		{Kind: "EndSyncPeriod"},
@@ -1220,20 +1218,6 @@ func TestSelfDestruct_MissingArgs(t *testing.T) {
 	ops := []TraceOp{
 		{Kind: "BeginBlock", Args: []string{"1"}},
 		{Kind: "SelfDestruct", Args: []string{}},
-	}
-
-	err := replayer.Execute(context.Background(), ops)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing argument")
-}
-
-func TestSelfDestruct6780_MissingArgs(t *testing.T) {
-	db := newTrackingStateDB(t)
-	replayer := newStateReplayer(db)
-
-	ops := []TraceOp{
-		{Kind: "BeginBlock", Args: []string{"1"}},
-		{Kind: "SelfDestruct6780", Args: []string{}},
 	}
 
 	err := replayer.Execute(context.Background(), ops)

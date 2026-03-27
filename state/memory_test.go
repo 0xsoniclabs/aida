@@ -21,48 +21,13 @@ import (
 
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
-
-func TestInMemoryDb_SelfDestruct6780OnlyDeletesContractsCreatedInSameTransaction(t *testing.T) {
-	a := common.Address{1}
-	b := common.Address{2}
-
-	db := MakeInMemoryStateDB(nil, 12)
-	db.CreateContract(a)
-
-	if want, got := false, db.HasSelfDestructed(a); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", a, want, got)
-	}
-	if want, got := false, db.HasSelfDestructed(b); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
-	}
-
-	db.SelfDestruct6780(a) // < this should work
-
-	if want, got := true, db.HasSelfDestructed(a); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", a, want, got)
-	}
-	if want, got := false, db.HasSelfDestructed(b); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
-	}
-
-	db.SelfDestruct6780(b) // < this should be ignored
-
-	if want, got := true, db.HasSelfDestructed(a); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", a, want, got)
-	}
-	if want, got := false, db.HasSelfDestructed(b); want != got {
-		t.Errorf("invalid self-destruct state of contract %x, want %v, got %v", b, want, got)
-	}
-}
 
 func TestInMemoryStateDB_GetLogs_ReturnEmptyLogsWithNilSnapshot(t *testing.T) {
 	sdb := &inMemoryStateDB{state: nil}
@@ -123,10 +88,9 @@ func TestInMemoryStateDB_SetTransientState(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -144,10 +108,9 @@ func TestInMemoryStateDB_GetTransientState(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -164,10 +127,9 @@ func TestInMemoryStateDB_CreateAccount(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     46051751,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 46051751,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -183,10 +145,9 @@ func TestInMemoryStateDB_CreateContract(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -204,10 +165,9 @@ func TestInMemoryStateDB_SubBalance(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	mockWs.EXPECT().Get(addr).Return(mockAcc).Times(2)
@@ -224,10 +184,9 @@ func TestInMemoryStateDB_AddBalance(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	mockWs.EXPECT().Get(addr).Return(mockAcc).Times(2)
@@ -244,10 +203,9 @@ func TestInMemoryStateDB_GetBalance(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	mockWs.EXPECT().Get(addr).Return(mockAcc).Times(1)
@@ -265,10 +223,9 @@ func TestInMemoryStateDB_GetNonce(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	mockWs.EXPECT().Get(addr).Return(mockAcc).Times(1)
@@ -284,10 +241,9 @@ func TestInMemoryStateDB_SetNonce(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	newNonce := uint64(100)
@@ -306,10 +262,9 @@ func TestInMemoryStateDB_GetCodeHash(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	expected := common.HexToHash("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
@@ -328,10 +283,9 @@ func TestInMemoryStateDB_GetCode(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	expectedCode := []byte{0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00}
@@ -351,10 +305,9 @@ func TestInMemoryStateDB_SetCode(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	expectedCode := []byte{0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00}
@@ -374,10 +327,9 @@ func TestInMemoryStateDB_GetCodeSize(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	expectedCode := []byte{0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00}
@@ -395,10 +347,9 @@ func TestInMemoryStateDB_AddRefund(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	refundAmount := uint64(100)
 
@@ -413,10 +364,9 @@ func TestInMemoryStateDB_SubRefund(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	subtractAmount := uint64(50)
 
@@ -432,10 +382,9 @@ func TestInMemoryStateDB_GetRefund(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	refund := mem.GetRefund()
@@ -450,10 +399,9 @@ func TestInMemoryStateDB_GetCommittedState(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -475,10 +423,9 @@ func TestInMemoryStateDB_GetState(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -500,10 +447,9 @@ func TestInMemoryStateDB_SetState(t *testing.T) {
 	mockAcc := txcontext.NewMockAccount(ctrl)
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -522,10 +468,9 @@ func TestInMemoryStateDB_GetStorageRoot(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -538,20 +483,13 @@ func TestInMemoryStateDB_SelfDestruct(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
-	mockAcc := txcontext.NewMockAccount(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
-
-	mockWs.EXPECT().Get(addr).Return(mockAcc)
-	mockAcc.EXPECT().GetBalance().Return(uint256.NewInt(100))
-	value := mem.SelfDestruct(addr)
-
-	assert.Equal(t, uint256.NewInt(100), &value)
+	mem.SelfDestruct(addr)
 }
 
 func TestInMemoryStateDB_HasBeenCreatedInThisTransaction(t *testing.T) {
@@ -560,38 +498,13 @@ func TestInMemoryStateDB_HasBeenCreatedInThisTransaction(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	value := mem.hasBeenCreatedInThisTransaction(addr)
 	assert.False(t, value)
-}
-
-func TestInMemoryStateDB_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockWs := txcontext.NewMockWorldState(ctrl)
-	mockAcc := txcontext.NewMockAccount(ctrl)
-
-	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
-	}
-	addr := common.Address{0x1, 0x2, 0x3}
-
-	mockWs.EXPECT().Get(addr).Return(mockAcc)
-	mockAcc.EXPECT().GetBalance().Return(uint256.NewInt(100))
-
-	// Call SelfDestruct6780
-	value, value2 := mem.SelfDestruct6780(addr)
-	assert.Equal(t, uint256.NewInt(100), &value)
-	assert.False(t, value2)
 }
 
 func TestInMemoryStateDB_HasSelfDestructed(t *testing.T) {
@@ -600,10 +513,9 @@ func TestInMemoryStateDB_HasSelfDestructed(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	hasSelfDestructed := mem.HasSelfDestructed(addr)
@@ -616,10 +528,9 @@ func TestInMemoryStateDB_Exist(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	mockWs.EXPECT().Has(addr).Return(true)
@@ -637,10 +548,9 @@ func TestInMemoryStateDB_Empty(t *testing.T) {
 	addr := common.Address{0x1, 0x2, 0x3}
 
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	mockWs.EXPECT().Has(addr).Return(false).Times(1)
 	mockWs.EXPECT().Get(addr).Return(mockAcc).Times(2)
@@ -657,10 +567,9 @@ func TestInMemoryStateDB_Prepare(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -674,10 +583,9 @@ func TestInMemoryStateDB_AddressInAccessList(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -692,10 +600,9 @@ func TestInMemoryStateDB_SlotInAccessList(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -711,10 +618,9 @@ func TestInMemoryStateDB_AddAddressToAccessList(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 
@@ -728,10 +634,9 @@ func TestInMemoryStateDB_AddSlotToAccessList(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	addr := common.Address{0x1, 0x2, 0x3}
 	key := common.Hash{0x4, 0x5, 0x6}
@@ -746,10 +651,9 @@ func TestInMemoryStateDB_RevertToSnapshot(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	assert.NotPanics(t, func() {
 		mem.RevertToSnapshot(0)
@@ -762,10 +666,9 @@ func TestInMemoryStateDB_Snapshot(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	ss := mem.Snapshot()
@@ -779,10 +682,9 @@ func TestInMemoryStateDB_AddLog(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	log := &types.Log{
 		Address: common.Address{0x1, 0x2, 0x3},
@@ -799,10 +701,9 @@ func TestInMemoryStateDB_AddPreimage(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	assert.Panics(t, func() {
@@ -811,32 +712,15 @@ func TestInMemoryStateDB_AddPreimage(t *testing.T) {
 
 }
 
-func TestInMemoryStateDB_AccessEvents(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockWs := txcontext.NewMockWorldState(ctrl)
-	mockEvents := state.NewAccessEvents(utils.NewPointCache(4096))
-	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: mockEvents,
-	}
-	out := mem.AccessEvents()
-	assert.Equal(t, mockEvents, out)
-}
-
 func TestInMemoryStateDB_SetTxContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	assert.NotPanics(t, func() {
 		mem.SetTxContext(common.Hash{}, 0)
@@ -849,10 +733,9 @@ func TestInMemoryStateDB_Finalise(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	assert.NotPanics(t, func() {
 		mem.Finalise(false)
@@ -865,10 +748,9 @@ func TestInMemoryStateDB_IntermediateRoot(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	assert.Panics(t, func() {
 		_ = mem.IntermediateRoot(false)
@@ -881,10 +763,9 @@ func TestInMemoryStateDB_Commit(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a, b := mem.Commit(uint64(0), false)
@@ -898,10 +779,9 @@ func TestInMemoryStateDB_GetLogs(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	txHash := common.Hash{0x1, 0x2, 0x3}
 	blkNumber := uint64(10)
@@ -912,32 +792,15 @@ func TestInMemoryStateDB_GetLogs(t *testing.T) {
 	assert.Empty(t, logs)
 }
 
-func TestInMemoryStateDB_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockWs := txcontext.NewMockWorldState(ctrl)
-	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
-	}
-	assert.Panics(t, func() {
-		_ = mem.PointCache()
-	})
-}
-
 func TestInMemoryStateDB_Witness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a := mem.Witness()
@@ -950,10 +813,9 @@ func TestInMemoryStateDB_Error(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a := mem.Error()
@@ -967,10 +829,9 @@ func TestInMemoryStateDB_getEffects(t *testing.T) {
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mockAcc := txcontext.NewMockAccount(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	mem.state.touched = map[common.Address]int{
 		{0x1, 0x2, 0x3}: 1,
@@ -994,10 +855,9 @@ func TestInMemoryStateDB_GetSubstatePostAlloc(t *testing.T) {
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mockAcc := txcontext.NewMockAccount(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	mem.state.touched = map[common.Address]int{
 		{0x1, 0x2, 0x3}: 1,
@@ -1026,10 +886,9 @@ func TestInMemoryStateDB_BeginTransaction(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	err := mem.BeginTransaction(uint32(0))
 	assert.NoError(t, err)
@@ -1041,10 +900,9 @@ func TestInMemoryStateDB_EndTransaction(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	err := mem.EndTransaction()
 	assert.NoError(t, err)
@@ -1056,10 +914,9 @@ func TestInMemoryStateDB_BeginBlock(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	err := mem.BeginBlock(uint64(1))
 	assert.NoError(t, err)
@@ -1072,10 +929,9 @@ func TestInMemoryStateDB_EndBlock(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	err := mem.EndBlock()
 	assert.NoError(t, err)
@@ -1087,10 +943,9 @@ func TestInMemoryStateDB_BeginSyncPeriod(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	assert.NotPanics(t, func() {
 		mem.BeginSyncPeriod(uint64(0))
@@ -1103,10 +958,9 @@ func TestInMemoryStateDB_EndSyncPeriod(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	assert.NotPanics(t, mem.EndSyncPeriod)
@@ -1118,10 +972,9 @@ func TestInMemoryStateDB_GetHash(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a, b := mem.GetHash()
@@ -1136,10 +989,9 @@ func TestInMemoryStateDB_Close(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a := mem.Close()
@@ -1152,10 +1004,9 @@ func TestInMemoryStateDB_GetMemoryUsage(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 
 	a := mem.GetMemoryUsage()
@@ -1168,10 +1019,9 @@ func TestInMemoryStateDB_GetArchiveState(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	a, b := mem.GetArchiveState(uint64(1))
 	assert.Nil(t, a)
@@ -1184,10 +1034,9 @@ func TestInMemoryStateDB_GetArchiveBlockHeight(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	a, b, c := mem.GetArchiveBlockHeight()
 	assert.Equal(t, uint64(0), a)
@@ -1202,10 +1051,9 @@ func TestInMemoryStateDB_PrepareSubstate(t *testing.T) {
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mockWs2 := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	mem.PrepareSubstate(mockWs2, uint64(1))
 	assert.Equal(t, uint64(1), mem.blockNum)
@@ -1218,10 +1066,9 @@ func TestInMemoryStateDB_StartBulkLoad(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	a, b := mem.StartBulkLoad(uint64(1))
 	assert.NotNil(t, a)
@@ -1234,10 +1081,9 @@ func TestInMemoryStateDB_GetShadowDB(t *testing.T) {
 
 	mockWs := txcontext.NewMockWorldState(ctrl)
 	mem := &inMemoryStateDB{
-		ws:           mockWs,
-		state:        makeSnapshot(nil, 0),
-		blockNum:     1,
-		accessEvents: state.NewAccessEvents(utils.NewPointCache(4096)),
+		ws:       mockWs,
+		state:    makeSnapshot(nil, 0),
+		blockNum: 1,
 	}
 	a := mem.GetShadowDB()
 	assert.Nil(t, a)

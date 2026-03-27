@@ -226,27 +226,10 @@ func TestGethStateDB_SelfDestruct(t *testing.T) {
 		db: mockDb,
 	}
 	addr := common.HexToAddress("0x1234")
-	expected := uint256.NewInt(0)
-	mockDb.EXPECT().SelfDestruct(addr).Return(*expected)
-	value := g.SelfDestruct(addr)
-	assert.Equal(t, expected, &value)
+	mockDb.EXPECT().SelfDestruct(addr)
+	g.SelfDestruct(addr)
 }
 
-func TestGethStateDB_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := NewMockVmStateDB(ctrl)
-	g := gethStateDB{
-		db: mockDb,
-	}
-	addr := common.HexToAddress("0x1234")
-	expected := uint256.NewInt(0)
-	mockDb.EXPECT().SelfDestruct6780(addr).Return(*expected, true)
-	value, value2 := g.SelfDestruct6780(addr)
-	assert.Equal(t, expected, &value)
-	assert.True(t, value2)
-}
 func TestGethStateDB_HasSelfDestructed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -854,19 +837,6 @@ func TestGethStateDB_GetLogs(t *testing.T) {
 	hash := common.HexToHash("0x1234")
 	result := g.GetLogs(hash, 1, common.Hash{}, 123456)
 	assert.Equal(t, []*types.Log{}, result)
-}
-
-func TestGethStateDB_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := NewMockVmStateDB(ctrl)
-	g := gethStateDB{
-		db: mockDb,
-	}
-	mockDb.EXPECT().PointCache().Return(nil)
-	result := g.PointCache()
-	assert.Nil(t, result)
 }
 
 func TestGethStateDB_Witness(t *testing.T) {

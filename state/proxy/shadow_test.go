@@ -1965,47 +1965,6 @@ func TestShadowVmStateDb_CreateContract(t *testing.T) {
 	shadow.CreateContract(addr)
 }
 
-func TestShadowVmStateDb_SelfDestruct6780(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockLogger := logger.NewLogger("info", "test")
-	shadow := &shadowVmStateDb{
-		prime:            mockDb,
-		shadow:           mockDb,
-		snapshots:        []snapshotPair{},
-		err:              nil,
-		log:              mockLogger,
-		compareStateHash: false,
-	}
-	addr := common.Address{0x12}
-	expectedBalance := uint256.NewInt(1000)
-	mockDb.EXPECT().SelfDestruct6780(addr).Return(*expectedBalance, true).Times(2)
-	balance, destroyed := shadow.SelfDestruct6780(addr)
-	assert.Equal(t, *expectedBalance, balance)
-	assert.True(t, destroyed)
-}
-
-func TestShadowVmStateDb_PointCache(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDb := state.NewMockStateDB(ctrl)
-	mockLogger := logger.NewLogger("info", "test")
-	shadow := &shadowVmStateDb{
-		prime:            mockDb,
-		shadow:           mockDb,
-		snapshots:        []snapshotPair{},
-		err:              nil,
-		log:              mockLogger,
-		compareStateHash: false,
-	}
-	mockDb.EXPECT().PointCache().Return(nil).Times(1)
-	cache := shadow.PointCache()
-	assert.Nil(t, cache)
-}
-
 func TestShadowVmStateDb_Witness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
