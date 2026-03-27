@@ -310,7 +310,7 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	defer ctrl.Finish()
 	mockLog := logger.NewMockLogger(ctrl)
 
-	duration := 1 * time.Second
+	duration := 500 * time.Millisecond
 	inquirer := &archiveInquirer{
 		log:            mockLog,
 		finished:       utils.MakeEvent(),
@@ -358,7 +358,7 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 
 	go inquirer.runProgressReport()
 
-	time.Sleep(duration)
+	time.Sleep(1 * time.Second)
 
 	inquirer.finished.Signal()
 	inquirer.done.Wait() // Wait for runProgressReport to complete
