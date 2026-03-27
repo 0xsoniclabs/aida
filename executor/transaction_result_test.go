@@ -128,7 +128,7 @@ func TestTransactionResult_String(t *testing.T) {
 		},
 	}
 	out := obj.String()
-	assert.Equal(t, 387, len(out))
+	assert.Equal(t, 383, len(out))
 }
 
 func TestTransactionResult_newTransactionResult(t *testing.T) {

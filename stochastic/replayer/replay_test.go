@@ -706,7 +706,7 @@ func TestExecute_EndBlock_RemoveError(t *testing.T) {
 	// Self-destructed will contain 1, expect Remove to return error
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	contracts.EXPECT().Remove(int64(1)).Return(assert.AnError)
-	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0))
+	db.EXPECT().SelfDestruct(gomock.Any())
 	db.EXPECT().EndBlock().Return(nil)
 	rg := rand.New(rand.NewSource(2))
 	ss := newReplayContext(rg, db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)
