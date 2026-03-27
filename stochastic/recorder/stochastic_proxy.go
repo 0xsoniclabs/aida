@@ -22,6 +22,7 @@ import (
 	"github.com/0xsoniclabs/aida/state"
 	"github.com/0xsoniclabs/aida/stochastic/operations"
 	"github.com/0xsoniclabs/aida/txcontext"
+	"github.com/0xsoniclabs/carmen/go/database/vt/utils"
 	"github.com/ethereum/go-ethereum/common"
 	geth_state "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/stateless"
@@ -74,10 +75,6 @@ func (p *StochasticProxy) CreateContract(addr common.Address) {
 }
 
 func (p *StochasticProxy) IsNewContract(addr common.Address) bool {
-	err := p.stats.CountAddressOp(operations.IsNewContractID, &addr)
-	if err != nil {
-		panic(err)
-	}
 	return p.db.IsNewContract(addr)
 }
 
@@ -233,6 +230,14 @@ func (p *StochasticProxy) SelfDestruct(address common.Address) {
 	p.db.SelfDestruct(address)
 }
 
+func (p *StochasticProxy) SelfDestruct6780(addr common.Address) {
+	err := p.stats.CountAddressOp(operations.SelfDestruct6780ID, &addr)
+	if err != nil {
+		panic(err)
+	}
+	p.db.SelfDestruct(addr)
+}
+
 func (p *StochasticProxy) HasSelfDestructed(address common.Address) bool {
 	err := p.stats.CountAddressOp(operations.HasSelfDestructedID, &address)
 	if err != nil {
@@ -307,6 +312,10 @@ func (p *StochasticProxy) AddLog(log *types.Log) {
 
 func (p *StochasticProxy) GetLogs(hash common.Hash, block uint64, blockHash common.Hash, blkTimestamp uint64) []*types.Log {
 	return p.db.GetLogs(hash, block, blockHash, blkTimestamp)
+}
+
+func (p *StochasticProxy) PointCache() *utils.PointCache {
+	return nil // p.db.PointCache()
 }
 
 func (p *StochasticProxy) Witness() *stateless.Witness {

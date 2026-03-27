@@ -264,6 +264,7 @@ func TestExecute_AllOps(t *testing.T) {
 
 	// Self-destruct path and removal during EndBlock
 	_ = ss.execute(operations.SelfDestructID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
+	_ = ss.execute(operations.SelfDestruct6780ID, addrCl, stochastic.NoArgID, stochastic.NoArgID)
 	assert.NoError(t, ss.execute(operations.EndBlockID, stochastic.NoArgID, stochastic.NoArgID, stochastic.NoArgID))
 
 	// Snapshot and revert
@@ -705,7 +706,7 @@ func TestExecute_EndBlock_RemoveError(t *testing.T) {
 	// Self-destructed will contain 1, expect Remove to return error
 	contracts.EXPECT().Choose(gomock.Any()).Return(int64(1), nil)
 	contracts.EXPECT().Remove(int64(1)).Return(assert.AnError)
-	db.EXPECT().SelfDestruct(gomock.Any())
+	db.EXPECT().SelfDestruct(gomock.Any()).Return(*uint256.NewInt(0))
 	db.EXPECT().EndBlock().Return(nil)
 	rg := rand.New(rand.NewSource(2))
 	ss := newReplayContext(rg, db, contracts, nil, nil, &stubSnapshots{ret: 0}, logger.NewLogger("INFO", "test"), testBalanceRange, testNonceRange)

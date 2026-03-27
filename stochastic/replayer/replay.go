@@ -674,6 +674,10 @@ func (ss *replayContext) execute(op int, addrCl int, keyCl int, valueCl int) err
 		db.SelfDestruct(addr)
 		ss.selfDestructed[addrIdx] = struct{}{}
 
+	case operations.SelfDestruct6780ID:
+		db.SelfDestruct(addr)
+		ss.selfDestructed[addrIdx] = struct{}{}
+
 	case operations.SetCodeID:
 		sz := int(ss.codeSampler.Sample(int64(MaxCodeSize)))
 		if sz <= 0 {
