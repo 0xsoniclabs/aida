@@ -3,10 +3,10 @@ module github.com/0xsoniclabs/aida
 go 1.25.0
 
 require (
-	github.com/0xsoniclabs/carmen/go v0.0.0-20260323143301-644656f8ac03
+	github.com/0xsoniclabs/carmen/go v0.0.0-20260327130402-3d65421a9475
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
-	github.com/0xsoniclabs/tosca v0.0.0-20260323143600-4b28d8e13187
+	github.com/0xsoniclabs/tosca v0.0.0-20260327130322-2d1aa839a807
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00

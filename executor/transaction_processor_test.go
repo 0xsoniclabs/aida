@@ -209,8 +209,8 @@ func TestMessageResult(t *testing.T) {
 	require.ErrorIs(t, res.GetError(), e)
 }
 
-// TestToscaTxContext_CreateAccount tests the CreateAccount method of toscaTxContext
-func TestToscaTxContext_CreateAccount(t *testing.T) {
+// TestToscaTxContext_CreateContract tests the CreateContract method of toscaTxContext
+func TestToscaTxContext_CreateContract(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

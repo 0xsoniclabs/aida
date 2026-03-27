@@ -116,10 +116,13 @@ func (s *shadowVmStateDb) Empty(addr common.Address) bool {
 }
 
 func (s *shadowVmStateDb) SelfDestruct(addr common.Address) {
-	s.run("SelfDestruct", func(s state.VmStateDB) error {
+	err := s.run("SelfDestruct", func(s state.VmStateDB) error {
 		s.SelfDestruct(addr)
 		return nil
 	})
+	if err != nil {
+		s.log.Errorf("failed: %v", err)
+	}
 }
 
 func (s *shadowVmStateDb) HasSelfDestructed(addr common.Address) bool {
@@ -817,16 +820,6 @@ func (s *shadowVmStateDb) getUint256(opName string, op func(s state.VmStateDB) u
 		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
 	}
 	return resP
-}
-
-func (s *shadowVmStateDb) getUint256Bool(opName string, op func(s state.VmStateDB) (uint256.Int, bool), args ...any) (uint256.Int, bool) {
-	aP, bP := op(s.prime)
-	aS, bS := op(s.shadow)
-	if bP != bS || aP.Cmp(&aS) != 0 {
-		s.logIssue(opName, fmt.Sprintf("(%v,%t)", aP, bP), fmt.Sprintf("(%v,%t)", aS, bS), args)
-		s.err = fmt.Errorf("%v diverged from shadow DB", getOpcodeString(opName, args))
-	}
-	return aP, bP
 }
 
 func (s *shadowVmStateDb) getBytes(opName string, op func(s state.VmStateDB) []byte, args ...any) []byte {
