@@ -58,6 +58,7 @@ var runVmApp = &cli.App{
 		&utils.DeltaLoggingFlag,
 		&utils.CacheFlag,
 		&utils.SubstateEncodingFlag,
+		&utils.EnableExceptionUpdaterFlag,
 	},
 }
 

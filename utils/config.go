@@ -316,6 +316,7 @@ type Config struct {
 	DeleteSourceDbs          bool                      // delete source databases
 	DeletionDb               string                    // directory of deleted account database
 	DiagnosticServer         int64                     // if not zero, the port used for hosting a HTTP server for performance diagnostics
+	EnableExceptionUpdater   bool                      // enables post transaction updater for blocks with code-size too large
 	ErrorLogging             string                    // if defined, error logging to file is enabled
 	EthTestType              EthTestType               // which geth test are we running
 	EvmImpl                  string                    // processor implementation

@@ -94,6 +94,7 @@ var RunSubstateCmd = cli.Command{
 		&utils.ProfileIntervalFlag,
 		&utils.ProfileDBFlag,
 		&utils.ProfileBlocksFlag,
+		&utils.EnableExceptionUpdaterFlag,
 
 		// RegisterRun
 		&utils.RegisterRunFlag,

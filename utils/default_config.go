@@ -83,6 +83,7 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		OverwriteRunId:           getFlagValue(ctx, OverwriteRunIdFlag).(string),
 		PrimeRandom:              getFlagValue(ctx, RandomizePrimingFlag).(bool),
 		PrimeThreshold:           getFlagValue(ctx, PrimeThresholdFlag).(int),
+		EnableExceptionUpdater:   getFlagValue(ctx, EnableExceptionUpdaterFlag).(bool),
 		Profile:                  getFlagValue(ctx, ProfileFlag).(bool),
 		ProfileBlocks:            getFlagValue(ctx, ProfileBlocksFlag).(bool),
 		ProfileDB:                getFlagValue(ctx, ProfileDBFlag).(string),

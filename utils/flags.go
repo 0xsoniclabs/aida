@@ -454,6 +454,10 @@ var (
 		Name:  "validate-state-hash",
 		Usage: "enables state hash validation",
 	}
+	EnableExceptionUpdaterFlag = cli.BoolFlag{
+		Name:  "enable-exception-updater",
+		Usage: "enables post transaction updater for blocks with code-size too large (pre-Osaka)",
+	}
 	ProfileBlocksFlag = cli.BoolFlag{
 		Name:  "profile-blocks",
 		Usage: "enables block profiling",

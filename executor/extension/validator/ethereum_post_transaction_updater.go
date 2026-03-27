@@ -69,6 +69,10 @@ func MakeEthereumDbPostTransactionUpdater(cfg *utils.Config) executor.Extension[
 }
 
 func makeEthereumDbPostTransactionUpdater(cfg *utils.Config, log logger.Logger) executor.Extension[txcontext.TxContext] {
+	if !cfg.EnableExceptionUpdater {
+		return extension.NilExtension[txcontext.TxContext]{}
+	}
+
 	if cfg.VmImpl != "lfvm" {
 		return extension.NilExtension[txcontext.TxContext]{}
 	}

@@ -56,6 +56,7 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &utils.Config{}
+			cfg.EnableExceptionUpdater = true
 			cfg.VmImpl = tt.vmImpl
 			cfg.ChainID = tt.chainId
 
@@ -83,6 +84,7 @@ func TestEthereumPostTransactionUpdater_SkippedExtensionBecauseOfWrongVmImplOrWr
 
 func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t *testing.T) {
 	cfg := &utils.Config{}
+	cfg.EnableExceptionUpdater = true
 	cfg.VmImpl = "lfvm"
 	cfg.ChainID = utils.EthereumChainID
 
@@ -111,6 +113,7 @@ func TestEthereumPostTransactionUpdater_NonExceptionBlockDoesntGetOverwritten(t 
 
 func TestEthereumPostTransactionUpdater_ExceptionBlockGetsOverwritten(t *testing.T) {
 	cfg := &utils.Config{}
+	cfg.EnableExceptionUpdater = true
 	cfg.VmImpl = "lfvm"
 	cfg.ChainID = utils.EthereumChainID
 
