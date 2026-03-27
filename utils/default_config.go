@@ -93,6 +93,8 @@ func createConfigFromFlags(ctx *cli.Context) *Config {
 		ProfileSqlite3:           getFlagValue(ctx, ProfileSqlite3Flag).(string),
 		ProfilingDbName:          getFlagValue(ctx, ProfilingDbNameFlag).(string),
 		RandomSeed:               getFlagValue(ctx, RandomSeedFlag).(int64),
+		EnableCoverage:           getFlagValue(ctx, EnableCoverageFlag).(bool),
+		CoverageSnapshotInterval: getFlagValue(ctx, CoverageSnapshotIntervalFlag).(int),
 		RegisterRun:              getFlagValue(ctx, RegisterRunFlag).(string),
 		RpcRecordingPath:         getFlagValue(ctx, RpcRecordingFileFlag).(string),
 		ShadowDb:                 getFlagValue(ctx, ShadowDb).(bool),
