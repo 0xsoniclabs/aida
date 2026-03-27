@@ -310,11 +310,12 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	defer ctrl.Finish()
 	mockLog := logger.NewMockLogger(ctrl)
 
-	duration := 500 * time.Millisecond
+	called := make(chan struct{}, 1)
+
 	inquirer := &archiveInquirer{
 		log:            mockLog,
 		finished:       utils.MakeEvent(),
-		tickerDuration: duration,
+		tickerDuration: 100 * time.Millisecond,
 	}
 
 	initialTxCount := uint64(20)
@@ -333,6 +334,11 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	// We capture the arguments to verify them after the goroutine finishes.
 	mockLog.EXPECT().Infof(formatString, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(format string, args ...interface{}) {
+			// Signal that the log was called, but don't block if it's already signaled.
+			select {
+			case called <- struct{}{}:
+			default:
+			}
 			if len(args) == 4 {
 				var ok bool
 				_, ok = args[0].(int)
@@ -358,7 +364,12 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 
 	go inquirer.runProgressReport()
 
-	time.Sleep(1 * time.Second)
+	// Wait for the log to be called, which indicates that runProgressReport has executed at least once.
+	select {
+	case <-called:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for progress report")
+	}
 
 	inquirer.finished.Signal()
 	inquirer.done.Wait() // Wait for runProgressReport to complete
