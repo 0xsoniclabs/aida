@@ -334,11 +334,6 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	// We capture the arguments to verify them after the goroutine finishes.
 	mockLog.EXPECT().Infof(formatString, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(format string, args ...interface{}) {
-			// Signal that the log was called, but don't block if it's already signaled.
-			select {
-			case called <- struct{}{}:
-			default:
-			}
 			if len(args) == 4 {
 				var ok bool
 				_, ok = args[0].(int)
@@ -359,6 +354,11 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 				}
 			} else {
 				t.Logf("Infof called with unexpected number of arguments: %d", len(args))
+			}
+			// Signal that the log was called, but don't block if it's already signaled.
+			select {
+			case called <- struct{}{}:
+			default:
 			}
 		}).MinTimes(1)
 
