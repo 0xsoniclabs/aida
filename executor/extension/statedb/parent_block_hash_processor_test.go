@@ -128,6 +128,27 @@ func TestParentBlockHashProcessor_PreBlock_FillsGapsForSkippedBlocks(t *testing.
 	require.NoError(t, err, "PreBlock failed")
 }
 
+func TestParentBlockHashProcessor_PreBlock_SkipsLoopWhenAlreadyProcessed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		lastProcessedBlock: 5, // already past state.Block
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 3,
+	})}, &executor.Context{State: mockState})
+	require.NoError(t, err)
+}
+
 func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	cfg := utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague")
 	hp := NewParentBlockHashProcessor(cfg)
