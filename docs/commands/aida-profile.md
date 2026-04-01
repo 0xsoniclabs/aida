@@ -35,25 +35,11 @@ Reports code size and nonce of smart contracts in the specified block range.
 ./build/aida-profile code-size --substate-db /path/to/substate_db <blockNumFirst> <blockNumLast>
 ```
 
-### Options
-
-```
-    --substate-db           sets directory containing substate database
-    --log                   level of the logging of the app action
-```
-
 ## Storage Size Command
 
 Returns the change in storage size by transactions in the specified block range.
 ```shell
 ./build/aida-profile storage-size --substate-db /path/to/substate_db <blockNumFirst> <blockNumLast>
-```
-
-### Options
-
-```
-    --substate-db           sets directory containing substate database
-    --log                   level of the logging of the app action
 ```
 
 ## Address Stats Command

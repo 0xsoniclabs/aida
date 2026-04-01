@@ -72,28 +72,9 @@ The `aida-rpc` executable application will be created in `build/` folder.
 ## Run
 
 ```
-./build/aida-rpc --rpc-recording path/to/api-recording --db-src path/to/statedb/with/archive --substate-db path/to/substate <blockNumFirst> <blockNumLast>
+./build/aida-rpc --rpc-recording path/to/api-recording --db-src path/to/statedb/with/archive <blockNumFirst> <blockNumLast>
 ```
 
 Executes recorded requests into StateDB with block range between `blockNumFirst`–`blockNumLast` and
 compares its results with recorded responses.
 **Requests need to be in block range of given StateDB otherwise they will not be executed.**
-
-### Options
-
-```
-GLOBAL:
-    --rpc-recording, -r     Path to source file with recorded API data
-    --vm-impl               select VM implementation
-    --chainid               ChainID for replayer
-    --continue-on-failure   continue execute after validation failure detected
-    --validate              enables all validations
-    --register-run          When enabled, register results/metadata to an external service.
-    --overwrite-run-id      Use provided run id instead of auto-generating run id
-    --shadow-db             use this flag when using an existing ShadowDb
-    --db-src                sets the directory contains source state DB data
-    --db-logging            sets path to file for db-logging output
-    --trace                 enable tracing
-    --trace-file            set storage trace's output directory
-    --trace-debug           enable debug output for tracing
-```

@@ -36,25 +36,11 @@ Generate update-set from substate.
 `<blockNumLast>` is last block of the inclusive range of blocks to generate update set.
 `<interval>` is the block interval of writing update set to updateDB.
 
-### Options
-
-```
-    --chainid               ChainID for replayer
-    --aida-db               set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --update-buffer-size    buffer size for holding update set in MB
-    --validate              enables all validations
-```
-
 ## Stats Command
 
 Print number of accounts and storage keys in update-set.
 ```shell
-./build/util-updateset stats --update-db /path/to/update_db <blockNumLast>
+./build/util-updateset stats --update-db /path/to/update_db <blockNumFirst> <blockNumLast>
 ```
-The stats command requires one arguments: `<blockNumLast>` - the last block of update-set.
-
-### Options
-
-```
-    --update-db             set update-set database directory
-```
+The stats command requires two arguments: `<blockNumFirst>` and `<blockNumLast>` — the block range
+of update-set.

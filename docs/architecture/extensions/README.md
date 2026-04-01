@@ -81,10 +81,10 @@ run within each worker's context.
 | Category | Count | Description |
 |----------|-------|-------------|
 | [StateDB](statedb.md) | 16 | DB lifecycle, event emission, state preparation |
-| [Validator](validator.md) | 10 | Output validation and correctness checking |
+| [Validator](validator.md) | 11 | Output validation and correctness checking |
 | [Profiler](profiler.md) | 8 | CPU/memory profiling, diagnostics, gas tracking |
 | [Logger](logger.md) | 5 | Progress, error, and debug logging |
-| [Tracker](tracker.md) | 3 | Progress tracking and reporting |
+| [Tracker](tracker.md) | 2 | Progress tracking and reporting |
 | [Primer](primer.md) | 3 | State priming and initialization |
 | [Register](register.md) | 2 | External progress monitoring |
 

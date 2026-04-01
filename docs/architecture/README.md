@@ -62,9 +62,9 @@ graph LR
 | Category | Count | Purpose |
 |----------|-------|---------|
 | [StateDB](extensions/statedb.md) | 16 | DB lifecycle, block/tx events, state preparation |
-| [Validator](extensions/validator.md) | 10 | Correctness checking (hashes, state diffs, RPC responses) |
+| [Validator](extensions/validator.md) | 11 | Correctness checking (hashes, state diffs, RPC responses) |
 | [Profiler](extensions/profiler.md) | 8 | CPU, memory, gas, operation profiling |
 | [Logger](extensions/logger.md) | 5 | Progress, error, and debug logging |
-| [Tracker](extensions/tracker.md) | 3 | Progress tracking to console |
+| [Tracker](extensions/tracker.md) | 2 | Progress tracking to console |
 | [Primer](extensions/primer.md) | 3 | State initialization and fast-forward |
 | [Register](extensions/register.md) | 2 | Progress reporting via filesystem IPC |
