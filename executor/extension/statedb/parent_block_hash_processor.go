@@ -104,8 +104,8 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 
 	// We are saving historic block hashes, first block must be skipped because
 	// there is no history at this point
-	firstBlock := utils.KeywordBlocks[p.cfg.ChainID]["first"]
-	if uint64(state.Block) <= firstBlock {
+	chainFirstBlock := utils.KeywordBlocks[p.cfg.ChainID]["first"]
+	if uint64(state.Block) <= chainFirstBlock {
 		return nil
 	}
 
@@ -115,16 +115,18 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 		return fmt.Errorf("cannot get chain config: %w", err)
 	}
 
+	// Only timestamp of current block is available. For a corner case where first non-empty block is not Prague,
+	// and the next non-empty block is after Prague, backfilling of parent hashes of non-Prague blocks may happen.
 	if !chainCfg.IsPrague(new(big.Int).SetUint64(inputEnv.GetNumber()), inputEnv.GetTimestamp()) {
 		return nil
 	}
 
 	startBlock := int(p.lastProcessedBlock) + 1
 
-	for b := startBlock; b <= state.Block; b++ {
-		prevBlockHash, err := p.hashProvider.GetBlockHash(b - 1)
+	for block := startBlock; block <= int(state.Block); block++ {
+		prevBlockHash, err := p.hashProvider.GetBlockHash(block - 1)
 		if err != nil {
-			return fmt.Errorf("cannot get block hash for block %d: %w", b-1, err)
+			return fmt.Errorf("cannot get block hash for block %d: %w", block-1, err)
 		}
 
 		if err = ctx.State.BeginTransaction(utils.PseudoTx); err != nil {
@@ -133,14 +135,14 @@ func (p *parentBlockHashProcessor) PreBlock(state executor.State[txcontext.TxCon
 
 		var hashError error
 		blockCtx := utils.PrepareBlockCtx(inputEnv, &hashError)
-		blockCtx.BlockNumber = new(big.Int).SetUint64(uint64(b))
+		blockCtx.BlockNumber = new(big.Int).SetUint64(uint64(block))
 		evm := vm.NewEVM(*blockCtx, ctx.State, chainCfg, p.cfg.VmCfg)
 		err = p.processor.ProcessParentBlockHash(common.Hash(prevBlockHash), evm, ctx.State)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot process parent block hash for block %d: %w", block, err)
 		}
 		if hashError != nil {
-			return fmt.Errorf("hash error while processing parent block hash for block %d: %v", b, hashError)
+			return fmt.Errorf("hash error while processing parent block hash for block %d: %v", block, hashError)
 		}
 	}
 

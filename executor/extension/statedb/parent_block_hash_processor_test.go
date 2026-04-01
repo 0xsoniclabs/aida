@@ -17,6 +17,7 @@
 package statedb
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -142,6 +143,107 @@ func TestParentBlockHashProcessor_PreRunInitializesHashProvider(t *testing.T) {
 	hash, err := hp.(*parentBlockHashProcessor).hashProvider.GetStateRootHash(10)
 	require.NoError(t, err, "hashProvider.GetStateRootHash failed")
 	require.Equal(t, stateRoot.Bytes(), hash.Bytes())
+}
+
+func TestParentBlockHashProcessor_PreBlock_GetBlockHashError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	mockProvider.EXPECT().GetBlockHash(2).Return(types.Hash{}, fmt.Errorf("db error"))
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		lastProcessedBlock: 2,
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 3,
+	})}, &executor.Context{State: mockState})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot get block hash for block 2")
+}
+
+func TestParentBlockHashProcessor_PreBlock_BeginTransactionError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	hash := types.Hash{123}
+	mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil)
+	mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(fmt.Errorf("tx error"))
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		lastProcessedBlock: 2,
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 3,
+	})}, &executor.Context{State: mockState})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot begin transaction")
+}
+
+func TestParentBlockHashProcessor_PreBlock_ProcessParentBlockHashError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	hash := types.Hash{123}
+	gomock.InOrder(
+		mockProvider.EXPECT().GetBlockHash(2).Return(hash, nil),
+		mockState.EXPECT().BeginTransaction(uint32(utils.PseudoTx)).Return(nil),
+		mockProcessor.EXPECT().ProcessParentBlockHash(common.Hash(hash), gomock.Any(), gomock.Any()).Return(fmt.Errorf("process error")),
+	)
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                utils.NewTestConfig(t, utils.HoleskyChainID, 1, 10, false, "Prague"),
+		lastProcessedBlock: 2,
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 3,
+	})}, &executor.Context{State: mockState})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot process parent block hash for block 3")
+}
+
+func TestParentBlockHashProcessor_PreBlock_GetChainConfigError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockProvider := db.NewMockHashProvider(ctrl)
+	mockState := state.NewMockStateDB(ctrl)
+	mockProcessor := mocks.NewMockiEvmProcessor(ctrl)
+
+	hashProcessor := parentBlockHashProcessor{
+		hashProvider:       mockProvider,
+		processor:          mockProcessor,
+		cfg:                &utils.Config{ChainID: utils.ChainID(999999)}, // wrong chain id
+		lastProcessedBlock: 2,
+		NilExtension:       extension.NilExtension[txcontext.TxContext]{},
+	}
+
+	err := hashProcessor.PreBlock(executor.State[txcontext.TxContext]{Block: 3, Data: substateCtx.NewTxContext(&substate.Substate{
+		Env:   &substate.Env{Timestamp: math.MaxUint64},
+		Block: 3,
+	})}, &executor.Context{State: mockState})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot get chain config")
 }
 
 func TestParentBlockHashProcessor_ProcessParentBlockHash(t *testing.T) {
