@@ -61,16 +61,7 @@ Creates clone of aida-db for desired block range.
 
 *   `db`: clone db creates aida-db subset
 *   `patch`: patch is used to create aida-db patch
-
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --target-db                 path to the target database
-    --compact                   compact target database
-    --validate                  enables validation
-    --log                       level of the logging of the app action
-```
+*   `custom`: clone custom creates a copy of aida-db components from specified range
 
 ## Merge Command
 
@@ -79,28 +70,11 @@ Creates target aida-db by merging source databases from arguments: `<db1> [<db2>
 ./build/util-db merge [options] <db1> [<db2> ...]
 ```
 
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --delete-source-d           delete source databases while merging into one database
-    --compact                   compact target database
-    --log                       level of the logging of the app action
-```
-
 ## Validate Command
 
 Validates aida-db.
 ```shell
 ./build/util-db validate [options]
-```
-
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --validate                  enables validation
-    --log                       level of the logging of the app action
 ```
 
 ## Info Command
@@ -115,34 +89,31 @@ Prints information about AidaDb.
 *   `all`: List of all records in AidaDb
 *   `del-acc`: Prints info about given deleted account in AidaDb
 
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --account                   wanted account (for 'all' subcommand)
-    --detailed                  prints detailed info (for 'del-acc' subcommand)
-    --log                       level of the logging of the app action
-```
-
 ## Generate Command
 
-Generates precompute substate data.
+Generates precompute substate data. This is a command group with the following subcommands:
+
+### Subcommands
+
+#### `db-hash`
+
+Generates new db-hash. Note that this will overwrite the current AidaDb hash.
 ```shell
-./build/util-db generate [options] <events>
+./build/util-db generate db-hash --aida-db /path/to/aida_db
 ```
 
-### Options
+#### `deleted-accounts`
 
+Executes full state transitions and records suicided and resurrected accounts.
+```shell
+./build/util-db generate deleted-accounts --aida-db /path/to/aida_db <blockNumFirst> <blockNumLast>
 ```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --db                        path to the database
-    --genesis                   does not stop the program when results do not match
-    --keep-db                   if set, statedb is not deleted after run
-    --compact                   compact target database
-    --db-tmp                    sets the temporary directory where to place DB data
-    --chainid                   choose chain id
-    --cache                     cache limit
-    --log                       level of the logging of the app action
+
+#### `ethereum-genesis`
+
+Extracts WorldState from genesis JSON into first updateset.
+```shell
+./build/util-db generate ethereum-genesis --chainid <id> --update-db /path/to/update_db <genesis.json>
 ```
 
 ## Update Command
@@ -152,21 +123,6 @@ Updates aida-db by downloading patches from aida-db generation server.
 ./build/util-db update [options]
 ```
 
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory (substate, updateset, deleted accounts)
-    --chainid                   choose chain id
-    --db                        path to the database
-    --compact                   compact target database
-    --genesis                   does not stop the program when results do not match.
-    --db-tmp                    sets the temporary directory where to place DB data
-    --cache                     cache limit
-    --datadir                   opera datadir directory
-    --output                    output path
-    --log                       level of the logging of the app action
-```
-
 ## Compact Command
 
 Performs a full LevelDB compaction on the specified target database. This process optimizes the
@@ -174,12 +130,6 @@ database storage structure, potentially reducing disk usage and improving read p
 merging SSTables and removing obsolete data.
 ```shell
 ./build/util-db compact [options]
-```
-
-### Options
-
-```
-    --target-db                 path to the target database
 ```
 
 ## Metadata Command
@@ -203,44 +153,11 @@ Stores state hashes into TargetDb for given range.
 ./build/util-db scrape [options] <blockNumFirst> <blockNumLast>
 ```
 
-### Options
-
-```
-    --target-db                 path to the target database
-    --chainid                   choose chain id
-    --client-db                 path to the client database
-    --log                       level of the logging of the app action
-```
-
 ## Priming Command
 
 Performs priming of the specified database.
 ```shell
 ./build/util-db priming [options] <blockNum>
-```
-
-### Options
-
-```
-    --aida-db                   set [aida-db](../Terminology.md) directory
-    --carmen-schema             select the DB schema used by Carmen's current state DB
-    --db-impl                   select state DB implementation
-    --db-variant                select a state DB variant
-    --db-src                    sets the directory contains source state DB data
-    --db-tmp                    sets the temporary directory where to place DB data
-    --archive-mode              enables archive mode
-    --archive-query-rate        defines the rate of queries to archive
-    --archive-max-query-age     defines the max age of queries to archive
-    --archive-variant           select a archive DB variant
-    --cpu-profile               enables CPU profiling
-    --memory-profile            enables memory allocation profiling
-    --random-seed               set random seed
-    --prime-threshold           set number of accounts written to stateDB before applying pending state updates
-    --prime-random              randomize order of accounts in StateDB priming
-    --update-buffer-size        buffer size for holding update set in MiB
-    --custom-db-name            custom db name
-    --track-progress            enable progress tracking
-    --log                       level of the logging of the app action
 ```
 
 ## Examples

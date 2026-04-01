@@ -10,6 +10,7 @@ Extensions that validate processing results for correctness. Source:
 | StateHashValidator | Validates state hash against AidaDb |
 | ShadowDbValidator | Compares primary and shadow StateDBs (proxy pattern) |
 | LiveDbValidator | Validates live StateDB output vs expected |
+| ArchiveDbValidator | Validates archive StateDB output vs expected |
 | RpcComparator | Compares RPC results vs recorded responses |
 | EthStateTestErrorValidator | Validates error expectations |
 | EthStateTestStateHashValidator | Validates post-state hash |
@@ -39,6 +40,13 @@ Validates the live StateDB's state against expected substates. At **PreTransacti
 optionally overwrites) the input world state. At **PostTransaction**, validates the output world
 state and optionally the transaction receipt. Checks account balances, nonces, code, and storage
 values.
+
+### ArchiveDbValidator
+
+**Constructor:** `MakeArchiveDbValidator(cfg)`
+
+Validates the archive StateDB's state against expected substates. Works similarly to LiveDbValidator
+but targets the archive database, verifying that historical state queries return correct results.
 
 ### RpcComparator
 
