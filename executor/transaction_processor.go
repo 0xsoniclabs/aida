@@ -30,6 +30,7 @@ import (
 	"github.com/0xsoniclabs/aida/txcontext"
 	"github.com/0xsoniclabs/aida/utils"
 	_ "github.com/0xsoniclabs/tosca/go/processor/floria"
+	_ "github.com/0xsoniclabs/tosca/go/processor/floria_eth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/geth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/geth_eth"
 	_ "github.com/0xsoniclabs/tosca/go/processor/opera"
@@ -521,23 +522,39 @@ func messageToTransaction(message *core.Message) tosca.Transaction {
 		}
 	}
 
+	var authorizations []tosca.SetCodeAuthorization
+	if message.SetCodeAuthorizations != nil {
+		authorizations = make([]tosca.SetCodeAuthorization, len(message.SetCodeAuthorizations))
+		for idx, authorization := range message.SetCodeAuthorizations {
+			authorizations[idx] = tosca.SetCodeAuthorization{
+				ChainID: tosca.Word(authorization.ChainID.Bytes32()),
+				Address: tosca.Address(authorization.Address),
+				Nonce:   authorization.Nonce,
+				V:       authorization.V,
+				R:       tosca.Word(authorization.R.Bytes32()),
+				S:       tosca.Word(authorization.S.Bytes32()),
+			}
+		}
+	}
+
 	var recipient *tosca.Address
 	if message.To != nil {
 		recipient = (*tosca.Address)(message.To)
 	}
 
 	transaction := tosca.Transaction{
-		Sender:        tosca.Address(message.From),
-		Recipient:     recipient,
-		Nonce:         message.Nonce,
-		Input:         message.Data,
-		Value:         bigToValue(message.Value),
-		GasFeeCap:     bigToValue(gasFeeCap),
-		GasTipCap:     bigToValue(gasTipCap),
-		GasLimit:      tosca.Gas(message.GasLimit),
-		BlobGasFeeCap: bigToValue(message.BlobGasFeeCap),
-		BlobHashes:    blobHashes,
-		AccessList:    accessList,
+		Sender:            tosca.Address(message.From),
+		Recipient:         recipient,
+		Nonce:             message.Nonce,
+		Input:             message.Data,
+		Value:             bigToValue(message.Value),
+		GasFeeCap:         bigToValue(gasFeeCap),
+		GasTipCap:         bigToValue(gasTipCap),
+		GasLimit:          tosca.Gas(message.GasLimit),
+		BlobGasFeeCap:     bigToValue(message.BlobGasFeeCap),
+		BlobHashes:        blobHashes,
+		AccessList:        accessList,
+		AuthorizationList: authorizations,
 	}
 
 	return transaction
