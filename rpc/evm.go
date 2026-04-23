@@ -166,7 +166,7 @@ func (e *EvmExecutor) sendCall() (*core.ExecutionResult, error) {
 		evm             *vm.EVM
 	)
 
-	gp = new(core.GasPool).AddGas(math.MaxUint64) // based in opera
+	gp = core.NewGasPool(math.MaxUint64) // based in opera
 	msg, err = e.args.ToMessage(globalGasCap, e.rules.MinGasPrice, log.Root())
 	if err != nil {
 		return nil, err

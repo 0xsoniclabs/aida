@@ -331,8 +331,7 @@ func (s *aidaProcessor) processRegularTx(db state.VmStateDB, block int, tx int, 
 	evm := vm.NewEVM(*blockCtx, db, chainCfg, s.cfg.VmCfg)
 
 	var msgResult messageResult
-	var gasPool = new(core.GasPool)
-	gasPool.AddGas(inputEnv.GetGasLimit())
+	gasPool := core.NewGasPool(inputEnv.GetGasLimit())
 	executionResult, err := core.ApplyMessage(evm, msg, gasPool)
 	if err != nil {
 		// if transaction fails, revert to the first snapshot.

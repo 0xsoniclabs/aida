@@ -340,6 +340,10 @@ func (s *carmenStateDB) GetLogs(common.Hash, uint64, common.Hash, uint64) []*typ
 	return res
 }
 
+func (s *carmenStateDB) EmitLogsForBurnAccounts() {
+	// TODO: implement eip-7708 for Amsterdam hard fork.
+}
+
 func (s *carmenStateDB) Witness() *stateless.Witness {
 	// this should not be relevant for revisions up to Cancun
 	return nil

@@ -376,6 +376,11 @@ func (s *loggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash com
 	return res
 }
 
+func (s *loggingVmStateDb) EmitLogsForBurnAccounts() {
+	s.writeLog("EmitLogsForBurnAccounts")
+	s.db.EmitLogsForBurnAccounts()
+}
+
 // Witness retrieves the current state witness.
 func (s *loggingVmStateDb) Witness() *stateless.Witness {
 	res := s.db.Witness()

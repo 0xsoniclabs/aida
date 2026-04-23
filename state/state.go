@@ -84,6 +84,7 @@ type VmStateDB interface {
 	// Logging
 	AddLog(*types.Log)
 	GetLogs(common.Hash, uint64, common.Hash, uint64) []*types.Log
+	EmitLogsForBurnAccounts()
 
 	// Witness retrieves the current state witness
 	Witness() *stateless.Witness

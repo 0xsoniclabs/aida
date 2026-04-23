@@ -314,6 +314,10 @@ func (p *StochasticProxy) GetLogs(hash common.Hash, block uint64, blockHash comm
 	return p.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
+func (p *StochasticProxy) EmitLogsForBurnAccounts() {
+	p.db.EmitLogsForBurnAccounts()
+}
+
 func (p *StochasticProxy) PointCache() *utils.PointCache {
 	return nil // p.db.PointCache()
 }
