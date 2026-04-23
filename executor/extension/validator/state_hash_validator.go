@@ -184,8 +184,6 @@ func (v *stateHashValidator[T]) checkArchiveHashes(state state.StateDB, aidaDb d
 			if len(block) > 0 {
 				return unexpectedHashErr
 			}
-			v.log.Warningf("Empty block %d has mismatch hash; %v", cur, unexpectedHashErr)
-
 		}
 
 		cur++

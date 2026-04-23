@@ -423,7 +423,6 @@ func TestStateHashValidator_CheckArchiveHashesBlocksReturnsError(t *testing.T) {
 			output: make(map[int]*substate.Substate), // no transactions
 			mockSetup: func(sdb *substateDb.MockSubstateDB, log *logger.MockLogger, output map[int]*substate.Substate) {
 				sdb.EXPECT().GetBlockSubstates(uint64(blockNumber)).Return(output, nil)
-				log.EXPECT().Warningf("Empty block %d has mismatch hash; %v", uint64(blockNumber), gomock.Any())
 			},
 			hasError: false,
 		},
