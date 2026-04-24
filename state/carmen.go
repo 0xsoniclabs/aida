@@ -341,7 +341,7 @@ func (s *carmenStateDB) GetLogs(common.Hash, uint64, common.Hash, uint64) []*typ
 }
 
 func (s *carmenStateDB) EmitLogsForBurnAccounts() {
-	// TODO: implement eip-7708 for Amsterdam hard fork.
+	panic("amsterdam hard fork / eip-7708 not yet implemented")
 }
 
 func (s *carmenStateDB) Witness() *stateless.Witness {
