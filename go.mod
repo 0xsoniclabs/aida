@@ -3,10 +3,10 @@ module github.com/0xsoniclabs/aida
 go 1.25.0
 
 require (
-	github.com/0xsoniclabs/carmen/go v0.0.0-20260413073511-38e882c830d4
+	github.com/0xsoniclabs/carmen/go v0.0.0-20260427113009-ed285bc2e427
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
-	github.com/0xsoniclabs/tosca v0.0.0-20260423115228-f81e8c56bb3a
+	github.com/0xsoniclabs/tosca v0.0.0-20260429071638-3f4119284c42
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Fantom-foundation/Norma v0.0.0-20240422103552-42e37352b2f4
 	github.com/Fantom-foundation/lachesis-base v0.0.0-20240116072301-a75735c4ef00
@@ -144,9 +144,9 @@ replace github.com/0xsoniclabs/tosca => ./tosca
 
 replace github.com/ethereum/evmc/v11 => ./tosca/third_party/evmc
 
-replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20260423113856-3e6aaf62fe9f
+replace github.com/ethereum/go-ethereum => github.com/0xsoniclabs/go-ethereum v0.0.0-20260424113012-971561538c58
 
-replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundation/lachesis-base-sonic v0.0.0-20260423124551-e7f95d0a4cf3
+replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundation/lachesis-base-sonic v0.0.0-20260429065829-930ae462cd09
 
 // Sonic client is integrated as a git-submodule to make version configuration easier
 // when running tests.
