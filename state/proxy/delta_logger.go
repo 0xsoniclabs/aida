@@ -439,6 +439,11 @@ func (s *deltaLoggingVmStateDb) GetLogs(hash common.Hash, block uint64, blockHas
 	return s.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
+func (s *deltaLoggingVmStateDb) EmitLogsForBurnAccounts() {
+	s.logf("EmitLogsForBurnAccounts")
+	s.db.EmitLogsForBurnAccounts()
+}
+
 func (s *deltaLoggingVmStateDb) Witness() *stateless.Witness {
 	s.logf("Witness")
 	return s.db.Witness()

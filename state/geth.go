@@ -383,6 +383,12 @@ func (s *gethStateDB) GetLogs(hash common.Hash, block uint64, blockHash common.H
 	return []*types.Log{}
 }
 
+func (s *gethStateDB) EmitLogsForBurnAccounts() {
+	if db, ok := s.db.(*geth.StateDB); ok {
+		db.EmitLogsForBurnAccounts()
+	}
+}
+
 func (s *gethStateDB) Witness() *stateless.Witness {
 	return s.db.Witness()
 }

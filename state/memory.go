@@ -438,6 +438,10 @@ func (db *inMemoryStateDB) GetLogs(_ common.Hash, _ uint64, _ common.Hash, blkTi
 	return logs
 }
 
+func (db *inMemoryStateDB) EmitLogsForBurnAccounts() {
+	panic("amsterdam hard fork / eip-7708 not yet implemented")
+}
+
 // Witness retrieves the current state witness being collected.
 func (db *inMemoryStateDB) Witness() *stateless.Witness {
 	// this should not be relevant for revisions up to Cancun

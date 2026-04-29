@@ -235,6 +235,10 @@ func (r *DeletionProxy) GetLogs(hash common.Hash, block uint64, blockHash common
 	return r.db.GetLogs(hash, block, blockHash, blkTimestamp)
 }
 
+func (r *DeletionProxy) EmitLogsForBurnAccounts() {
+	r.db.EmitLogsForBurnAccounts()
+}
+
 // Witness retrieves the current state witness.
 func (r *DeletionProxy) Witness() *stateless.Witness {
 	return r.db.Witness()

@@ -386,6 +386,12 @@ func (p *ProfilerProxy) GetLogs(hash common.Hash, block uint64, blockHash common
 	return logs
 }
 
+func (p *ProfilerProxy) EmitLogsForBurnAccounts() {
+	p.do(operation.EmitLogsForBurnAccountsID, func() {
+		p.db.EmitLogsForBurnAccounts()
+	})
+}
+
 // Witness retrieves the current state witness.
 func (p *ProfilerProxy) Witness() *stateless.Witness {
 	var res *stateless.Witness

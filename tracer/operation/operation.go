@@ -72,6 +72,7 @@ const (
 	CloseID
 	GetLogsID
 	GetRefundID
+	EmitLogsForBurnAccountsID
 	IntermediateRootID
 	SetTxContextID
 	SubRefundID
@@ -142,21 +143,22 @@ var opDict = map[byte]OperationDictionary{
 	GetStorageRootID:                {label: "GetStorageRoot"},
 
 	// for testing
-	AddAddressToAccessListID: {label: "AddAddressToAccessList"},
-	AddLogID:                 {label: "AddLog"},
-	AddPreimageID:            {label: "AddPreimage"},
-	AddRefundID:              {label: "AddRefund"},
-	AddressInAccessListID:    {label: "AddressInAccessList"},
-	AddSlotToAccessListID:    {label: "AddSlotToAccessList"},
-	CloseID:                  {label: "Close"},
-	GetLogsID:                {label: "GetLogs"},
-	GetRefundID:              {label: "GetRefund"},
-	IntermediateRootID:       {label: "IntermediateRoot"},
-	PrepareID:                {label: "Prepare"},
-	SetTxContextID:           {label: "SetTxContext"},
-	SlotInAccessListID:       {label: "SlotInAccessList"},
-	SubRefundID:              {label: "SubRefund"},
-	WitnessID:                {label: "Witness"},
+	AddAddressToAccessListID:  {label: "AddAddressToAccessList"},
+	AddLogID:                  {label: "AddLog"},
+	AddPreimageID:             {label: "AddPreimage"},
+	AddRefundID:               {label: "AddRefund"},
+	AddressInAccessListID:     {label: "AddressInAccessList"},
+	AddSlotToAccessListID:     {label: "AddSlotToAccessList"},
+	CloseID:                   {label: "Close"},
+	GetLogsID:                 {label: "GetLogs"},
+	EmitLogsForBurnAccountsID: {label: "EmitLogsForBurnAccounts"},
+	GetRefundID:               {label: "GetRefund"},
+	IntermediateRootID:        {label: "IntermediateRoot"},
+	PrepareID:                 {label: "Prepare"},
+	SetTxContextID:            {label: "SetTxContext"},
+	SlotInAccessListID:        {label: "SlotInAccessList"},
+	SubRefundID:               {label: "SubRefund"},
+	WitnessID:                 {label: "Witness"},
 
 	// Transient Storage
 	GetTransientStateID:     {label: "GetTransientState"},

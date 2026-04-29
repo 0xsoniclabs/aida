@@ -435,6 +435,16 @@ func (s *shadowVmStateDb) GetLogs(hash common.Hash, block uint64, blockHash comm
 	return logsP
 }
 
+func (s *shadowVmStateDb) EmitLogsForBurnAccounts() {
+	err := s.run("EmitLogsForBurnAccounts", func(s state.VmStateDB) error {
+		s.EmitLogsForBurnAccounts()
+		return nil
+	})
+	if err != nil {
+		s.log.Errorf("failed: %v", err)
+	}
+}
+
 func (s *shadowVmStateDb) GetStorageRoot(addr common.Address) common.Hash {
 	// call must be done onto both databases but result must not be compared
 	_ = s.shadow.GetStorageRoot(addr)
