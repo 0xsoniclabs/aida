@@ -29,7 +29,7 @@ import (
 const (
 	RPCSonicMainnet = "https://rpc.soniclabs.com"
 	RPCOperaMainnet = "https://rpcapi.fantom.network"
-	RPCTestnet      = "https://rpc.blaze.soniclabs.com"
+	RPCTestnet      = "https://rpc.testnet.soniclabs.com"
 )
 
 var ErrRPCUnsupported = fmt.Errorf("chain-id is not supported")
