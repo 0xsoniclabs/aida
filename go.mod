@@ -1,6 +1,6 @@
 module github.com/0xsoniclabs/aida
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/0xsoniclabs/carmen/go v0.0.0-20260427113009-ed285bc2e427
@@ -28,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/urfave/cli/v2 v2.27.5
-	go.uber.org/mock v0.5.0
+	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.44.0
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 	golang.org/x/text v0.31.0
