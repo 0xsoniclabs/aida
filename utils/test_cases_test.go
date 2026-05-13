@@ -24,7 +24,7 @@ import (
 
 func TestCases_GetStateDbTestCases(t *testing.T) {
 	testCases := GetStateDbTestCases()
-	assert.Equal(t, 5, len(testCases))
+	assert.Equal(t, 4, len(testCases))
 }
 
 func TestCases_MakeRandomByteSlice(t *testing.T) {
