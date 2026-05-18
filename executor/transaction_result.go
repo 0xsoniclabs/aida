@@ -70,7 +70,12 @@ func (r transactionResult) Equal(y txcontext.Receipt) bool {
 }
 
 func (r transactionResult) String() string {
-	return fmt.Sprintf("Status: %v\nBloom: %s\nContract Address: %s\nGas Used: %v\nLogs: %v\n", r.status, string(r.bloom.Bytes()), r.contractAddress, r.gasUsed, r.logs)
+	s := fmt.Sprintf("Status: %v\nBloom: %s\nContract Address: %s\nGas Used: %v\n", r.status, string(r.bloom.Bytes()), r.contractAddress, r.gasUsed)
+	s += "Logs:\n"
+	for i, log := range r.logs {
+		s += fmt.Sprintf("  Log %d: Address: %s, Topics: %v, Data: %s\n", i, log.Address, log.Topics, string(log.Data))
+	}
+	return s
 }
 
 func newTransactionResult(logs []*types.Log, msg *core.Message, msgResult executionResult, err error, origin common.Address) transactionResult {
