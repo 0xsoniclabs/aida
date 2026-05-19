@@ -77,9 +77,8 @@ func (p evmProcessor) ProcessParentBlockHash(prevHash common.Hash, evm *vm.EVM, 
 	}
 
 	state.AddAddressToAccessList(params.HistoryStorageAddress)
-	txContext := evmcore.NewEVMTxContext(msg)
 	if evm != nil {
-		evm.SetTxContext(txContext)
+		evm.SetTxContext(evmcore.MustNewEVMTxContext(msg))
 		_, _, _ = evm.Call(msg.From, *msg.To, msg.Data, 30_000_000, common.U2560)
 	}
 	state.Finalise(true)
