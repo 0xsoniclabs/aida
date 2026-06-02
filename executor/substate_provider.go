@@ -19,6 +19,8 @@ package executor
 //go:generate mockgen -source substate_provider.go -destination substate_provider_mocks.go -package executor
 
 import (
+	"errors"
+
 	"github.com/0xsoniclabs/aida/txcontext"
 	substatecontext "github.com/0xsoniclabs/aida/txcontext/substate"
 	"github.com/0xsoniclabs/aida/utils"
@@ -53,21 +55,21 @@ type substateProvider struct {
 
 func (s substateProvider) Run(from int, to int, consumer Consumer[txcontext.TxContext]) error {
 	iter := s.db.NewSubstateIterator(from, s.numParallelDecoders)
+	release := func(err error) error {
+		iter.Release()
+		return errors.Join(err, iter.Error())
+	}
+
 	for iter.Next() {
 		tx := iter.Value()
 		if tx.Block >= uint64(to) {
-			// TODO bug not release
-			return nil
+			return release(nil)
 		}
 		if err := consumer(TransactionInfo[txcontext.TxContext]{int(tx.Block), tx.Transaction, substatecontext.NewTxContext(tx)}); err != nil {
-			// TODO bug not release
-			return err
+			return release(err)
 		}
 	}
-	// this cannot be used in defer because Release() has a WaitGroup.Wait() call
-	// so if called after iter.Error() there is a change the error does not get distributed.
-	iter.Release()
-	return iter.Error()
+	return release(nil)
 }
 
 func (s substateProvider) Close() {

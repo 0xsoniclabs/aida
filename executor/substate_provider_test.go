@@ -257,6 +257,79 @@ func TestSubstateProvider_Run(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestSubstateProvider_Run_ReleasesIteratorOnUpperBound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	mockIter := db.NewMockIIterator[*substate.Substate](ctrl)
+	mockDb.EXPECT().NewSubstateIterator(0, 0).Return(mockIter)
+	mockIter.EXPECT().Next().Return(true)
+	mockIter.EXPECT().Value().Return(&substate.Substate{
+		Block: 1,
+	})
+	mockIter.EXPECT().Release().Return()
+	mockIter.EXPECT().Error().Return(nil)
+
+	provider := &substateProvider{
+		db: mockDb,
+	}
+	err := provider.Run(0, 1, func(info TransactionInfo[txcontext.TxContext]) error {
+		t.Fatal("consumer must not be called for transactions outside the requested range")
+		return nil
+	})
+	assert.NoError(t, err)
+}
+
+func TestSubstateProvider_Run_ReleasesIteratorOnConsumerError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	mockIter := db.NewMockIIterator[*substate.Substate](ctrl)
+	mockDb.EXPECT().NewSubstateIterator(0, 0).Return(mockIter)
+	mockIter.EXPECT().Next().Return(true)
+	mockIter.EXPECT().Value().Return(&substate.Substate{
+		Block: 0,
+	})
+	mockIter.EXPECT().Release().Return()
+	mockIter.EXPECT().Error().Return(nil)
+
+	consumerErr := errors.New("consumer failed")
+	provider := &substateProvider{
+		db: mockDb,
+	}
+	err := provider.Run(0, 1, func(info TransactionInfo[txcontext.TxContext]) error {
+		return consumerErr
+	})
+	assert.ErrorIs(t, err, consumerErr)
+}
+
+func TestSubstateProvider_Run_ReturnsIteratorErrorAfterRelease(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDb := db.NewMockSubstateDB(ctrl)
+	mockIter := db.NewMockIIterator[*substate.Substate](ctrl)
+	mockDb.EXPECT().NewSubstateIterator(0, 0).Return(mockIter)
+	mockIter.EXPECT().Next().Return(true)
+	mockIter.EXPECT().Value().Return(&substate.Substate{
+		Block: 1,
+	})
+	mockIter.EXPECT().Release().Return()
+	iterErr := errors.New("iterator failed")
+	mockIter.EXPECT().Error().Return(iterErr)
+
+	provider := &substateProvider{
+		db: mockDb,
+	}
+	err := provider.Run(0, 1, func(info TransactionInfo[txcontext.TxContext]) error {
+		t.Fatal("consumer must not be called for transactions outside the requested range")
+		return nil
+	})
+	assert.ErrorIs(t, err, iterErr)
+}
+
 func TestSubstateProvider_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
