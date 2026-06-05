@@ -114,13 +114,13 @@ var EthereumChainIDs = ChainIDs{
 }
 
 const (
-	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository-public/sonic/aida-patches"
-	AidaDbRepositoryOperaUrl    = "https://storage.googleapis.com/aida-repository-public/mainnet/aida-patches"
-	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository-public/testnet/aida-patches"
-	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository-public/ethereum/aida-patches"
-	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository-public/holesky/aida-patches"
-	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository-public/hoodi/aida-patches"
-	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository-public/sepolia/aida-patches"
+	AidaDbRepositorySonicUrl    = "https://storage.googleapis.com/aida-repository/sonic/aida-patches"
+	AidaDbRepositoryOperaUrl    = "https://storage.googleapis.com/aida-repository/mainnet/aida-patches"
+	AidaDbRepositoryTestnetUrl  = "https://storage.googleapis.com/aida-repository/testnet/aida-patches"
+	AidaDbRepositoryEthereumUrl = "https://storage.googleapis.com/aida-repository/ethereum/aida-patches"
+	AidaDbRepositoryHoleskyUrl  = "https://storage.googleapis.com/aida-repository/holesky/aida-patches"
+	AidaDbRepositoryHoodiUrl    = "https://storage.googleapis.com/aida-repository/hoodi/aida-patches"
+	AidaDbRepositorySepoliaUrl  = "https://storage.googleapis.com/aida-repository/sepolia/aida-patches"
 )
 
 const maxLastBlock = math.MaxUint64 - 1 // we decrease the value by one because params are always +1
