@@ -30,15 +30,32 @@ import (
 )
 
 func TestDownloadPatchesJson(t *testing.T) {
-	AidaDbRepositoryUrl = AidaDbRepositorySonicUrl
-
-	patches, err := DownloadPatchesJson()
-	if err != nil {
-		t.Fatal(err)
+	testCases := []struct {
+		name string
+		url  string
+	}{
+		{name: "sonic", url: AidaDbRepositorySonicUrl},
+		{name: "opera", url: AidaDbRepositoryOperaUrl},
+		{name: "testnet", url: AidaDbRepositoryTestnetUrl},
+		//{name: "ethereum", url: AidaDbRepositoryEthereumUrl}, // DISCONTINUED
+		{name: "holesky", url: AidaDbRepositoryHoleskyUrl},
+		{name: "hoodi", url: AidaDbRepositoryHoodiUrl},
+		{name: "sepolia", url: AidaDbRepositorySepoliaUrl},
 	}
 
-	if len(patches) == 0 {
-		t.Fatal("patches.json are empty; are you connected to the internet?")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			AidaDbRepositoryUrl = tc.url
+
+			patches, err := DownloadPatchesJson()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(patches) == 0 {
+				t.Fatal("patches.json are empty; are you connected to the internet?")
+			}
+		})
 	}
 }
 
