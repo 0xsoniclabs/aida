@@ -250,6 +250,34 @@ func makeStateDBVariant(
 			cfg.CarmenCheckpointInterval,
 			cfg.CarmenCheckpointPeriod,
 		)
+	case "mini-client-geth":
+		chainCfg, err := cfg.GetChainConfig("")
+		if err != nil {
+			return nil, fmt.Errorf("cannot get chain config: %w", err)
+		}
+		return state.MakeMiniClientGethStateDB(
+			directory,
+			variant,
+			rootHash,
+			cfg.ArchiveMode,
+			state.NewChainConduit(IsEthereumNetwork(cfg.ChainID), chainCfg),
+		)
+	case "mini-client-sonic":
+		// Delegates to Carmen with mini-client's S5 / go-file defaults.
+		// Threads cfg-derived cache and checkpoint knobs through
+		// identically to the "carmen" case above so tuning works the
+		// same way for both SUT names.
+		return state.MakeMiniClientSonicStateDB(
+			directory,
+			variant,
+			rootHash,
+			cfg.ArchiveMode,
+			nil,
+			cfg.CarmenNodeCacheSize,
+			cfg.CarmenNodeCacheSize,
+			cfg.CarmenCheckpointInterval,
+			cfg.CarmenCheckpointPeriod,
+		)
 	}
 	return nil, fmt.Errorf("unknown Db implementation: %v", impl)
 }

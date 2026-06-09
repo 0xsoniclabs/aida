@@ -7,3 +7,6 @@
 [submodule "sonic"]
 	path = sonic
 	url = https://github.com/0xsoniclabs/sonic.git
+[submodule "mini-client"]
+	path = mini-client
+	url = git@github.com:0xsoniclabs/mini-client.git
