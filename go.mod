@@ -3,6 +3,7 @@ module github.com/0xsoniclabs/aida
 go 1.26.0
 
 require (
+        github.com/0xsoniclabs/mini-client v0.0.0-00010101000000-000000000000
 	github.com/0xsoniclabs/carmen/go v0.0.0-20260512102324-2d892af38ce4
 	github.com/0xsoniclabs/sonic v0.0.0-20250729080702-e82930ba5cad
 	github.com/0xsoniclabs/substate v0.0.0-20260210033457-fde3f1bee6ca
@@ -151,3 +152,5 @@ replace github.com/Fantom-foundation/lachesis-base => github.com/Fantom-foundati
 // Sonic client is integrated as a git-submodule to make version configuration easier
 // when running tests.
 replace github.com/0xsoniclabs/sonic => ./sonic
+
+replace github.com/0xsoniclabs/mini-client => ./mini-client
