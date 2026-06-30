@@ -310,11 +310,12 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 	defer ctrl.Finish()
 	mockLog := logger.NewMockLogger(ctrl)
 
-	duration := 1 * time.Second
+	called := make(chan struct{}, 1)
+
 	inquirer := &archiveInquirer{
 		log:            mockLog,
 		finished:       utils.MakeEvent(),
-		tickerDuration: duration,
+		tickerDuration: 100 * time.Millisecond,
 	}
 
 	initialTxCount := uint64(20)
@@ -354,11 +355,21 @@ func TestArchiveInquirer_RunProgressReport(t *testing.T) {
 			} else {
 				t.Logf("Infof called with unexpected number of arguments: %d", len(args))
 			}
+			// Signal that the log was called, but don't block if it's already signaled.
+			select {
+			case called <- struct{}{}:
+			default:
+			}
 		}).MinTimes(1)
 
 	go inquirer.runProgressReport()
 
-	time.Sleep(duration)
+	// Wait for the log to be called, which indicates that runProgressReport has executed at least once.
+	select {
+	case <-called:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for progress report")
+	}
 
 	inquirer.finished.Signal()
 	inquirer.done.Wait() // Wait for runProgressReport to complete
