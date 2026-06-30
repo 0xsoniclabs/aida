@@ -660,7 +660,7 @@ func TestShadowState_SetStateUsingBulkInsertion(t *testing.T) {
 
 			addr := common.BytesToAddress(state.MakeRandomByteSlice(t, 40))
 
-			cbl.CreateAccount(addr)
+			cbl.SetBalance(addr, uint256.NewInt(10))
 
 			// generate state key and value
 			key := common.BytesToHash(state.MakeRandomByteSlice(t, 32))

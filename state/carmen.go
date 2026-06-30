@@ -52,18 +52,14 @@ func MakeCarmenStateDB(
 	switch strings.ToLower(archive) {
 	case "none":
 		archiveType = ""
-	case "": // = default option
-		fallthrough
 	case "ldb":
 		fallthrough
 	case "leveldb":
 		archiveType = "ldb"
-	case "sql":
-		fallthrough
-	case "sqlite":
-		archiveType = "sql"
 	case "s4":
 		archiveType = "s4"
+	case "": // = default option
+		fallthrough
 	case "s5":
 		archiveType = "s5"
 	default:

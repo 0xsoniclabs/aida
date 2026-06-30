@@ -94,14 +94,10 @@ func TestCarmenState_AccountLifecycle(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			csDB.CreateAccount(addr)
+			csDB.AddBalance(addr, uint256.NewInt(10), 0)
 
 			if !csDB.Exist(addr) {
 				t.Fatal("failed to create carmen state DB account")
-			}
-
-			if !csDB.Empty(addr) {
-				t.Fatal("failed to create carmen state DB account; should be empty")
 			}
 
 			csDB.SelfDestruct(addr)
@@ -133,8 +129,6 @@ func TestCarmenState_AccountBalanceOperations(t *testing.T) {
 			}(csDB)
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
-
-			csDB.CreateAccount(addr)
 
 			// get randomized balance
 			additionBase := GetRandom(t, 1, 5_000_000)
@@ -181,8 +175,6 @@ func TestCarmenState_NonceOperations(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			csDB.CreateAccount(addr)
-
 			// get randomized nonce
 			newNonce := GetRandom(t, 1, 5_000_000)
 
@@ -217,8 +209,6 @@ func TestCarmenState_CodeOperations(t *testing.T) {
 			}(csDB)
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
-
-			csDB.CreateAccount(addr)
 
 			// generate new randomized code
 			code := MakeRandomByteSlice(t, 2048)
@@ -263,7 +253,7 @@ func TestCarmenState_StateOperations(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			csDB.CreateAccount(addr)
+			csDB.AddBalance(addr, uint256.NewInt(10), 0)
 
 			// generate state key and value
 			key := common.BytesToHash(MakeRandomByteSlice(t, 32))
@@ -496,7 +486,7 @@ func TestCarmenState_GetArchiveState(t *testing.T) {
 			}
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			csDB.CreateAccount(addr)
+			csDB.AddBalance(addr, uint256.NewInt(10), 0)
 
 			// generate state key and value
 			key := common.BytesToHash(MakeRandomByteSlice(t, 32))
@@ -563,8 +553,6 @@ func TestCarmenState_SetBalanceUsingBulkInsertion(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			cbl.CreateAccount(addr)
-
 			newBalance := uint256.NewInt(GetRandom(t, 1, 5_000_000))
 			cbl.SetBalance(addr, newBalance)
 
@@ -612,8 +600,6 @@ func TestCarmenState_SetNonceUsingBulkInsertion(t *testing.T) {
 			}
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
-
-			cbl.CreateAccount(addr)
 
 			newNonce := GetRandom(t, 1, 5_000_000)
 
@@ -664,7 +650,7 @@ func TestCarmenState_SetStateUsingBulkInsertion(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			cbl.CreateAccount(addr)
+			cbl.SetBalance(addr, uint256.NewInt(10))
 
 			// generate state key and value
 			key := common.BytesToHash(MakeRandomByteSlice(t, 32))
@@ -717,8 +703,6 @@ func TestCarmenState_SetCodeUsingBulkInsertion(t *testing.T) {
 
 			addr := common.BytesToAddress(MakeRandomByteSlice(t, 40))
 
-			cbl.CreateAccount(addr)
-
 			// generate new randomized code
 			code := MakeRandomByteSlice(t, 2048)
 
@@ -766,7 +750,7 @@ func TestCarmenState_BulkloadOperations(t *testing.T) {
 
 			for i := 0; i < len(accounts); i++ {
 				accounts[i] = common.BytesToAddress(MakeRandomByteSlice(t, 40))
-				csDB.CreateAccount(accounts[i])
+				csDB.AddBalance(accounts[i], uint256.NewInt(10), 0)
 			}
 
 			if err = csDB.EndTransaction(); err != nil {
@@ -851,21 +835,6 @@ func TestCarmenState_GetShadowDB(t *testing.T) {
 			}
 		})
 	}
-}
-
-// carmenStateDB struct method tests
-func TestCarmenStateDB_CreateAccount(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDb := carmen.NewMockDatabase(ctrl)
-	mockTxCtx := carmen.NewMockTransactionContext(ctrl)
-	c := &carmenStateDB{
-		db:    mockDb,
-		txCtx: mockTxCtx,
-	}
-	addr := common.HexToAddress("0x1234")
-	mockTxCtx.EXPECT().CreateAccount(carmen.Address(addr))
-	c.CreateAccount(addr)
 }
 
 func TestCarmenStateDB_CreateContract(t *testing.T) {
@@ -1780,19 +1749,6 @@ func TestCarmenHistoricState_Release(t *testing.T) {
 	mockBlkCtx.EXPECT().Close().Return(nil)
 	err := c.Release()
 	assert.NoError(t, err)
-}
-
-// carmenBulkLoad struct method tests
-func TestCarmenBulkLoad_CreateAccount(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockBulk := carmen.NewMockBulkLoad(ctrl)
-	c := &carmenBulkLoad{
-		load: mockBulk,
-	}
-	addr := common.HexToAddress("0x1234")
-	mockBulk.EXPECT().CreateAccount(carmen.Address(addr))
-	c.CreateAccount(addr)
 }
 
 func TestCarmenBulkLoad_SetBalance(t *testing.T) {
